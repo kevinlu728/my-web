@@ -3,60 +3,185 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>个人网站</title>
-    <!-- 引入字体 -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <!-- 引入图标库 -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="styles.css">
+    <title>云栖思渊</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/header.css">
+    <link rel="stylesheet" href="styles/footer.css">
+    <script src="https://kit.fontawesome.com/your-code.js" crossorigin="anonymous"></script>
+    <!-- 修改 particles.js 的引用 -->
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Iconfont -->
+    <link rel="stylesheet" href="//at.alicdn.com/t/c/font_4447411_ky6yxhm8dc.css">
 </head>
 <body>
-    <!-- 导航栏 -->
-    <nav class="navbar">
-        <div class="logo">云思</div>
-        <ul class="nav-links">
-            <li><a href="#home">首页</a></li>
-            <li><a href="#about">关于我</a></li>
-            <li><a href="#photos">照片集</a></li>
-            <li><a href="#contact">联系方式</a></li>
-        </ul>
-    </nav>
-
-    <!-- Hero区域 -->
-    <section id="home" class="hero">
-        <div class="hero-content">
-            <img src="your-photo.jpg" alt="个人照片" class="profile-photo">
-            <h1>Hi, 我是你的名字</h1>
-            <p>摄影爱好者 | 旅行探索者 | 设计师</p>
-        </div>
-    </section>
-
-    <!-- 照片轮播 -->
-    <section id="photos" class="carousel-section">
-        <h2>我的作品</h2>
-        <div class="carousel">
-            <div class="carousel-container">
-                <!-- 照片将通过JavaScript动态添加 -->
+    <!-- 添加粒子背景容器 -->
+    <div id="particles-js"></div>
+    <header class="header">
+        <nav class="nav-container">
+            <div class="web-title">
+                云 栖 思 渊
             </div>
-            <button class="carousel-button prev">&lt;</button>
-            <button class="carousel-button next">&gt;</button>
-        </div>
-        <div class="carousel-dots">
-            <!-- 点位将通过JavaScript动态添加 -->
-        </div>
-    </section>
+            <button class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <ul class="nav-menu">
+                <li><a href="/">首页</a></li>
+                <li><a href="/AICode/my-web/resume.html">职业旅程</a></li>
+                <li><a href="/tech">技术沉淀</a></li>
+                <li><a href="/blog">生活点滴</a></li>
+                <li><a href="/contact">联系方式</a></li>
+            </ul>
+        </nav>
+    </header>
 
-    <!-- 页脚和社交媒体链接 -->
-    <footer>
+    <main class="main-content">
+        <section class="hero">
+            <div class="avatar-container">
+                <img src="assets/profile.jpeg" alt="个人头像" class="avatar">
+            </div>
+            <div class="profile-container">
+                <div class="profile-content">
+                    <!-- <h1>陆 凯</h1> -->
+                    <div class="intro">
+                        <div class="intro-title">职业旅程</div>
+                        <div class="intro-title">「终端技术架构专家 × AI终端工程化先行者」</div>
+                        <div class="intro-item">9年终端技术纵深：从华为终端芯片层到美团亿级流量终端架构</div>
+                        <div class="intro-item">5年技术管理沉淀：0-1组建3个创新团队（华为HiAI/京东端智能/美团终端PaaS）</div>
+                        <div class="intro-item">AI全栈实践能力：覆盖端侧推理 → 大模型应用（GPT/Diffusion）→ AI工具链（Copilot）</div>
+                    </div>
+                    <!-- <div class="tags">
+                        <span class="tag">终端技术</span>
+                        <span class="tag">管理经验</span>
+                        <span class="tag">AI工程化</span>
+                    </div> -->
+                    <!-- <div class="tech-stack">
+                        <span class="tech">JavaScript</span>
+                        <span class="tech">React</span>
+                        <span class="tech">Swift</span>
+                    </div> -->
+                    <div class="intro">
+                        <div class="intro-title">生活另一面</div>
+                        <div class="intro-title">—— 当一个「不务正业」的程序猿决定给人生按Ctrl+Alt+Del</div>
+                        <div class="intro-item">电影：在诺兰的时空折叠里找技术灵感，在达子的荒诞骗局中品光怪陆离，在星爷的龙套故事中悟草根人生</div>
+                        <div class="intro-item">足球：稀有的南大王和小国际双料，以前踢踢小场，现在只是纸上谈兵的懂球帝，实况玩家和小众FMer</div>
+                        <div class="intro-item">漫游：偶尔出去走走，偏好一些古迹遗址，左手《全球通史》右手充电宝，读史旅游两不误</div>
+                    </div>
+                    <div class="collaboration">
+                        <div class="collab-title">与我同行</div>
+                        <div class="collab-text">正在寻找：前瞻技术合作者 | 价值投资伙伴 | 敢想敢为的极客团队</div>
+                        <div class="collab-motto">Let's build something that matters.</div>
+                        <button class="contact-btn">联系我</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
         <div class="social-links">
-            <a href="#" target="_blank"><i class="fab fa-instagram"></i></a>
-            <a href="#" target="_blank"><i class="fab fa-weibo"></i></a>
-            <a href="#" target="_blank"><i class="fab fa-linkedin"></i></a>
-            <a href="#" target="_blank"><i class="fab fa-facebook"></i></a>
+            <a href="javascript:void(0)" class="social-link" title="微信" id="wechat-link">
+                <i class="fab fa-weixin"></i>
+            </a>
+            <a href="#" target="_blank" rel="noopener noreferrer" class="social-link" title="微博">
+                <i class="fab fa-weibo"></i>
+            </a>
+            <a href="#" target="_blank" rel="noopener noreferrer" class="social-link" title="知乎">
+                <i class="fab fa-zhihu"></i>
+            </a>
+            <a href="#" target="_blank" rel="noopener noreferrer" class="social-link" title="Bilibili">
+                <svg class="bilibili-icon" viewBox="0 0 1024 1024" width="24" height="24">
+                    <path d="M777.514667 131.669333a53.333333 53.333333 0 0 1 0 75.434667L728.746667 255.829333h49.92A160 160 0 0 1 938.666667 415.829333v320a160 160 0 0 1-160 160H245.333333A160 160 0 0 1 85.333333 735.829333v-320a160 160 0 0 1 160-160h49.749334L246.4 207.104a53.333333 53.333333 0 1 1 75.392-75.434667l113.152 113.152c3.370667 3.370667 6.186667 7.04 8.448 10.965334h137.088c2.261333-3.925333 5.077333-7.594667 8.448-10.965334l113.152-113.152a53.333333 53.333333 0 0 1 75.434667 0z m1.152 231.253334H245.333333a53.333333 53.333333 0 0 0-53.333333 53.333333v320a53.333333 53.333333 0 0 0 53.333333 53.333333h533.333334a53.333333 53.333333 0 0 0 53.333333-53.333333v-320a53.333333 53.333333 0 0 0-53.333333-53.333333zM341.333333 469.333333a53.333333 53.333333 0 1 1 0 106.666667 53.333333 53.333333 0 0 1 0-106.666667z m341.333334 0a53.333333 53.333333 0 1 1 0 106.666667 53.333333 53.333333 0 0 1 0-106.666667z" fill="currentColor"/>
+                </svg>
+            </a>
+            <a href="#" target="_blank" rel="noopener noreferrer" class="social-link" title="LinkedIn">
+                <i class="fab fa-linkedin-in"></i>
+            </a>
+            <a href="mailto:kevinlu728@gmail.com" class="social-link" title="Email">
+                <i class="fas fa-envelope"></i>
+            </a>
         </div>
-        <p class="copyright">© 2024 你的名字. All rights reserved.</p>
+        <div class="copyright">
+            © 2024 陆凯 - All rights reserved
+        </div>
     </footer>
 
-    <script src="script.js"></script>
+    <div class="contact-modal" id="contact-modal">
+        <div class="contact-container">
+            <h3>联系方式</h3>
+            <div class="contact-methods">
+                <div class="contact-method">
+                    <i class="fab fa-weixin"></i>
+                    <span>微信扫码添加</span>
+                    <img src="assets/wechat-qr.jpg" alt="微信二维码" class="contact-qr">
+                </div>
+                <div class="contact-method">
+                    <i class="fas fa-envelope"></i>
+                    <span>邮箱</span>
+                    <a href="mailto:kevinlu728@gmail.com">Kevin的个人邮箱</a>
+                </div>
+                <div class="contact-method">
+                    <i class="fab fa-linkedin-in"></i>
+                    <span>领英</span>
+                    <a href="https://www.linkedin.com/in/kevinlu728/" target="_blank">Kevin的领英主页</a>
+                </div>
+            </div>
+            <button class="close-btn">关闭</button>
+        </div>
+    </div>
+
+    <div class="qr-modal" id="wechat-modal">
+        <div class="qr-container">
+            <img src="assets/wechat-qr.jpg" alt="微信二维码" class="qr-code">
+            <div class="qr-title">扫码添加微信</div>
+        </div>
+    </div>
+
+    <!-- 在 footer 前添加对话界面 -->
+    <div class="chat-widget" id="chat-widget">
+        <button class="chat-toggle" id="chat-toggle">
+            <i class="fas fa-comments"></i>
+        </button>
+        
+        <div class="chat-container">
+            <div class="chat-header">
+                <h3>与AI助手对话</h3>
+                <div class="chat-controls">
+                    <button class="minimize-btn" id="minimize-btn">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                    <button class="chat-close-btn" id="close-btn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="chat-messages" id="chat-messages">
+                <!-- 消息内容会动态添加 -->
+            </div>
+            
+            <div class="chat-input">
+                <textarea 
+                    id="chat-input-field" 
+                    placeholder="输入消息..." 
+                    rows="1"
+                ></textarea>
+                <button class="send-btn" id="send-btn">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+            
+            <div class="quick-replies">
+                <button class="quick-reply-btn">了解更多</button>
+                <button class="quick-reply-btn">查看项目</button>
+                <button class="quick-reply-btn">联系方式</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
 </body>
-</html> 
+</html>
