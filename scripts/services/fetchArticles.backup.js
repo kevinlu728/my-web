@@ -1,4 +1,4 @@
-// fetchArticles.js
+// fetchArticles.js - Backup
 
 // 获取文章列表
 async function getArticles(databaseId) {
@@ -84,4 +84,4 @@ async function getArticles(databaseId) {
   }
 }
 
-window.getArticles = getArticles; // 将函数暴露到全局
+window.getArticles = getArticles; // 将函数暴露到全局 
