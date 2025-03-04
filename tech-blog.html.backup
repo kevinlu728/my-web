@@ -82,10 +82,9 @@
       import { getDatabaseInfo, testApiConnection, getDatabases } from './scripts/services/notionService.js';
       import { showStatus } from './scripts/utils/utils.js';
       import { loadArticles } from './scripts/managers/articleManager.js';
-      import config from './scripts/config/config.js';
       
-      // 使用配置文件中的数据库ID
-      let currentDatabaseId = config.notion.databaseId || config.debug.defaultDatabaseId;
+      // 存储当前数据库 ID
+      let currentDatabaseId = '1a932af826e680df8bf7f320b51930b9';
       
       // 更新配置
       function updateConfig(newDatabaseId) {
@@ -95,12 +94,6 @@
 
       // 页面加载完成后执行
       window.onload = function() {
-        // 设置调试面板中的默认值
-        const databaseIdInput = document.getElementById('database-id');
-        if (databaseIdInput) {
-          databaseIdInput.value = currentDatabaseId;
-        }
-
         // 初始化调试面板
         initDebugPanel(currentDatabaseId, {
           onConfigUpdate: updateConfig,

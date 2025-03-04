@@ -1,1 +1,13 @@
+# 依赖
 node_modules/
+
+# 环境文件
+.env
+.env.*
+
+# 开发环境配置（包含敏感信息）
+scripts/config/config.development.js
+
+# 其他敏感文件
+*.pem
+*.key
