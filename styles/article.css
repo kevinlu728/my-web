@@ -1,0 +1,94 @@
+/* 文章内容区域样式 */
+.main-content {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    gap: 40px;
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 100px 40px 40px;
+    min-height: calc(100vh - 60px);
+    position: relative;
+    z-index: 1;
+}
+
+.left-column {
+    background: #ffffff;
+    padding: 30px;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    position: sticky;
+    top: 80px;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    width: 100%;
+}
+
+/* 文章列表样式 */
+#article-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.article-list-item {
+    cursor: pointer;
+    padding: 15px 20px;
+    transition: all 0.3s ease;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    font-size: 15px;
+    line-height: 1.5;
+    color: #334155;
+}
+
+/* 文章内容样式 */
+.right-column {
+    background: #ffffff;
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    width: 100%;
+}
+
+.article-title {
+    margin-bottom: 30px;
+    color: #2c3e50;
+    font-size: 2em;
+    font-weight: 600;
+    line-height: 1.4;
+    border-bottom: 2px solid #93C5FD;
+    padding-bottom: 15px;
+}
+
+/* 响应式布局 */
+@media (max-width: 1200px) {
+    .main-content {
+        max-width: 100%;
+        padding: 80px 20px 20px;
+        gap: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        grid-template-columns: 1fr;
+        padding: 80px 15px 20px;
+    }
+    .left-column {
+        position: relative;
+        top: 0;
+        max-height: none;
+        margin-bottom: 20px;
+        padding: 20px;
+    }
+    .right-column {
+        padding: 20px;
+    }
+    .article-title {
+        font-size: 1.5em;
+    }
+}
+
+/* 其他文章相关样式... */ 
