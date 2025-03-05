@@ -1,0 +1,171 @@
+/* 通用模态框动画 */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* 二维码模态框 */
+.qr-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.qr-container {
+    background: white;
+    padding: 3rem;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    max-width: 90%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.qr-code {
+    width: 400px;
+    height: auto;
+    margin-bottom: 0.8rem;
+    border-radius: 4px;
+    padding: 16px;
+    border: 1px solid #e5e5e5;
+    object-fit: contain;
+}
+
+.qr-title {
+    color: #353535;
+    font-size: 1rem;
+    font-weight: normal;
+    margin-top: 0.5rem;
+}
+
+.qr-modal.active {
+    display: flex;
+    animation: fadeIn 0.3s ease;
+}
+
+/* 联系方式模态框 */
+.contact-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.contact-container {
+    background: white;
+    padding: 2.5rem;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    max-width: 90%;
+    width: 480px;
+}
+
+.contact-container h3 {
+    color: var(--primary-color);
+    font-size: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.contact-methods {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.contact-method {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+    border-radius: 8px;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+.contact-method:hover {
+    background: #f1f3f5;
+}
+
+.contact-method i {
+    font-size: 1.8rem;
+    color: var(--secondary-color);
+    margin-bottom: 0.5rem;
+}
+
+.contact-method span {
+    color: #4a5568;
+    margin-bottom: 0.5rem;
+}
+
+.contact-method a {
+    color: var(--secondary-color);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.contact-method a:hover {
+    color: #2980b9;
+}
+
+.contact-qr {
+    width: 180px;
+    height: auto;
+    margin-top: 0.5rem;
+    border-radius: 4px;
+    border: 1px solid #e5e5e5;
+}
+
+.close-btn {
+    margin-top: 2rem;
+    padding: 0.8rem 2rem;
+    background: #f1f3f5;
+    border: none;
+    border-radius: 6px;
+    color: #4a5568;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+    background: #e9ecef;
+    color: #2d3748;
+}
+
+.contact-modal.active {
+    display: flex;
+    animation: fadeIn 0.3s ease;
+}
+
+/* 响应式样式 */
+@media (max-width: 768px) {
+    .qr-container {
+        padding: 2rem;
+    }
+    
+    .qr-code {
+        width: 320px;
+        height: auto;
+    }
+    
+    .contact-container {
+        width: 90%;
+        padding: 1.5rem;
+    }
+} 

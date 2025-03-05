@@ -1,0 +1,72 @@
+/* 从原 collaboration.css 复制所有内容 */ 
+
+/* 合作区域样式 */
+.collaboration {
+    margin: 3rem 0 2rem;
+    padding: 1.5rem 0;
+    border-top: 1px solid rgba(52, 152, 219, 0.2);
+}
+
+.collab-title {
+    font-size: 1.2rem;
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 1.2rem;
+}
+
+.collab-text {
+    color: #4a5568;
+    font-size: 1rem;
+    line-height: 1.8;
+    margin-bottom: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.collab-motto {
+    color: var(--secondary-color);
+    font-size: 1rem;
+    font-style: italic;
+    margin-bottom: 1rem;
+}
+
+/* 联系按钮样式 */
+.contact-btn {
+    margin-top: 2rem;
+    padding: 0.8rem 2.5rem;
+    background: linear-gradient(45deg, var(--secondary-color), #5dade2);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.contact-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+    background: linear-gradient(45deg, #5dade2, var(--secondary-color));
+}
+
+.contact-btn:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 4px rgba(52, 152, 219, 0.2);
+}
+
+/* 响应式样式 */
+@media (max-width: 768px) {
+    .collaboration {
+        text-align: center;
+        padding: 1.5rem 0;
+    }
+    
+    .collab-text {
+        white-space: normal;
+    }
+} 

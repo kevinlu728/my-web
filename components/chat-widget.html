@@ -1,0 +1,46 @@
+<!-- 聊天组件 -->
+<div class="chat-widget">
+    <button class="chat-toggle">
+        <i class="fas fa-comments"></i>
+    </button>
+    
+    <div class="chat-container">
+        <div class="chat-header">
+            <h3>与AI助手对话</h3>
+            <div class="chat-controls">
+                <button class="minimize-btn">
+                    <i class="fas fa-minus"></i>
+                </button>
+                <button class="chat-close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="chat-messages">
+            <!-- 默认欢迎消息 -->
+            <div class="message bot-message">
+                <div class="message-content">
+                    👋 你好！我是Kevin的AI助手，有什么我可以帮忙的吗？
+                </div>
+            </div>
+        </div>
+        
+        <div class="chat-input">
+            <textarea 
+                class="chat-input-field"
+                placeholder="输入消息..." 
+                rows="1"
+            ></textarea>
+            <button class="send-btn">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+        
+        <div class="quick-replies">
+            <button class="quick-reply-btn">了解更多</button>
+            <button class="quick-reply-btn">查看项目</button>
+            <button class="quick-reply-btn">联系方式</button>
+        </div>
+    </div>
+</div> 

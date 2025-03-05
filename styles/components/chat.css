@@ -1,0 +1,174 @@
+/* 从原 chat.css 复制所有内容 */ 
+
+/* 聊天组件样式 */
+.chat-widget {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.chat-toggle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #4299e1;
+    border: none;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chat-toggle i {
+    font-size: 24px;
+}
+
+.chat-toggle:hover {
+    transform: scale(1.1) rotate(5deg);
+    background: #3182ce;
+    box-shadow: 0 6px 20px rgba(66, 153, 225, 0.3);
+}
+
+.chat-container {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 300px;
+    height: 400px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.chat-widget.active .chat-container {
+    display: flex;
+}
+
+.chat-header {
+    padding: 12px 16px;
+    background: #4299e1;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chat-header h3 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.chat-controls button {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 4px 8px;
+    opacity: 0.8;
+    transition: opacity 0.3s ease;
+}
+
+.chat-controls button:hover {
+    opacity: 1;
+}
+
+.chat-messages {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+}
+
+.chat-input {
+    padding: 12px;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    gap: 8px;
+}
+
+.chat-input-field {
+    flex: 1;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 8px;
+    resize: none;
+    font-size: 0.9rem;
+}
+
+.send-btn {
+    background: #4299e1;
+    border: none;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.send-btn:hover {
+    background: #3182ce;
+}
+
+.quick-replies {
+    padding: 8px 12px;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+}
+
+.quick-reply-btn {
+    background: #edf2f7;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 0.85rem;
+    color: #4a5568;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+}
+
+.quick-reply-btn:hover {
+    background: #e2e8f0;
+    transform: translateY(-1px);
+}
+
+/* 消息样式 */
+.message {
+    margin-bottom: 1rem;
+    max-width: 85%;
+}
+
+.bot-message {
+    margin-right: auto;
+}
+
+.user-message {
+    margin-left: auto;
+}
+
+.message-content {
+    padding: 0.8rem 1rem;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    margin-bottom: 0.5rem;
+}
+
+.bot-message .message-content {
+    background: #f0f7ff;
+    color: #2d3748;
+    border: 1px solid #e2e8f0;
+}
+
+.user-message .message-content {
+    background: #4299e1;
+    color: white;
+} 

@@ -1,0 +1,52 @@
+/* 从原 intro.css 复制所有内容 */ 
+
+/* 简介内容样式 */
+.intro {
+    font-size: 1rem;
+    line-height: 1.8;
+    color: #4a5568;
+    margin: 1rem 0;
+    white-space: normal;
+}
+
+.intro-title {
+    font-size: 1.2rem;
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+}
+
+.intro-item {
+    display: block;
+    margin-bottom: 1rem;
+    position: relative;
+    padding-left: 1.2rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.intro-item::before {
+    content: "-";
+    position: absolute;
+    left: 0;
+    color: var(--secondary-color);
+}
+
+/* 标签样式 */
+.tags {
+    margin: 2.5rem 0;
+}
+
+/* 响应式样式 */
+@media (max-width: 768px) {
+    .intro-item {
+        white-space: normal;
+        text-align: left;
+        padding-left: 1.5rem;
+    }
+
+    .tags {
+        text-align: center;
+    }
+} 

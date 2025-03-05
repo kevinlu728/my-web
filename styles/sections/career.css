@@ -1,0 +1,92 @@
+/* 从原 career.css 复制所有内容 */ 
+
+/* 职业经历样式 */
+.career-journey {
+    padding: 2rem 0;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    margin: 2rem 0;
+}
+
+.career-journey h2 {
+    text-align: center;
+    color: var(--primary-color);
+    margin-bottom: 1.5rem;
+}
+
+.timeline {
+    position: relative;
+    padding: 1rem 0;
+}
+
+.timeline-item {
+    margin-bottom: 0.5rem;
+    position: relative;
+    padding-left: 1.5rem;
+}
+
+.timeline-content {
+    background: #f0f8ff;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s;
+    text-align: left;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    color: var(--text-color);
+}
+
+.timeline-content:hover {
+    transform: translateY(-5px);
+}
+
+.timeline-content h3 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.date {
+    display: block;
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 0.5rem;
+    font-style: italic;
+}
+
+.timeline-content ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.timeline-content li {
+    margin-bottom: 0.3rem;
+    position: relative;
+    padding-left: 1.2rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.timeline-content li::before {
+    content: "-";
+    position: absolute;
+    left: 0;
+    color: var(--secondary-color);
+}
+
+/* 响应式样式 */
+@media (max-width: 768px) {
+    .career-journey {
+        padding: 1.5rem;
+    }
+
+    .timeline-content {
+        margin-left: 0;
+    }
+
+    .timeline-content li {
+        white-space: normal;
+    }
+} 

@@ -1,0 +1,281 @@
+/* 从原 profile.css 复制所有内容 */ 
+
+/* 个人主页容器样式 */
+.profile-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem;
+    width: 100%;
+}
+
+/* 头像和个人信息样式 */
+.hero {
+    text-align: center;
+    padding: 2rem 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.avatar-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 0;
+    padding: 1rem 0.5rem 0 0.5rem;
+}
+
+.avatar {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid #ffffff;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.avatar:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
+}
+
+.avatar-info {
+    margin-top: 2rem;
+}
+
+.avatar-name {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.avatar-motto {
+    font-size: 1rem;
+    color: #666;
+    line-height: 1.6;
+    margin: 0.2rem 0;
+}
+
+.profile-content {
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* 移除通用间距控制 */
+.profile-content > *:not(:last-child) {
+    margin-bottom: 1.5rem;
+}
+
+/* 特别控制与我同行板块的间距 */
+.intro + .intro {
+    margin-top: 0.3rem;
+}
+
+.collaboration {
+    margin-top: 0.3rem !important;
+}
+
+/* 简介样式调整 */
+.intro {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 16px;
+    padding: 2rem 3.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    text-align: center;
+}
+
+/* 主标题 */
+.intro-title {
+    font-size: 2.4rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    font-weight: 600;
+    position: relative;
+    display: inline-block;
+}
+
+/* 副标题 */
+.intro-subtitle {
+    font-size: 1.1rem;
+    color: var(--primary-color);
+    margin-bottom: 2rem;
+    font-weight: 600;
+    display: block;
+}
+
+/* 列表容器 */
+.intro-items-container {
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: left;
+    padding-left: 3.5rem;
+}
+
+.intro-item {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    margin-bottom: 1.5rem;
+    color: #4a5568;
+    padding-left: 1.5rem;
+    position: relative;
+    text-align: left;
+}
+
+.intro-item::before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: var(--secondary-color);
+}
+
+.intro-item:last-child {
+    margin-bottom: 0;
+}
+
+/* 合作区域样式调整 */
+.collaboration {
+    width: 100%;
+    text-align: center;
+    padding: 1.2rem 3rem;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    position: relative;
+    overflow: hidden;
+    max-width: 900px;
+}
+
+.collaboration::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+}
+
+.collab-title {
+    font-size: 1.8rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.collab-text {
+    font-size: 1.2rem;
+    line-height: 1.8;
+    margin-bottom: 1.5rem;
+    color: #4a5568;
+}
+
+.collab-motto {
+    font-size: 1.3rem;
+    color: var(--secondary-color);
+    font-style: italic;
+    margin: 1rem 0;
+    font-weight: 500;
+}
+
+.contact-btn {
+    margin-top: 1rem;
+    padding: 1rem 3rem;
+    background: linear-gradient(45deg, var(--secondary-color), #5dade2);
+    color: white;
+    border: none;
+    border-radius: 30px;
+    font-size: 1.1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+}
+
+.contact-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+    background: linear-gradient(45deg, #5dade2, var(--secondary-color));
+}
+
+/* 响应式样式 */
+@media (max-width: 768px) {
+    .profile-container {
+        padding: 1rem;
+    }
+
+    .hero {
+        padding: 1rem 0 0;
+    }
+
+    .avatar-container {
+        margin-bottom: 0;
+        padding: 1rem 0.4rem 0 0.4rem;
+    }
+
+    .avatar {
+        width: 160px;
+        height: 160px;
+    }
+
+    .profile-content > *:not(:last-child) {
+        margin-bottom: 0.2rem;
+    }
+
+    .intro {
+        padding: 1.5rem;
+    }
+
+    .intro-title {
+        font-size: 1.8rem;
+    }
+
+    .intro-subtitle {
+        font-size: 1rem;
+    }
+
+    .intro-items-container {
+        padding-left: 1.5rem;
+    }
+
+    .intro-item {
+        margin-bottom: 0.6rem;
+    }
+
+    .collaboration {
+        padding: 1.2rem;
+    }
+
+    .collab-title {
+        font-size: 1.4rem;
+    }
+
+    .collab-text {
+        font-size: 1rem;
+    }
+
+    .collab-motto {
+        font-size: 1.1rem;
+        margin: 1.5rem 0;
+    }
+
+    .contact-btn {
+        padding: 0.8rem 2rem;
+        font-size: 1rem;
+    }
+
+    .intro + .intro {
+        margin-top: 0.2rem;
+    }
+
+    .collaboration {
+        margin-top: 0.2rem !important;
+    }
+} 
