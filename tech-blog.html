@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="styles/tech-blog-layout.css">
     <link rel="stylesheet" href="styles/article.css">
     <link rel="stylesheet" href="styles/debug-panel.css">
+    <link rel="stylesheet" href="styles/article-list.css">
     <!-- FontAwesome CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
@@ -29,6 +30,27 @@
     </header>
     <main class="main-content">
         <div class="left-column">
+            <!-- 搜索框移到分类列表上方 -->
+            <div class="search-section">
+                <div class="search-box">
+                    <input type="text" id="article-search" placeholder="搜索文章...">
+                    <button id="search-clear" class="search-clear" title="清除搜索">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 分类列表 -->
+            <div class="categories-section">
+                <h2>文章分类</h2>
+                <ul id="category-list">
+                    <li class="category-item active" data-category="all">
+                        <span class="category-name">全部文章</span>
+                        <span class="category-count">(0)</span>
+                    </li>
+                </ul>
+            </div>
+
             <h2>文章列表</h2>
             <ul id="article-list">
                 <li class="loading">加载中...</li>
@@ -77,44 +99,7 @@
 
     <!-- Particles.js -->
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
-    <script type="module">
-      import { initDebugPanel } from './scripts/components/debugPanel.js';
-      import { getDatabaseInfo, testApiConnection, getDatabases } from './scripts/services/notionService.js';
-      import { showStatus } from './scripts/utils/utils.js';
-      import { loadArticles } from './scripts/managers/articleManager.js';
-      import config from './scripts/config/config.js';
-      
-      // 使用配置文件中的数据库ID
-      let currentDatabaseId = config.notion.databaseId || config.debug.defaultDatabaseId;
-      
-      // 更新配置
-      function updateConfig(newDatabaseId) {
-        currentDatabaseId = newDatabaseId;
-        loadArticles(currentDatabaseId);
-      }
-
-      // 页面加载完成后执行
-      window.onload = function() {
-        // 设置调试面板中的默认值
-        const databaseIdInput = document.getElementById('database-id');
-        if (databaseIdInput) {
-          databaseIdInput.value = currentDatabaseId;
-        }
-
-        // 初始化调试面板
-        initDebugPanel(currentDatabaseId, {
-          onConfigUpdate: updateConfig,
-          onRefresh: () => loadArticles(currentDatabaseId),
-          showStatus,
-          getDatabaseInfo,
-          testApiConnection,
-          getDatabases
-        });
-        
-        // 加载文章
-        loadArticles(currentDatabaseId);
-      };
-    </script>
+    <script type="module" src="scripts/pages/tech-blog.js"></script>
     <script src="scripts/core/main.js"></script>
 </body>
 </html> 

@@ -106,7 +106,18 @@ export async function getArticleContent(pageId) {
 // 获取数据库信息
 export async function getDatabaseInfo(databaseId) {
   try {
-    const response = await fetch(`/api/database-info?id=${databaseId}`);
+    console.log(`Fetching database info for database: ${databaseId}`);
+    
+    const response = await fetch('/api/articles', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ 
+        database_id: databaseId,
+        type: 'database_info'  // 添加类型标识，让后端知道这是获取数据库信息的请求
+      })
+    });
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -114,7 +125,9 @@ export async function getDatabaseInfo(databaseId) {
       throw new Error(`Failed to fetch database info with status ${response.status}: ${errorText}`);
     }
     
-    return await response.json();
+    const data = await response.json();
+    console.log('Database info response:', data);
+    return data;
   } catch (error) {
     console.error('Error fetching database info:', error);
     throw error;

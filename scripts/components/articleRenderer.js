@@ -1,4 +1,4 @@
-// Notion 内容渲染模块
+// 文章内容渲染模块
 
 // 主渲染函数
 export function renderNotionBlocks(blocks) {

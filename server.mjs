@@ -12,11 +12,11 @@ const config = {
     notion: {
         apiKey: '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',
         defaultDatabaseId: '1a932af826e680df8bf7f320b51930b9',
-        headers: {
+      headers: {
             'Authorization': 'Bearer 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',
-            'Content-Type': 'application/json',
-            'Notion-Version': '2022-06-28'
-        },
+        'Content-Type': 'application/json',
+        'Notion-Version': '2022-06-28'
+      },
         timeout: 10000,     // 10秒超时
         cacheTime: 5 * 60 * 1000, // 5分钟缓存
         healthCheck: {
@@ -296,9 +296,9 @@ const notionApi = {
                 }
 
                 throw new Error(errorMessage);
-            }
-
-            const data = await response.json();
+    }
+    
+    const data = await response.json();
             
             // 缓存响应数据
             if (options.method === 'GET' || endpoint.includes('query')) {
@@ -306,7 +306,7 @@ const notionApi = {
             }
 
             return data;
-        } catch (error) {
+  } catch (error) {
             if (error.message === '请求超时' && attempt < config.notion.retry.maxAttempts) {
                 const retryDelay = this.getRetryDelay(attempt);
                 logger.warn(`Request timeout, retrying (${attempt}/${config.notion.retry.maxAttempts}) after ${retryDelay}ms`);
@@ -335,14 +335,14 @@ const notionApi = {
     // 获取数据库列表
     async listDatabases() {
         return this.fetch('search', {
-            method: 'POST',
-            body: JSON.stringify({
-                filter: {
-                    value: 'database',
-                    property: 'object'
-                }
-            })
-        });
+      method: 'POST',
+      body: JSON.stringify({
+        filter: {
+          value: 'database',
+          property: 'object'
+        }
+      })
+    });
     },
 
     // 获取页面内容
@@ -446,8 +446,8 @@ app.post('/api/articles', async (req, res) => {
             });
         }
         
-        res.json(data);
-    } catch (error) {
+    res.json(data);
+  } catch (error) {
         logger.error('Error fetching articles:', error);
         res.status(error.message.includes('超时') ? 504 : 500).json({ 
             error: 'Failed to fetch articles', 
@@ -475,8 +475,8 @@ app.get('/api/notion-test', async (req, res) => {
 app.get('/api/databases', async (req, res) => {
     try {
         const data = await notionApi.listDatabases();
-        res.json(data);
-    } catch (error) {
+    res.json(data);
+  } catch (error) {
         logger.error('Error fetching databases:', error);
         res.status(500).json({ 
             error: 'Error fetching databases', 
@@ -486,8 +486,8 @@ app.get('/api/databases', async (req, res) => {
 });
 
 app.get('/api/article-content/:pageId', async (req, res) => {
-    try {
-        const { pageId } = req.params;
+  try {
+    const { pageId } = req.params;
         const data = await notionApi.getPageContent(pageId);
         res.json(data);
     } catch (error) {
@@ -554,11 +554,11 @@ app.get('/metrics', (req, res) => {
 
 // 页面路由
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.get('/tech-blog.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'tech-blog.html'));
+  res.sendFile(path.join(__dirname, 'tech-blog.html'));
 });
 
 // 修改错误处理中间件
