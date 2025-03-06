@@ -1,9 +1,16 @@
 // 分类管理模块
+import { categoryConfig } from '../config/categories.js';
+
 class CategoryManager {
     constructor() {
         this.categories = new Map();
         this.currentCategory = 'all';
         this.onCategoryChange = null;
+    }
+
+    // 获取分类的显示名称
+    getCategoryDisplayName(category) {
+        return categoryConfig.nameMap[category] || category;
     }
 
     // 更新分类列表
@@ -46,7 +53,7 @@ class CategoryManager {
             .map(([category, count]) => `
                 <li class="category-item ${category === this.currentCategory ? 'active' : ''}" 
                     data-category="${category}">
-                    <span class="category-name">${category === 'all' ? '全部文章' : category}</span>
+                    <span class="category-name">${this.getCategoryDisplayName(category)}</span>
                     <span class="category-count">(${count})</span>
                 </li>
             `).join('');
@@ -85,6 +92,15 @@ class CategoryManager {
     // 设置分类变更的回调函数
     setOnCategoryChange(callback) {
         this.onCategoryChange = callback;
+    }
+
+    // 选择分类
+    selectCategory(category) {
+        this.currentCategory = category;
+        this.updateCategoryActive();
+        if (this.onCategoryChange) {
+            this.onCategoryChange(this.currentCategory);
+        }
     }
 }
 

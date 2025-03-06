@@ -4,12 +4,18 @@ import { getArticles, getArticleContent } from '../services/notionService.js';
 import { categoryManager } from './categoryManager.js';
 import { renderNotionBlocks, initializeLazyLoading } from '../components/articleRenderer.js';
 import { imageLazyLoader } from '../utils/image-lazy-loader.js';
+import { categoryConfig } from '../config/categories.js';
 
 class ArticleManager {
     constructor() {
         this.articles = [];
         this.currentDatabaseId = null;
         this.searchTerm = '';
+        // 添加分类名称映射
+        this.categoryNameMap = {
+            'Test': '测试',
+            'Compter Basis': '计算机基础',
+        };
         this.initializeSearch();
     }
 
@@ -91,6 +97,9 @@ class ArticleManager {
             
             // 显示文章列表
             this.renderArticleList();
+
+            // 在数据加载完成后显示欢迎页面
+            this.showWelcomePage();
             
         } catch (error) {
             console.error('Error loading articles:', error);
@@ -149,15 +158,30 @@ class ArticleManager {
             return;
         }
 
-        articleList.innerHTML = filteredArticles.map(article => {
+        // 按发布日期排序
+        const sortedArticles = filteredArticles.sort((a, b) => {
+            const dateA = a.properties?.['Publish Date']?.date?.start || '';
+            const dateB = b.properties?.['Publish Date']?.date?.start || '';
+            return dateB.localeCompare(dateA); // 降序排列，最新的在前
+        });
+
+        articleList.innerHTML = sortedArticles.map(article => {
             const title = article.properties?.Title?.title[0]?.plain_text || '无标题';
             const category = this.getArticleCategory(article);
-            const date = article.created_time ? new Date(article.created_time).toLocaleDateString('zh-CN') : '';
+            
+            // 使用 Publish Date 字段
+            let date = '';
+            const publishDate = article.properties?.['Publish Date']?.date?.start;
+            if (publishDate) {
+                // 转换日期格式为 YYYY/M/D
+                const dateObj = new Date(publishDate);
+                date = `${dateObj.getFullYear()}/${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
+            }
             
             // 只在搜索时高亮显示
             const highlightedTitle = this.searchTerm ? this.highlightSearchTerm(title) : title;
             
-            const articleElement = `
+            return `
                 <li class="article-item" data-category="${category}">
                     <a href="#" onclick="showArticle('${article.id}'); return false;">
                         <span class="article-title-text">${highlightedTitle}</span>
@@ -165,8 +189,6 @@ class ArticleManager {
                     </a>
                 </li>
             `;
-
-            return articleElement;
         }).join('');
 
         // 应用分类过滤
@@ -245,12 +267,93 @@ class ArticleManager {
                 this.scrollHandler = null;
             }
 
+            // 显示优化后的加载状态
             articleContainer.innerHTML = `
-                <div class="loading">
-                    <div class="loading-spinner"></div>
-                    <div class="loading-text">加载中...</div>
+                <div class="article-loading">
+                    <div class="loading-content">
+                        <div class="loading-skeleton">
+                            <div class="skeleton-title"></div>
+                            <div class="skeleton-meta"></div>
+                            <div class="skeleton-paragraph">
+                                <div class="skeleton-line"></div>
+                                <div class="skeleton-line"></div>
+                                <div class="skeleton-line"></div>
+                                <div class="skeleton-line" style="width: 80%"></div>
+                            </div>
+                            <div class="skeleton-paragraph">
+                                <div class="skeleton-line"></div>
+                                <div class="skeleton-line"></div>
+                                <div class="skeleton-line" style="width: 60%"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             `;
+
+            // 添加加载状态样式
+            const existingStyle = document.getElementById('loading-style');
+            if (!existingStyle) {
+                const style = document.createElement('style');
+                style.id = 'loading-style';
+                style.textContent = `
+                    .article-loading {
+                        padding: 2rem;
+                        max-width: 800px;
+                        margin: 0 auto;
+                    }
+
+                    .loading-content {
+                        background: #fff;
+                        border-radius: 8px;
+                        padding: 2rem;
+                    }
+
+                    .loading-skeleton {
+                        animation: pulse 1.5s ease-in-out infinite;
+                    }
+
+                    .skeleton-title {
+                        height: 2.8rem;
+                        background: #f0f0f0;
+                        border-radius: 4px;
+                        margin-bottom: 1.5rem;
+                        width: 80%;
+                    }
+
+                    .skeleton-meta {
+                        height: 1.2rem;
+                        background: #f0f0f0;
+                        border-radius: 4px;
+                        margin-bottom: 3rem;
+                        width: 40%;
+                    }
+
+                    .skeleton-paragraph {
+                        margin-bottom: 2rem;
+                    }
+
+                    .skeleton-line {
+                        height: 1rem;
+                        background: #f0f0f0;
+                        border-radius: 4px;
+                        margin-bottom: 1rem;
+                        width: 100%;
+                    }
+
+                    @keyframes pulse {
+                        0% {
+                            opacity: 1;
+                        }
+                        50% {
+                            opacity: 0.4;
+                        }
+                        100% {
+                            opacity: 1;
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
             
             const articleData = await this.loadAndDisplayArticle(pageId);
             if (!articleData) {
@@ -316,9 +419,52 @@ class ArticleManager {
             console.error('❌ 加载文章失败:', error);
             const articleContainer = document.getElementById('article-container');
             if (articleContainer) {
-                articleContainer.innerHTML = `<div class="error">加载文章失败: ${error.message}</div>`;
+                articleContainer.innerHTML = `
+                    <div class="error-container">
+                        <div class="error-icon">❌</div>
+                        <div class="error-message">加载文章失败</div>
+                        <div class="error-details">${error.message}</div>
+                        <button class="retry-button" onclick="location.reload()">重新加载</button>
+                    </div>
+                `;
+
+                // 添加错误状态样式
+                const errorStyle = document.createElement('style');
+                errorStyle.textContent = `
+                    .error-container {
+                        text-align: center;
+                        padding: 3rem 2rem;
+                        max-width: 600px;
+                        margin: 0 auto;
+                    }
+                    .error-icon {
+                        font-size: 3rem;
+                        margin-bottom: 1rem;
+                    }
+                    .error-message {
+                        font-size: 1.5rem;
+                        color: #e74c3c;
+                        margin-bottom: 1rem;
+                    }
+                    .error-details {
+                        color: #666;
+                        margin-bottom: 2rem;
+                    }
+                    .retry-button {
+                        padding: 0.8rem 2rem;
+                        background-color: #3498db;
+                        color: white;
+                        border: none;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        transition: background-color 0.2s;
+                    }
+                    .retry-button:hover {
+                        background-color: #2980b9;
+                    }
+                `;
+                document.head.appendChild(errorStyle);
             }
-            showStatus(`加载文章失败: ${error.message}`, true);
         }
     }
 
@@ -405,6 +551,256 @@ class ArticleManager {
     updateDatabaseId(newDatabaseId) {
         this.currentDatabaseId = newDatabaseId;
         this.loadArticles();
+    }
+
+    // 显示欢迎页面
+    showWelcomePage() {
+        const articleContainer = document.getElementById('article-container');
+        if (!articleContainer || !this.articles.length) return;
+
+        articleContainer.innerHTML = `
+            <div class="welcome-page">
+                <div class="welcome-header">
+                    <h1>温故知新，回望前行</h1>
+                    <p class="welcome-subtitle">这里记录了一些技术学习和思考，欢迎讨论和指正</p>
+                </div>
+                
+                <div class="welcome-content">
+                    <div class="welcome-section">
+                        <h2>📚 快速开始</h2>
+                        <ul>
+                            <li>从左侧文章列表选择感兴趣的主题</li>
+                            <li>使用顶部搜索框查找特定内容</li>
+                            <li>通过分类筛选相关文章</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="welcome-section">
+                        <h2>🏷️ 主要分类</h2>
+                        <div class="category-tags" id="welcome-categories"></div>
+                    </div>
+                    
+                    <div class="welcome-section">
+                        <h2>✨ 最新文章</h2>
+                        <div class="recent-articles" id="welcome-recent-articles"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 添加分类标签
+        const categoriesContainer = document.getElementById('welcome-categories');
+        if (categoriesContainer) {
+            const categories = new Set();
+            this.articles.forEach(article => {
+                const category = this.getArticleCategory(article);
+                if (category && category !== '未分类') categories.add(category);
+            });
+
+            // 定义分类颜色映射
+            const categoryColors = this.getCategoryColors();
+
+            categoriesContainer.innerHTML = Array.from(categories)
+                .sort()
+                .map(category => {
+                    const colors = categoryColors[category] || categoryColors.default;
+                    const displayName = this.getCategoryDisplayName(category);
+                    return `
+                        <div class="category-tag" 
+                             onclick="categoryManager.selectCategory('${category}')"
+                             style="background-color: ${colors.bg}; 
+                                    color: ${colors.color};"
+                             data-hover-bg="${colors.hoverBg}"
+                             data-category="${category}">
+                            ${displayName}
+                        </div>
+                    `;
+                }).join('');
+
+            // 添加悬停效果的样式
+            const hoverStyle = document.createElement('style');
+            hoverStyle.textContent = `
+                .category-tag {
+                    padding: 0.4rem 1rem;
+                    border-radius: 20px;
+                    font-size: 0.9rem;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    border: none;
+                }
+                .category-tag:hover {
+                    transform: translateY(-1px);
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }
+            `;
+            document.head.appendChild(hoverStyle);
+
+            // 添加悬停效果
+            const categoryTags = categoriesContainer.getElementsByClassName('category-tag');
+            Array.from(categoryTags).forEach(tag => {
+                const hoverBg = tag.dataset.hoverBg;
+                tag.addEventListener('mouseenter', () => {
+                    tag.style.backgroundColor = hoverBg;
+                });
+                tag.addEventListener('mouseleave', () => {
+                    tag.style.backgroundColor = categoryColors[tag.dataset.category]?.bg || categoryColors.default.bg;
+                });
+            });
+        }
+
+        // 添加最新文章
+        const recentArticlesContainer = document.getElementById('welcome-recent-articles');
+        if (recentArticlesContainer) {
+            // 按发布日期排序并获取最新的3篇文章
+            const recentArticles = [...this.articles]
+                .filter(article => article.properties?.['Publish Date']?.date?.start) // 只显示有发布日期的文章
+                .sort((a, b) => {
+                    const dateA = a.properties?.['Publish Date']?.date?.start || '';
+                    const dateB = b.properties?.['Publish Date']?.date?.start || '';
+                    return dateB.localeCompare(dateA);
+                })
+                .slice(0, 3);
+
+            recentArticlesContainer.innerHTML = recentArticles
+                .map(article => {
+                    const title = article.properties?.Title?.title[0]?.plain_text || '无标题';
+                    const publishDate = article.properties?.['Publish Date']?.date?.start;
+                    const date = publishDate ? new Date(publishDate).toLocaleDateString('zh-CN') : '';
+
+                    return `
+                        <div class="recent-article-item" onclick="showArticle('${article.id}')">
+                            <div class="recent-article-title">${title}</div>
+                            ${date ? `<span class="recent-article-date">${date}</span>` : ''}
+                        </div>
+                    `;
+                }).join('');
+        }
+
+        // 添加或更新样式
+        const existingStyle = document.getElementById('welcome-page-style');
+        if (!existingStyle) {
+            const style = document.createElement('style');
+            style.id = 'welcome-page-style';
+            style.textContent = `
+                .welcome-page {
+                    padding: 2rem;
+                    max-width: 800px;
+                    margin: 0 auto;
+                }
+                
+                .welcome-header {
+                    text-align: center;
+                    margin-bottom: 3rem;
+                    padding-bottom: 2rem;
+                    border-bottom: 1px solid #eee;
+                }
+                
+                .welcome-header h1 {
+                    font-size: 2.5rem;
+                    color: #2c3e50;
+                    margin-bottom: 1rem;
+                }
+                
+                .welcome-subtitle {
+                    font-size: 1.2rem;
+                    color: #666;
+                }
+                
+                .welcome-section {
+                    margin-bottom: 2.5rem;
+                }
+                
+                .welcome-section h2 {
+                    font-size: 1.5rem;
+                    color: #34495e;
+                    margin-bottom: 1rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                }
+                
+                .welcome-section ul {
+                    list-style: none;
+                    padding: 0;
+                }
+                
+                .welcome-section ul li {
+                    margin: 0.8rem 0;
+                    color: #666;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                }
+                
+                .welcome-section ul li:before {
+                    content: "•";
+                    color: #3498db;
+                    font-weight: bold;
+                    margin-right: 0.5rem;
+                }
+                
+                .category-tags {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 0.8rem;
+                }
+                
+                .category-tag {
+                    padding: 0.4rem 1rem;
+                    background-color: #f8f9fa;
+                    border-radius: 20px;
+                    color: #666;
+                    font-size: 0.9rem;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                }
+                
+                .category-tag:hover {
+                    background-color: #e9ecef;
+                    color: #333;
+                }
+                
+                .recent-articles {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1rem;
+                }
+                
+                .recent-article-item {
+                    padding: 1rem;
+                    background-color: #f8f9fa;
+                    border-radius: 8px;
+                    transition: all 0.2s ease;
+                    cursor: pointer;
+                }
+                
+                .recent-article-item:hover {
+                    background-color: #e9ecef;
+                    transform: translateX(5px);
+                }
+                
+                .recent-article-title {
+                    color: #2c3e50;
+                    font-weight: 500;
+                    margin-bottom: 0.5rem;
+                }
+                
+                .recent-article-date {
+                    color: #666;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
+
+    // 获取分类的显示名称
+    getCategoryDisplayName(category) {
+        return categoryConfig.nameMap[category] || category;
+    }
+
+    // 获取分类颜色
+    getCategoryColors() {
+        return categoryConfig.colors;
     }
 }
 
