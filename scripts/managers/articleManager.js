@@ -200,30 +200,37 @@ class ArticleManager {
     // 加载和显示文章内容
     async loadAndDisplayArticle(pageId) {
         try {
-            const response = await fetch(`/api/article-content/${pageId}`);
+            // 初始化加载状态
+            this.isLoading = false;
+            this.hasMore = true;
+            this.nextCursor = null;
+            
+            const response = await fetch(`/api/article-content/${pageId}?page_size=10`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
             const data = await response.json();
             
+            // 更新分页状态
+            this.hasMore = data.hasMore;
+            this.nextCursor = data.nextCursor;
+            this.currentPageId = pageId;
+
+            // 存储已加载的块
+            this.loadedBlocks = data.blocks || [];
+            
             // 处理表格块的子块数据
-            if (data.results) {
+            if (this.loadedBlocks.length > 0) {
                 console.log('开始处理文章块数据...');
-                for (let i = 0; i < data.results.length; i++) {
-                    const block = data.results[i];
+                for (let i = 0; i < this.loadedBlocks.length; i++) {
+                    const block = this.loadedBlocks[i];
                     if (block.type === 'table' && block.has_children) {
                         console.log('发现表格块，获取子块数据...');
                         try {
-                            // 获取表格的子块数据
-                            const tableResponse = await fetch(`/api/blocks/${block.id}/children`);
-                            if (tableResponse.ok) {
-                                const tableData = await tableResponse.json();
-                                console.log('获取到表格子块数据:', tableData);
-                                // 将子块数据添加到表格块中
+                            const tableData = await this.loadTableData(block.id);
+                            if (tableData && tableData.results) {
                                 block.children = tableData.results;
-                            } else {
-                                console.error('获取表格子块数据失败:', tableResponse.status);
                             }
                         } catch (error) {
                             console.error('获取表格子块数据出错:', error);
@@ -232,7 +239,12 @@ class ArticleManager {
                 }
             }
 
-            return data;
+            return {
+                page: data.page,
+                results: this.loadedBlocks,
+                hasMore: this.hasMore,
+                nextCursor: this.nextCursor
+            };
         } catch (error) {
             console.error('Error loading article content:', error);
             throw error;
@@ -246,7 +258,18 @@ class ArticleManager {
             const articleContainer = document.getElementById('article-container');
             if (!articleContainer) return;
 
-            articleContainer.innerHTML = '<div class="loading">加载中...</div>';
+            // 移除之前的滚动监听器
+            if (this.scrollHandler) {
+                window.removeEventListener('scroll', this.scrollHandler);
+                this.scrollHandler = null;
+            }
+
+            articleContainer.innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">加载中...</div>
+                </div>
+            `;
             
             const articleData = await this.loadAndDisplayArticle(pageId);
             if (!articleData) {
@@ -269,28 +292,35 @@ class ArticleManager {
                 <div class="article-body">
                     ${contentHtml}
                 </div>
+                ${this.hasMore ? '<div class="load-more-container"><div class="loading-spinner"></div></div>' : ''}
             `;
 
             // 处理文章中的图片
             console.log('🖼️ 处理文章中的图片...');
             const articleBody = articleContainer.querySelector('.article-body');
             if (articleBody) {
-                // 先确保所有图片都有正确的src属性
-                const images = articleBody.getElementsByTagName('img');
-                for (let img of images) {
-                    // 检查是否是 SVG 数据 URL
-                    if (img.src && !img.src.startsWith('data:image/svg+xml')) {
-                        console.log('找到图片URL:', img.src);
-                        // 保存原始URL
-                        img.setAttribute('data-original-src', img.src);
-                    }
-                }
-
-                // 然后处理懒加载
                 imageLazyLoader.processImages(articleBody);
-            } else {
-                console.warn('⚠️ 未找到文章内容区域');
             }
+            
+            // 添加滚动监听
+            this.scrollHandler = () => {
+                if (this.isLoading || !this.hasMore) return;
+
+                const loadMoreContainer = document.querySelector('.load-more-container');
+                if (!loadMoreContainer) return;
+
+                const containerRect = loadMoreContainer.getBoundingClientRect();
+                const isNearBottom = containerRect.top <= window.innerHeight + 100;
+
+                if (isNearBottom) {
+                    console.log('触发加载更多内容...');
+                    this.loadMoreContent();
+                }
+            };
+
+            // 添加节流处理
+            this.throttledScrollHandler = this.throttle(this.scrollHandler, 200);
+            window.addEventListener('scroll', this.throttledScrollHandler);
             
             // 如果有代码高亮需求，可以在这里调用Prism
             if (window.Prism) {
@@ -306,6 +336,107 @@ class ArticleManager {
                 articleContainer.innerHTML = `<div class="error">加载文章失败: ${error.message}</div>`;
             }
             showStatus(`加载文章失败: ${error.message}`, true);
+        }
+    }
+
+    // 节流函数
+    throttle(func, limit) {
+        let inThrottle;
+        return function(...args) {
+            if (!inThrottle) {
+                func.apply(this, args);
+                inThrottle = true;
+                setTimeout(() => inThrottle = false, limit);
+            }
+        };
+    }
+
+    // 加载更多内容
+    async loadMoreContent() {
+        if (!this.hasMore || this.isLoading || !this.currentPageId) return;
+
+        try {
+            this.isLoading = true;
+            console.log('加载更多内容...');
+
+            // 更新加载状态显示
+            const loadMoreContainer = document.querySelector('.load-more-container');
+            if (loadMoreContainer) {
+                loadMoreContainer.innerHTML = '<div class="loading-spinner"></div><div class="loading-text">加载中...</div>';
+            }
+
+            const response = await fetch(
+                `/api/article-content/${this.currentPageId}?page_size=10&cursor=${this.nextCursor}`
+            );
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            // 更新分页状态
+            this.hasMore = data.hasMore;
+            this.nextCursor = data.nextCursor;
+
+            // 处理新加载的块
+            if (data.blocks && data.blocks.length > 0) {
+                for (const block of data.blocks) {
+                    if (block.type === 'table' && block.has_children) {
+                        const tableData = await this.loadTableData(block.id);
+                        if (tableData && tableData.results) {
+                            block.children = tableData.results;
+                        }
+                    }
+                }
+                
+                // 添加到已加载的块中
+                this.loadedBlocks = this.loadedBlocks.concat(data.blocks);
+                
+                // 渲染新内容
+                const newContent = renderNotionBlocks(data.blocks);
+                const articleBody = document.querySelector('.article-body');
+                if (articleBody) {
+                    articleBody.insertAdjacentHTML('beforeend', newContent);
+                    // 处理新加载内容中的图片
+                    imageLazyLoader.processImages(articleBody);
+                }
+            }
+
+            // 更新加载更多按钮状态
+            if (loadMoreContainer) {
+                if (this.hasMore) {
+                    loadMoreContainer.innerHTML = '<div class="loading-spinner"></div>';
+                } else {
+                    loadMoreContainer.innerHTML = '<div class="no-more">没有更多内容</div>';
+                }
+            }
+
+        } catch (error) {
+            console.error('加载更多内容失败:', error);
+            showStatus('加载更多内容失败', true);
+            
+            // 显示错误状态
+            const loadMoreContainer = document.querySelector('.load-more-container');
+            if (loadMoreContainer) {
+                loadMoreContainer.innerHTML = '<div class="error">加载失败，请稍后重试</div>';
+            }
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    // 加载表格数据的辅助方法
+    async loadTableData(blockId) {
+        try {
+            const response = await fetch(`/api/blocks/${blockId}/children`);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch table data: ${response.status}`);
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Error loading table data:', error);
+            return null;
         }
     }
 

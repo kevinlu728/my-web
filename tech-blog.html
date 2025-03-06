@@ -23,15 +23,29 @@
             justify-content: center;
         }
 
-        .image-loader::before {
-            content: '';
-            position: absolute;
+        /* 加载更多内容的容器样式 */
+        .load-more-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        /* 加载动画样式 */
+        .loading-spinner {
             width: 40px;
             height: 40px;
             border: 4px solid #f3f3f3;
             border-top: 4px solid #3498db;
             border-radius: 50%;
             animation: spin 1s linear infinite;
+        }
+
+        .loading-text {
+            margin-top: 10px;
+            color: #666;
+            font-size: 14px;
         }
 
         @keyframes spin {

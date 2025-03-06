@@ -226,31 +226,63 @@ const cache = {
 };
 
 // 获取所有块内容
-async function getAllBlockChildren(blockId) {
+async function getAllBlockChildren(blockId, pageSize = 100, startCursor = undefined, fetchAll = false) {
     let allBlocks = [];
     let hasMore = true;
-    let startCursor = undefined;
+    let nextCursor = startCursor;
 
-    while (hasMore) {
-        const response = await fetch(
-            `https://api.notion.com/v1/blocks/${blockId}/children?page_size=100${startCursor ? `&start_cursor=${startCursor}` : ''}`,
-            {
-                method: 'GET',
-                headers: config.notion.headers
+    try {
+        // 如果不是获取所有内容，只获取一页
+        if (!fetchAll) {
+            const response = await fetch(
+                `https://api.notion.com/v1/blocks/${blockId}/children?page_size=${pageSize}${nextCursor ? `&start_cursor=${nextCursor}` : ''}`,
+                {
+                    method: 'GET',
+                    headers: config.notion.headers
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch blocks: ${response.status}`);
             }
-        );
 
-        if (!response.ok) {
-            throw new Error(`Failed to fetch blocks: ${response.status}`);
+            const data = await response.json();
+            return {
+                blocks: data.results,
+                hasMore: data.has_more,
+                nextCursor: data.next_cursor
+            };
         }
 
-        const data = await response.json();
-        allBlocks = allBlocks.concat(data.results);
-        hasMore = data.has_more;
-        startCursor = data.next_cursor;
-    }
+        // 获取所有内容的逻辑
+        while (hasMore) {
+            const response = await fetch(
+                `https://api.notion.com/v1/blocks/${blockId}/children?page_size=${pageSize}${nextCursor ? `&start_cursor=${nextCursor}` : ''}`,
+                {
+                    method: 'GET',
+                    headers: config.notion.headers
+                }
+            );
 
-    return allBlocks;
+            if (!response.ok) {
+                throw new Error(`Failed to fetch blocks: ${response.status}`);
+            }
+
+            const data = await response.json();
+            allBlocks = allBlocks.concat(data.results);
+            hasMore = data.has_more;
+            nextCursor = data.next_cursor;
+        }
+
+        return {
+            blocks: allBlocks,
+            hasMore: false,
+            nextCursor: null
+        };
+    } catch (error) {
+        logger.error('Error in getAllBlockChildren:', error);
+        throw error;
+    }
 }
 
 // Notion API 工具函数
@@ -374,16 +406,16 @@ const notionApi = {
     },
 
     // 获取页面内容
-    async getPageContent(pageId) {
+    async getPageContent(pageId, pageSize = 10, cursor = undefined) {
         try {
-            const [pageData, blocks] = await Promise.all([
+            const [pageData, blocksData] = await Promise.all([
                 this.fetch(`pages/${pageId}`),
-                getAllBlockChildren(pageId)
+                getAllBlockChildren(pageId, pageSize, cursor, false)
             ]);
 
             return {
                 page: pageData,
-                results: blocks || []
+                ...blocksData
             };
         } catch (error) {
             logger.error('Error in getPageContent:', error);
@@ -545,10 +577,20 @@ app.get('/api/databases', async (req, res) => {
 });
 
 app.get('/api/article-content/:pageId', async (req, res) => {
-  try {
-    const { pageId } = req.params;
-        const data = await notionApi.getPageContent(pageId);
-        res.json(data);
+    try {
+        const { pageId } = req.params;
+        const pageSize = parseInt(req.query.page_size) || 10;
+        const cursor = req.query.cursor;
+
+        logger.info(`Fetching article content for page ${pageId} with pageSize ${pageSize} and cursor ${cursor}`);
+        
+        const data = await notionApi.getPageContent(pageId, pageSize, cursor);
+        res.json({
+            page: data.page,
+            blocks: data.blocks,
+            hasMore: data.hasMore,
+            nextCursor: data.nextCursor
+        });
     } catch (error) {
         logger.error('Error fetching article content:', error);
         res.status(500).json({ 
