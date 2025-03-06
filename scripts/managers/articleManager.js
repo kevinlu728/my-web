@@ -3,6 +3,7 @@ import { showStatus, showLoading, showError } from '../utils/utils.js';
 import { getArticles, getArticleContent } from '../services/notionService.js';
 import { categoryManager } from './categoryManager.js';
 import { renderNotionBlocks } from '../components/articleRenderer.js';
+import { imageLazyLoader } from '../utils/image-lazy-loader.js';
 
 class ArticleManager {
     constructor() {
@@ -205,6 +206,32 @@ class ArticleManager {
             }
 
             const data = await response.json();
+            
+            // 处理表格块的子块数据
+            if (data.results) {
+                console.log('开始处理文章块数据...');
+                for (let i = 0; i < data.results.length; i++) {
+                    const block = data.results[i];
+                    if (block.type === 'table' && block.has_children) {
+                        console.log('发现表格块，获取子块数据...');
+                        try {
+                            // 获取表格的子块数据
+                            const tableResponse = await fetch(`/api/blocks/${block.id}/children`);
+                            if (tableResponse.ok) {
+                                const tableData = await tableResponse.json();
+                                console.log('获取到表格子块数据:', tableData);
+                                // 将子块数据添加到表格块中
+                                block.children = tableData.results;
+                            } else {
+                                console.error('获取表格子块数据失败:', tableResponse.status);
+                            }
+                        } catch (error) {
+                            console.error('获取表格子块数据出错:', error);
+                        }
+                    }
+                }
+            }
+
             return data;
         } catch (error) {
             console.error('Error loading article content:', error);
@@ -215,6 +242,7 @@ class ArticleManager {
     // 显示文章内容
     async showArticle(pageId) {
         try {
+            console.log('📄 开始加载文章:', pageId);
             const articleContainer = document.getElementById('article-container');
             if (!articleContainer) return;
 
@@ -230,24 +258,49 @@ class ArticleManager {
                         articleData.page?.properties?.Name?.title[0]?.plain_text || 
                         '无标题';
             
+            console.log('🔄 渲染文章内容...');
+            
             // 渲染文章内容
             const contentHtml = renderNotionBlocks(articleData.results || []);
             
             // 更新DOM
             articleContainer.innerHTML = `
                 <h1 class="article-title">${title}</h1>
-                <div class="article-content">
+                <div class="article-body">
                     ${contentHtml}
                 </div>
             `;
+
+            // 处理文章中的图片
+            console.log('🖼️ 处理文章中的图片...');
+            const articleBody = articleContainer.querySelector('.article-body');
+            if (articleBody) {
+                // 先确保所有图片都有正确的src属性
+                const images = articleBody.getElementsByTagName('img');
+                for (let img of images) {
+                    // 检查是否是 SVG 数据 URL
+                    if (img.src && !img.src.startsWith('data:image/svg+xml')) {
+                        console.log('找到图片URL:', img.src);
+                        // 保存原始URL
+                        img.setAttribute('data-original-src', img.src);
+                    }
+                }
+
+                // 然后处理懒加载
+                imageLazyLoader.processImages(articleBody);
+            } else {
+                console.warn('⚠️ 未找到文章内容区域');
+            }
             
             // 如果有代码高亮需求，可以在这里调用Prism
             if (window.Prism) {
                 Prism.highlightAll();
             }
+
+            console.log('✅ 文章加载完成');
             
         } catch (error) {
-            console.error('Error showing article:', error);
+            console.error('❌ 加载文章失败:', error);
             const articleContainer = document.getElementById('article-container');
             if (articleContainer) {
                 articleContainer.innerHTML = `<div class="error">加载文章失败: ${error.message}</div>`;

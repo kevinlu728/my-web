@@ -225,6 +225,34 @@ const cache = {
     }
 };
 
+// 获取所有块内容
+async function getAllBlockChildren(blockId) {
+    let allBlocks = [];
+    let hasMore = true;
+    let startCursor = undefined;
+
+    while (hasMore) {
+        const response = await fetch(
+            `https://api.notion.com/v1/blocks/${blockId}/children?page_size=100${startCursor ? `&start_cursor=${startCursor}` : ''}`,
+            {
+                method: 'GET',
+                headers: config.notion.headers
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch blocks: ${response.status}`);
+        }
+
+        const data = await response.json();
+        allBlocks = allBlocks.concat(data.results);
+        hasMore = data.has_more;
+        startCursor = data.next_cursor;
+    }
+
+    return allBlocks;
+}
+
 // Notion API 工具函数
 const notionApi = {
     // 延迟函数
@@ -347,15 +375,20 @@ const notionApi = {
 
     // 获取页面内容
     async getPageContent(pageId) {
-        const [pageData, blocksData] = await Promise.all([
-            this.fetch(`pages/${pageId}`),
-            this.fetch(`blocks/${pageId}/children?page_size=100`)
-        ]);
+        try {
+            const [pageData, blocks] = await Promise.all([
+                this.fetch(`pages/${pageId}`),
+                getAllBlockChildren(pageId)
+            ]);
 
-        return {
-            page: pageData,
-            results: blocksData.results || []
-        };
+            return {
+                page: pageData,
+                results: blocks || []
+            };
+        } catch (error) {
+            logger.error('Error in getPageContent:', error);
+            throw error;
+        }
     },
 
     // 清除所有缓存
@@ -446,11 +479,37 @@ app.post('/api/articles', async (req, res) => {
             });
         }
         
-    res.json(data);
-  } catch (error) {
+        res.json(data);
+    } catch (error) {
         logger.error('Error fetching articles:', error);
         res.status(error.message.includes('超时') ? 504 : 500).json({ 
             error: 'Failed to fetch articles', 
+            message: error.message 
+        });
+    }
+});
+
+// 获取块的子块数据
+app.get('/api/blocks/:blockId/children', async (req, res) => {
+    try {
+        const { blockId } = req.params;
+        logger.info(`Fetching children blocks for block: ${blockId}`);
+        
+        const response = await fetch(`https://api.notion.com/v1/blocks/${blockId}/children?page_size=100`, {
+            method: 'GET',
+            headers: config.notion.headers
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch block children: ${response.status}`);
+        }
+
+        const data = await response.json();
+        res.json(data);
+    } catch (error) {
+        logger.error('Error fetching block children:', error);
+        res.status(500).json({ 
+            error: 'Error fetching block children', 
             message: error.message 
         });
     }
