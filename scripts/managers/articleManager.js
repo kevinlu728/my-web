@@ -2,7 +2,7 @@
 import { showStatus, showLoading, showError } from '../utils/utils.js';
 import { getArticles, getArticleContent } from '../services/notionService.js';
 import { categoryManager } from './categoryManager.js';
-import { renderNotionBlocks } from '../components/articleRenderer.js';
+import { renderNotionBlocks, initializeLazyLoading } from '../components/articleRenderer.js';
 import { imageLazyLoader } from '../utils/image-lazy-loader.js';
 
 class ArticleManager {
@@ -219,25 +219,6 @@ class ArticleManager {
 
             // 存储已加载的块
             this.loadedBlocks = data.blocks || [];
-            
-            // 处理表格块的子块数据
-            if (this.loadedBlocks.length > 0) {
-                console.log('开始处理文章块数据...');
-                for (let i = 0; i < this.loadedBlocks.length; i++) {
-                    const block = this.loadedBlocks[i];
-                    if (block.type === 'table' && block.has_children) {
-                        console.log('发现表格块，获取子块数据...');
-                        try {
-                            const tableData = await this.loadTableData(block.id);
-                            if (tableData && tableData.results) {
-                                block.children = tableData.results;
-                            }
-                        } catch (error) {
-                            console.error('获取表格子块数据出错:', error);
-                        }
-                    }
-                }
-            }
 
             return {
                 page: data.page,
@@ -300,6 +281,8 @@ class ArticleManager {
             const articleBody = articleContainer.querySelector('.article-body');
             if (articleBody) {
                 imageLazyLoader.processImages(articleBody);
+                // 初始化表格和代码块的懒加载
+                initializeLazyLoading(articleBody);
             }
             
             // 添加滚动监听
@@ -381,15 +364,6 @@ class ArticleManager {
 
             // 处理新加载的块
             if (data.blocks && data.blocks.length > 0) {
-                for (const block of data.blocks) {
-                    if (block.type === 'table' && block.has_children) {
-                        const tableData = await this.loadTableData(block.id);
-                        if (tableData && tableData.results) {
-                            block.children = tableData.results;
-                        }
-                    }
-                }
-                
                 // 添加到已加载的块中
                 this.loadedBlocks = this.loadedBlocks.concat(data.blocks);
                 
@@ -398,8 +372,9 @@ class ArticleManager {
                 const articleBody = document.querySelector('.article-body');
                 if (articleBody) {
                     articleBody.insertAdjacentHTML('beforeend', newContent);
-                    // 处理新加载内容中的图片
+                    // 处理新加载内容中的图片和其他懒加载内容
                     imageLazyLoader.processImages(articleBody);
+                    initializeLazyLoading(articleBody);
                 }
             }
 
@@ -423,20 +398,6 @@ class ArticleManager {
             }
         } finally {
             this.isLoading = false;
-        }
-    }
-
-    // 加载表格数据的辅助方法
-    async loadTableData(blockId) {
-        try {
-            const response = await fetch(`/api/blocks/${blockId}/children`);
-            if (!response.ok) {
-                throw new Error(`Failed to fetch table data: ${response.status}`);
-            }
-            return await response.json();
-        } catch (error) {
-            console.error('Error loading table data:', error);
-            return null;
         }
     }
 

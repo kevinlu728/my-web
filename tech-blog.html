@@ -12,6 +12,10 @@
     <link rel="stylesheet" href="styles/article-list.css">
     <!-- FontAwesome CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Prism.js -->
+    <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-java.min.js"></script>
     <style>
         /* 图片加载状态指示器样式 */
         .image-loader {
@@ -77,6 +81,55 @@
         .image-error i {
             font-size: 2em;
             margin-bottom: 10px;
+        }
+
+        /* 懒加载块的基本样式 */
+        .lazy-block {
+            background: #f8f9fa;
+            border-radius: 4px;
+            padding: 20px;
+            margin: 15px 0;
+            min-height: 100px;
+            transition: all 0.3s ease;
+        }
+
+        /* 占位符内容样式 */
+        .placeholder-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+            gap: 10px;
+        }
+
+        .placeholder-content i {
+            font-size: 24px;
+        }
+
+        /* 表格块特定样式 */
+        .table-block .placeholder-content {
+            min-height: 150px;
+        }
+
+        /* 代码块特定样式 */
+        .code-block .placeholder-content {
+            min-height: 120px;
+            font-family: monospace;
+        }
+
+        /* 错误状态样式 */
+        .error-message {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            color: #dc3545;
+            cursor: pointer;
+        }
+
+        .error-message i {
+            font-size: 24px;
         }
     </style>
 </head>

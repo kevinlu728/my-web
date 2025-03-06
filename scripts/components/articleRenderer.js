@@ -1,5 +1,8 @@
 // 文章内容渲染模块
 
+import { tableLazyLoader } from '../utils/table-lazy-loader.js';
+import { codeLazyLoader } from '../utils/code-lazy-loader.js';
+
 // 主渲染函数
 export function renderNotionBlocks(blocks) {
     console.log('开始渲染块:', blocks); // 添加日志
@@ -132,19 +135,30 @@ function renderToggle(block) {
 
 // 渲染代码块
 function renderCode(block) {
-    if (!block.code || !block.code.rich_text) {
-        return `<pre><code></code></pre>`;
-    }
-    
-    const text = block.code.rich_text.map(richText => {
-        return richText.plain_text;
-    }).join('');
-    
-    const language = block.code.language || '';
+    const code = block.code?.rich_text?.[0]?.plain_text || '';
+    const language = block.code?.language || 'plaintext';
     
     return `
-        <pre><code class="language-${language}">${text || '&nbsp;'}</code></pre>
+        <div class="lazy-block code-block" 
+            data-block-id="${block.id}"
+            data-code="${escapeAttribute(code)}"
+            data-language="${language}">
+            <div class="placeholder-content">
+                <i class="fas fa-code"></i>
+                <span>代码加载中</span>
+            </div>
+        </div>
     `;
+}
+
+// 转义HTML属性值
+function escapeAttribute(str) {
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/'/g, '&apos;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
 }
 
 // 渲染图片
@@ -284,16 +298,15 @@ function renderTableBlock(block) {
     return tableHtml;
 }
 
-/**
- * 渲染 Notion 块
- * @param {Object} block - Notion 块数据
- * @returns {string} - 渲染后的 HTML
- */
+// 修改渲染函数以使用新的懒加载模块
 function renderBlock(block) {
-    // 添加调试日志
     console.log('渲染块类型:', block.type, block);
 
     switch (block.type) {
+        case 'table':
+            return tableLazyLoader.createPlaceholder(block.id);
+        case 'code':
+            return renderCode(block);
         case 'paragraph':
             return renderParagraph(block);
         case 'heading_1':
@@ -310,19 +323,25 @@ function renderBlock(block) {
             return renderTodo(block);
         case 'toggle':
             return renderToggle(block);
-        case 'code':
-            return renderCode(block);
         case 'image':
             return renderImage(block);
-        case 'table':
-            // 确保表格块有子块数据
-            if (!block.has_children) {
-                console.warn('表格块没有子块数据');
-                return '';
-            }
-            return renderTableBlock(block);
         default:
             console.warn('不支持的块类型:', block.type);
             return `<div class="unsupported-block">不支持的块类型: ${block.type}</div>`;
     }
+}
+
+// 在渲染完成后初始化懒加载观察
+export function initializeLazyLoading(container) {
+    // 查找并观察所有懒加载块
+    const tablePlaceholders = container.querySelectorAll('.table-block[data-block-id]');
+    const codePlaceholders = container.querySelectorAll('.code-block[data-block-id]');
+
+    tablePlaceholders.forEach(element => {
+        tableLazyLoader.observe(element);
+    });
+
+    codePlaceholders.forEach(element => {
+        codeLazyLoader.observe(element);
+    });
 } 

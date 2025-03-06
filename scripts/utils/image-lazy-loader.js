@@ -313,23 +313,31 @@ class ImageLazyLoader {
         console.log(`🎯 找到 ${images.length} 张图片，开始处理懒加载...`);
         
         images.forEach((img, index) => {
-            // 获取原始图片URL
+            // 获取原始图片URL和尺寸信息
             const originalSrc = img.getAttribute('data-original-src') || img.src;
-            
+            console.log('图片信息:', {
+                src: originalSrc,
+                naturalWidth: img.naturalWidth,
+                naturalHeight: img.naturalHeight,
+                width: img.width,
+                height: img.height,
+                dataWidth: img.getAttribute('data-width'),
+                dataHeight: img.getAttribute('data-height'),
+                dataset: img.dataset
+            });
+
             if (!originalSrc || originalSrc.startsWith('data:image/svg+xml')) {
                 console.log('⚠️ 图片没有有效的源URL');
                 return;
             }
 
-            console.log(`🖼️ 处理图片 ${index + 1}:`, originalSrc);
-
             // 创建包装容器
             const wrapper = document.createElement('div');
             wrapper.style.position = 'relative';
-            wrapper.style.width = '100%';
-            wrapper.style.minHeight = '100px';
-            wrapper.style.textAlign = 'left'; // 确保容器左对齐
-            wrapper.style.margin = '0'; // 移除容器的边距
+            wrapper.style.width = 'fit-content';
+            wrapper.style.maxWidth = '100%';
+            wrapper.style.minHeight = '50px';
+            wrapper.style.margin = '0.5rem 0'; // 减小上下边距
             img.parentNode.insertBefore(wrapper, img);
             wrapper.appendChild(img);
             
@@ -345,27 +353,33 @@ class ImageLazyLoader {
             
             // 设置懒加载
             if (this.hasIntersectionObserver) {
-                // 保存原始URL到data-src
                 img.setAttribute('data-src', originalSrc);
-                // 设置占位图
                 img.src = this.placeholderImage;
                 img.classList.add('lazy-image');
                 this.observer.observe(img);
             } else {
-                // 如果不支持 IntersectionObserver，直接加载图片
                 img.src = originalSrc;
             }
             
             // 处理加载完成
             img.addEventListener('load', () => {
                 if (!img.src.startsWith('data:image/svg+xml')) {
-                    console.log('✅ 图片加载完成:', img.src);
+                    console.log('✅ 图片加载完成:', {
+                        src: img.src,
+                        naturalWidth: img.naturalWidth,
+                        naturalHeight: img.naturalHeight
+                    });
+                    
                     if (loader.parentNode === wrapper) {
                         loader.remove();
                     }
                     img.classList.add('loaded');
                     img.classList.remove('lazy-image');
-                    this.applyCustomStyles(img);
+                    
+                    // 使用图片的原始尺寸
+                    if (img.naturalWidth && img.naturalHeight) {
+                        this.applyCustomStyles(img);
+                    }
                 }
             });
             
@@ -394,8 +408,6 @@ class ImageLazyLoader {
                     img.style.display = 'none';
                 }
             });
-            
-            this.applyCustomStyles(img);
         });
     }
 
@@ -424,22 +436,42 @@ class ImageLazyLoader {
      * @param {HTMLImageElement} img - 图片元素
      */
     applyCustomStyles(img) {
-        // 基础样式
-        img.style.maxWidth = '80%';  // 增大默认图片尺寸
-        img.style.height = 'auto';
-        img.style.margin = '1.5rem 0'; // 移除 auto，只保留上下边距
+        const containerWidth = img.parentElement.offsetWidth;
+        const naturalWidth = img.naturalWidth;
+        const naturalHeight = img.naturalHeight;
+        
+        // 计算60%的尺寸
+        const targetWidth = Math.round(naturalWidth * 0.6);
+        const targetHeight = Math.round(naturalHeight * 0.6);
+        
+        // 设置图片样式
         img.style.display = 'block';
         
-        // 在移动设备上调整
-        if (window.innerWidth <= 768) {
-            img.style.maxWidth = '100%'; // 移动端使用全宽
+        // 如果60%后的宽度仍然大于容器宽度，则进一步缩放
+        if (targetWidth > containerWidth) {
+            const scale = containerWidth / targetWidth;
+            img.style.width = '100%';
+            img.style.height = (targetHeight * scale) + 'px';
+        } else {
+            // 否则使用60%的尺寸
+            img.style.width = targetWidth + 'px';
+            img.style.height = targetHeight + 'px';
         }
 
         // 获取图片容器并设置样式
         const wrapper = img.parentElement;
         if (wrapper) {
-            wrapper.style.textAlign = 'left'; // 确保容器左对齐
-            wrapper.style.margin = '0'; // 移除容器的边距
+            wrapper.style.textAlign = 'left';
+            wrapper.style.margin = '0.2rem 0';
+            
+            // 如果目标宽度小于容器宽度的60%，允许内联显示
+            if (targetWidth < containerWidth * 0.6) {
+                wrapper.style.display = 'inline-block';
+                wrapper.style.marginRight = '1rem';
+            } else {
+                wrapper.style.display = 'block';
+                wrapper.style.marginRight = '0';
+            }
         }
     }
 
@@ -469,6 +501,38 @@ class ImageLazyLoader {
         
         // 返回处理后的 HTML
         return tempDiv.innerHTML;
+    }
+
+    // 处理图片加载失败
+    handleImageError(imgElement) {
+        // 检查是否已经有错误提示
+        const existingError = imgElement.parentElement.querySelector('.error-message');
+        if (existingError) {
+            return; // 如果已经有错误提示，则不再创建新的
+        }
+
+        const errorContainer = document.createElement('div');
+        errorContainer.className = 'error-message';
+        errorContainer.innerHTML = `
+            <i class="fas fa-exclamation-circle"></i>
+            <span>图片加载失败</span>
+        `;
+        
+        // 隐藏原始图片
+        imgElement.style.display = 'none';
+        
+        // 在图片后面插入错误提示
+        imgElement.parentElement.appendChild(errorContainer);
+
+        // 点击重试
+        errorContainer.onclick = () => {
+            // 移除错误提示
+            errorContainer.remove();
+            // 显示图片
+            imgElement.style.display = '';
+            // 重新加载图片
+            imgElement.src = imgElement.dataset.src;
+        };
     }
 }
 
