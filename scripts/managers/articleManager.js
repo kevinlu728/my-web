@@ -11,12 +11,67 @@ class ArticleManager {
         this.articles = [];
         this.currentDatabaseId = null;
         this.searchTerm = '';
+        this.cacheExpiration = 30 * 60 * 1000; // 缓存过期时间：30分钟
+        this.cachePrefix = 'article_cache_';
         // 添加分类名称映射
         this.categoryNameMap = {
             'Test': '测试',
             'Compter Basis': '计算机基础',
         };
         this.initializeSearch();
+    }
+
+    // 缓存相关方法
+    getCacheKey(pageId) {
+        return `${this.cachePrefix}${pageId}`;
+    }
+
+    getArticleFromCache(pageId) {
+        try {
+            const cacheKey = this.getCacheKey(pageId);
+            const cached = localStorage.getItem(cacheKey);
+            if (!cached) return null;
+
+            const { data, timestamp } = JSON.parse(cached);
+            if (Date.now() - timestamp > this.cacheExpiration) {
+                // 缓存过期，删除
+                localStorage.removeItem(cacheKey);
+                return null;
+            }
+
+            return data;
+        } catch (error) {
+            console.warn('读取缓存失败:', error);
+            return null;
+        }
+    }
+
+    setArticleCache(pageId, data) {
+        try {
+            const cacheKey = this.getCacheKey(pageId);
+            const cacheData = {
+                data,
+                timestamp: Date.now()
+            };
+            localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+        } catch (error) {
+            console.warn('写入缓存失败:', error);
+        }
+    }
+
+    clearExpiredCache() {
+        try {
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith(this.cachePrefix)) {
+                    const cached = JSON.parse(localStorage.getItem(key));
+                    if (Date.now() - cached.timestamp > this.cacheExpiration) {
+                        localStorage.removeItem(key);
+                    }
+                }
+            });
+        } catch (error) {
+            console.warn('清理缓存失败:', error);
+        }
     }
 
     // 初始化
@@ -66,6 +121,21 @@ class ArticleManager {
 
             showLoading(articleList, '加载中...');
 
+            // 清理过期缓存
+            this.clearExpiredCache();
+
+            // 尝试从缓存获取文章列表
+            const cachedList = this.getArticleFromCache('article_list');
+            if (cachedList) {
+                console.log('📦 从缓存加载文章列表');
+                this.articles = cachedList;
+                this.renderArticleList();
+                categoryManager.updateCategories(this.articles);
+                this.showWelcomePage();
+                return;
+            }
+
+            console.log('🌐 从网络加载文章列表');
             const response = await fetch('/api/articles', {
                 method: 'POST',
                 headers: {
@@ -91,6 +161,9 @@ class ArticleManager {
             }
 
             this.articles = data.results;
+            
+            // 缓存文章列表
+            this.setArticleCache('article_list', this.articles);
             
             // 更新分类列表
             categoryManager.updateCategories(this.articles);
@@ -227,29 +300,95 @@ class ArticleManager {
             this.hasMore = true;
             this.nextCursor = null;
             
-            const response = await fetch(`/api/article-content/${pageId}?page_size=10`);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+            // 先尝试从缓存获取
+            const cachedData = this.getArticleFromCache(pageId);
+            if (cachedData) {
+                console.log('📦 从缓存加载文章:', pageId);
+                return cachedData;
             }
 
-            const data = await response.json();
+            console.log('🌐 从网络加载文章:', pageId);
+            showStatus('加载中...', false);
             
-            // 更新分页状态
-            this.hasMore = data.hasMore;
-            this.nextCursor = data.nextCursor;
-            this.currentPageId = pageId;
+            let retryCount = 0;
+            const maxRetries = 3;
+            const timeout = 10000; // 10秒超时
+            
+            while (retryCount < maxRetries) {
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => {
+                        controller.abort();
+                        console.log('请求超时，正在中断...');
+                    }, timeout);
+                    
+                    console.log(`正在发起第${retryCount + 1}次请求...`);
+                    
+                    const response = await fetch(`/api/article-content/${pageId}?page_size=10`, {
+                        signal: controller.signal,
+                        headers: {
+                            'Cache-Control': 'no-cache',
+                            'Pragma': 'no-cache'
+                        }
+                    });
+                    
+                    clearTimeout(timeoutId);
+                    
+                    if (!response.ok) {
+                        throw new Error(`服务器响应错误: ${response.status} ${response.statusText}`);
+                    }
 
-            // 存储已加载的块
-            this.loadedBlocks = data.blocks || [];
+                    console.log('服务器响应成功，正在解析数据...');
+                    const data = await response.json();
+                    
+                    // 更新分页状态
+                    this.hasMore = data.hasMore;
+                    this.nextCursor = data.nextCursor;
+                    this.currentPageId = pageId;
 
-            return {
-                page: data.page,
-                results: this.loadedBlocks,
-                hasMore: this.hasMore,
-                nextCursor: this.nextCursor
-            };
+                    // 存储已加载的块
+                    this.loadedBlocks = data.blocks || [];
+                    console.log(`成功加载 ${this.loadedBlocks.length} 个内容块`);
+
+                    // 缓存文章数据
+                    const articleData = {
+                        page: data.page,
+                        results: this.loadedBlocks,
+                        hasMore: this.hasMore,
+                        nextCursor: this.nextCursor
+                    };
+                    this.setArticleCache(pageId, articleData);
+
+                    return articleData;
+                } catch (error) {
+                    retryCount++;
+                    console.error(`第${retryCount}次请求失败:`, error);
+                    
+                    if (error.name === 'AbortError') {
+                        console.log('请求超时，正在重试...');
+                        if (retryCount < maxRetries) {
+                            showStatus('加载超时，正在重试...', true);
+                        }
+                    } else {
+                        console.log(`加载失败，第${retryCount}次重试...`);
+                        if (retryCount < maxRetries) {
+                            showStatus('加载失败，正在重试...', true);
+                        }
+                    }
+                    
+                    if (retryCount === maxRetries) {
+                        throw new Error('加载失败，请稍后重试');
+                    }
+                    
+                    // 指数退避重试
+                    const delay = Math.min(1000 * Math.pow(2, retryCount), 5000);
+                    console.log(`等待 ${delay}ms 后重试...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
         } catch (error) {
-            console.error('Error loading article content:', error);
+            console.error('文章加载失败:', error);
+            showStatus('加载失败', true);
             throw error;
         }
     }
@@ -280,81 +419,11 @@ class ArticleManager {
                                 <div class="skeleton-line"></div>
                                 <div class="skeleton-line" style="width: 80%"></div>
                             </div>
-                            <div class="skeleton-paragraph">
-                                <div class="skeleton-line"></div>
-                                <div class="skeleton-line"></div>
-                                <div class="skeleton-line" style="width: 60%"></div>
-                            </div>
                         </div>
                     </div>
                 </div>
             `;
 
-            // 添加加载状态样式
-            const existingStyle = document.getElementById('loading-style');
-            if (!existingStyle) {
-                const style = document.createElement('style');
-                style.id = 'loading-style';
-                style.textContent = `
-                    .article-loading {
-                        padding: 2rem;
-                        max-width: 800px;
-                        margin: 0 auto;
-                    }
-
-                    .loading-content {
-                        background: #fff;
-                        border-radius: 8px;
-                        padding: 2rem;
-                    }
-
-                    .loading-skeleton {
-                        animation: pulse 1.5s ease-in-out infinite;
-                    }
-
-                    .skeleton-title {
-                        height: 2.8rem;
-                        background: #f0f0f0;
-                        border-radius: 4px;
-                        margin-bottom: 1.5rem;
-                        width: 80%;
-                    }
-
-                    .skeleton-meta {
-                        height: 1.2rem;
-                        background: #f0f0f0;
-                        border-radius: 4px;
-                        margin-bottom: 3rem;
-                        width: 40%;
-                    }
-
-                    .skeleton-paragraph {
-                        margin-bottom: 2rem;
-                    }
-
-                    .skeleton-line {
-                        height: 1rem;
-                        background: #f0f0f0;
-                        border-radius: 4px;
-                        margin-bottom: 1rem;
-                        width: 100%;
-                    }
-
-                    @keyframes pulse {
-                        0% {
-                            opacity: 1;
-                        }
-                        50% {
-                            opacity: 0.4;
-                        }
-                        100% {
-                            opacity: 1;
-                        }
-                    }
-                `;
-                document.head.appendChild(style);
-            }
-            
             const articleData = await this.loadAndDisplayArticle(pageId);
             if (!articleData) {
                 throw new Error('无法加载文章数据');
@@ -389,7 +458,7 @@ class ArticleManager {
             }
             
             // 添加滚动监听
-            this.scrollHandler = () => {
+            this.scrollHandler = this.throttle(() => {
                 if (this.isLoading || !this.hasMore) return;
 
                 const loadMoreContainer = document.querySelector('.load-more-container');
@@ -402,15 +471,19 @@ class ArticleManager {
                     console.log('触发加载更多内容...');
                     this.loadMoreContent();
                 }
-            };
+            }, 200);
 
-            // 添加节流处理
-            this.throttledScrollHandler = this.throttle(this.scrollHandler, 200);
-            window.addEventListener('scroll', this.throttledScrollHandler);
+            window.addEventListener('scroll', this.scrollHandler);
             
             // 如果有代码高亮需求，可以在这里调用Prism
             if (window.Prism) {
-                Prism.highlightAll();
+                try {
+                    Prism.highlightAll();
+                } catch (error) {
+                    console.warn('代码高亮失败:', error);
+                }
+            } else {
+                console.warn('Prism.js未加载，代码块将不会高亮显示');
             }
 
             console.log('✅ 文章加载完成');
@@ -424,46 +497,9 @@ class ArticleManager {
                         <div class="error-icon">❌</div>
                         <div class="error-message">加载文章失败</div>
                         <div class="error-details">${error.message}</div>
-                        <button class="retry-button" onclick="location.reload()">重新加载</button>
+                        <button class="retry-button" onclick="showArticle('${pageId}')">重新加载</button>
                     </div>
                 `;
-
-                // 添加错误状态样式
-                const errorStyle = document.createElement('style');
-                errorStyle.textContent = `
-                    .error-container {
-                        text-align: center;
-                        padding: 3rem 2rem;
-                        max-width: 600px;
-                        margin: 0 auto;
-                    }
-                    .error-icon {
-                        font-size: 3rem;
-                        margin-bottom: 1rem;
-                    }
-                    .error-message {
-                        font-size: 1.5rem;
-                        color: #e74c3c;
-                        margin-bottom: 1rem;
-                    }
-                    .error-details {
-                        color: #666;
-                        margin-bottom: 2rem;
-                    }
-                    .retry-button {
-                        padding: 0.8rem 2rem;
-                        background-color: #3498db;
-                        color: white;
-                        border: none;
-                        border-radius: 4px;
-                        cursor: pointer;
-                        transition: background-color 0.2s;
-                    }
-                    .retry-button:hover {
-                        background-color: #2980b9;
-                    }
-                `;
-                document.head.appendChild(errorStyle);
             }
         }
     }
@@ -494,53 +530,95 @@ class ArticleManager {
                 loadMoreContainer.innerHTML = '<div class="loading-spinner"></div><div class="loading-text">加载中...</div>';
             }
 
-            const response = await fetch(
-                `/api/article-content/${this.currentPageId}?page_size=10&cursor=${this.nextCursor}`
-            );
+            const timeout = 10000; // 10秒超时
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+            try {
+                const response = await fetch(
+                    `/api/article-content/${this.currentPageId}?page_size=10${this.nextCursor ? `&cursor=${this.nextCursor}` : ''}`,
+                    { signal: controller.signal }
+                );
 
-            const data = await response.json();
-            
-            // 更新分页状态
-            this.hasMore = data.hasMore;
-            this.nextCursor = data.nextCursor;
+                clearTimeout(timeoutId);
 
-            // 处理新加载的块
-            if (data.blocks && data.blocks.length > 0) {
-                // 添加到已加载的块中
-                this.loadedBlocks = this.loadedBlocks.concat(data.blocks);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
                 
-                // 渲染新内容
-                const newContent = renderNotionBlocks(data.blocks);
-                const articleBody = document.querySelector('.article-body');
-                if (articleBody) {
-                    articleBody.insertAdjacentHTML('beforeend', newContent);
-                    // 处理新加载内容中的图片和其他懒加载内容
-                    imageLazyLoader.processImages(articleBody);
-                    initializeLazyLoading(articleBody);
-                }
-            }
+                // 更新分页状态
+                this.hasMore = data.hasMore;
+                this.nextCursor = data.nextCursor;
 
-            // 更新加载更多按钮状态
-            if (loadMoreContainer) {
-                if (this.hasMore) {
-                    loadMoreContainer.innerHTML = '<div class="loading-spinner"></div>';
-                } else {
-                    loadMoreContainer.innerHTML = '<div class="no-more">没有更多内容</div>';
+                // 处理新加载的块
+                if (data.blocks && data.blocks.length > 0) {
+                    // 添加到已加载的块中
+                    this.loadedBlocks = this.loadedBlocks.concat(data.blocks);
+                    
+                    // 更新缓存
+                    const articleData = {
+                        page: data.page,
+                        results: this.loadedBlocks,
+                        hasMore: this.hasMore,
+                        nextCursor: this.nextCursor
+                    };
+                    this.setArticleCache(this.currentPageId, articleData);
+                    
+                    // 渲染新内容
+                    const newContent = renderNotionBlocks(data.blocks);
+                    const articleBody = document.querySelector('.article-body');
+                    if (articleBody) {
+                        articleBody.insertAdjacentHTML('beforeend', newContent);
+                        // 处理新加载内容中的图片和其他懒加载内容
+                        imageLazyLoader.processImages(articleBody);
+                        initializeLazyLoading(articleBody);
+                    }
+
+                    // 如果有代码高亮需求，重新调用Prism
+                    if (window.Prism) {
+                        try {
+                            Prism.highlightAll();
+                        } catch (error) {
+                            console.warn('代码高亮失败:', error);
+                        }
+                    }
                 }
+
+                // 更新加载更多按钮状态
+                if (loadMoreContainer) {
+                    if (this.hasMore) {
+                        loadMoreContainer.innerHTML = '<div class="loading-spinner"></div>';
+                    } else {
+                        loadMoreContainer.innerHTML = '<div class="no-more">没有更多内容</div>';
+                        // 移除滚动监听器
+                        if (this.scrollHandler) {
+                            window.removeEventListener('scroll', this.scrollHandler);
+                            this.scrollHandler = null;
+                        }
+                    }
+                }
+
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    throw new Error('加载超时，请检查网络连接后重试');
+                }
+                throw error;
             }
 
         } catch (error) {
             console.error('加载更多内容失败:', error);
-            showStatus('加载更多内容失败', true);
+            showStatus('加载更多内容失败: ' + error.message, true);
             
             // 显示错误状态
             const loadMoreContainer = document.querySelector('.load-more-container');
             if (loadMoreContainer) {
-                loadMoreContainer.innerHTML = '<div class="error">加载失败，请稍后重试</div>';
+                loadMoreContainer.innerHTML = `
+                    <div class="error">
+                        ${error.message}，<a href="#" onclick="articleManager.loadMoreContent(); return false;">点击重试</a>
+                    </div>
+                `;
             }
         } finally {
             this.isLoading = false;
