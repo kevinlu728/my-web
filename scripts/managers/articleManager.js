@@ -16,9 +16,15 @@ class ArticleManager {
         // 添加分类名称映射
         this.categoryNameMap = {
             'Test': '测试',
-            'Compter Basis': '计算机基础',
+            'Computer Basis': '计算机基础',
+            'Data Structure and Algorithm': '数据结构和算法',
         };
         this.initializeSearch();
+        
+        // 添加请求控制相关属性
+        this.currentLoadingId = null;
+        this.abortController = null;
+        this.loadingStatus = new Map(); // 记录每篇文章的加载状态
     }
 
     // 缓存相关方法
@@ -118,8 +124,6 @@ class ArticleManager {
         try {
             const articleList = document.getElementById('article-list');
             if (!articleList) return;
-
-            showLoading(articleList, '加载中...');
 
             // 清理过期缓存
             this.clearExpiredCache();
@@ -254,8 +258,11 @@ class ArticleManager {
             // 只在搜索时高亮显示
             const highlightedTitle = this.searchTerm ? this.highlightSearchTerm(title) : title;
             
+            // 检查是否是当前选中的文章
+            const isActive = this.currentLoadingId === article.id ? 'active' : '';
+            
             return `
-                <li class="article-item" data-category="${category}">
+                <li class="article-item ${isActive}" data-category="${category}" data-article-id="${article.id}">
                     <a href="#" onclick="showArticle('${article.id}'); return false;">
                         <span class="article-title-text">${highlightedTitle}</span>
                         ${date ? `<span class="article-date">${date}</span>` : ''}
@@ -292,40 +299,56 @@ class ArticleManager {
         });
     }
 
+    // 取消当前加载
+    cancelCurrentLoading() {
+        if (this.abortController) {
+            console.log('取消当前加载请求');
+            this.abortController.abort();
+            this.abortController = null;
+        }
+        this.isLoading = false;
+        this.currentLoadingId = null;
+    }
+
     // 加载和显示文章内容
     async loadAndDisplayArticle(pageId) {
         try {
             // 初始化加载状态
-            this.isLoading = false;
-            this.hasMore = true;
+            this.isLoading = true;
+            this.hasMore = false;
             this.nextCursor = null;
+            
+            // 创建新的 AbortController
+            this.abortController = new AbortController();
+            this.currentLoadingId = pageId;
             
             // 先尝试从缓存获取
             const cachedData = this.getArticleFromCache(pageId);
-            if (cachedData) {
+            if (cachedData && cachedData.isComplete) { // 只有完整加载的文章才使用缓存
                 console.log('📦 从缓存加载文章:', pageId);
+                this.isLoading = false;
                 return cachedData;
             }
 
             console.log('🌐 从网络加载文章:', pageId);
-            showStatus('加载中...', false);
             
             let retryCount = 0;
             const maxRetries = 3;
-            const timeout = 10000; // 10秒超时
+            const timeout = 10000;
             
             while (retryCount < maxRetries) {
                 try {
-                    const controller = new AbortController();
                     const timeoutId = setTimeout(() => {
-                        controller.abort();
+                        if (this.abortController) {
+                            this.abortController.abort();
+                        }
                         console.log('请求超时，正在中断...');
                     }, timeout);
                     
                     console.log(`正在发起第${retryCount + 1}次请求...`);
                     
-                    const response = await fetch(`/api/article-content/${pageId}?page_size=10`, {
-                        signal: controller.signal,
+                    const response = await fetch(`/api/article-content/${pageId}?page_size=100`, {
+                        signal: this.abortController.signal,
                         headers: {
                             'Cache-Control': 'no-cache',
                             'Pragma': 'no-cache'
@@ -341,54 +364,59 @@ class ArticleManager {
                     console.log('服务器响应成功，正在解析数据...');
                     const data = await response.json();
                     
+                    // 检查是否仍在加载同一篇文章
+                    if (this.currentLoadingId !== pageId) {
+                        console.log('文章已切换，停止处理当前响应');
+                        return null;
+                    }
+                    
                     // 更新分页状态
-                    this.hasMore = data.hasMore;
-                    this.nextCursor = data.nextCursor;
+                    this.hasMore = Boolean(data.hasMore);
+                    this.nextCursor = data.nextCursor || null;
                     this.currentPageId = pageId;
 
                     // 存储已加载的块
                     this.loadedBlocks = data.blocks || [];
                     console.log(`成功加载 ${this.loadedBlocks.length} 个内容块`);
+                    console.log('是否有更多内容:', this.hasMore);
 
-                    // 缓存文章数据
+                    // 缓存文章数据，标记完整性
                     const articleData = {
                         page: data.page,
                         results: this.loadedBlocks,
                         hasMore: this.hasMore,
-                        nextCursor: this.nextCursor
+                        nextCursor: this.nextCursor,
+                        isComplete: !this.hasMore // 标记文章是否完整加载
                     };
                     this.setArticleCache(pageId, articleData);
+                    this.loadingStatus.set(pageId, 'complete');
 
+                    this.isLoading = false;
                     return articleData;
                 } catch (error) {
+                    if (error.name === 'AbortError') {
+                        console.log('请求被取消');
+                        return null;
+                    }
+                    
                     retryCount++;
                     console.error(`第${retryCount}次请求失败:`, error);
                     
-                    if (error.name === 'AbortError') {
-                        console.log('请求超时，正在重试...');
-                        if (retryCount < maxRetries) {
-                            showStatus('加载超时，正在重试...', true);
-                        }
-                    } else {
-                        console.log(`加载失败，第${retryCount}次重试...`);
-                        if (retryCount < maxRetries) {
-                            showStatus('加载失败，正在重试...', true);
-                        }
-                    }
-                    
                     if (retryCount === maxRetries) {
+                        this.isLoading = false;
+                        this.loadingStatus.set(pageId, 'error');
                         throw new Error('加载失败，请稍后重试');
                     }
                     
-                    // 指数退避重试
-                    const delay = Math.min(1000 * Math.pow(2, retryCount), 5000);
-                    console.log(`等待 ${delay}ms 后重试...`);
-                    await new Promise(resolve => setTimeout(resolve, delay));
+                    await new Promise(resolve => setTimeout(resolve, 
+                        Math.min(1000 * Math.pow(2, retryCount), 5000)));
                 }
             }
         } catch (error) {
             console.error('文章加载失败:', error);
             showStatus('加载失败', true);
+            this.isLoading = false;
+            this.loadingStatus.set(pageId, 'error');
             throw error;
         }
     }
@@ -400,13 +428,27 @@ class ArticleManager {
             const articleContainer = document.getElementById('article-container');
             if (!articleContainer) return;
 
+            // 更新选中状态
+            this.updateActiveArticle(pageId);
+
+            // 如果正在加载其他文章，先取消那个加载
+            if (this.currentLoadingId && this.currentLoadingId !== pageId) {
+                this.cancelCurrentLoading();
+            }
+
             // 移除之前的滚动监听器
             if (this.scrollHandler) {
                 window.removeEventListener('scroll', this.scrollHandler);
                 this.scrollHandler = null;
             }
 
-            // 显示优化后的加载状态
+            // 重置滚动位置
+            window.scrollTo({
+                top: 0,
+                behavior: 'instant' // 使用 'instant' 而不是 'smooth' 以避免视觉干扰
+            });
+
+            // 显示加载状态
             articleContainer.innerHTML = `
                 <div class="article-loading">
                     <div class="loading-content">
@@ -425,8 +467,10 @@ class ArticleManager {
             `;
 
             const articleData = await this.loadAndDisplayArticle(pageId);
+            // 检查是否因切换文章而取消加载
             if (!articleData) {
-                throw new Error('无法加载文章数据');
+                console.log('文章加载已取消');
+                return;
             }
             
             // 提取文章标题
@@ -448,42 +492,51 @@ class ArticleManager {
                 ${this.hasMore ? '<div class="load-more-container"><div class="loading-spinner"></div></div>' : ''}
             `;
 
-            // 处理文章中的图片
-            console.log('🖼️ 处理文章中的图片...');
+            // 处理文章中的图片和其他内容
             const articleBody = articleContainer.querySelector('.article-body');
             if (articleBody) {
+                console.log('🖼️ 处理文章中的图片...');
                 imageLazyLoader.processImages(articleBody);
-                // 初始化表格和代码块的懒加载
                 initializeLazyLoading(articleBody);
             }
-            
-            // 添加滚动监听
-            this.scrollHandler = this.throttle(() => {
-                if (this.isLoading || !this.hasMore) return;
 
-                const loadMoreContainer = document.querySelector('.load-more-container');
-                if (!loadMoreContainer) return;
-
-                const containerRect = loadMoreContainer.getBoundingClientRect();
-                const isNearBottom = containerRect.top <= window.innerHeight + 100;
-
-                if (isNearBottom) {
-                    console.log('触发加载更多内容...');
-                    this.loadMoreContent();
+            // 处理加载更多功能
+            if (!this.hasMore) {
+                console.log('没有更多内容，移除加载指示器');
+                const loadMoreContainer = articleContainer.querySelector('.load-more-container');
+                if (loadMoreContainer) {
+                    loadMoreContainer.remove();
                 }
-            }, 200);
+            } else {
+                console.log('设置滚动监听以加载更多内容');
+                this.scrollHandler = this.throttle(() => {
+                    if (this.isLoading || !this.hasMore) {
+                        console.log('跳过加载：', this.isLoading ? '正在加载中' : '没有更多内容');
+                        return;
+                    }
 
-            window.addEventListener('scroll', this.scrollHandler);
-            
-            // 如果有代码高亮需求，可以在这里调用Prism
+                    const loadMoreContainer = document.querySelector('.load-more-container');
+                    if (!loadMoreContainer) return;
+
+                    const containerRect = loadMoreContainer.getBoundingClientRect();
+                    const isNearBottom = containerRect.top <= window.innerHeight + 100;
+
+                    if (isNearBottom) {
+                        console.log('触发加载更多内容...');
+                        this.loadMoreContent();
+                    }
+                }, 200);
+
+                window.addEventListener('scroll', this.scrollHandler);
+            }
+
+            // 代码高亮
             if (window.Prism) {
                 try {
                     Prism.highlightAll();
                 } catch (error) {
                     console.warn('代码高亮失败:', error);
                 }
-            } else {
-                console.warn('Prism.js未加载，代码块将不会高亮显示');
             }
 
             console.log('✅ 文章加载完成');
@@ -497,7 +550,7 @@ class ArticleManager {
                         <div class="error-icon">❌</div>
                         <div class="error-message">加载文章失败</div>
                         <div class="error-details">${error.message}</div>
-                        <button class="retry-button" onclick="showArticle('${pageId}')">重新加载</button>
+                        <button class="retry-button" onclick="articleManager.showArticle('${pageId}')">重新加载</button>
                     </div>
                 `;
             }
@@ -879,6 +932,20 @@ class ArticleManager {
     // 获取分类颜色
     getCategoryColors() {
         return categoryConfig.colors;
+    }
+
+    // 更新选中状态
+    updateActiveArticle(pageId) {
+        // 移除所有文章的选中状态
+        document.querySelectorAll('.article-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        
+        // 添加新的选中状态
+        const activeArticle = document.querySelector(`.article-item[data-article-id="${pageId}"]`);
+        if (activeArticle) {
+            activeArticle.classList.add('active');
+        }
     }
 }
 

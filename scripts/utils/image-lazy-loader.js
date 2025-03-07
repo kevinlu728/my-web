@@ -395,6 +395,10 @@ class ImageLazyLoader {
                     console.log(`⚠️ 图片加载失败，正在进行第 ${retryCount + 1} 次重试:`, originalSrc);
                     
                     setTimeout(() => {
+                        // 清除所有已存在的错误提示
+                        const existingErrors = wrapper.querySelectorAll('.error-message');
+                        existingErrors.forEach(error => error.remove());
+                        
                         img.src = originalSrc + '?retry=' + Date.now();
                     }, 1000 * Math.pow(2, retryCount));
                     
@@ -403,9 +407,8 @@ class ImageLazyLoader {
                     if (loader.parentNode === wrapper) {
                         loader.remove();
                     }
-                    const errorElement = this.createErrorElement();
-                    wrapper.appendChild(errorElement);
-                    img.style.display = 'none';
+                    // 使用统一的错误处理方法
+                    this.handleImageError(img);
                 }
             });
         });
@@ -505,12 +508,13 @@ class ImageLazyLoader {
 
     // 处理图片加载失败
     handleImageError(imgElement) {
-        // 检查是否已经有错误提示
-        const existingError = imgElement.parentElement.querySelector('.error-message');
-        if (existingError) {
-            return; // 如果已经有错误提示，则不再创建新的
-        }
-
+        const wrapper = imgElement.parentElement;
+        
+        // 先清除所有已存在的错误提示
+        const existingErrors = wrapper.querySelectorAll('.error-message');
+        existingErrors.forEach(error => error.remove());
+        
+        // 创建新的错误提示
         const errorContainer = document.createElement('div');
         errorContainer.className = 'error-message';
         errorContainer.innerHTML = `
@@ -522,8 +526,8 @@ class ImageLazyLoader {
         imgElement.style.display = 'none';
         
         // 在图片后面插入错误提示
-        imgElement.parentElement.appendChild(errorContainer);
-
+        wrapper.appendChild(errorContainer);
+    
         // 点击重试
         errorContainer.onclick = () => {
             // 移除错误提示
@@ -531,7 +535,7 @@ class ImageLazyLoader {
             // 显示图片
             imgElement.style.display = '';
             // 重新加载图片
-            imgElement.src = imgElement.dataset.src;
+            imgElement.src = imgElement.dataset.src || imgElement.getAttribute('data-original-src');
         };
     }
 }

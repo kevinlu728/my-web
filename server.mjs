@@ -467,8 +467,24 @@ const healthCheckInterval = setInterval(checkHealth, config.notion.healthCheck.i
 
 const app = express();
 
-// 添加静态文件服务
-app.use(express.static(__dirname));
+// 修改为：
+app.use(express.static(__dirname, {
+    setHeaders: (res, path) => {
+        if (path.endsWith('.css')) {
+            res.setHeader('Content-Type', 'text/css');
+        }
+    }
+}));
+
+// 特别为 styles 目录添加静态文件服务
+app.use('/styles', express.static(path.join(__dirname, 'styles'), {
+    setHeaders: (res, path) => {
+        if (path.endsWith('.css')) {
+            res.setHeader('Content-Type', 'text/css');
+        }
+    }
+}));
+
 app.use(express.json());
 
 // 添加中间件来记录API请求

@@ -1,10 +1,11 @@
- // 分类配置
+// 分类配置
 export const categoryConfig = {
     // 分类名称映射
     nameMap: {
-        'Test': '测试',
-        'Compter Basis': '计算机基础',
         'all': '全部文章',
+        'Test': '测试',
+        'Computer Basis': '计算机基础',
+        'Data Structure and Algorithm': '数据结构和算法',
         '未分类': '未分类'
     },
     
@@ -15,15 +16,20 @@ export const categoryConfig = {
             color: '#666666',
             hoverBg: '#E8E8E8'
         },
-        'Compter Basis': {
+        'Computer Basis': {
             bg: '#EBF5FB',
             color: '#2E86C1',
             hoverBg: '#D6EAF8'
         },
+        'Data Structure and Algorithm': {
+            bg: '#e8f5e9',      // 柔和的浅绿色背景
+            color: '#2e7d32',   // 深绿色文字
+            hoverBg: '#c8e6c9'  // 悬停时的背景色
+        },
         'default': {
-            bg: '#F8F9FA',
-            color: '#7F8C8D',
-            hoverBg: '#EBEDEF'
+            bg: '#f8f9fa',
+            color: '#718096',
+            hoverBg: '#e2e8f0'
         }
     }
 };

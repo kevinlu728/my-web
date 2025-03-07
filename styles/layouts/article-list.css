@@ -85,10 +85,35 @@
     border-color: #63b3ed;
 }
 
+/* 选中状态样式 */
+.article-item.active a {
+    background: #ebf8ff;
+    border-color: #4299e1;
+    box-shadow: 0 2px 4px rgba(66, 153, 225, 0.1);
+    position: relative;
+}
+
+.article-item.active a::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: #4299e1;
+    border-radius: 4px 0 0 4px;
+}
+
 .article-title-text {
     font-weight: 500;
     color: #4a5568;
     font-size: 1rem;
+}
+
+/* 选中状态的文字样式 */
+.article-item.active .article-title-text {
+    color: #2b6cb0;
+    font-weight: 600;
 }
 
 .article-date {
@@ -156,6 +181,28 @@
     background-color: rgba(99, 179, 237, 0.2);
     padding: 0.1em 0.2em;
     border-radius: 2px;
+}
+
+/* 错误状态提示 */
+.error {
+    padding: 1rem;
+    color: #e53e3e;
+    text-align: center;
+    font-size: 0.9rem;
+    background: #fff5f5;
+    border-radius: 8px;
+    border: 1px solid #feb2b2;
+}
+
+/* 无结果提示 */
+.no-results {
+    padding: 1rem;
+    color: #718096;
+    text-align: center;
+    font-size: 0.9rem;
+    background: #f7fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
 }
 
 /* 响应式调整 */

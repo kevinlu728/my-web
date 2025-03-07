@@ -181,7 +181,61 @@ function renderImage(block) {
     return `<img src="${url}" alt="图片" style="max-width: 100%;">`;
 }
 
-// 渲染富文本
+// 渲染公式块
+function renderEquation(block) {
+    if (!block.equation) {
+        return '<div class="equation-placeholder">公式</div>';
+    }
+
+    const formula = block.equation.expression;
+    try {
+        // 使用KaTeX直接渲染公式
+        if (window.katex) {
+            return `
+                <div class="equation-block">
+                    ${window.katex.renderToString(formula, {
+                        displayMode: true,
+                        throwOnError: false,
+                        strict: false
+                    })}
+                </div>
+            `;
+        } else {
+            // 如果KaTeX还未加载，先保存原始公式等待后续渲染
+            return `
+                <div class="equation-block" data-formula="${escapeAttribute(formula)}">
+                    <div class="katex-display">${formula}</div>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('公式渲染错误:', error);
+        return `<div class="equation-error">公式渲染错误: ${formula}</div>`;
+    }
+}
+
+// 处理行内公式
+function processInlineEquations(text) {
+    // 匹配行内公式 $formula$，但排除 $$ 的情况
+    return text.replace(/(?<!\$)\$(?!\$)([^\$]+)\$(?!\$)/g, (match, formula) => {
+        try {
+            if (window.katex) {
+                return window.katex.renderToString(formula, {
+                    displayMode: false,
+                    throwOnError: false,
+                    strict: false
+                });
+            } else {
+                return `<span class="katex-inline" data-formula="${escapeAttribute(formula)}">${formula}</span>`;
+            }
+        } catch (error) {
+            console.error('行内公式渲染错误:', error);
+            return match;
+        }
+    });
+}
+
+// 更新富文本渲染函数以支持行内公式
 function renderRichText(richText) {
     if (!richText || !richText.plain_text) {
         return '';
@@ -189,13 +243,18 @@ function renderRichText(richText) {
     
     let text = richText.plain_text;
     
-    // 转义 HTML 特殊字符
-    text = text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+    // 处理行内公式
+    if (text.includes('$')) {
+        text = processInlineEquations(text);
+    } else {
+        // 转义 HTML 特殊字符
+        text = text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
     
     // 应用文本样式
     if (richText.annotations) {
@@ -298,11 +357,13 @@ function renderTableBlock(block) {
     return tableHtml;
 }
 
-// 修改渲染函数以使用新的懒加载模块
+// 更新渲染块函数以支持公式
 function renderBlock(block) {
     console.log('渲染块类型:', block.type, block);
 
     switch (block.type) {
+        case 'equation':
+            return renderEquation(block);
         case 'table':
             return tableLazyLoader.createPlaceholder(block.id);
         case 'code':
@@ -331,7 +392,7 @@ function renderBlock(block) {
     }
 }
 
-// 在渲染完成后初始化懒加载观察
+// 更新初始化懒加载函数以包含公式渲染
 export function initializeLazyLoading(container) {
     // 查找并观察所有懒加载块
     const tablePlaceholders = container.querySelectorAll('.table-block[data-block-id]');
@@ -344,4 +405,39 @@ export function initializeLazyLoading(container) {
     codePlaceholders.forEach(element => {
         codeLazyLoader.observe(element);
     });
+
+    // 等待KaTeX加载完成后渲染公式
+    if (window.katex && window.renderMathInElement) {
+        try {
+            window.renderMathInElement(container, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false}
+                ],
+                throwOnError: false,
+                strict: false,
+                trust: true,
+                macros: {
+                    "\\log": "\\log",
+                    "\\exp": "\\exp",
+                    "\\sqrt": "\\sqrt",
+                    "\\sum": "\\sum",
+                    "\\prod": "\\prod"
+                }
+            });
+        } catch (error) {
+            console.error('公式渲染失败:', error);
+        }
+    } else {
+        // 如果KaTeX还未加载，等待加载完成后再渲染
+        const checkKaTeX = setInterval(() => {
+            if (window.katex && window.renderMathInElement) {
+                clearInterval(checkKaTeX);
+                initializeLazyLoading(container);
+            }
+        }, 100);
+        
+        // 设置超时，避免无限等待
+        setTimeout(() => clearInterval(checkKaTeX), 5000);
+    }
 } 
