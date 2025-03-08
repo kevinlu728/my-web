@@ -30,6 +30,9 @@
       },
       {
         "src": "/(.*)",
+        "headers": {
+          "x-content-type-options": "nosniff"
+        },
         "dest": "/$1"
       }
     ]
