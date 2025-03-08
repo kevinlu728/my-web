@@ -8,7 +8,7 @@
     ],
     "routes": [
       {
-        "src": "/scripts/config/config\\.(development|production)\\.js",
+        "src": "/scripts/config/config\\.production\\.js",
         "dest": "/scripts/config/config.production.js",
         "headers": {
           "cache-control": "no-cache, no-store, must-revalidate"

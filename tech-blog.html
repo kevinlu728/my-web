@@ -109,31 +109,30 @@
     
     <!-- 使用 type="module" 确保模块正确加载 -->
     <script type="module">
-        // 根据环境加载配置
-        const configPath = '/scripts/config/config.production.js';
-        
-        // 先加载配置
-        import(configPath).then(({ config }) => {
-            // 再加载其他模块
-            import('./scripts/utils/image-lazy-loader.js').then(({ imageLazyLoader }) => {
+        // 使用相对路径
+        import { config } from '/scripts/config/config.production.js';
+        import { imageLazyLoader } from '/scripts/utils/image-lazy-loader.js';
+        import { articleManager } from '/scripts/managers/articleManager.js';
+
+        // 等待 DOM 加载完成
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                // 初始化图片懒加载
                 if (config.imageLazyLoader.enabled) {
                     imageLazyLoader.init(config.imageLazyLoader);
                 }
-            });
 
-            import('./scripts/managers/articleManager.js').then(({ articleManager }) => {
+                // 初始化文章管理器
                 if (config.articleManager.enabled) {
                     articleManager.init(config.articleManager);
                 }
-            });
-        }).catch(error => {
-            console.error('配置加载失败:', error);
+            } catch (error) {
+                console.error('初始化失败:', error);
+            }
         });
     </script>
     
-    <!-- 加载主要逻辑 -->
-    <script type="module" src="scripts/utils/image-lazy-loader.js"></script>
-    <script type="module" src="scripts/pages/tech-blog.js"></script>
-    <script type="module" src="scripts/utils/init-lazy-loading.js"></script>
+    <!-- 移除重复的模块加载 -->
+    <script type="module" src="/scripts/pages/tech-blog.js"></script>
 </body>
 </html> 
