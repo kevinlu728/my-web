@@ -8,6 +8,14 @@
     ],
     "routes": [
       {
+        "src": "/scripts/(.*)",
+        "dest": "/scripts/$1"
+      },
+      {
+        "src": "/styles/(.*)",
+        "dest": "/styles/$1"
+      },
+      {
         "handle": "filesystem"
       },
       {
