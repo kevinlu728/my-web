@@ -8,11 +8,21 @@
     ],
     "routes": [
       {
+        "src": "/scripts/config/config\\.development\\.js",
+        "dest": "/scripts/config/config.development.js",
+        "headers": {
+          "cache-control": "no-cache, no-store, must-revalidate"
+        }
+      },
+      {
         "src": "/scripts/(.*)",
         "dest": "/scripts/$1"
       },
       {
         "src": "/styles/(.*)",
+        "headers": {
+          "cache-control": "public, max-age=31536000, immutable"
+        },
         "dest": "/styles/$1"
       },
       {
@@ -21,6 +31,21 @@
       {
         "src": "/(.*)",
         "dest": "/$1"
+      }
+    ],
+    "headers": [
+      {
+        "source": "/(.*)",
+        "headers": [
+          {
+            "key": "X-Content-Type-Options",
+            "value": "nosniff"
+          },
+          {
+            "key": "X-Frame-Options",
+            "value": "DENY"
+          }
+        ]
       }
     ]
   }
