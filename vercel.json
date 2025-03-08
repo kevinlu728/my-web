@@ -11,19 +11,21 @@
         "src": "/scripts/config/config\\.production\\.js",
         "dest": "/scripts/config/config.production.js",
         "headers": {
+          "content-type": "application/javascript",
           "cache-control": "no-cache, no-store, must-revalidate"
+        }
+      },
+      {
+        "src": "/scripts/(utils|managers|pages)/(.*)\\.js",
+        "dest": "/scripts/$1/$2.js",
+        "headers": {
+          "content-type": "application/javascript",
+          "cache-control": "no-cache"
         }
       },
       {
         "src": "/scripts/utils/(.*)",
         "dest": "/scripts/utils/$1",
-        "headers": {
-          "cache-control": "public, max-age=3600"
-        }
-      },
-      {
-        "src": "/scripts/managers/(.*)",
-        "dest": "/scripts/managers/$1",
         "headers": {
           "cache-control": "public, max-age=3600"
         }

@@ -109,30 +109,39 @@
     
     <!-- 使用 type="module" 确保模块正确加载 -->
     <script type="module">
-        // 使用相对路径
-        import { config } from '/scripts/config/config.production.js';
-        import { imageLazyLoader } from '/scripts/utils/image-lazy-loader.js';
-        import { articleManager } from '/scripts/managers/articleManager.js';
-
-        // 等待 DOM 加载完成
-        document.addEventListener('DOMContentLoaded', () => {
+        // 定义一个异步初始化函数
+        async function initializeApp() {
             try {
+                // 导入所需模块
+                const { config } = await import('/scripts/config/config.production.js');
+                const { imageLazyLoader } = await import('/scripts/utils/image-lazy-loader.js');
+                const { articleManager } = await import('/scripts/managers/articleManager.js');
+
+                console.log('配置加载成功:', config);
+                console.log('模块加载成功:', { imageLazyLoader, articleManager });
+
                 // 初始化图片懒加载
-                if (config.imageLazyLoader.enabled) {
-                    imageLazyLoader.init(config.imageLazyLoader);
+                if (config.imageLazyLoader?.enabled) {
+                    console.log('初始化图片懒加载...');
+                    await imageLazyLoader.init(config.imageLazyLoader);
                 }
 
                 // 初始化文章管理器
-                if (config.articleManager.enabled) {
-                    articleManager.init(config.articleManager);
+                if (config.articleManager?.enabled) {
+                    console.log('初始化文章管理器...');
+                    await articleManager.init(config.articleManager);
                 }
             } catch (error) {
-                console.error('初始化失败:', error);
+                console.error('应用初始化失败:', error);
             }
-        });
+        }
+
+        // 当 DOM 加载完成后执行初始化
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeApp);
+        } else {
+            initializeApp();
+        }
     </script>
-    
-    <!-- 移除重复的模块加载 -->
-    <script type="module" src="/scripts/pages/tech-blog.js"></script>
 </body>
 </html> 

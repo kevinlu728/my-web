@@ -947,6 +947,22 @@ class ArticleManager {
             activeArticle.classList.add('active');
         }
     }
+
+    async init(config) {
+        try {
+            console.log('文章管理器初始化中...', config);
+            // 这里添加文章管理器的初始化逻辑
+            await this.loadArticles(config.notionDatabaseId);
+        } catch (error) {
+            console.error('文章管理器初始化失败:', error);
+        }
+    }
+
+    async loadArticles(databaseId) {
+        // 文章加载逻辑
+        console.log('加载文章列表...');
+        // ... 其他代码
+    }
 }
 
 export const articleManager = new ArticleManager(); 
