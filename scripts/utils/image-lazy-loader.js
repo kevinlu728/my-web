@@ -538,33 +538,9 @@ class ImageLazyLoader {
             imgElement.src = imgElement.dataset.src || imgElement.getAttribute('data-original-src');
         };
     }
-
-    // 添加 init 方法
-    init(config) {
-        console.log('初始化图片懒加载...', config);
-        // 更新配置
-        if (config) {
-            if (config.threshold) {
-                this.threshold = config.threshold;
-            }
-            if (config.rootMargin) {
-                this.rootMargin = config.rootMargin;
-            }
-        }
-        
-        // 重新初始化 IntersectionObserver
-        if (this.hasIntersectionObserver) {
-            this.observer = new IntersectionObserver(this.onIntersection.bind(this), {
-                rootMargin: this.rootMargin || '50px',
-                threshold: this.threshold || 0.01
-            });
-        }
-        
-        return this;
-    }
 }
 
-// 导出单个实例
+// 导出实例
 export const imageLazyLoader = new ImageLazyLoader();
 
 // 默认导出类

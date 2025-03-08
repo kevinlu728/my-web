@@ -1,19 +1,12 @@
 // 生产环境配置
-export const config = {
+export default {
     notion: {
-        databaseId: '1a932af826e680df8bf7f320b51930b9'  // 直接使用固定值
+        // 生产环境的值应该在部署时由构建工具注入
+        apiKey: 'PRODUCTION_API_KEY',
+        databaseId: 'PRODUCTION_DATABASE_ID'
     },
     debug: {
         enabled: false,
-        defaultDatabaseId: '1a932af826e680df8bf7f320b51930b9'
-    },
-    imageLazyLoader: {
-        enabled: true,
-        threshold: 0.01,
-        rootMargin: '50px'
-    },
-    articleManager: {
-        enabled: true,
-        notionDatabaseId: '1a932af826e680df8bf7f320b51930b9'  // 直接使用固定值
+        defaultDatabaseId: ''
     }
 }; 

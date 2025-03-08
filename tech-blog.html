@@ -104,62 +104,29 @@
         </div>
     </main>
 
+    <!-- 先加载依赖 -->
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    
     <!-- 使用 type="module" 确保模块正确加载 -->
     <script type="module">
-        // 定义一个异步初始化函数
-        async function initializeApp() {
-            try {
-                console.log('开始初始化应用...');
-                
-                // 导入所需模块
-                const { config } = await import('/scripts/config/config.production.js');
-                console.log('配置加载成功:', config);
-                
-                const { imageLazyLoader } = await import('/scripts/utils/image-lazy-loader.js');
-                console.log('图片懒加载模块加载成功');
-                
-                const { articleManager } = await import('/scripts/managers/articleManager.js');
-                console.log('文章管理器加载成功');
-
-                // 初始化图片懒加载
-                if (config.imageLazyLoader?.enabled) {
-                    try {
-                        console.log('初始化图片懒加载...');
-                        imageLazyLoader.init(config.imageLazyLoader);
-                        console.log('图片懒加载初始化成功');
-                    } catch (error) {
-                        console.error('图片懒加载初始化失败:', error);
-                    }
-                }
-
-                // 初始化文章管理器
-                if (config.articleManager?.enabled) {
-                    try {
-                        console.log('初始化文章管理器...');
-                        await articleManager.init(config.articleManager);
-                        console.log('文章管理器初始化成功');
-                    } catch (error) {
-                        console.error('文章管理器初始化失败:', error);
-                    }
-                }
-            } catch (error) {
-                console.error('应用初始化失败:', error);
-                document.getElementById('article-container').innerHTML = `
-                    <div class="error-message">
-                        <h3>初始化失败</h3>
-                        <p>${error.message}</p>
-                        <button onclick="location.reload()">重试</button>
-                    </div>
-                `;
-            }
-        }
-
-        // 当 DOM 加载完成后执行初始化
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeApp);
-        } else {
-            initializeApp();
-        }
+        import { imageLazyLoader } from './scripts/utils/image-lazy-loader.js';
+        import { articleManager } from './scripts/managers/articleManager.js';
+        
+        // 将模块导出到全局作用域，方便调试
+        window.imageLazyLoader = imageLazyLoader;
+        window.articleManager = articleManager;
+        
+        // 页面加载完成后检查模块状态
+        window.addEventListener('load', () => {
+            console.log('🔍 检查模块加载状态：');
+            console.log('- imageLazyLoader:', !!window.imageLazyLoader);
+            console.log('- articleManager:', !!window.articleManager);
+        });
     </script>
+    
+    <!-- 加载主要逻辑 -->
+    <script type="module" src="scripts/utils/image-lazy-loader.js"></script>
+    <script type="module" src="scripts/pages/tech-blog.js"></script>
+    <script type="module" src="scripts/utils/init-lazy-loading.js"></script>
 </body>
 </html> 
