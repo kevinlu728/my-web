@@ -109,18 +109,25 @@
     
     <!-- 使用 type="module" 确保模块正确加载 -->
     <script type="module">
-        import { imageLazyLoader } from './scripts/utils/image-lazy-loader.js';
-        import { articleManager } from './scripts/managers/articleManager.js';
+        // 根据环境加载配置
+        const configPath = '/scripts/config/config.production.js';
         
-        // 将模块导出到全局作用域，方便调试
-        window.imageLazyLoader = imageLazyLoader;
-        window.articleManager = articleManager;
-        
-        // 页面加载完成后检查模块状态
-        window.addEventListener('load', () => {
-            console.log('🔍 检查模块加载状态：');
-            console.log('- imageLazyLoader:', !!window.imageLazyLoader);
-            console.log('- articleManager:', !!window.articleManager);
+        // 先加载配置
+        import(configPath).then(({ config }) => {
+            // 再加载其他模块
+            import('./scripts/utils/image-lazy-loader.js').then(({ imageLazyLoader }) => {
+                if (config.imageLazyLoader.enabled) {
+                    imageLazyLoader.init(config.imageLazyLoader);
+                }
+            });
+
+            import('./scripts/managers/articleManager.js').then(({ articleManager }) => {
+                if (config.articleManager.enabled) {
+                    articleManager.init(config.articleManager);
+                }
+            });
+        }).catch(error => {
+            console.error('配置加载失败:', error);
         });
     </script>
     

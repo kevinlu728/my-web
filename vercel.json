@@ -8,15 +8,25 @@
     ],
     "routes": [
       {
-        "src": "/scripts/config/config\\.development\\.js",
-        "dest": "/scripts/config/config.development.js",
+        "src": "/scripts/config/config\\.(development|production)\\.js",
+        "dest": "/scripts/config/config.production.js",
         "headers": {
           "cache-control": "no-cache, no-store, must-revalidate"
         }
       },
       {
-        "src": "/scripts/(.*)",
-        "dest": "/scripts/$1"
+        "src": "/scripts/utils/(.*)",
+        "dest": "/scripts/utils/$1",
+        "headers": {
+          "cache-control": "public, max-age=3600"
+        }
+      },
+      {
+        "src": "/scripts/managers/(.*)",
+        "dest": "/scripts/managers/$1",
+        "headers": {
+          "cache-control": "public, max-age=3600"
+        }
       },
       {
         "src": "/styles/(.*)",
@@ -27,6 +37,13 @@
       },
       {
         "handle": "filesystem"
+      },
+      {
+        "src": "/(.*)\\.js",
+        "headers": {
+          "cache-control": "public, max-age=3600"
+        },
+        "dest": "/$1.js"
       },
       {
         "src": "/(.*)",
