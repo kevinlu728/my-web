@@ -23,8 +23,8 @@
         }
       },
       {
-        "src": "/scripts/(.*)",
-        "dest": "/scripts/$1"
+        "src": "/scripts/core/(.*)\\.js",
+        "dest": "/scripts/core/$1.js"
       },
       {
         "src": "/styles/(.*)",
@@ -37,14 +37,18 @@
         "handle": "filesystem"
       },
       {
+        "src": "/(.*)\\.html",
+        "dest": "/$1.html"
+      },
+      {
         "src": "/(.*)",
+        "dest": "/$1",
         "headers": {
           "x-content-type-options": "nosniff",
           "x-frame-options": "DENY",
           "x-xss-protection": "1; mode=block",
           "referrer-policy": "strict-origin-when-cross-origin"
-        },
-        "dest": "/$1"
+        }
       }
     ]
   }
