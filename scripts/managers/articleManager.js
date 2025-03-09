@@ -209,8 +209,8 @@ class ArticleManager {
                 }
             } catch (testError) {
                 console.error('API 测试异常:', testError);
-                console.log('将使用静态数据作为备用方案');
-                useStaticData = true;
+                console.log('将尝试直接调用Notion API');
+                // 不强制使用静态数据，尝试直接调用API
             }
             
             let articles = [];
@@ -234,7 +234,7 @@ class ArticleManager {
                     articles = [];
                 }
             } else {
-                console.log('正在从 API 获取文章列表...');
+                console.log('正在从 Notion API 获取文章列表...');
                 try {
                     const apiData = await getArticles(this.currentDatabaseId);
                     if (apiData && apiData.results && Array.isArray(apiData.results)) {
@@ -245,22 +245,10 @@ class ArticleManager {
                         throw new Error('API数据格式不正确');
                     }
                 } catch (apiError) {
-                    console.error('从API获取文章失败，尝试使用静态数据:', apiError);
-                    try {
-                        const staticData = await getStaticArticles();
-                        if (staticData && staticData.results && Array.isArray(staticData.results)) {
-                            articles = staticData.results;
-                            console.log(`成功获取 ${articles.length} 篇静态文章（备用方案）`);
-                        } else {
-                            console.error('静态数据格式不正确:', staticData);
-                            throw new Error('静态数据格式不正确');
-                        }
-                    } catch (staticError) {
-                        console.error('获取静态文章也失败:', staticError);
-                        showError(`获取文章列表失败: ${apiError.message}`);
-                        // 不抛出异常，使用空数组继续
-                        articles = [];
-                    }
+                    console.error('从API获取文章失败:', apiError);
+                    showError(`获取文章列表失败: ${apiError.message}`);
+                    // 不使用静态数据作为备用，直接返回错误
+                    throw apiError;
                 }
             }
             
@@ -290,8 +278,7 @@ class ArticleManager {
             // 显示错误状态
             showError(`加载文章列表失败: ${error.message}`);
             
-            // 返回空数组而不是抛出异常
-            return [];
+            throw error;
         } finally {
             // 清除 AbortController
             this.abortController = null;

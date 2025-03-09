@@ -69,7 +69,7 @@ export async function getArticles(databaseId) {
       const articles = [];
       
       for (const page of data.results) {
-        console.log('Processing page: ', page);
+        console.log('Processing page: ', page.id);
         
         // 确保页面有 ID
         if (!page.id) {
@@ -155,7 +155,6 @@ export async function getArticles(databaseId) {
       });
       
       console.log(`Processed ${articles.length} articles`);
-      console.log('Articles: ', articles);
       
       return articles;
     } catch (fetchError) {
