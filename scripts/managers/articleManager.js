@@ -24,7 +24,13 @@
  */
 
 import { showStatus, showLoading, showError } from '../utils/utils.js';
-import { getArticles, getArticleContent, testApiConnection } from '../services/notionService.js';
+import { 
+    getArticles, 
+    getArticleContent, 
+    testApiConnection, 
+    getStaticArticles, 
+    getStaticArticleContent 
+} from '../services/notionService.js';
 import { categoryManager } from './categoryManager.js';
 import { renderNotionBlocks, initializeLazyLoading } from '../components/articleRenderer.js';
 import { imageLazyLoader } from '../utils/image-lazy-loader.js';
@@ -183,6 +189,7 @@ class ArticleManager {
             console.log(`开始加载文章，数据库ID: ${this.currentDatabaseId}`);
             
             // 测试 API 连接
+            let useStaticData = false;
             try {
                 console.log('测试 API 连接...');
                 const testData = await testApiConnection();
@@ -193,28 +200,57 @@ class ArticleManager {
                     console.log('环境信息:', testData.env);
                     if (!testData.env.NOTION_API_KEY_EXISTS) {
                         console.warn('警告: Notion API 密钥未设置');
+                        useStaticData = true;
                     }
                     if (!testData.env.NOTION_DATABASE_ID_EXISTS) {
                         console.warn('警告: Notion 数据库 ID 未设置');
+                        useStaticData = true;
                     }
                 }
             } catch (testError) {
                 console.error('API 测试异常:', testError);
-                showError(`API 测试失败: ${testError.message}`);
-                throw testError;
+                console.log('将使用静态数据作为备用方案');
+                useStaticData = true;
             }
             
+            let articles;
+            
             // 获取文章列表
-            console.log('正在从 API 获取文章列表...');
-            const articles = await getArticles(this.currentDatabaseId);
+            if (useStaticData) {
+                console.log('正在获取静态文章列表...');
+                try {
+                    const staticData = await getStaticArticles();
+                    articles = staticData.results;
+                    console.log(`成功获取 ${articles.length} 篇静态文章`);
+                } catch (staticError) {
+                    console.error('获取静态文章失败:', staticError);
+                    showError(`获取静态文章失败: ${staticError.message}`);
+                    throw staticError;
+                }
+            } else {
+                console.log('正在从 API 获取文章列表...');
+                try {
+                    articles = await getArticles(this.currentDatabaseId);
+                    console.log(`成功获取 ${articles.length} 篇文章`);
+                } catch (apiError) {
+                    console.error('从API获取文章失败，尝试使用静态数据:', apiError);
+                    try {
+                        const staticData = await getStaticArticles();
+                        articles = staticData.results;
+                        console.log(`成功获取 ${articles.length} 篇静态文章（备用方案）`);
+                    } catch (staticError) {
+                        console.error('获取静态文章也失败:', staticError);
+                        showError(`获取文章列表失败: ${apiError.message}`);
+                        throw apiError;
+                    }
+                }
+            }
             
             // 如果请求已取消，不继续处理
             if (signal.aborted) {
                 console.log('文章列表加载已取消');
                 return;
             }
-            
-            console.log(`成功获取 ${articles.length} 篇文章`);
             
             // 保存文章列表
             this.articles = articles;
@@ -428,80 +464,94 @@ class ArticleManager {
     // 加载和显示文章内容
     async loadAndDisplayArticle(pageId) {
         try {
-            // 初始化加载状态
-            this.isLoading = true;
-            this.hasMore = false;
-            this.nextCursor = null;
+            // 取消之前的请求
+            this.cancelCurrentLoading();
+            
+            // 如果已经在加载这篇文章，不重复加载
+            if (this.loadingStatus.get(pageId) === 'loading') {
+                console.log(`文章 ${pageId} 正在加载中，不重复加载`);
+                return;
+            }
+            
+            // 标记为正在加载
+            this.loadingStatus.set(pageId, 'loading');
+            this.currentLoadingId = pageId;
             
             // 创建新的 AbortController
             this.abortController = new AbortController();
-            this.currentLoadingId = pageId;
             
-            // 先尝试从缓存获取
-            const cachedData = this.getArticleFromCache(pageId);
-            if (cachedData && cachedData.isComplete) { // 只有完整加载的文章才使用缓存
-                console.log('📦 从缓存加载文章:', pageId);
-                this.isLoading = false;
-                return cachedData;
+            // 显示加载状态
+            showLoading(`正在加载文章...`);
+            
+            console.log(`开始加载文章，ID: ${pageId}`);
+            
+            // 尝试从缓存获取
+            const cachedArticle = this.getArticleFromCache(pageId);
+            if (cachedArticle) {
+                console.log(`从缓存加载文章: ${pageId}`);
+                await this.showArticle(pageId, cachedArticle);
+                this.loadingStatus.set(pageId, 'loaded');
+                return;
             }
-
-            console.log('🌐 从网络加载文章:', pageId);
             
-            let retryCount = 0;
-            const maxRetries = 3;
-            const timeout = 10000;
-            
-            while (retryCount < maxRetries) {
+            // 从API获取文章内容
+            try {
+                const articleData = await getArticleContent(pageId);
+                
+                // 如果请求已取消，不继续处理
+                if (this.abortController && this.abortController.signal.aborted) {
+                    console.log(`文章 ${pageId} 加载已取消`);
+                    this.loadingStatus.set(pageId, 'canceled');
+                    return;
+                }
+                
+                // 缓存文章内容
+                this.setArticleCache(pageId, articleData);
+                
+                // 显示文章
+                await this.showArticle(pageId, articleData);
+                
+                // 标记为已加载
+                this.loadingStatus.set(pageId, 'loaded');
+            } catch (apiError) {
+                console.error(`从API获取文章内容失败，尝试使用静态数据:`, apiError);
+                
                 try {
-                    const timeoutId = setTimeout(() => {
-                        if (this.abortController) {
-                            this.abortController.abort();
-                        }
-                        console.log('请求超时，正在中断...');
-                    }, timeout);
+                    const staticData = await getStaticArticleContent(pageId);
                     
-                    console.log(`正在发起第${retryCount + 1}次请求...`);
-                    
-                    // 使用 notionService 获取文章内容
-                    const articleData = await getArticleContent(pageId);
-                    
-                    clearTimeout(timeoutId);
-                    
-                    if (!articleData) {
-                        throw new Error('获取文章内容失败');
+                    // 如果请求已取消，不继续处理
+                    if (this.abortController && this.abortController.signal.aborted) {
+                        console.log(`文章 ${pageId} 加载已取消`);
+                        this.loadingStatus.set(pageId, 'canceled');
+                        return;
                     }
                     
-                    // 缓存文章内容
-                    this.setArticleCache(pageId, {
-                        ...articleData,
-                        isComplete: true
-                    });
+                    // 显示静态文章
+                    await this.showArticle(pageId, staticData);
                     
-                    this.isLoading = false;
-                    return articleData;
-                } catch (error) {
-                    retryCount++;
-                    console.error(`第${retryCount}次请求失败:`, error);
-                    
-                    if (retryCount >= maxRetries) {
-                        throw error;
-                    }
-                    
-                    // 等待一段时间后重试
-                    await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+                    // 标记为已加载
+                    this.loadingStatus.set(pageId, 'loaded');
+                } catch (staticError) {
+                    console.error('获取静态文章内容也失败:', staticError);
+                    this.loadingStatus.set(pageId, 'error');
+                    showError(`加载文章失败: ${apiError.message}`);
+                    throw apiError;
                 }
             }
         } catch (error) {
-            console.error('加载文章失败:', error);
-            this.isLoading = false;
+            console.error(`Error loading article ${pageId}:`, error);
+            this.loadingStatus.set(pageId, 'error');
+            showError(`加载文章失败: ${error.message}`);
             throw error;
         } finally {
+            // 清除 AbortController
             this.abortController = null;
+            this.currentLoadingId = null;
         }
     }
 
     // 显示文章内容
-    async showArticle(pageId) {
+    async showArticle(pageId, articleData) {
         try {
             console.log('📄 开始加载文章:', pageId);
             const articleContainer = document.getElementById('article-container');
@@ -546,13 +596,6 @@ class ArticleManager {
             `;
 
             try {
-                const articleData = await this.loadAndDisplayArticle(pageId);
-                // 检查是否因切换文章而取消加载
-                if (!articleData) {
-                    console.log('文章加载已取消');
-                    return;
-                }
-                
                 console.log('文章数据:', articleData);
                 
                 // 设置当前页面ID和分页状态

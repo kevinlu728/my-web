@@ -24,6 +24,14 @@
         "dest": "/api/articles.js"
       },
       {
+        "src": "/api/static-articles",
+        "dest": "/api/static-articles.js"
+      },
+      {
+        "src": "/api/static-article-content",
+        "dest": "/api/static-article-content.js"
+      },
+      {
         "src": "/api/article-content/(.*)",
         "dest": "/api/article-content/[id].js?id=$1"
       },

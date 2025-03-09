@@ -308,4 +308,90 @@ export async function getDatabases() {
     console.error('Error fetching databases:', error);
     throw error;
   }
+}
+
+// 获取静态文章列表（备用方案）
+export async function getStaticArticles() {
+  try {
+    console.log('Fetching static articles');
+    const apiUrl = `${config.api?.baseUrl || '/api'}/static-articles`;
+    console.log(`Static articles API URL: ${apiUrl}`);
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
+    
+    try {
+      const response = await fetch(apiUrl, {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      console.log(`Static API Response status: ${response.status} ${response.statusText}`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Static API request failed: ${response.status} ${response.statusText}`, errorText);
+        throw new Error(`Static API request failed with status ${response.status}: ${errorText}`);
+      }
+      
+      const data = await response.json();
+      console.log('Static articles received:', data);
+      
+      return data;
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === 'AbortError') {
+        console.error('Static API request timed out after 30 seconds');
+        throw new Error('Static API request timed out. Please try again later.');
+      }
+      throw fetchError;
+    }
+  } catch (error) {
+    console.error('Error fetching static articles:', error);
+    throw error;
+  }
+}
+
+// 获取静态文章内容（备用方案）
+export async function getStaticArticleContent(pageId) {
+  try {
+    console.log(`Fetching static article content for page: ${pageId}`);
+    const apiUrl = `${config.api?.baseUrl || '/api'}/static-article-content?id=${pageId}`;
+    console.log(`Static content API URL: ${apiUrl}`);
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
+    
+    try {
+      const response = await fetch(apiUrl, {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      console.log(`Static content API Response status: ${response.status} ${response.statusText}`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Static content API request failed: ${response.status} ${response.statusText}`, errorText);
+        throw new Error(`Static content API request failed with status ${response.status}: ${errorText}`);
+      }
+      
+      const data = await response.json();
+      console.log('Static article content received:', data);
+      
+      return data;
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === 'AbortError') {
+        console.error('Static content API request timed out after 30 seconds');
+        throw new Error('Static content API request timed out. Please try again later.');
+      }
+      throw fetchError;
+    }
+  } catch (error) {
+    console.error('Error fetching static article content:', error);
+    throw error;
+  }
 } 
