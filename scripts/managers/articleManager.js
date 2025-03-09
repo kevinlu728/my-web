@@ -213,35 +213,53 @@ class ArticleManager {
                 useStaticData = true;
             }
             
-            let articles;
+            let articles = [];
             
             // 获取文章列表
             if (useStaticData) {
                 console.log('正在获取静态文章列表...');
                 try {
                     const staticData = await getStaticArticles();
-                    articles = staticData.results;
-                    console.log(`成功获取 ${articles.length} 篇静态文章`);
+                    if (staticData && staticData.results && Array.isArray(staticData.results)) {
+                        articles = staticData.results;
+                        console.log(`成功获取 ${articles.length} 篇静态文章`);
+                    } else {
+                        console.error('静态数据格式不正确:', staticData);
+                        throw new Error('静态数据格式不正确');
+                    }
                 } catch (staticError) {
                     console.error('获取静态文章失败:', staticError);
                     showError(`获取静态文章失败: ${staticError.message}`);
-                    throw staticError;
+                    // 不抛出异常，使用空数组继续
+                    articles = [];
                 }
             } else {
                 console.log('正在从 API 获取文章列表...');
                 try {
-                    articles = await getArticles(this.currentDatabaseId);
-                    console.log(`成功获取 ${articles.length} 篇文章`);
+                    const apiData = await getArticles(this.currentDatabaseId);
+                    if (apiData && apiData.results && Array.isArray(apiData.results)) {
+                        articles = apiData.results;
+                        console.log(`成功获取 ${articles.length} 篇文章`);
+                    } else {
+                        console.error('API数据格式不正确:', apiData);
+                        throw new Error('API数据格式不正确');
+                    }
                 } catch (apiError) {
                     console.error('从API获取文章失败，尝试使用静态数据:', apiError);
                     try {
                         const staticData = await getStaticArticles();
-                        articles = staticData.results;
-                        console.log(`成功获取 ${articles.length} 篇静态文章（备用方案）`);
+                        if (staticData && staticData.results && Array.isArray(staticData.results)) {
+                            articles = staticData.results;
+                            console.log(`成功获取 ${articles.length} 篇静态文章（备用方案）`);
+                        } else {
+                            console.error('静态数据格式不正确:', staticData);
+                            throw new Error('静态数据格式不正确');
+                        }
                     } catch (staticError) {
                         console.error('获取静态文章也失败:', staticError);
                         showError(`获取文章列表失败: ${apiError.message}`);
-                        throw apiError;
+                        // 不抛出异常，使用空数组继续
+                        articles = [];
                     }
                 }
             }
@@ -259,10 +277,9 @@ class ArticleManager {
             this.filterAndRenderArticles();
             
             // 显示成功状态
-            showStatus('文章列表加载成功', false, 'success');
-            
-            // 如果没有文章，显示提示
-            if (articles.length === 0) {
+            if (articles.length > 0) {
+                showStatus(`成功获取 ${articles.length} 篇文章`, false, 'success');
+            } else {
                 showStatus('没有找到文章', false, 'info');
             }
             
@@ -273,7 +290,8 @@ class ArticleManager {
             // 显示错误状态
             showError(`加载文章列表失败: ${error.message}`);
             
-            throw error;
+            // 返回空数组而不是抛出异常
+            return [];
         } finally {
             // 清除 AbortController
             this.abortController = null;

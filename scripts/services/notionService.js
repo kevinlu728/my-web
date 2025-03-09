@@ -321,6 +321,7 @@ export async function getStaticArticles() {
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
     
     try {
+      console.log('发送静态文章请求...');
       const response = await fetch(apiUrl, {
         signal: controller.signal
       });
@@ -337,6 +338,13 @@ export async function getStaticArticles() {
       
       const data = await response.json();
       console.log('Static articles received:', data);
+      console.log('Static articles count:', data.results ? data.results.length : 0);
+      
+      // 确保返回的数据结构正确
+      if (!data.results || !Array.isArray(data.results)) {
+        console.error('Invalid static API response format:', data);
+        throw new Error('Invalid static API response format');
+      }
       
       return data;
     } catch (fetchError) {
@@ -349,7 +357,32 @@ export async function getStaticArticles() {
     }
   } catch (error) {
     console.error('Error fetching static articles:', error);
-    throw error;
+    
+    // 返回一个有效的备用数据结构
+    console.log('返回硬编码的备用数据');
+    return {
+      results: [
+        {
+          id: 'fallback-article-1',
+          properties: {
+            Name: {
+              title: [
+                {
+                  plain_text: '欢迎使用云栖思渊博客（备用数据）'
+                }
+              ]
+            },
+            Category: {
+              select: {
+                name: '公告'
+              }
+            }
+          },
+          created_time: new Date().toISOString(),
+          last_edited_time: new Date().toISOString()
+        }
+      ]
+    };
   }
 }
 

@@ -34,12 +34,12 @@ module.exports = async (req, res) => {
     // 初始化Notion客户端
     const notion = new Client({ auth: notionApiKey });
     
-    // 查询数据库
+    // 查询数据库，修改排序属性
     const response = await notion.databases.query({
       database_id: database_id,
       sorts: [
         {
-          property: 'Created time',
+          timestamp: 'created_time',
           direction: 'descending',
         },
       ],
