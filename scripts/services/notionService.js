@@ -29,124 +29,143 @@ export async function getArticles(databaseId) {
     // 发送请求到服务器端 API
     const apiUrl = `${config.api?.baseUrl || '/api'}/articles`;
     console.log(`Full API URL: ${apiUrl}`);
+    console.log(`Notion API Key available: ${Boolean(config.notion?.apiKey)}`);
     
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-notion-api-key': config.notion?.apiKey || ''
-      },
-      body: JSON.stringify({ database_id: databaseId })
-    });
+    // 添加超时和错误处理
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
     
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`API request failed: ${response.status} ${response.statusText}`, errorText);
-      throw new Error(`API request failed with status ${response.status}: ${errorText}`);
-    }
-    
-    const data = await response.json();
-    console.log('API Response: ', data);
-    
-    // 检查数据结构
-    if (!data.results || !Array.isArray(data.results)) {
-      console.error('Invalid API response format:', data);
-      throw new Error('Invalid API response format');
-    }
-    
-    // 处理每个页面，提取所需信息
-    const articles = [];
-    
-    for (const page of data.results) {
-      console.log('Processing page: ', page);
+    try {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-notion-api-key': config.notion?.apiKey || ''
+        },
+        body: JSON.stringify({ database_id: databaseId }),
+        signal: controller.signal
+      });
       
-      // 确保页面有 ID
-      if (!page.id) {
-        console.error('Page missing ID:', page);
-        continue;
+      clearTimeout(timeoutId);
+      
+      console.log(`API Response status: ${response.status} ${response.statusText}`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`API request failed: ${response.status} ${response.statusText}`, errorText);
+        throw new Error(`API request failed with status ${response.status}: ${errorText}`);
       }
       
-      // 提取标题
-      let title = 'Untitled';
+      const data = await response.json();
+      console.log('API Response data structure:', Object.keys(data));
       
-      // 尝试从 properties 中获取标题
-      if (page.properties) {
-        // 尝试从 Name 或 Title 属性中获取标题
-        const titleProperty = page.properties.Name || page.properties.Title;
+      // 检查数据结构
+      if (!data.results || !Array.isArray(data.results)) {
+        console.error('Invalid API response format:', data);
+        throw new Error('Invalid API response format');
+      }
+      
+      // 处理每个页面，提取所需信息
+      const articles = [];
+      
+      for (const page of data.results) {
+        console.log('Processing page: ', page);
         
-        if (titleProperty && titleProperty.title && Array.isArray(titleProperty.title) && titleProperty.title.length > 0) {
-          title = titleProperty.title[0].plain_text || title;
+        // 确保页面有 ID
+        if (!page.id) {
+          console.error('Page missing ID:', page);
+          continue;
         }
-      }
-      
-      // 提取 URL
-      let url = '';
-      if (page.url) {
-        url = page.url;
-      } else if (page.public_url) {
-        url = page.public_url;
-      }
-      
-      // 使用原始 ID，不做任何修改
-      const pageId = page.id;
-      
-      // 提取创建时间
-      const createdTime = page.created_time ? new Date(page.created_time) : new Date();
-      
-      // 提取最后编辑时间
-      const lastEditedTime = page.last_edited_time ? new Date(page.last_edited_time) : new Date();
-      
-      // 提取分类
-      let category = 'Uncategorized';
-      if (page.properties && page.properties.Category) {
-        const categoryProp = page.properties.Category;
         
-        if (categoryProp.select && categoryProp.select.name) {
-          category = categoryProp.select.name;
-        } else if (categoryProp.multi_select && Array.isArray(categoryProp.multi_select) && categoryProp.multi_select.length > 0) {
-          category = categoryProp.multi_select[0].name;
+        // 提取标题
+        let title = 'Untitled';
+        
+        // 尝试从 properties 中获取标题
+        if (page.properties) {
+          // 尝试从 Name 或 Title 属性中获取标题
+          const titleProperty = page.properties.Name || page.properties.Title;
+          
+          if (titleProperty && titleProperty.title && Array.isArray(titleProperty.title) && titleProperty.title.length > 0) {
+            title = titleProperty.title[0].plain_text || title;
+          }
         }
+        
+        // 提取 URL
+        let url = '';
+        if (page.url) {
+          url = page.url;
+        } else if (page.public_url) {
+          url = page.public_url;
+        }
+        
+        // 使用原始 ID，不做任何修改
+        const pageId = page.id;
+        
+        // 提取创建时间
+        const createdTime = page.created_time ? new Date(page.created_time) : new Date();
+        
+        // 提取最后编辑时间
+        const lastEditedTime = page.last_edited_time ? new Date(page.last_edited_time) : new Date();
+        
+        // 提取分类
+        let category = 'Uncategorized';
+        if (page.properties && page.properties.Category) {
+          const categoryProp = page.properties.Category;
+          
+          if (categoryProp.select && categoryProp.select.name) {
+            category = categoryProp.select.name;
+          } else if (categoryProp.multi_select && Array.isArray(categoryProp.multi_select) && categoryProp.multi_select.length > 0) {
+            category = categoryProp.multi_select[0].name;
+          }
+        }
+        
+        // 提取发布时间
+        let publishDate = null;
+        if (page.properties && page.properties['Publish Date'] && page.properties['Publish Date'].date) {
+          publishDate = page.properties['Publish Date'].date.start;
+        }
+        
+        // 构建文章对象
+        const article = {
+          id: pageId,
+          title: title,
+          url: url,
+          created_time: page.created_time,
+          last_edited_time: page.last_edited_time,
+          publish_date: publishDate,
+          category: category,
+          properties: page.properties // 保留原始属性以备后用
+        };
+        
+        articles.push(article);
       }
       
-      // 提取发布时间
-      let publishDate = null;
-      if (page.properties && page.properties['Publish Date'] && page.properties['Publish Date'].date) {
-        publishDate = page.properties['Publish Date'].date.start;
+      // 按发布时间排序，没有发布时间的排在最后
+      articles.sort((a, b) => {
+        // 如果两篇文章都有发布时间，按发布时间降序排序
+        if (a.publish_date && b.publish_date) {
+          return new Date(b.publish_date) - new Date(a.publish_date);
+        }
+        // 如果只有 a 有发布时间，a 排在前面
+        if (a.publish_date) return -1;
+        // 如果只有 b 有发布时间，b 排在前面
+        if (b.publish_date) return 1;
+        // 如果都没有发布时间，按创建时间降序排序
+        return new Date(b.created_time) - new Date(a.created_time);
+      });
+      
+      console.log(`Processed ${articles.length} articles`);
+      console.log('Articles: ', articles);
+      
+      return articles;
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === 'AbortError') {
+        console.error('API request timed out after 30 seconds');
+        throw new Error('API request timed out. Please try again later.');
       }
-      
-      // 构建文章对象
-      const article = {
-        id: pageId,
-        title: title,
-        url: url,
-        created_time: page.created_time,
-        last_edited_time: page.last_edited_time,
-        publish_date: publishDate,
-        category: category,
-        properties: page.properties // 保留原始属性以备后用
-      };
-      
-      articles.push(article);
+      throw fetchError;
     }
-    
-    // 按发布时间排序，没有发布时间的排在最后
-    articles.sort((a, b) => {
-      // 如果两篇文章都有发布时间，按发布时间降序排序
-      if (a.publish_date && b.publish_date) {
-        return new Date(b.publish_date) - new Date(a.publish_date);
-      }
-      // 如果只有 a 有发布时间，a 排在前面
-      if (a.publish_date) return -1;
-      // 如果只有 b 有发布时间，b 排在前面
-      if (b.publish_date) return 1;
-      // 如果都没有发布时间，按创建时间降序排序
-      return new Date(b.created_time) - new Date(a.created_time);
-    });
-    
-    console.log(`Processed ${articles.length} articles`);
-    console.log('Articles: ', articles);
-    
-    return articles;
   } catch (error) {
     console.error('Error fetching articles:', error);
     throw error;

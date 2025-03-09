@@ -1,1 +1,27 @@
-{"dependencies":{"@notionhq/client":"^2.2.16","cors":"^2.8.5","dotenv":"^16.4.7","express":"^4.21.2","katex":"^0.16.21","node-fetch":"^3.3.2","react-katex":"^3.0.1"},"scripts":{"start":"node server/core/server.mjs","dev":"vercel dev","start:old":"node server.mjs","api:old":"node api-server.js","static:old":"node static-server.js"}}
+{
+  "name": "my-web",
+  "version": "1.0.0",
+  "description": "个人网站",
+  "main": "index.js",
+  "dependencies": {
+    "@notionhq/client": "^2.2.16",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "katex": "^0.16.21",
+    "node-fetch": "^3.3.2",
+    "react-katex": "^3.0.1"
+  },
+  "scripts": {
+    "start": "node server/core/server.mjs",
+    "dev": "vercel dev",
+    "start:old": "node server.mjs",
+    "api:old": "node api-server.js",
+    "static:old": "node static-server.js"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "author": "陆凯",
+  "license": "MIT"
+}

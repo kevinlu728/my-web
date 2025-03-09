@@ -6,9 +6,9 @@
  * @updated 2024-03-10
  */
 
-import { Client } from '@notionhq/client';
+const { Client } = require('@notionhq/client');
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   // 获取页面ID
   const { id } = req.query;
   
