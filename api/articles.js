@@ -34,7 +34,7 @@ module.exports = async (req, res) => {
     // 初始化Notion客户端
     const notion = new Client({ auth: notionApiKey });
     
-    // 查询数据库
+    // 查询数据库 - 直接返回原始响应，不做处理
     const response = await notion.databases.query({
       database_id: database_id,
       sorts: [
@@ -47,7 +47,7 @@ module.exports = async (req, res) => {
     
     console.log(`Retrieved ${response.results.length} articles from Notion`);
     
-    // 返回结果
+    // 直接返回Notion API的原始响应
     return res.status(200).json(response);
   } catch (error) {
     console.error('Error in articles API:', error);

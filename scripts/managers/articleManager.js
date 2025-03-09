@@ -236,10 +236,20 @@ class ArticleManager {
             } else {
                 console.log('正在从 Notion API 获取文章列表...');
                 try {
+                    // 获取原始API响应
                     const apiData = await getArticles(this.currentDatabaseId);
+                    
+                    // 验证API响应格式
                     if (apiData && apiData.results && Array.isArray(apiData.results)) {
+                        // 直接使用原始结果
                         articles = apiData.results;
                         console.log(`成功获取 ${articles.length} 篇文章`);
+                        
+                        // 打印文章标题，用于调试
+                        articles.forEach((article, index) => {
+                            const title = this.getArticleTitle(article);
+                            console.log(`文章 ${index + 1}: ${title}`);
+                        });
                     } else {
                         console.error('API数据格式不正确:', apiData);
                         throw new Error('API数据格式不正确');
@@ -285,6 +295,20 @@ class ArticleManager {
         }
     }
 
+    // 从Notion页面对象中获取文章标题
+    getArticleTitle(page) {
+        if (!page || !page.properties) return 'Untitled';
+        
+        // 尝试从 Name 或 Title 属性中获取标题
+        const titleProperty = page.properties.Name || page.properties.Title;
+        
+        if (titleProperty && titleProperty.title && Array.isArray(titleProperty.title) && titleProperty.title.length > 0) {
+            return titleProperty.title[0].plain_text || 'Untitled';
+        }
+        
+        return 'Untitled';
+    }
+
     // 搜索文章
     searchArticles(articles) {
         if (!this.searchTerm || !articles || articles.length === 0) return articles;
@@ -294,44 +318,31 @@ class ArticleManager {
 
         return articles.filter(article => {
             // 提取标题
-            let title = '';
-            if (article.title) {
-                title = article.title;
-            } else if (article.properties && article.properties.Title) {
-                title = article.properties.Title.title?.[0]?.plain_text || '';
-            }
+            const title = this.getArticleTitle(article).toLowerCase();
             
             // 提取分类
-            const category = this.getArticleCategory(article);
+            const category = this.getArticleCategory(article).toLowerCase();
             
-            // 搜索匹配
-            const titleMatch = title.toLowerCase().includes(searchTerm);
-            const categoryMatch = category.toLowerCase().includes(searchTerm);
-            
-            return titleMatch || categoryMatch;
+            // 搜索标题和分类
+            return title.includes(searchTerm) || category.includes(searchTerm);
         });
     }
 
     // 获取文章分类
     getArticleCategory(article) {
-        // 如果文章对象已经包含 category 属性，直接使用
-        if (article.category) {
-            return article.category;
-        }
+        if (!article || !article.properties) return 'Uncategorized';
         
-        // 否则尝试从 properties 中提取
-        if (article.properties) {
-            const categoryProp = article.properties.Category;
-            if (categoryProp) {
-                if (categoryProp.select && categoryProp.select.name) {
-                    return categoryProp.select.name;
-                } else if (categoryProp.multi_select && Array.isArray(categoryProp.multi_select) && categoryProp.multi_select.length > 0) {
-                    return categoryProp.multi_select[0].name;
-                }
+        // 尝试从 Category 属性中获取分类
+        const categoryProp = article.properties.Category;
+        
+        if (categoryProp) {
+            if (categoryProp.select && categoryProp.select.name) {
+                return categoryProp.select.name;
+            } else if (categoryProp.multi_select && Array.isArray(categoryProp.multi_select) && categoryProp.multi_select.length > 0) {
+                return categoryProp.multi_select[0].name;
             }
         }
         
-        // 默认分类
         return 'Uncategorized';
     }
 
@@ -409,9 +420,72 @@ class ArticleManager {
         this.filterArticles(currentCategory);
     }
 
-    // 渲染文章列表（覆盖原方法）
+    // 渲染文章列表
     renderArticleList() {
-        this.filterAndRenderArticles();
+        const articleList = document.getElementById('article-list');
+        if (!articleList) return;
+        
+        // 清空列表
+        articleList.innerHTML = '';
+        
+        // 获取过滤后的文章
+        const filteredArticles = this.filterArticles(this.currentCategory);
+        
+        if (filteredArticles.length === 0) {
+            articleList.innerHTML = '<li class="no-results">没有找到文章</li>';
+            return;
+        }
+        
+        // 创建文章列表项
+        filteredArticles.forEach(article => {
+            const li = document.createElement('li');
+            li.className = 'article-item';
+            li.dataset.id = article.id;
+            
+            const a = document.createElement('a');
+            a.href = '#';
+            
+            // 获取文章标题
+            const title = this.getArticleTitle(article);
+            
+            // 获取文章日期
+            let dateStr = '';
+            if (article.last_edited_time) {
+                const date = new Date(article.last_edited_time);
+                dateStr = `${date.getFullYear()}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`;
+            }
+            
+            // 创建标题元素
+            const titleSpan = document.createElement('span');
+            titleSpan.className = 'article-title-text';
+            
+            // 如果有搜索词，高亮显示
+            if (this.searchTerm) {
+                titleSpan.innerHTML = this.highlightSearchTerm(title);
+            } else {
+                titleSpan.textContent = title;
+            }
+            
+            // 创建日期元素
+            const dateSpan = document.createElement('span');
+            dateSpan.className = 'article-date';
+            dateSpan.textContent = dateStr;
+            
+            // 添加到链接
+            a.appendChild(titleSpan);
+            a.appendChild(dateSpan);
+            
+            // 添加点击事件
+            a.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.loadAndDisplayArticle(article.id);
+                this.updateActiveArticle(article.id);
+            });
+            
+            // 添加到列表项
+            li.appendChild(a);
+            articleList.appendChild(li);
+        });
     }
 
     // 过滤文章列表
