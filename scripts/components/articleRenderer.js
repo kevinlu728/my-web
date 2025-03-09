@@ -420,7 +420,6 @@ function renderBlock(block) {
                 return renderEquation(block);
             case 'table':
                 console.log('发现表格块，使用懒加载:', block.id);
-                console.log('表格块完整数据:', JSON.stringify(block, null, 2));
                 
                 // 创建表格数据对象
                 const tableData = {
@@ -436,25 +435,129 @@ function renderBlock(block) {
                     tableData.rows = block.table.rows;
                 } else if (block.children && block.children.length > 0) {
                     console.log('表格行数据来自block.children');
-                    tableData.rows = block.children.map(row => {
-                        if (row.table_row && row.table_row.cells) {
-                            return row.table_row.cells;
+                    
+                    // 首先分析表格结构，找出有效的行和列
+                    const validRows = [];
+                    
+                    // 处理每一行
+                    block.children.forEach((row, rowIndex) => {
+                        if (row.table_row && Array.isArray(row.table_row.cells)) {
+                            // 处理每个单元格，确保格式正确
+                            const processedCells = [];
+                            
+                            // 处理每个单元格
+                            row.table_row.cells.forEach((cell, cellIndex) => {
+                                // 特殊处理：如果是第一行第一个单元格，且表格有列头，保留空数组
+                                if (rowIndex === 0 && cellIndex === 0 && tableData.hasColumnHeader) {
+                                    // 如果单元格为空或内容为空，返回空数组
+                                    if (!cell || (Array.isArray(cell) && cell.length === 0)) {
+                                        processedCells.push([]);
+                                        return;
+                                    }
+                                }
+                                
+                                // 如果单元格是数组（富文本），确保每个元素格式正确
+                                if (Array.isArray(cell)) {
+                                    // 如果数组为空，添加空数组
+                                    if (cell.length === 0) {
+                                        processedCells.push([]);
+                                        return;
+                                    }
+                                    
+                                    // 过滤掉无效的元素
+                                    processedCells.push(cell.filter(item => item !== null && item !== undefined)
+                                        .map(item => {
+                                            // 如果元素是字符串，转换为简单文本对象
+                                            if (typeof item === 'string') {
+                                                return {
+                                                    type: 'text',
+                                                    text: { content: item },
+                                                    plain_text: item
+                                                };
+                                            }
+                                            // 如果元素是对象，确保有必要的属性
+                                            if (typeof item === 'object' && item !== null) {
+                                                // 确保有 plain_text 属性
+                                                if (!item.plain_text && item.text && item.text.content) {
+                                                    item.plain_text = item.text.content;
+                                                }
+                                                return item;
+                                            }
+                                            // 默认返回空文本对象
+                                            return {
+                                                type: 'text',
+                                                text: { content: '' },
+                                                plain_text: ''
+                                            };
+                                        }));
+                                    return;
+                                }
+                                
+                                // 如果单元格是字符串，转换为富文本数组
+                                if (typeof cell === 'string') {
+                                    processedCells.push([{
+                                        type: 'text',
+                                        text: { content: cell },
+                                        plain_text: cell
+                                    }]);
+                                    return;
+                                }
+                                
+                                // 如果单元格是对象，包装为数组
+                                if (typeof cell === 'object' && cell !== null) {
+                                    processedCells.push([cell]);
+                                    return;
+                                }
+                                
+                                // 默认添加空数组
+                                processedCells.push([]);
+                            });
+                            
+                            // 添加处理后的行
+                            validRows.push(processedCells);
+                        } else {
+                            // 如果行数据无效，添加一个空行
+                            validRows.push([]);
                         }
-                        return [];
                     });
+                    
+                    // 设置处理后的行数据
+                    tableData.rows = validRows;
                 } else {
-                    // 表格数据为空，但我们不创建示例数据，而是显示一个加载中的状态
+                    // 表格数据为空，显示一个加载中的状态
                     console.log('没有找到表格行数据，显示加载状态');
                 }
                 
-                console.log('表格数据:', tableData); // 添加日志
+                // 确保每行的列数一致
+                if (tableData.rows.length > 0) {
+                    // 找出最大列数
+                    const maxColumns = Math.max(...tableData.rows.map(row => row.length));
+                    
+                    // 确保每行都有相同数量的列
+                    tableData.rows = tableData.rows.map(row => {
+                        // 如果列数不足，添加空列
+                        const newRow = [...row];
+                        while (newRow.length < maxColumns) {
+                            newRow.push([]);
+                        }
+                        return newRow;
+                    });
+                }
+                
+                // 输出处理后的表格数据，帮助调试
+                console.log('处理后的表格数据结构:', {
+                    rowCount: tableData.rows.length,
+                    hasColumnHeader: tableData.hasColumnHeader,
+                    hasRowHeader: tableData.hasRowHeader,
+                    columnCounts: tableData.rows.map(row => row.length)
+                });
                 
                 // 将表格数据序列化为JSON字符串
                 const tableDataJson = JSON.stringify(tableData);
                 
                 // 返回表格懒加载占位符
                 return `
-                    <div class="lazy-block table-block" data-block-id="${block.id}" data-table-data="${escapeAttribute(tableDataJson)}">
+                    <div class="lazy-block table-block" data-block-id="${block.id}" data-table-data="${escapeAttribute(tableDataJson)}" style="width:100%; max-width:100%;">
                         <div class="table-loading">表格加载中...</div>
                     </div>
                 `;

@@ -1,110 +1,238 @@
 /**
  * 表格样式
+ * @file table-block.css
+ * @description 表格组件的样式定义
+ * @author 陆凯
+ * @updated 2024-03-11
  */
 
-.lazy-block.table-block {
-    background: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-}
-.table-container {
-    overflow-x: auto;
-    margin: 0.2rem 0;
-    background: none;
-    border-radius: 3px;
-    border: 1px solid #e0e0e0;
-}
-.table-container table {
-    background: none;
-    width: 100%;
-    table-layout: auto;
-    margin: 0;
-    padding: 0;
-}
-.notion-table {
-    border-collapse: collapse;
-    font-size: 14px;
-    margin: 0;
-    padding: 0;
-    background: none !important;
-}
-.notion-table tr {
-    background: none !important;
-}
+/* 重置所有表格相关元素的边距和内边距 */
+.lazy-block.table-block,
+.table-container,
+.notion-table,
+.notion-table tr,
 .notion-table th,
 .notion-table td {
-    border: 1px solid #e0e0e0;
-    padding: 5px 12px;
-    text-align: left;
+    margin: 0;
+    padding: 0;
+    border-spacing: 0;
+    box-sizing: border-box;
+}
+
+/* 表格块容器 - 仅用于非文章内容区域 */
+.lazy-block.table-block:not(.article-body .lazy-block.table-block) {
+    margin: 0 0 1rem 0;
+    padding: 0;
+    width: 100%;
+    max-width: 100%;
+    display: block;
     background: none;
-    word-break: break-word;
 }
-.notion-table th {
-    background-color: #f5f5f5 !important;
-    font-weight: 600;
-    position: sticky;
-    top: 0;
-    z-index: 1;
+
+/* 表格外层容器 - 仅用于非文章内容区域 */
+.table-container:not(.article-body .table-container) {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    background-color: #ffffff;
 }
-.notion-table tr:nth-child(even) {
-    background-color: #fafafa !important;
-}
-.notion-table tr:hover {
-    background-color: #f0f0f0 !important;
-}
-.table-loading {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100px;
-    background-color: #f9f9f9;
-    border-radius: 3px;
-    color: #666;
+
+/* 表格基础样式 - 仅用于非文章内容区域 */
+table:not(.article-body table) {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: auto;
     font-size: 14px;
+    line-height: 1.5;
+    background: none;
 }
-.table-loading::after {
-    content: '';
-    width: 20px;
-    height: 20px;
-    margin-left: 10px;
-    border: 2px solid #ddd;
-    border-top-color: #3498db;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+
+/* 表格行 - 仅用于非文章内容区域 */
+tr:not(.article-body tr) {
+    border: none;
+    background: none;
 }
+
+/* 表格单元格基础样式 - 仅用于非文章内容区域 */
+th:not(.article-body th),
+td:not(.article-body td) {
+    padding: 8px 12px;
+    border: 1px solid #e0e0e0;
+    text-align: left;
+    vertical-align: top;
+    min-width: 40px;
+    word-break: normal;
+    white-space: normal;
+}
+
+/* 表头单元格样式 - 仅用于非文章内容区域 */
+th:not(.article-body th) {
+    font-weight: 600;
+    background-color: #f5f5f5;
+    white-space: nowrap;
+}
+
+/* 表格行交替颜色 - 仅用于非文章内容区域 */
+tr:nth-child(even):not(.article-body tr:nth-child(even)) {
+    background-color: #fafafa;
+}
+
+/* 表格行悬停效果 - 仅用于非文章内容区域 */
+tr:hover:not(.article-body tr:hover) {
+    background-color: #f0f0f0;
+}
+
+/* 长文本单元格 - 通用 */
+.long-text {
+    min-width: 150px;
+}
+
+/* 数字单元格 - 通用 */
+.number-cell {
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* 表格加载中状态 */
+.table-loading {
+    padding: 10px;
+    text-align: center;
+    color: #333;
+}
+
+/* 表格错误状态 */
 .table-error {
     padding: 10px;
-    color: #e74c3c;
-    background-color: #f9f9f9;
-    border-radius: 3px;
     text-align: center;
+    color: #d32f2f;
+    background-color: #fff0f0;
 }
+
+/* 空表格状态 */
 .table-empty {
-    padding: 20px;
-    color: #7f8c8d;
-    background-color: #f9f9f9;
-    border-radius: 3px;
+    padding: 10px;
     text-align: center;
-    font-style: italic;
-}
-.sort-icon {
-    display: inline-block;
-    margin-left: 5px;
-    font-size: 12px;
-    opacity: 0.5;
-    transition: opacity 0.2s;
+    color: #666;
 }
 
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
+/* 文本颜色类 */
+.color-gray { color: #666; }
+.color-brown { color: #8B4513; }
+.color-orange { color: #FF8C00; }
+.color-yellow { color: #FFD700; }
+.color-green { color: #008000; }
+.color-blue { color: #0000FF; }
+.color-purple { color: #800080; }
+.color-pink { color: #FFC0CB; }
+.color-red { color: #FF0000; }
 
+/* 移动设备适配 */
 @media (max-width: 768px) {
-    .notion-table {
+    table:not(.article-body table) {
         font-size: 12px;
     }
+    
+    th:not(.article-body th),
+    td:not(.article-body td) {
+        padding: 6px 8px;
+    }
+}
+
+/* ===== 自适应宽度表格 ===== */
+.auto-width-table {
+    width: auto !important;
+    table-layout: auto !important;
+}
+
+.auto-width-table th,
+.auto-width-table td {
+    width: auto !important;
+    white-space: normal;
+}
+
+/* 确保长文本单元格有足够空间 */
+.auto-width-table td.long-text {
+    min-width: 150px;
+    max-width: 300px;
+}
+
+/* 确保数字单元格对齐 */
+.auto-width-table td.number-cell {
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* ===== 文章正文中的表格样式 ===== */
+.article-body .table-container {
+    margin: 0;
+}
+
+/* ===== 数字列处理 ===== */
+.notion-table td.number-cell {
+    min-width: 80px !important;
+}
+
+/* ===== 表格响应式处理 ===== */
+@media (max-width: 768px) {
+    .notion-table {
+        table-layout: fixed;
+    }
+    
     .notion-table th,
     .notion-table td {
-        padding: 4px 8px;
+        min-width: 40px;
+        max-width: none;
+        padding: 6px 8px;
+        font-size: 12px;
     }
+    
+    .notion-table td.long-text {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
+/* ===== 自适应宽度表格 ===== */
+.auto-width-table {
+    width: auto !important;
+    table-layout: auto !important;
+}
+
+.auto-width-table th,
+.auto-width-table td {
+    width: auto !important;
+    white-space: normal;
+}
+
+/* 确保长文本单元格有足够空间 */
+.auto-width-table td.long-text {
+    min-width: 150px;
+    max-width: 300px;
+}
+
+/* 确保数字单元格对齐 */
+.auto-width-table td.number-cell {
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* ===== 单元格内容样式 ===== */
+.cell-content {
+    display: inline-block;
+    max-width: 100%;
+    word-break: normal;
+}
+
+.cell-content.long-text {
+    min-width: 150px;
+    white-space: normal;
+}
+
+.cell-content.number-cell {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 } 

@@ -2,14 +2,12 @@
 监控系统已设置
 服务器运行在 http://127.0.0.1:8000
 测试端点: http://127.0.0.1:8000/api/hello
-2025-03-09T19:28:20.476Z - GET /hello
-2025-03-09T19:28:20.488Z - POST /articles
+2025-03-09T21:05:41.630Z - GET /hello
+2025-03-09T21:05:41.633Z - GET /hello
+2025-03-09T21:05:41.642Z - POST /articles
 Request body: { database_id: '1a932af826e680df8bf7f320b51930b9' }
 Using database ID: 1a932af826e680df8bf7f320b51930b9
-2025-03-09T19:28:21.103Z - GET /hello
-Request started: {"method":"GET","url":"/assets/favicon.ico","requestId":"kmjbuu"}
-Request completed: {"method":"GET","url":"/assets/favicon.ico","requestId":"kmjbuu","statusCode":404,"duration":7}
-2025-03-09T19:28:21.118Z - POST /articles
+2025-03-09T21:05:41.677Z - POST /articles
 Request body: { database_id: '1a932af826e680df8bf7f320b51930b9' }
 Using database ID: 1a932af826e680df8bf7f320b51930b9
 Notion API POST databases/1a932af826e680df8bf7f320b51930b9/query: 200
@@ -18,75 +16,12 @@ Found 6 articles
 Notion API POST databases/1a932af826e680df8bf7f320b51930b9/query: 200
 Notion API response received
 Found 6 articles
-2025-03-09T19:28:24.379Z - GET /article-content/1ae32af8-26e6-80b5-a33b-f88ffc495766
-Fetching article content for page 1ae32af8-26e6-80b5-a33b-f88ffc495766
-Notion API GET pages/1ae32af8-26e6-80b5-a33b-f88ffc495766: 200
-2025-03-09T19:28:24.784Z - GET /blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children
+2025-03-09T21:05:43.716Z - GET /blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children
 获取块的子块数据，块ID: 1af32af8-26e6-80d8-a11a-edc916fbdc4b
 Notion API GET blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?page_size=100: 200
 成功获取块的子块数据，共 6 个子块
-2025-03-09T19:28:25.423Z - GET /blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children
+2025-03-09T21:05:44.394Z - GET /blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children
 获取块的子块数据，块ID: 1af32af8-26e6-80d8-a11a-edc916fbdc4b
 Notion API GET blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?page_size=100: 200
 成功获取块的子块数据，共 6 个子块
-[ALERT] low_success_rate: Success rate 0.00% below threshold 95%
-2025-03-09T19:30:27.216Z - GET /hello
-2025-03-09T19:30:27.217Z - GET /hello
-2025-03-09T19:30:27.218Z - POST /articles
-Request body: { database_id: '1a932af826e680df8bf7f320b51930b9' }
-Using database ID: 1a932af826e680df8bf7f320b51930b9
-Using cached data for databases/1a932af826e680df8bf7f320b51930b9/query
-Notion API response received
-Found 6 articles
-2025-03-09T19:30:27.219Z - POST /articles
-Request body: { database_id: '1a932af826e680df8bf7f320b51930b9' }
-Using database ID: 1a932af826e680df8bf7f320b51930b9
-Using cached data for databases/1a932af826e680df8bf7f320b51930b9/query
-Notion API response received
-Found 6 articles
-2025-03-09T19:30:38.793Z - GET /hello
-2025-03-09T19:30:38.794Z - GET /hello
-2025-03-09T19:30:38.797Z - POST /articles
-Request body: { database_id: '1a932af826e680df8bf7f320b51930b9' }
-Using database ID: 1a932af826e680df8bf7f320b51930b9
-Using cached data for databases/1a932af826e680df8bf7f320b51930b9/query
-Notion API response received
-Found 6 articles
-2025-03-09T19:30:38.800Z - POST /articles
-Request body: { database_id: '1a932af826e680df8bf7f320b51930b9' }
-Using database ID: 1a932af826e680df8bf7f320b51930b9
-Using cached data for databases/1a932af826e680df8bf7f320b51930b9/query
-Notion API response received
-Found 6 articles
-2025-03-09T19:30:39.691Z - GET /hello
-2025-03-09T19:30:39.692Z - GET /hello
-2025-03-09T19:30:39.694Z - POST /articles
-Request body: { database_id: '1a932af826e680df8bf7f320b51930b9' }
-Using database ID: 1a932af826e680df8bf7f320b51930b9
-Using cached data for databases/1a932af826e680df8bf7f320b51930b9/query
-Notion API response received
-Found 6 articles
-2025-03-09T19:30:39.696Z - POST /articles
-Request body: { database_id: '1a932af826e680df8bf7f320b51930b9' }
-Using database ID: 1a932af826e680df8bf7f320b51930b9
-Using cached data for databases/1a932af826e680df8bf7f320b51930b9/query
-Notion API response received
-Found 6 articles
-2025-03-09T19:30:41.076Z - GET /article-content/1ae32af8-26e6-80b5-a33b-f88ffc495766
-Fetching article content for page 1ae32af8-26e6-80b5-a33b-f88ffc495766
-Notion API GET pages/1ae32af8-26e6-80b5-a33b-f88ffc495766: 200
-2025-03-09T19:30:42.055Z - GET /blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children
-获取块的子块数据，块ID: 1af32af8-26e6-80d8-a11a-edc916fbdc4b
-Notion API GET blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?page_size=100: 200
-成功获取块的子块数据，共 6 个子块
-2025-03-09T19:30:42.784Z - GET /blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children
-获取块的子块数据，块ID: 1af32af8-26e6-80d8-a11a-edc916fbdc4b
-Notion API GET blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?page_size=100: 200
-成功获取块的子块数据，共 6 个子块
-2025-03-09T19:33:20.585Z - GET /hello
-2025-03-09T19:33:20.595Z - POST /articles
-Request body: { database_id: '1a932af826e680df8bf7f320b51930b9' }
-Using database ID: 1a932af826e680df8bf7f320b51930b9
-Using cached data for databases/1a932af826e680df8bf7f320b51930b9/query
-Notion API response received
-Found 6 articles
+收到 SIGTERM 信号，正在关闭服务器...
