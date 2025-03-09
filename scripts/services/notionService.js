@@ -1,5 +1,23 @@
-// Notion API 服务
-// 处理与 Notion API 的所有交互
+/**
+ * @file notionService.js
+ * @description Notion API服务模块，负责与Notion API交互获取数据
+ * @author 陆凯
+ * @version 1.0.0
+ * @created 2024-03-09
+ * 
+ * 该模块封装了与Notion API的所有交互逻辑，提供以下功能：
+ * - 获取文章列表数据
+ * - 获取文章详细内容
+ * - 处理API响应和错误
+ * - 数据格式转换和清理
+ * 
+ * 主要导出函数：
+ * - getArticles: 获取文章列表
+ * - getArticleContent: 获取文章详细内容
+ * 
+ * 该模块依赖于fetch API进行网络请求，并使用环境配置中的API密钥和端点。
+ */
+
 import config from '../config/config.js';
 
 // 获取文章列表

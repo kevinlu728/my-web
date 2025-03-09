@@ -1,4 +1,12 @@
-// Notion API 块内容接口
+/**
+ * @file databases.js
+ * @description 数据库列表API路由处理，获取Notion中可用的数据库列表
+ * @author 陆凯
+ * @created 2024-03-09
+ * @updated 2024-03-10
+ */
+
+// Notion API 数据库列表接口
 // 使用 CommonJS 风格导入，兼容 Vercel 环境
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
@@ -13,6 +21,31 @@ const config = {
     }
   }
 };
+
+// 获取数据库列表
+async function listDatabases() {
+  try {
+    const response = await fetch('https://api.notion.com/v1/search', {
+      method: 'POST',
+      headers: config.notion.headers,
+      body: JSON.stringify({
+        filter: {
+          value: 'database',
+          property: 'object'
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching databases:', error);
+    throw error;
+  }
+}
 
 // 导出处理函数
 module.exports = async (req, res) => {
@@ -34,24 +67,12 @@ module.exports = async (req, res) => {
   // 只处理 GET 请求
   if (req.method === 'GET') {
     try {
-      const { blockId } = req.query;
-      console.log(`Fetching children blocks for block: ${blockId}`);
-      
-      const response = await fetch(`https://api.notion.com/v1/blocks/${blockId}/children?page_size=100`, {
-        method: 'GET',
-        headers: config.notion.headers
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch block children: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const data = await listDatabases();
       res.status(200).json(data);
     } catch (error) {
-      console.error('Error fetching block children:', error);
+      console.error('Error fetching databases:', error);
       res.status(500).json({ 
-        error: 'Error fetching block children', 
+        error: 'Error fetching databases', 
         message: error.message 
       });
     }

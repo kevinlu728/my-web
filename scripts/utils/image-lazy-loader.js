@@ -1,6 +1,24 @@
 /**
- * 图片懒加载工具
- * 简化版本 - 不使用外部服务，直接通过 CSS 控制图片大小
+ * @file image-lazy-loader.js
+ * @description 图片懒加载工具，实现图片的延迟加载和优化
+ * @author 陆凯
+ * @version 1.0.0
+ * @created 2024-03-08
+ * 
+ * 该模块实现了图片的懒加载功能，提高页面加载性能和用户体验：
+ * - 使用IntersectionObserver监测图片可见性
+ * - 图片进入视口时才加载
+ * - 支持渐进式加载效果
+ * - 支持加载失败的回退处理
+ * - 支持响应式图片
+ * - 支持WebP等现代图片格式的检测和使用
+ * 
+ * 主要方法：
+ * - processImages: 处理页面中的所有图片
+ * - loadImage: 加载单个图片
+ * - setupIntersectionObserver: 设置交叉观察器
+ * 
+ * 导出单例imageLazyLoader供其他模块使用。
  */
 
 class ImageLazyLoader {

@@ -1,3 +1,10 @@
+/**
+ * @file main.css
+ * @description 主样式文件，负责导入和组织所有样式
+ * @author 陆凯
+ * @updated 2024-03-10
+ */
+
 /* 导入基础样式 */
 @import 'base.css';
 
@@ -7,11 +14,12 @@
 @import 'components/chat.css';
 @import 'components/modal.css';
 @import 'components/debug-panel.css';
+@import 'components/code-block.css';
+@import 'components/table-block.css';
 
 /* 导入布局样式 */
-@import 'layouts/home.css';
-@import 'layouts/tech-blog-layout.css';
-@import 'layouts/article.css';
+@import 'layouts/home-layout.css';
+@import 'layouts/blog-layout.css'; /* 新的统一博客布局 */
 @import 'layouts/article-list.css';
 
 /* 导入页面区块样式 */
@@ -19,6 +27,7 @@
 @import 'sections/intro.css';
 @import 'sections/career.css';
 @import 'sections/collaboration.css';
+@import 'sections/article-content.css';
 
 /* 图标样式 */
 .bilibili-icon {

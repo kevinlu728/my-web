@@ -1,6 +1,24 @@
 /**
- * 图片优化工具
- * 使用 Cloudinary 的免费服务来压缩和优化图片
+ * @file image-optimizer.js
+ * @description 图片优化工具，提供图片处理和优化功能
+ * @author 陆凯
+ * @version 1.0.0
+ * @created 2024-03-06
+ * 
+ * 该模块提供了一系列图片处理和优化功能：
+ * - 图片格式转换（如JPEG转WebP）
+ * - 图片尺寸调整
+ * - 图片质量优化
+ * - 响应式图片源集生成
+ * - 图片加载性能优化
+ * 
+ * 主要方法：
+ * - optimizeImage: 优化单个图片
+ * - generateSrcset: 生成响应式图片源集
+ * - detectImageSupport: 检测浏览器对特定图片格式的支持
+ * - preloadCriticalImages: 预加载关键图片
+ * 
+ * 该模块与image-lazy-loader.js配合使用，提供完整的图片优化解决方案。
  */
 
 // Cloudinary 配置

@@ -1,3 +1,23 @@
+/**
+ * @file tech-blog.js
+ * @description 技术博客页面脚本，处理技术博客页面的特定功能
+ * @author 陆凯
+ * @version 1.0.0
+ * @created 2024-03-09
+ * 
+ * 该模块负责技术博客页面的特定功能：
+ * - 初始化文章列表和分类
+ * - 处理文章的加载和显示
+ * - 实现文章的搜索和筛选
+ * - 处理分页和"加载更多"功能
+ * - 管理页面的状态和UI交互
+ * 
+ * 该页面脚本协调articleManager和categoryManager，
+ * 实现技术博客页面的完整功能。
+ * 
+ * 该模块在tech-blog.html页面中被引入和执行。
+ */
+
 // 技术博客页面主逻辑
 import { initDebugPanel } from '../components/debugPanel.js';
 import { getDatabaseInfo, testApiConnection, getDatabases } from '../services/notionService.js';
@@ -6,6 +26,7 @@ import { categoryManager } from '../managers/categoryManager.js';
 import { articleManager } from '../managers/articleManager.js';
 import config from '../config/config.js';
 import { imageLazyLoader } from '../utils/image-lazy-loader.js';
+import { initializeLazyLoading } from '../components/articleRenderer.js';
 
 console.log('🚀 tech-blog.js 开始加载...');
 
@@ -32,12 +53,15 @@ async function initializePage() {
                 const result = await originalShowArticle.call(this, pageId);
                 console.log('✅ 文章加载成功');
                 
-                // 处理文章中的图片
+                // 处理文章中的图片和懒加载内容
                 setTimeout(() => {
                     const articleBody = document.querySelector('.article-body');
                     if (articleBody) {
                         console.log('🖼️ 处理文章中的图片...');
                         imageLazyLoader.processImages(articleBody);
+                        
+                        console.log('🔄 初始化代码块和表格懒加载...');
+                        initializeLazyLoading(articleBody);
                     } else {
                         console.warn('⚠️ 未找到文章内容区域');
                     }
@@ -105,12 +129,15 @@ if (typeof articleManager.displayArticleContent === 'function') {
         // 调用原始方法
         const result = originalDisplayContent.call(this, article);
         
-        // 在内容显示后处理图片懒加载
+        // 在内容显示后处理图片懒加载和代码块懒加载
         setTimeout(() => {
             const articleBody = document.querySelector('.article-body');
             if (articleBody) {
                 console.log('🖼️ 开始处理新加载的文章图片...');
                 imageLazyLoader.processImages(articleBody);
+                
+                console.log('🔄 初始化代码块和表格懒加载...');
+                initializeLazyLoading(articleBody);
             }
         }, 100);
         

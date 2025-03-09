@@ -1,0 +1,92 @@
+/**
+ * @file blog-layout.css
+ * @description 博客页面的统一布局样式
+ * @author 陆凯
+ * @created 2024-03-09
+ * @updated 2024-03-09
+ * 
+ * 该文件整合了博客页面的所有布局样式，包括：
+ * - 博客页面的整体布局（网格布局、间距等）
+ * - 左侧栏和右侧栏的基本样式
+ * - 响应式布局调整
+ */
+
+/* 博客页面主容器 */
+.blog-content {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    gap: 25px; /* 减小左右栏间距 */
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 20px 40px 40px; /* 减小顶部间距 */
+    min-height: calc(100vh - 60px);
+    position: relative;
+    z-index: 1;
+}
+
+/* 左侧栏样式 */
+.blog-content .left-column {
+    background: #ffffff;
+    padding: 30px;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    position: sticky;
+    top: 80px;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    width: 100%;
+}
+
+/* 右侧栏样式 */
+.blog-content .right-column {
+    background: #ffffff;
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    width: 100%;
+}
+
+/* 面包屑导航样式 */
+.breadcrumb {
+    padding: 5px 40px;
+    margin: 0;
+    background-color: transparent;
+}
+
+/* 响应式布局 - 中等屏幕 */
+@media (max-width: 1200px) {
+    .blog-content {
+        max-width: 100%;
+        padding: 15px 20px 20px; /* 减小顶部间距 */
+        gap: 20px;
+    }
+    
+    .breadcrumb {
+        padding: 5px 20px;
+    }
+}
+
+/* 响应式布局 - 小屏幕 */
+@media (max-width: 768px) {
+    .blog-content {
+        grid-template-columns: 1fr; /* 单列布局 */
+        padding: 10px 15px 20px; /* 减小顶部间距 */
+        gap: 15px;
+    }
+    
+    .blog-content .left-column {
+        position: relative;
+        top: 0;
+        max-height: none;
+        margin-bottom: 15px;
+        padding: 20px;
+    }
+    
+    .blog-content .right-column {
+        padding: 20px;
+    }
+    
+    .breadcrumb {
+        padding: 5px 15px;
+    }
+} 

@@ -1,4 +1,28 @@
-// 文章管理模块
+/**
+ * @file articleManager.js
+ * @description 文章管理器，负责文章数据的获取、缓存和渲染
+ * @author 陆凯
+ * @version 1.0.0
+ * @created 2024-03-09
+ * 
+ * 该模块是网站文章功能的核心管理器，负责：
+ * - 从API获取文章列表和详情
+ * - 管理文章数据的本地缓存
+ * - 处理文章的渲染和显示
+ * - 实现文章的分页和加载更多功能
+ * - 处理文章的分类和筛选
+ * - 管理文章的搜索功能
+ * 
+ * 主要方法：
+ * - loadArticles: 加载文章列表
+ * - displayArticle: 显示单篇文章
+ * - loadAndDisplayArticle: 加载并显示文章
+ * - searchArticles: 搜索文章
+ * - filterArticlesByCategory: 按分类筛选文章
+ * 
+ * 该模块依赖于notionService.js获取数据，依赖于articleRenderer.js渲染内容。
+ */
+
 import { showStatus, showLoading, showError } from '../utils/utils.js';
 import { getArticles, getArticleContent } from '../services/notionService.js';
 import { categoryManager } from './categoryManager.js';
@@ -575,14 +599,11 @@ class ArticleManager {
                     console.log(`找到 ${tablePlaceholders.length} 个表格占位符`);
                     
                     if (tablePlaceholders.length > 0) {
-                        if (window.tableLazyLoader) {
-                            tablePlaceholders.forEach(placeholder => {
-                                const blockId = placeholder.dataset.blockId;
-                                console.log(`观察表格占位符: ${blockId}`);
-                                window.tableLazyLoader.observe(placeholder);
-                            });
+                        if (window.tableLazyLoader && typeof window.tableLazyLoader.processAllTables === 'function') {
+                            console.log('使用表格懒加载器处理所有表格...');
+                            window.tableLazyLoader.processAllTables();
                         } else {
-                            console.warn('tableLazyLoader 不可用，无法初始化表格懒加载');
+                            console.warn('tableLazyLoader 不可用或缺少processAllTables方法，无法初始化表格懒加载');
                         }
                     }
                 }

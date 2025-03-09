@@ -1,4 +1,22 @@
-// 分类配置
+/**
+ * @file categories.js
+ * @description 文章分类配置，定义网站的文章分类结构
+ * @author 陆凯
+ * @version 1.0.0
+ * @created 2024-03-07
+ * 
+ * 该模块定义了网站的文章分类结构：
+ * - 定义分类的名称、slug和图标
+ * - 定义分类的层级关系（主分类和子分类）
+ * - 定义分类的显示顺序
+ * - 定义分类的特殊属性（如是否在导航中显示）
+ * 
+ * 分类数据被categoryManager使用，用于生成分类导航和文章筛选。
+ * 每个分类包含id, name, slug, icon等属性，可选包含children表示子分类。
+ * 
+ * 该模块导出分类数组，可被其他模块导入使用。
+ */
+
 export const categoryConfig = {
     // 分类名称映射
     nameMap: {

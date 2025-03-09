@@ -1,4 +1,27 @@
-// 分类管理模块
+/**
+ * @file categoryManager.js
+ * @description 分类管理器，负责文章分类的管理和显示
+ * @author 陆凯
+ * @version 1.0.0
+ * @created 2024-03-09
+ * 
+ * 该模块负责管理网站的文章分类功能：
+ * - 加载和解析分类数据
+ * - 渲染分类导航菜单
+ * - 处理分类的选择和切换
+ * - 与articleManager协作实现按分类筛选文章
+ * - 管理分类的状态和UI交互
+ * 
+ * 主要方法：
+ * - loadCategories: 加载分类数据
+ * - renderCategoryMenu: 渲染分类菜单
+ * - handleCategorySelection: 处理分类选择
+ * - getCategoryBySlug: 根据slug获取分类
+ * - updateActiveCategoryUI: 更新活动分类的UI状态
+ * 
+ * 该模块使用config/categories.js中的配置数据，并与articleManager协作。
+ */
+
 import { categoryConfig } from '../config/categories.js';
 
 class CategoryManager {

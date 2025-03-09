@@ -4,6 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>云栖思渊</title>
+    <!-- SEO元标签 -->
+    <meta name="description" content="云栖思渊 - 终端技术架构专家与AI终端工程化先行者的个人网站，分享技术沉淀和生活点滴">
+    <meta name="keywords" content="终端技术,AI工程化,技术架构,华为,美团,京东">
+    <!-- Open Graph标签 -->
+    <meta property="og:title" content="云栖思渊">
+    <meta property="og:description" content="终端技术架构专家与AI终端工程化先行者的个人网站">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://yourdomain.com/">
+    <meta property="og:image" content="https://yourdomain.com/assets/profile.jpeg">
+    <!-- Twitter卡片 -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="云栖思渊">
+    <meta name="twitter:description" content="终端技术架构专家与AI终端工程化先行者的个人网站">
+    <meta name="twitter:image" content="https://yourdomain.com/assets/profile.jpeg">
+    <!-- CSS资源 -->
     <link rel="stylesheet" href="/styles/main.css">
     <link rel="stylesheet" href="/styles/components/header.css">
     <link rel="stylesheet" href="/styles/components/footer.css">
@@ -11,6 +26,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Iconfont -->
     <link rel="stylesheet" href="//at.alicdn.com/t/c/font_4447411_ky6yxhm8dc.css">
+    <!-- 网站图标 -->
+    <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
 </head>
 <body class="home-page">
     <div id="particles-js"></div>
@@ -19,7 +36,7 @@
             <div class="web-title">
                 云 栖 思 渊
             </div>
-            <button class="hamburger">
+            <button class="hamburger" aria-label="菜单">
                 <span></span>
                 <span></span>
                 <span></span>
@@ -36,7 +53,7 @@
     <main class="home-content">
         <section class="hero">
             <div class="avatar-container">
-                <img src="assets/profile.jpeg" alt="个人头像" class="avatar">
+                <img src="assets/profile.jpeg" alt="个人头像" class="avatar" loading="lazy" width="200" height="200">
             </div>
             <div class="profile-container">
                 <div class="profile-content">
@@ -80,8 +97,23 @@
 
     <div id="chat-widget-container"></div>
 
-    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
-    <script src="scripts/core/main.js"></script>
-    <script src="scripts/components/componentLoader.js"></script>
+    <!-- 结构化数据 -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      "name": "陆凯",
+      "jobTitle": "终端技术架构专家",
+      "description": "终端技术架构专家与AI终端工程化先行者",
+      "url": "https://yourdomain.com/",
+      "sameAs": [
+        "https://www.linkedin.com/in/kevinlu728/",
+        "https://github.com/yourusername"
+      ]
+    }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js" ></script>
+    <script src="scripts/core/componentManager.js" type="module"></script>
 </body>
 </html>

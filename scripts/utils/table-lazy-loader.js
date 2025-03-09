@@ -1,143 +1,127 @@
 /**
- * 表格懒加载工具
+ * @file table-lazy-loader.js
+ * @description 表格懒加载工具，实现表格的延迟加载和交互功能
+ * @author 陆凯
+ * @version 1.0.0
+ * @created 2024-03-09
+ * 
+ * 该模块实现了表格的懒加载功能，提高页面加载性能：
+ * - 使用IntersectionObserver监测表格可见性
+ * - 表格进入视口时才加载和渲染
+ * - 支持表格排序功能
+ * - 支持从API动态获取表格数据
+ * - 处理各种错误情况和边缘情况
+ * 
+ * 主要方法：
+ * - loadTable: 加载表格数据并渲染
+ * - renderTable: 将表格数据渲染为HTML
+ * - processAllTables: 处理页面中的所有表格
+ * - addTableSorting: 添加表格排序功能
+ * 
+ * 导出单例tableLazyLoader供其他模块使用。
  */
+
+import { tableStyles, addTableStylesToDocument } from '../styles/table-styles.js';
+
 class TableLazyLoader {
     constructor() {
         this.observer = null;
         this.initObserver();
-        this.addTableStyles();
+        addTableStylesToDocument();
     }
 
-    // 添加表格样式
-    addTableStyles() {
-        const style = document.createElement('style');
-        style.textContent = `
-            .lazy-block.table-block {
-                background: none !important;
-                padding: 0 !important;
-                margin: 0 !important;
-            }
-            .table-container {
-                overflow-x: auto;
-                margin: 0.2rem 0;
-                background: none;
-                border-radius: 3px;
-                border: 1px solid #e0e0e0;
-            }
-            .table-container table {
-                background: none;
-                width: 100%;
-                table-layout: auto;
-                margin: 0;
-                padding: 0;
-            }
-            .notion-table {
-                border-collapse: collapse;
-                font-size: 14px;
-                margin: 0;
-                padding: 0;
-                background: none !important;
-            }
-            .notion-table tr {
-                background: none !important;
-            }
-            .notion-table th,
-            .notion-table td {
-                border: 1px solid #e0e0e0;
-                padding: 5px 12px;
-                text-align: left;
-                background: none;
-                word-break: break-word;
-                max-width: 400px;
-                margin: 0;
-            }
-            .notion-table th {
-                background-color: #fafafa;
-                font-weight: 500;
-                color: rgb(55, 53, 47);
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-            .notion-table td {
-                color: rgb(55, 53, 47);
-                min-width: 100px;
-            }
-            /* 加载状态样式调整 */
-            .loading-spinner,
-            .loading-text,
-            .error-message {
-                margin: 0.2rem 0;
-            }
-            @media (max-width: 768px) {
-                .notion-table {
-                    font-size: 12px;
-                }
-                .notion-table th,
-                .notion-table td {
-                    padding: 4px 8px;
-                }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-
-    // 初始化观察器
+    // 初始化 IntersectionObserver
     initObserver() {
-        if (this.observer) return;
-        
-        this.observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const element = entry.target;
-                    const blockId = element.dataset.blockId;
-                    // 只有未加载过的表格才进行加载
-                    if (blockId && element.dataset.loaded !== 'true') {
-                        this.loadTableContent(element, blockId);
-                    }
-                }
+        if ('IntersectionObserver' in window) {
+            this.observer = new IntersectionObserver(this.onIntersection.bind(this), {
+                rootMargin: '100px 0px', // 提前100px开始加载
+                threshold: 0.01 // 当表格有1%进入视口时触发
             });
-        }, {
-            rootMargin: '50px 0px',
-            threshold: 0.1
+        }
+    }
+
+    // 处理表格懒加载
+    onIntersection(entries) {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const tableBlock = entry.target;
+                this.loadTable(tableBlock);
+                this.observer.unobserve(tableBlock);
+            }
         });
     }
 
-    // 创建表格占位符
-    createPlaceholder(blockId) {
-        return `
-            <div class="lazy-block table-block" data-block-id="${blockId}" data-loaded="false">
-                <div class="placeholder-content">
-                    <i class="fas fa-table"></i>
-                    <span>表格加载中</span>
-                </div>
-            </div>
-        `;
+    // 加载表格
+    loadTable(tableBlock) {
+        try {
+            console.log('开始加载表格:', tableBlock);
+            
+            // 获取表格数据
+            const tableDataStr = tableBlock.dataset.tableData || '{}';
+            const blockId = tableBlock.dataset.blockId;
+            console.log('表格数据字符串:', tableDataStr);
+            console.log('表格块ID:', blockId);
+            
+            const tableData = JSON.parse(tableDataStr);
+            console.log('解析后的表格数据:', tableData);
+            
+            if (!tableData) {
+                console.error('无效的表格数据: 数据为空');
+                tableBlock.innerHTML = '<div class="table-error">无效的表格数据</div>';
+                return;
+            }
+            
+            if (!tableData.rows) {
+                console.error('无效的表格数据: 缺少rows属性');
+                tableBlock.innerHTML = '<div class="table-error">无效的表格数据 (缺少rows)</div>';
+                return;
+            }
+            
+            if (!Array.isArray(tableData.rows)) {
+                console.error('无效的表格数据: rows不是数组');
+                tableBlock.innerHTML = '<div class="table-error">无效的表格数据 (rows不是数组)</div>';
+                return;
+            }
+            
+            if (tableData.rows.length === 0 && blockId) {
+                // 如果表格数据为空但有blockId，尝试从API获取数据
+                console.log('表格数据为空，尝试从API获取数据');
+                this.fetchTableData(tableBlock, blockId);
+                return;
+            }
+            
+            if (tableData.rows.length === 0) {
+                console.warn('表格数据为空: rows数组为空');
+                tableBlock.innerHTML = '<div class="table-empty">空表格</div>';
+                return;
+            }
+            
+            // 渲染表格
+            const tableHtml = this.renderTable(tableData);
+            tableBlock.innerHTML = tableHtml;
+            
+            // 添加表格排序功能
+            this.addTableSorting(tableBlock.querySelector('table'));
+            
+            console.log('表格加载完成');
+        } catch (error) {
+            console.error('加载表格失败:', error);
+            tableBlock.innerHTML = `<div class="table-error">加载表格失败: ${error.message}</div>`;
+        }
     }
 
-    // 加载表格内容
-    async loadTableContent(element, blockId) {
-        // 如果表格已经加载过，不再重复加载
-        if (element.dataset.loaded === 'true') {
-            console.log(`表格 ${blockId} 已加载，跳过`);
-            return;
-        }
-
-        console.log(`开始加载表格 ${blockId} 的内容`);
-        
+    // 从API获取表格数据
+    async fetchTableData(tableBlock, blockId) {
         try {
-            // 显示加载状态
-            element.innerHTML = `
-                <div class="loading-spinner"></div>
-                <div class="loading-text">加载中...</div>
-            `;
-
+            console.log(`从API获取表格数据: ${blockId}`);
+            tableBlock.innerHTML = '<div class="table-loading">正在获取表格数据...</div>';
+            
             // 从配置中获取 API 基础 URL
             const config = window.config || {};
             const apiBaseUrl = config.api?.baseUrl || '/api';
             const apiUrl = `${apiBaseUrl}/blocks/${blockId}/children`;
             
-            console.log('加载表格数据，URL:', apiUrl);
+            console.log('API URL:', apiUrl);
             
             // 添加超时处理
             const controller = new AbortController();
@@ -158,33 +142,29 @@ class TableLazyLoader {
                     console.error('无效的表格数据:', data);
                     throw new Error('无效的表格数据');
                 }
-
+                
                 console.log(`获取到表格数据: ${data.results.length} 行`);
-
+                
+                // 创建表格数据对象
+                const tableData = {
+                    rows: data.results.map(row => {
+                        if (row.table_row && row.table_row.cells) {
+                            return row.table_row.cells;
+                        }
+                        return [];
+                    }),
+                    hasColumnHeader: true, // 默认第一行为表头
+                    hasRowHeader: false
+                };
+                
                 // 渲染表格
-                const tableHtml = this.renderTableBlock({
-                    table: { 
-                        has_column_header: true,
-                        has_row_header: false
-                    },
-                    children: data.results
-                });
+                const tableHtml = this.renderTable(tableData);
+                tableBlock.innerHTML = tableHtml;
                 
-                element.innerHTML = tableHtml;
+                // 添加表格排序功能
+                this.addTableSorting(tableBlock.querySelector('table'));
                 
-                // 标记表格已加载
-                element.dataset.loaded = 'true';
-                
-                // 取消观察
-                if (this.observer) {
-                    this.observer.unobserve(element);
-                }
-
-                // 调整列宽
-                this.adjustColumnWidths(element);
-                
-                console.log(`表格 ${blockId} 加载完成`);
-
+                console.log('表格加载完成');
             } catch (error) {
                 clearTimeout(timeoutId);
                 
@@ -194,154 +174,236 @@ class TableLazyLoader {
                 
                 throw error;
             }
-
         } catch (error) {
-            console.error('加载表格失败:', error);
-            element.innerHTML = `
-                <div class="error-message">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <span>表格加载失败: ${error.message}</span>
-                    <button class="retry-button">重试</button>
-                </div>
-            `;
-            
-            // 添加重试按钮事件
-            const retryButton = element.querySelector('.retry-button');
-            if (retryButton) {
-                retryButton.onclick = (e) => {
-                    e.stopPropagation(); // 阻止事件冒泡
-                    console.log(`重试加载表格 ${blockId}`);
-                    element.dataset.loaded = 'false'; // 重置加载状态
-                    this.loadTableContent(element, blockId);
-                };
-            }
-        }
-    }
-
-    // 调整列宽
-    adjustColumnWidths(element) {
-        const table = element.querySelector('table');
-        if (!table) return;
-
-        const rows = table.rows;
-        if (rows.length === 0) return;
-
-        const columnCount = rows[0].cells.length;
-        const columnWidths = new Array(columnCount).fill(0);
-        const minWidth = 100; // 最小列宽
-        
-        // 计算每列的最大内容宽度
-        for (let i = 0; i < rows.length; i++) {
-            const cells = rows[i].cells;
-            for (let j = 0; j < cells.length; j++) {
-                const cell = cells[j];
-                // 创建一个临时span来测量内容宽度
-                const span = document.createElement('span');
-                span.style.position = 'absolute';
-                span.style.visibility = 'hidden';
-                span.style.whiteSpace = 'nowrap';
-                span.innerHTML = cell.innerHTML;
-                document.body.appendChild(span);
-                const width = span.offsetWidth;
-                document.body.removeChild(span);
-                
-                // 更新最大宽度
-                columnWidths[j] = Math.max(columnWidths[j], width + 40); // 添加内边距
-            }
-        }
-
-        // 应用列宽
-        let tableWidth = table.offsetWidth;
-        let totalWidth = columnWidths.reduce((a, b) => a + b, 0);
-        let scale = tableWidth / totalWidth;
-
-        // 创建colgroup
-        let colgroup = document.createElement('colgroup');
-        columnWidths.forEach(width => {
-            let col = document.createElement('col');
-            let adjustedWidth = Math.max(minWidth, Math.floor(width * scale));
-            col.style.width = `${adjustedWidth}px`;
-            colgroup.appendChild(col);
-        });
-
-        // 如果表格已经有colgroup，替换它
-        const existingColgroup = table.querySelector('colgroup');
-        if (existingColgroup) {
-            table.replaceChild(colgroup, existingColgroup);
-        } else {
-            table.insertBefore(colgroup, table.firstChild);
+            console.error('从API获取表格数据失败:', error);
+            tableBlock.innerHTML = `<div class="table-error">获取表格数据失败: ${error.message}</div>`;
         }
     }
 
     // 渲染表格
-    renderTableBlock(block) {
-        if (!block.children || block.children.length === 0) {
-            console.warn('表格数据为空');
-            return '<div class="table-error">表格数据为空</div>';
-        }
-
-        console.log('渲染表格数据:', block);
-
-        let tableHtml = '<div class="table-container"><table class="notion-table">';
-        const hasColumnHeader = block.table.has_column_header;
+    renderTable(tableData) {
+        const { rows, hasColumnHeader, hasRowHeader } = tableData;
         
-        block.children.forEach((row, rowIndex) => {
-            if (!row.table_row || !row.table_row.cells) {
-                console.warn(`行数据格式不正确:`, row);
-                return;
-            }
-            
-            const cells = row.table_row.cells;
-            tableHtml += '<tr>';
-            
-            cells.forEach((cell, colIndex) => {
-                const isHeader = hasColumnHeader && rowIndex === 0;
-                const cellTag = isHeader ? 'th' : 'td';
-                
-                const cellContent = cell.map(textObj => {
-                    let content = textObj.plain_text || '';
-                    if (textObj.annotations) {
-                        if (textObj.annotations.bold) content = `<strong>${content}</strong>`;
-                        if (textObj.annotations.italic) content = `<em>${content}</em>`;
-                        if (textObj.annotations.strikethrough) content = `<del>${content}</del>`;
-                        if (textObj.annotations.underline) content = `<u>${content}</u>`;
-                        if (textObj.annotations.code) content = `<code>${content}</code>`;
-                    }
-                    if (textObj.href) {
-                        content = `<a href="${textObj.href}" target="_blank">${content}</a>`;
-                    }
-                    return content;
-                }).join('');
-                
-                tableHtml += `<${cellTag}>${cellContent || '&nbsp;'}</${cellTag}>`;
-            });
-            
-            tableHtml += '</tr>';
+        if (!rows || rows.length === 0) {
+            console.warn('表格数据为空');
+            return '<div class="table-empty">空表格</div>';
+        }
+        
+        console.log('渲染表格数据:', { 
+            rowsCount: rows.length, 
+            hasColumnHeader, 
+            hasRowHeader,
+            firstRow: rows[0]
         });
         
-        tableHtml += '</table></div>';
-        return tableHtml;
+        let html = '<div class="table-container"><table class="notion-table">';
+        
+        // 渲染表头
+        if (hasColumnHeader && rows.length > 0) {
+            html += '<thead><tr>';
+            rows[0].forEach((cell, cellIndex) => {
+                const isRowHeader = hasRowHeader && cellIndex === 0;
+                html += `<th${isRowHeader ? ' scope="col"' : ''}>${this.renderCell(cell)}</th>`;
+            });
+            html += '</tr></thead>';
+        }
+        
+        // 渲染表体
+        html += '<tbody>';
+        const startRow = hasColumnHeader ? 1 : 0;
+        for (let i = startRow; i < rows.length; i++) {
+            html += '<tr>';
+            rows[i].forEach((cell, cellIndex) => {
+                const isRowHeader = hasRowHeader && cellIndex === 0 && !hasColumnHeader;
+                if (isRowHeader) {
+                    html += `<th scope="row">${this.renderCell(cell)}</th>`;
+                } else {
+                    html += `<td>${this.renderCell(cell)}</td>`;
+                }
+            });
+            html += '</tr>';
+        }
+        html += '</tbody></table></div>';
+        
+        return html;
     }
 
-    // 观察新元素
-    observe(element) {
-        if (!element) {
-            console.warn('无法观察表格元素: 元素为空');
+    // 渲染单元格
+    renderCell(cell) {
+        if (!cell) return '';
+        
+        console.log('渲染单元格:', { type: typeof cell, value: cell });
+        
+        if (typeof cell === 'string') {
+            return this.escapeHtml(cell);
+        }
+        
+        if (typeof cell === 'number') {
+            return cell.toString();
+        }
+        
+        if (Array.isArray(cell)) {
+            // 处理数组类型的单元格（Notion API 格式）
+            return cell.map(textObj => {
+                let content = textObj.plain_text || '';
+                
+                // 应用文本样式
+                if (textObj.annotations) {
+                    if (textObj.annotations.bold) content = `<strong>${content}</strong>`;
+                    if (textObj.annotations.italic) content = `<em>${content}</em>`;
+                    if (textObj.annotations.strikethrough) content = `<del>${content}</del>`;
+                    if (textObj.annotations.underline) content = `<u>${content}</u>`;
+                    if (textObj.annotations.code) content = `<code>${content}</code>`;
+                }
+                
+                // 处理链接
+                if (textObj.href) {
+                    content = `<a href="${textObj.href}" target="_blank">${content}</a>`;
+                }
+                
+                return content;
+            }).join('');
+        }
+        
+        if (typeof cell === 'object') {
+            if (cell.type === 'text') {
+                return this.escapeHtml(cell.text || '');
+            }
+            
+            if (cell.type === 'link') {
+                return `<a href="${this.escapeHtml(cell.url || '')}" target="_blank" rel="noopener noreferrer">${this.escapeHtml(cell.text || cell.url || '')}</a>`;
+            }
+            
+            if (cell.plain_text) {
+                return this.escapeHtml(cell.plain_text);
+            }
+            
+            if (cell.content) {
+                return this.escapeHtml(cell.content);
+            }
+        }
+        
+        // 如果无法识别类型，尝试转换为字符串
+        try {
+            return this.escapeHtml(JSON.stringify(cell));
+        } catch (e) {
+            console.error('无法渲染单元格:', e);
+            return '';
+        }
+    }
+
+    // 转义HTML
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // 添加表格排序功能
+    addTableSorting(table) {
+        if (!table) return;
+        
+        const headers = table.querySelectorAll('th');
+        headers.forEach((header, index) => {
+            if (header.getAttribute('scope') === 'row') return;
+            
+            header.style.cursor = 'pointer';
+            header.title = '点击排序';
+            header.dataset.sortDirection = 'none';
+            header.dataset.columnIndex = index;
+            
+            // 添加排序图标
+            const sortIcon = document.createElement('span');
+            sortIcon.className = 'sort-icon';
+            sortIcon.innerHTML = '⇅';
+            sortIcon.style.marginLeft = '5px';
+            sortIcon.style.fontSize = '12px';
+            sortIcon.style.opacity = '0.5';
+            header.appendChild(sortIcon);
+            
+            header.addEventListener('click', () => this.sortTable(table, index, header));
+        });
+    }
+
+    // 排序表格
+    sortTable(table, columnIndex, header) {
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        
+        // 获取当前排序方向
+        const currentDirection = header.dataset.sortDirection;
+        const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
+        
+        // 更新所有表头的排序方向
+        table.querySelectorAll('th').forEach(th => {
+            th.dataset.sortDirection = 'none';
+            th.querySelector('.sort-icon').innerHTML = '⇅';
+            th.querySelector('.sort-icon').style.opacity = '0.5';
+        });
+        
+        // 更新当前表头的排序方向
+        header.dataset.sortDirection = newDirection;
+        header.querySelector('.sort-icon').innerHTML = newDirection === 'asc' ? '↑' : '↓';
+        header.querySelector('.sort-icon').style.opacity = '1';
+        
+        // 排序行
+        rows.sort((rowA, rowB) => {
+            const cellA = rowA.querySelectorAll('td, th')[columnIndex];
+            const cellB = rowB.querySelectorAll('td, th')[columnIndex];
+            
+            if (!cellA || !cellB) return 0;
+            
+            const valueA = cellA.textContent.trim();
+            const valueB = cellB.textContent.trim();
+            
+            // 尝试数字排序
+            const numA = parseFloat(valueA);
+            const numB = parseFloat(valueB);
+            
+            if (!isNaN(numA) && !isNaN(numB)) {
+                return newDirection === 'asc' ? numA - numB : numB - numA;
+            }
+            
+            // 字符串排序
+            return newDirection === 'asc' 
+                ? valueA.localeCompare(valueB, 'zh-CN') 
+                : valueB.localeCompare(valueA, 'zh-CN');
+        });
+        
+        // 重新添加排序后的行
+        rows.forEach(row => tbody.appendChild(row));
+    }
+
+    // 处理页面中的所有表格
+    processAllTables() {
+        const tableBlocks = document.querySelectorAll('.lazy-block.table-block');
+        
+        if (tableBlocks.length === 0) {
+            console.log('没有找到表格块');
             return;
         }
         
-        if (!this.observer) {
-            console.warn('无法观察表格元素: 观察器未初始化');
-            this.initObserver();
-        }
+        console.log(`找到 ${tableBlocks.length} 个表格块`);
         
-        console.log('开始观察表格元素:', element.dataset.blockId);
-        this.observer.observe(element);
+        tableBlocks.forEach(tableBlock => {
+            // 检查表格是否已经加载
+            const isLoaded = tableBlock.querySelector('table') !== null;
+            if (isLoaded) {
+                console.log('表格已加载，跳过');
+                return;
+            }
+            
+            if (this.observer) {
+                console.log('使用IntersectionObserver观察表格块');
+                this.observer.observe(tableBlock);
+            } else {
+                // 如果不支持 IntersectionObserver，直接加载
+                console.log('不支持IntersectionObserver，直接加载表格');
+                this.loadTable(tableBlock);
+            }
+        });
     }
 }
 
-// 导出实例
-export const tableLazyLoader = new TableLazyLoader();
-
-// 默认导出类
-export default TableLazyLoader; 
+// 创建单例
+export const tableLazyLoader = new TableLazyLoader(); 

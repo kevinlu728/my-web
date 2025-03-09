@@ -35,15 +35,4 @@ body {
     margin-top: 60px;
 }
 
-/* 博客页面主容器样式 */
-.blog-content {
-    display: grid;
-    grid-template-columns: 360px 1fr;
-    gap: 40px;
-    max-width: 1600px;
-    margin: 0 auto;
-    padding: 100px 40px 40px;
-    min-height: calc(100vh - 60px);
-    position: relative;
-    z-index: 1;
-} 
+/* 注意：博客页面布局已移至 layouts/blog-layout.css */ 

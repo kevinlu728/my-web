@@ -1,3 +1,11 @@
+/**
+ * @file [pageId].js
+ * @description 文章内容API路由处理，根据页面ID获取Notion页面的完整内容
+ * @author 陆凯
+ * @created 2024-03-09
+ * @updated 2024-03-10
+ */
+
 // Notion API 文章内容接口
 // 使用 CommonJS 风格导入，兼容 Vercel 环境
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));

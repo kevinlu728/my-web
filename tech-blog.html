@@ -4,22 +4,108 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>技术沉淀 - 云栖思渊</title>
+    <!-- SEO元标签 -->
+    <meta name="description" content="云栖思渊技术博客 - 分享终端技术、AI工程化、架构设计等技术文章和学习心得">
+    <meta name="keywords" content="技术博客,终端技术,AI工程化,架构设计,Notion">
+    <!-- Open Graph标签 -->
+    <meta property="og:title" content="技术沉淀 - 云栖思渊">
+    <meta property="og:description" content="分享终端技术、AI工程化、架构设计等技术文章和学习心得">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://yourdomain.com/tech-blog.html">
+    <meta property="og:image" content="https://yourdomain.com/assets/tech-blog-cover.jpg">
+    <!-- Twitter卡片 -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="技术沉淀 - 云栖思渊">
+    <meta name="twitter:description" content="分享终端技术、AI工程化、架构设计等技术文章和学习心得">
+    <meta name="twitter:image" content="https://yourdomain.com/assets/tech-blog-cover.jpg">
+    <!-- 预加载关键资源 -->
+    <link rel="preload" href="/styles/main.css" as="style">
+    <link rel="preload" href="/styles/layouts/blog-layout.css" as="style">
+    <link rel="preload" href="/styles/components/code-block.css" as="style">
+    <link rel="preload" href="/styles/components/table-block.css" as="style">
+    <!-- CSS资源 -->
     <link rel="stylesheet" href="/styles/main.css">
     <link rel="stylesheet" href="/styles/components/header.css">
     <link rel="stylesheet" href="/styles/components/footer.css">
-    <link rel="stylesheet" href="/styles/layouts/article.css">
+    <link rel="stylesheet" href="/styles/layouts/blog-layout.css">
     <link rel="stylesheet" href="/styles/components/debug-panel.css">
     <link rel="stylesheet" href="/styles/layouts/article-list.css">
+    <link rel="stylesheet" href="/styles/components/code-block.css">
+    <link rel="stylesheet" href="/styles/components/table-block.css">
     <!-- FontAwesome CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <!-- Prism.js -->
-    <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
-    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-java.min.js"></script>
-    <!-- KaTeX -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    
+    <!-- Prism.js - 添加备用CDN和加载失败处理 -->
+    <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" onerror="this.onerror=null;this.href='https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css';">
+    <script>
+        // 加载脚本的函数，支持备用CDN
+        function loadScript(src, backupSrc) {
+            const script = document.createElement('script');
+            script.async = false; // 保持执行顺序
+            script.defer = true;
+            script.src = src;
+            script.onerror = function() {
+                console.warn(`Failed to load script from primary source: ${src}`);
+                if (backupSrc) {
+                    console.log(`Trying backup source: ${backupSrc}`);
+                    this.src = backupSrc;
+                }
+            };
+            document.head.appendChild(script);
+            return script;
+        }
+        
+        // 加载Prism.js及其组件
+        const prismCore = loadScript(
+            'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js',
+            'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js'
+        );
+        
+        // 确保组件在核心库加载后加载
+        prismCore.onload = function() {
+            loadScript(
+                'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-java.min.js',
+                'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js'
+            );
+        };
+    </script>
+    
+    <!-- KaTeX - 添加备用CDN和加载失败处理 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" onerror="this.onerror=null;this.href='https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css';">
+    <script>
+        // 加载KaTeX及其组件
+        const katexCore = loadScript(
+            'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js',
+            'https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js'
+        );
+        
+        // 确保auto-render在核心库加载后加载
+        katexCore.onload = function() {
+            const autoRender = loadScript(
+                'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js',
+                'https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js'
+            );
+            
+            // 初始化KaTeX自动渲染
+            autoRender.onload = function() {
+                document.addEventListener('DOMContentLoaded', function() {
+                    if (typeof renderMathInElement === 'function') {
+                        renderMathInElement(document.body, {
+                            delimiters: [
+                                {left: '$$', right: '$$', display: true},
+                                {left: '$', right: '$', display: false}
+                            ]
+                        });
+                    } else {
+                        console.warn('KaTeX auto-render not available');
+                    }
+                });
+            };
+        };
+    </script>
+    
+    <!-- 网站图标 -->
+    <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
 </head>
 <body class="article-page">
     <header class="header">
@@ -28,13 +114,22 @@
             <nav>
                 <ul class="nav-menu">
                     <li><a href="index.html">首页</a></li>
-                    <li><a href="tech-blog.html">技术沉淀</a></li>
+                    <li><a href="tech-blog.html" aria-current="page">技术沉淀</a></li>
                     <li><a href="/blog">生活点滴</a></li>
                     <li><a href="/contact">联系方式</a></li>
                 </ul>
             </nav>
         </div>
     </header>
+    
+    <!-- 面包屑导航 -->
+    <nav class="breadcrumb" aria-label="面包屑导航">
+        <ol>
+            <li><a href="index.html">首页</a></li>
+            <li aria-current="page">技术沉淀</li>
+        </ol>
+    </nav>
+    
     <main class="blog-content">
         <div class="left-column">
             <!-- 搜索框移到分类列表上方 -->
@@ -104,35 +199,60 @@
         </div>
     </main>
 
-    <!-- 先加载依赖 -->
-    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <footer class="footer">
+        <div class="copyright">
+            © 2024 陆凯 - All rights reserved
+        </div>
+    </footer>
+
+    <!-- 结构化数据 -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Blog",
+      "name": "技术沉淀 - 云栖思渊",
+      "description": "分享终端技术、AI工程化、架构设计等技术文章和学习心得",
+      "url": "https://yourdomain.com/tech-blog.html",
+      "author": {
+        "@type": "Person",
+        "name": "陆凯"
+      }
+    }
+    </script>
     
-    <!-- 使用 type="module" 确保模块正确加载 -->
+    <!-- 先加载依赖 -->
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js" defer></script>
+    
+    <!-- 使用统一的模块加载方式 -->
     <script type="module">
+        // 导入所需模块
         import { imageLazyLoader } from './scripts/utils/image-lazy-loader.js';
         import { articleManager } from './scripts/managers/articleManager.js';
         import config from './scripts/config/config.js';
         import { tableLazyLoader } from './scripts/utils/table-lazy-loader.js';
+        import { codeLazyLoader } from './scripts/utils/code-lazy-loader.js';
+        import { initializePage } from './scripts/pages/tech-blog.js';
         
         // 将模块导出到全局作用域，方便调试
         window.imageLazyLoader = imageLazyLoader;
         window.articleManager = articleManager;
         window.config = config;
         window.tableLazyLoader = tableLazyLoader;
+        window.codeLazyLoader = codeLazyLoader;
         
-        // 页面加载完成后检查模块状态
-        window.addEventListener('load', () => {
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('初始化技术博客页面...');
+            initializePage();
+            
+            // 检查模块加载状态
             console.log('🔍 检查模块加载状态：');
             console.log('- imageLazyLoader:', !!window.imageLazyLoader);
             console.log('- articleManager:', !!window.articleManager);
             console.log('- config:', !!window.config);
             console.log('- tableLazyLoader:', !!window.tableLazyLoader);
+            console.log('- codeLazyLoader:', !!window.codeLazyLoader);
         });
     </script>
-    
-    <!-- 加载主要逻辑 -->
-    <script type="module" src="/scripts/utils/image-lazy-loader.js"></script>
-    <script type="module" src="/scripts/pages/tech-blog.js"></script>
-    <script type="module" src="/scripts/utils/init-lazy-loading.js"></script>
 </body>
 </html> 

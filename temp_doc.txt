@@ -1,0 +1,4 @@
+/**
+ * @file main.js
+ * @description 网站主入口文件，负责初始化和加载网站的各个组件
+ * @author 陆凯

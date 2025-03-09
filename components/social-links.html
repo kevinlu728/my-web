@@ -1,23 +1,42 @@
+<!--
+/**
+ * 社交链接组件 (Social Links)
+ * 
+ * 用途：显示社交媒体和联系方式链接
+ * 
+ * 使用方法：
+ * 1. 在页面中引入此组件：<div id="social-links-container"></div>
+ * 2. 在JavaScript中加载组件：document.getElementById('social-links-container').innerHTML = socialLinksHTML;
+ * 3. 初始化社交链接功能：initSocialLinks();
+ */
+-->
+
 <!-- 社交链接 -->
-<div class="social-links">
-    <a href="javascript:void(0)" class="social-link" title="微信" id="wechat-link">
-        <i class="fab fa-weixin"></i>
+<div class="social-links" role="navigation" aria-label="社交媒体链接">
+    <a href="javascript:void(0)" class="social-link" title="微信" id="wechat-link" aria-label="显示微信二维码">
+        <i class="fab fa-weixin" aria-hidden="true"></i>
+        <span class="sr-only">微信</span>
     </a>
-    <a href="#" target="_blank" rel="noopener noreferrer" class="social-link" title="微博">
-        <i class="fab fa-weibo"></i>
+    <a href="https://weibo.com/yourprofile" target="_blank" rel="noopener noreferrer" class="social-link" title="微博" aria-label="访问我的微博">
+        <i class="fab fa-weibo" aria-hidden="true"></i>
+        <span class="sr-only">微博</span>
     </a>
-    <a href="#" target="_blank" rel="noopener noreferrer" class="social-link" title="知乎">
-        <i class="fab fa-zhihu"></i>
+    <a href="https://www.zhihu.com/people/yourprofile" target="_blank" rel="noopener noreferrer" class="social-link" title="知乎" aria-label="访问我的知乎">
+        <i class="fab fa-zhihu" aria-hidden="true"></i>
+        <span class="sr-only">知乎</span>
     </a>
-    <a href="#" target="_blank" rel="noopener noreferrer" class="social-link" title="Bilibili">
-        <svg class="bilibili-icon" viewBox="0 0 1024 1024" width="24" height="24">
+    <a href="https://space.bilibili.com/yourprofile" target="_blank" rel="noopener noreferrer" class="social-link" title="Bilibili" aria-label="访问我的B站">
+        <svg class="bilibili-icon" viewBox="0 0 1024 1024" width="24" height="24" aria-hidden="true" focusable="false">
             <path d="M777.514667 131.669333a53.333333 53.333333 0 0 1 0 75.434667L728.746667 255.829333h49.92A160 160 0 0 1 938.666667 415.829333v320a160 160 0 0 1-160 160H245.333333A160 160 0 0 1 85.333333 735.829333v-320a160 160 0 0 1 160-160h49.749334L246.4 207.104a53.333333 53.333333 0 1 1 75.392-75.434667l113.152 113.152c3.370667 3.370667 6.186667 7.04 8.448 10.965334h137.088c2.261333-3.925333 5.077333-7.594667 8.448-10.965334l113.152-113.152a53.333333 53.333333 0 0 1 75.434667 0z m1.152 231.253334H245.333333a53.333333 53.333333 0 0 0-53.333333 53.333333v320a53.333333 53.333333 0 0 0 53.333333 53.333333h533.333334a53.333333 53.333333 0 0 0 53.333333-53.333333v-320a53.333333 53.333333 0 0 0-53.333333-53.333333zM341.333333 469.333333a53.333333 53.333333 0 1 1 0 106.666667 53.333333 53.333333 0 0 1 0-106.666667z m341.333334 0a53.333333 53.333333 0 1 1 0 106.666667 53.333333 53.333333 0 0 1 0-106.666667z" fill="currentColor"/>
         </svg>
+        <span class="sr-only">Bilibili</span>
     </a>
-    <a href="#" target="_blank" rel="noopener noreferrer" class="social-link" title="LinkedIn">
-        <i class="fab fa-linkedin-in"></i>
+    <a href="https://www.linkedin.com/in/kevinlu728/" target="_blank" rel="noopener noreferrer" class="social-link" title="LinkedIn" aria-label="访问我的LinkedIn">
+        <i class="fab fa-linkedin-in" aria-hidden="true"></i>
+        <span class="sr-only">LinkedIn</span>
     </a>
-    <a href="mailto:kevinlu728@gmail.com" class="social-link" title="Email">
-        <i class="fas fa-envelope"></i>
+    <a href="mailto:kevinlu728@gmail.com" class="social-link" title="Email" aria-label="发送邮件给我">
+        <i class="fas fa-envelope" aria-hidden="true"></i>
+        <span class="sr-only">Email</span>
     </a>
 </div> 

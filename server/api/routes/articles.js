@@ -1,3 +1,11 @@
+/**
+ * @file articles.js
+ * @description 文章列表API路由处理，负责获取和过滤Notion数据库中的文章
+ * @author 陆凯
+ * @created 2024-03-09
+ * @updated 2024-03-10
+ */
+
 // Notion API 文章列表接口
 import fetch from 'node-fetch';
 

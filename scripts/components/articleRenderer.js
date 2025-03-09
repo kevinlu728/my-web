@@ -1,4 +1,24 @@
-// 文章内容渲染模块
+/**
+ * @file articleRenderer.js
+ * @description 文章渲染模块，负责将Notion API返回的数据渲染为HTML
+ * @author 陆凯
+ * @version 1.0.0
+ * @created 2024-03-09
+ * 
+ * 该模块负责将从Notion API获取的文章数据转换为HTML内容，支持多种块类型的渲染：
+ * - 段落、标题、列表、待办事项
+ * - 代码块（支持语法高亮）
+ * - 表格（支持懒加载）
+ * - 图片（支持懒加载）
+ * - 公式（支持KaTeX渲染）
+ * - 引用、标注等
+ * 
+ * 主要导出函数：
+ * - renderNotionBlocks: 渲染Notion块数组为HTML
+ * - initializeLazyLoading: 初始化懒加载功能
+ * 
+ * 依赖于table-lazy-loader.js和code-lazy-loader.js实现懒加载功能。
+ */
 
 import { tableLazyLoader } from '../utils/table-lazy-loader.js';
 import { codeLazyLoader } from '../utils/code-lazy-loader.js';
@@ -137,12 +157,20 @@ function renderToggle(block) {
 function renderCode(block) {
     const code = block.code?.rich_text?.[0]?.plain_text || '';
     const language = block.code?.language || 'plaintext';
+    const caption = block.code?.caption?.[0]?.plain_text || '';
+    
+    // 创建代码数据对象
+    const codeData = {
+        code: code,
+        language: language,
+        caption: caption
+    };
+    
+    // 将代码数据序列化为JSON字符串
+    const codeDataJson = JSON.stringify(codeData);
     
     return `
-        <div class="lazy-block code-block" 
-            data-block-id="${block.id}"
-            data-code="${escapeAttribute(code)}"
-            data-language="${language}">
+        <div class="lazy-block code-block" data-code-data="${escapeAttribute(codeDataJson)}">
             <div class="placeholder-content">
                 <i class="fas fa-code"></i>
                 <span>代码加载中</span>
@@ -392,7 +420,44 @@ function renderBlock(block) {
                 return renderEquation(block);
             case 'table':
                 console.log('发现表格块，使用懒加载:', block.id);
-                return tableLazyLoader.createPlaceholder(block.id);
+                console.log('表格块完整数据:', JSON.stringify(block, null, 2));
+                
+                // 创建表格数据对象
+                const tableData = {
+                    id: block.id,
+                    rows: [],
+                    hasColumnHeader: block.table?.has_column_header || false,
+                    hasRowHeader: block.table?.has_row_header || false
+                };
+                
+                // 如果有表格行数据，则添加到rows中
+                if (block.table && block.table.rows) {
+                    console.log('表格行数据来自block.table.rows');
+                    tableData.rows = block.table.rows;
+                } else if (block.children && block.children.length > 0) {
+                    console.log('表格行数据来自block.children');
+                    tableData.rows = block.children.map(row => {
+                        if (row.table_row && row.table_row.cells) {
+                            return row.table_row.cells;
+                        }
+                        return [];
+                    });
+                } else {
+                    // 表格数据为空，但我们不创建示例数据，而是显示一个加载中的状态
+                    console.log('没有找到表格行数据，显示加载状态');
+                }
+                
+                console.log('表格数据:', tableData); // 添加日志
+                
+                // 将表格数据序列化为JSON字符串
+                const tableDataJson = JSON.stringify(tableData);
+                
+                // 返回表格懒加载占位符
+                return `
+                    <div class="lazy-block table-block" data-block-id="${block.id}" data-table-data="${escapeAttribute(tableDataJson)}">
+                        <div class="table-loading">表格加载中...</div>
+                    </div>
+                `;
             case 'divider':
                 return '<hr class="notion-divider">';
             case 'quote':
@@ -412,17 +477,21 @@ function renderBlock(block) {
 
 // 更新初始化懒加载函数以包含公式渲染
 export function initializeLazyLoading(container) {
-    // 查找并观察所有懒加载块
-    const tablePlaceholders = container.querySelectorAll('.table-block[data-block-id]');
-    const codePlaceholders = container.querySelectorAll('.code-block[data-block-id]');
+    // 查找并处理所有懒加载块
+    const tablePlaceholders = container.querySelectorAll('.lazy-block.table-block');
+    const codePlaceholders = container.querySelectorAll('.lazy-block.code-block');
 
-    tablePlaceholders.forEach(element => {
-        tableLazyLoader.observe(element);
-    });
+    // 处理表格懒加载
+    if (tablePlaceholders.length > 0) {
+        console.log(`找到 ${tablePlaceholders.length} 个表格块，初始化懒加载`);
+        tableLazyLoader.processAllTables();
+    }
 
-    codePlaceholders.forEach(element => {
-        codeLazyLoader.observe(element);
-    });
+    // 处理代码块懒加载
+    if (codePlaceholders.length > 0) {
+        console.log(`找到 ${codePlaceholders.length} 个代码块，初始化懒加载`);
+        codeLazyLoader.processAllCodeBlocks();
+    }
 
     // 等待KaTeX加载完成后渲染公式
     if (window.katex && window.renderMathInElement) {

@@ -1,11 +1,33 @@
 /**
- * 代码块懒加载工具
+ * @file code-lazy-loader.js
+ * @description 代码块懒加载工具，实现代码块的延迟加载和语法高亮
+ * @author 陆凯
+ * @version 1.0.0
+ * @created 2024-03-09
+ * 
+ * 该模块实现了代码块的懒加载和语法高亮功能：
+ * - 使用IntersectionObserver监测代码块可见性
+ * - 代码块进入视口时才加载和渲染
+ * - 支持多种编程语言的语法高亮
+ * - 支持代码块的复制功能
+ * - 支持代码行号显示
+ * 
+ * 主要方法：
+ * - loadCode: 加载代码内容并应用语法高亮
+ * - highlightCode: 对代码应用语法高亮
+ * - processAllCodeBlocks: 处理页面中的所有代码块
+ * - addCopyButton: 为代码块添加复制按钮
+ * 
+ * 导出单例codeLazyLoader供其他模块使用。
  */
+
+import { codeStyles, addCodeStylesToDocument } from '../styles/code-styles.js';
+
 class CodeLazyLoader {
     constructor() {
         this.observer = null;
         this.initObserver();
-        this.addCodeStyles();
+        addCodeStylesToDocument();
         this.loadPrism();
     }
 
@@ -30,264 +52,165 @@ class CodeLazyLoader {
         document.head.appendChild(prismJava);
     }
 
-    // 添加代码块样式
-    addCodeStyles() {
-        const style = document.createElement('style');
-        style.textContent = `
-            .lazy-block.code-block {
-                background: none !important;
-                padding: 0 !important;
-                margin: 0 !important;
-            }
-            .code-container {
-                background-color: #2b2b2b;
-                border-radius: 3px;
-                margin: 0;
-                position: relative;
-                overflow: hidden;
-            }
-            .code-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 0.3em 0.8em;
-                color: #a9b7c6;
-                font-size: 0.85em;
-                background-color: #313335;
-                border-bottom: 1px solid #323232;
-            }
-            .code-language {
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-                font-size: 0.75em;
-                color: #808080;
-            }
-            .copy-button {
-                opacity: 0;
-                transition: opacity 0.2s;
-                border: none;
-                background: none;
-                color: #a9b7c6;
-                cursor: pointer;
-                font-size: 0.9em;
-                padding: 4px 8px;
-                border-radius: 3px;
-            }
-            .code-container:hover .copy-button {
-                opacity: 1;
-            }
-            .copy-button:hover {
-                background-color: #3c3f41;
-            }
-            .code-content {
-                padding: 0.8em;
-                overflow-x: auto;
-                background-color: #2b2b2b;
-            }
-            .code-content pre {
-                margin: 0;
-                padding: 0;
-                background: none !important;
-            }
-            .code-content code {
-                font-family: "JetBrains Mono", Consolas, Monaco, "Andale Mono", monospace !important;
-                font-size: 14px !important;
-                line-height: 1.4 !important;
-                background: none !important;
-                padding: 0 !important;
-                color: #a9b7c6 !important;
-            }
-            /* IntelliJ IDEA Darcula 主题精确匹配 */
-            .token.comment {
-                color: #629755 !important;
-                font-style: italic !important;
-            }
-            .token.keyword {
-                color: #cc7832 !important;
-                font-weight: bold !important;
-            }
-            .token.string {
-                color: #6a8759 !important;
-            }
-            .token.number {
-                color: #6897bb !important;
-            }
-            .token.operator {
-                color: #a9b7c6 !important;
-            }
-            .token.class-name {
-                color: #a9b7c6 !important;
-            }
-            .token.function {
-                color: #ffc66d !important;
-            }
-            .token.punctuation {
-                color: #a9b7c6 !important;
-            }
-            .token.property {
-                color: #9876aa !important;
-            }
-            /* 特殊关键字颜色 */
-            .token.builtin {
-                color: #cc7832 !important;
-                font-weight: bold !important;
-            }
-            .token.important {
-                color: #cc7832 !important;
-                font-weight: bold !important;
-            }
-            /* 变量名颜色 */
-            .token.variable {
-                color: #a9b7c6 !important;
-            }
-            /* 注解颜色 */
-            .token.annotation {
-                color: #bbb529 !important;
-            }
-            /* 静态成员颜色 */
-            .token.static {
-                color: #cc7832 !important;
-                font-weight: bold !important;
-            }
-            /* 方法调用颜色 */
-            .token.method {
-                color: #ffc66d !important;
-            }
-            /* 参数颜色 */
-            .token.parameter {
-                color: #a9b7c6 !important;
-            }
-            @media (max-width: 768px) {
-                .code-container {
-                    font-size: 12px;
-                }
-                .code-content {
-                    padding: 0.6em;
-                }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-
     // 初始化观察器
     initObserver() {
-        if (this.observer) return;
-        
-        this.observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const element = entry.target;
-                    const blockId = element.dataset.blockId;
-                    if (blockId) {
-                        this.loadCodeContent(element, blockId);
-                        this.observer.unobserve(element);
-                    }
-                }
+        if ('IntersectionObserver' in window) {
+            this.observer = new IntersectionObserver(this.onIntersection.bind(this), {
+                rootMargin: '100px 0px',
+                threshold: 0.01
             });
-        }, {
-            rootMargin: '50px 0px',
-            threshold: 0.1
+        }
+    }
+
+    // 处理代码块懒加载
+    onIntersection(entries) {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const codeBlock = entry.target;
+                this.loadCode(codeBlock);
+                this.observer.unobserve(codeBlock);
+            }
         });
     }
 
-    // 创建代码块占位符
-    createPlaceholder(blockId) {
-        return `
-            <div class="lazy-block code-block" data-block-id="${blockId}">
-                <div class="placeholder-content">
-                    <i class="fas fa-code"></i>
-                    <span>代码加载中</span>
-                </div>
-            </div>
-        `;
-    }
-
-    // 加载代码内容
-    async loadCodeContent(element, blockId) {
+    // 加载代码
+    loadCode(codeBlock) {
         try {
-            element.innerHTML = `
-                <div class="loading-spinner"></div>
-                <div class="loading-text">加载中...</div>
-            `;
-
-            const codeContent = element.dataset.code || '';
-            const language = element.dataset.language || 'plaintext';
-
+            // 获取代码数据
+            const codeData = JSON.parse(codeBlock.dataset.codeData || '{}');
+            
+            if (!codeData || !codeData.code) {
+                console.error('无效的代码数据:', codeData);
+                codeBlock.innerHTML = '<div class="code-error">无效的代码数据</div>';
+                return;
+            }
+            
             // 渲染代码块
-            const codeHtml = this.renderCodeBlock(codeContent, language);
-            element.innerHTML = codeHtml;
-
+            const codeHtml = this.renderCode(codeData);
+            codeBlock.innerHTML = codeHtml;
+            
+            // 高亮代码
+            this.highlightCode(codeBlock);
+            
             // 添加复制功能
-            const copyButton = element.querySelector('.copy-button');
-            if (copyButton) {
-                copyButton.addEventListener('click', () => {
-                    navigator.clipboard.writeText(codeContent).then(() => {
-                        const originalText = copyButton.innerHTML;
-                        copyButton.innerHTML = '已复制';
-                        copyButton.style.opacity = '1';
-                        setTimeout(() => {
-                            copyButton.innerHTML = originalText;
-                            copyButton.style.opacity = '';
-                        }, 2000);
-                    });
-                });
-            }
-
-            // 使用Prism进行语法高亮
-            if (window.Prism) {
-                const codeElement = element.querySelector('code');
-                if (codeElement) {
-                    Prism.highlightElement(codeElement);
-                }
-            }
-
+            this.addCopyButton(codeBlock);
         } catch (error) {
-            console.error('加载代码块失败:', error);
-            element.innerHTML = `
-                <div class="error-message">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <span>代码加载失败，点击重试</span>
-                </div>
-            `;
-            element.onclick = () => this.loadCodeContent(element, blockId);
+            console.error('加载代码失败:', error);
+            codeBlock.innerHTML = '<div class="code-error">加载代码失败</div>';
         }
     }
 
     // 渲染代码块
-    renderCodeBlock(content, language) {
-        return `
-            <div class="code-container">
-                <div class="code-header">
-                    <span class="code-language">${language}</span>
-                    <button class="copy-button">复制</button>
-                </div>
-                <div class="code-content">
-                    <pre><code class="language-${language}">${this.escapeHtml(content)}</code></pre>
-                </div>
-            </div>
-        `;
-    }
-
-    // HTML转义
-    escapeHtml(text) {
-        return text
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    }
-
-    // 观察新元素
-    observe(element) {
-        if (element && this.observer) {
-            this.observer.observe(element);
+    renderCode(codeData) {
+        const { code, language, caption } = codeData;
+        
+        let html = '<div class="code-container">';
+        
+        // 添加代码头部
+        html += '<div class="code-header">';
+        html += `<div class="code-language">${language || 'text'}</div>`;
+        if (caption) {
+            html += `<div class="code-caption">${caption}</div>`;
         }
+        html += '<div class="code-actions">';
+        html += '<button class="code-action-btn copy-btn" title="复制代码"><i class="fas fa-copy"></i></button>';
+        html += '</div></div>';
+        
+        // 添加代码内容
+        html += '<div class="code-content">';
+        html += `<pre><code class="language-${language || 'text'}">${this.escapeHtml(code)}</code></pre>`;
+        html += '</div>';
+        
+        // 添加复制成功提示
+        html += '<div class="copy-success">已复制</div>';
+        
+        html += '</div>';
+        
+        return html;
+    }
+
+    // 转义HTML
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // 高亮代码
+    highlightCode(codeBlock) {
+        if (window.Prism) {
+            Prism.highlightAllUnder(codeBlock);
+        }
+    }
+
+    // 添加复制按钮功能
+    addCopyButton(codeBlock) {
+        const copyBtn = codeBlock.querySelector('.copy-btn');
+        const codeElement = codeBlock.querySelector('code');
+        const successElement = codeBlock.querySelector('.copy-success');
+        
+        if (copyBtn && codeElement) {
+            copyBtn.addEventListener('click', () => {
+                const code = codeElement.textContent;
+                
+                // 使用 Clipboard API
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(code)
+                        .then(() => this.showCopySuccess(successElement))
+                        .catch(err => console.error('复制失败:', err));
+                } else {
+                    // 回退方法
+                    const textarea = document.createElement('textarea');
+                    textarea.value = code;
+                    textarea.style.position = 'fixed';
+                    textarea.style.opacity = '0';
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    
+                    try {
+                        document.execCommand('copy');
+                        this.showCopySuccess(successElement);
+                    } catch (err) {
+                        console.error('复制失败:', err);
+                    }
+                    
+                    document.body.removeChild(textarea);
+                }
+            });
+        }
+    }
+
+    // 显示复制成功提示
+    showCopySuccess(element) {
+        if (!element) return;
+        
+        element.classList.add('show');
+        
+        setTimeout(() => {
+            element.classList.remove('show');
+        }, 2000);
+    }
+
+    // 处理页面中的所有代码块
+    processAllCodeBlocks() {
+        const codeBlocks = document.querySelectorAll('.lazy-block.code-block');
+        
+        if (codeBlocks.length === 0) {
+            return;
+        }
+        
+        console.log(`找到 ${codeBlocks.length} 个代码块`);
+        
+        codeBlocks.forEach(codeBlock => {
+            if (this.observer) {
+                this.observer.observe(codeBlock);
+            } else {
+                // 如果不支持 IntersectionObserver，直接加载
+                this.loadCode(codeBlock);
+            }
+        });
     }
 }
 
-// 导出实例
-export const codeLazyLoader = new CodeLazyLoader();
-
-// 默认导出类
-export default CodeLazyLoader; 
+// 创建单例
+export const codeLazyLoader = new CodeLazyLoader(); 
