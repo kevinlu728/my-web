@@ -357,38 +357,56 @@ function renderTableBlock(block) {
     return tableHtml;
 }
 
-// 更新渲染块函数以支持公式
+// 渲染单个块
 function renderBlock(block) {
-    console.log('渲染块类型:', block.type, block);
-
-    switch (block.type) {
-        case 'equation':
-            return renderEquation(block);
-        case 'table':
-            return tableLazyLoader.createPlaceholder(block.id);
-        case 'code':
-            return renderCode(block);
-        case 'paragraph':
-            return renderParagraph(block);
-        case 'heading_1':
-            return renderHeading(block, 'h1');
-        case 'heading_2':
-            return renderHeading(block, 'h2');
-        case 'heading_3':
-            return renderHeading(block, 'h3');
-        case 'bulleted_list_item':
-            return renderListItem(block, 'ul');
-        case 'numbered_list_item':
-            return renderListItem(block, 'ol');
-        case 'to_do':
-            return renderTodo(block);
-        case 'toggle':
-            return renderToggle(block);
-        case 'image':
-            return renderImage(block);
-        default:
-            console.warn('不支持的块类型:', block.type);
-            return `<div class="unsupported-block">不支持的块类型: ${block.type}</div>`;
+    console.log('渲染块:', block.type, block.id);
+    
+    if (!block || !block.type) {
+        console.warn('无效的块:', block);
+        return '';
+    }
+    
+    try {
+        switch (block.type) {
+            case 'paragraph':
+                return renderParagraph(block);
+            case 'heading_1':
+                return renderHeading(block, 'h1');
+            case 'heading_2':
+                return renderHeading(block, 'h2');
+            case 'heading_3':
+                return renderHeading(block, 'h3');
+            case 'bulleted_list_item':
+                return renderListItem(block, 'ul');
+            case 'numbered_list_item':
+                return renderListItem(block, 'ol');
+            case 'to_do':
+                return renderTodo(block);
+            case 'toggle':
+                return renderToggle(block);
+            case 'code':
+                return renderCode(block);
+            case 'image':
+                return renderImage(block);
+            case 'equation':
+                return renderEquation(block);
+            case 'table':
+                console.log('发现表格块，使用懒加载:', block.id);
+                return tableLazyLoader.createPlaceholder(block.id);
+            case 'divider':
+                return '<hr class="notion-divider">';
+            case 'quote':
+                return `<blockquote class="notion-quote">${renderRichText(block.quote.rich_text)}</blockquote>`;
+            case 'callout':
+                const icon = block.callout.icon?.emoji ? `<span class="callout-icon">${block.callout.icon.emoji}</span>` : '';
+                return `<div class="notion-callout">${icon}<div class="callout-content">${renderRichText(block.callout.rich_text)}</div></div>`;
+            default:
+                console.warn('未支持的块类型:', block.type);
+                return `<div class="unsupported-block">不支持的内容类型: ${block.type}</div>`;
+        }
+    } catch (error) {
+        console.error(`渲染 ${block.type} 块时出错:`, error);
+        return `<div class="error-block">渲染 ${block.type} 内容时出错: ${error.message}</div>`;
     }
 }
 

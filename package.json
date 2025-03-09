@@ -1,10 +1,18 @@
 {
   "dependencies": {
     "@notionhq/client": "^2.2.16",
+    "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "katex": "^0.16.21",
     "node-fetch": "^3.3.2",
     "react-katex": "^3.0.1"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "api": "node api-server.js",
+    "api:esm": "node api-server.mjs",
+    "static": "node static-server.js",
+    "dev": "vercel dev"
   }
 }

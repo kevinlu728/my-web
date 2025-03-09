@@ -1,13 +1,18 @@
 // Notion API 服务
 // 处理与 Notion API 的所有交互
+import config from '../config/config.js';
 
 // 获取文章列表
 export async function getArticles(databaseId) {
   try {
     console.log(`Fetching articles from Notion API for database: ${databaseId}`);
+    console.log(`API Base URL: ${config.api?.baseUrl || '/api'}`);
     
     // 发送请求到服务器端 API
-    const response = await fetch('/api/articles', {
+    const apiUrl = `${config.api?.baseUrl || '/api'}/articles`;
+    console.log(`Full API URL: ${apiUrl}`);
+    
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -48,7 +53,7 @@ export async function getArticles(databaseId) {
       // 尝试从 properties 中获取标题
       if (page.properties) {
         // 尝试从 Name 或 Title 属性中获取标题
-        const titleProperty = page.properties.Name || page.properties.Title || page.properties.title;
+        const titleProperty = page.properties.Name || page.properties.Title;
         
         if (titleProperty && titleProperty.title && Array.isArray(titleProperty.title) && titleProperty.title.length > 0) {
           title = titleProperty.title[0].plain_text || title;
@@ -66,14 +71,58 @@ export async function getArticles(databaseId) {
       // 使用原始 ID，不做任何修改
       const pageId = page.id;
       
-      articles.push({
+      // 提取创建时间
+      const createdTime = page.created_time ? new Date(page.created_time) : new Date();
+      
+      // 提取最后编辑时间
+      const lastEditedTime = page.last_edited_time ? new Date(page.last_edited_time) : new Date();
+      
+      // 提取分类
+      let category = 'Uncategorized';
+      if (page.properties && page.properties.Category) {
+        const categoryProp = page.properties.Category;
+        
+        if (categoryProp.select && categoryProp.select.name) {
+          category = categoryProp.select.name;
+        } else if (categoryProp.multi_select && Array.isArray(categoryProp.multi_select) && categoryProp.multi_select.length > 0) {
+          category = categoryProp.multi_select[0].name;
+        }
+      }
+      
+      // 提取发布时间
+      let publishDate = null;
+      if (page.properties && page.properties['Publish Date'] && page.properties['Publish Date'].date) {
+        publishDate = page.properties['Publish Date'].date.start;
+      }
+      
+      // 构建文章对象
+      const article = {
         id: pageId,
         title: title,
         url: url,
         created_time: page.created_time,
-        last_edited_time: page.last_edited_time
-      });
+        last_edited_time: page.last_edited_time,
+        publish_date: publishDate,
+        category: category,
+        properties: page.properties // 保留原始属性以备后用
+      };
+      
+      articles.push(article);
     }
+    
+    // 按发布时间排序，没有发布时间的排在最后
+    articles.sort((a, b) => {
+      // 如果两篇文章都有发布时间，按发布时间降序排序
+      if (a.publish_date && b.publish_date) {
+        return new Date(b.publish_date) - new Date(a.publish_date);
+      }
+      // 如果只有 a 有发布时间，a 排在前面
+      if (a.publish_date) return -1;
+      // 如果只有 b 有发布时间，b 排在前面
+      if (b.publish_date) return 1;
+      // 如果都没有发布时间，按创建时间降序排序
+      return new Date(b.created_time) - new Date(a.created_time);
+    });
     
     console.log(`Processed ${articles.length} articles`);
     console.log('Articles: ', articles);
@@ -88,15 +137,33 @@ export async function getArticles(databaseId) {
 // 获取文章内容
 export async function getArticleContent(pageId) {
   try {
-    const response = await fetch(`/api/article-content/${pageId}`);
+    console.log(`Fetching article content for page: ${pageId}`);
+    const apiUrl = `${config.api?.baseUrl || '/api'}/article-content/${pageId}`;
+    console.log(`Content API URL: ${apiUrl}`);
+    
+    const response = await fetch(apiUrl);
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Failed to fetch article content: ${response.status} ${response.statusText}`, errorText);
-      throw new Error(`Failed to fetch article content with status ${response.status}: ${errorText}`);
+      console.error(`Failed to fetch article content: ${response.status}`, errorText);
+      throw new Error(`Failed to fetch article content: ${response.status}`);
     }
     
-    return await response.json();
+    const data = await response.json();
+    console.log('Article content received:', data);
+    
+    // 确保返回的数据结构符合预期
+    if (!data.page || !data.blocks) {
+      console.error('Invalid article content format:', data);
+      throw new Error('Invalid article content format');
+    }
+    
+    return {
+      page: data.page,
+      blocks: data.blocks,
+      hasMore: data.hasMore || false,
+      nextCursor: data.nextCursor || null
+    };
   } catch (error) {
     console.error('Error fetching article content:', error);
     throw error;
@@ -106,27 +173,26 @@ export async function getArticleContent(pageId) {
 // 获取数据库信息
 export async function getDatabaseInfo(databaseId) {
   try {
-    console.log(`Fetching database info for database: ${databaseId}`);
+    console.log(`Fetching database info for: ${databaseId}`);
+    const apiUrl = `${config.api?.baseUrl || '/api'}/database-info`;
+    console.log(`Database info API URL: ${apiUrl}`);
     
-    const response = await fetch('/api/articles', {
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ 
-        database_id: databaseId,
-        type: 'database_info'  // 添加类型标识，让后端知道这是获取数据库信息的请求
-      })
+      body: JSON.stringify({ database_id: databaseId })
     });
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Failed to fetch database info: ${response.status} ${response.statusText}`, errorText);
-      throw new Error(`Failed to fetch database info with status ${response.status}: ${errorText}`);
+      console.error(`Failed to fetch database info: ${response.status}`, errorText);
+      throw new Error(`Failed to fetch database info: ${response.status}`);
     }
     
     const data = await response.json();
-    console.log('Database info response:', data);
+    console.log('Database info received:', data);
     return data;
   } catch (error) {
     console.error('Error fetching database info:', error);
@@ -137,15 +203,22 @@ export async function getDatabaseInfo(databaseId) {
 // 测试 API 连接
 export async function testApiConnection() {
   try {
-    const response = await fetch('/api/notion-test');
+    console.log('Testing API connection...');
+    const apiUrl = `${config.api?.baseUrl || '/api'}/hello`;
+    console.log(`Test API URL: ${apiUrl}`);
+    
+    const response = await fetch(apiUrl);
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`API test failed: ${response.status} ${response.statusText}`, errorText);
-      throw new Error(`API test failed with status ${response.status}: ${errorText}`);
+      console.error(`API connection test failed: ${response.status}`, errorText);
+      throw new Error(`API connection test failed: ${response.status}`);
     }
     
-    return await response.json();
+    const data = await response.json();
+    console.log('API connection test successful:', data);
+    
+    return data;
   } catch (error) {
     console.error('Error testing API connection:', error);
     throw error;
@@ -155,17 +228,23 @@ export async function testApiConnection() {
 // 获取数据库列表
 export async function getDatabases() {
   try {
-    const response = await fetch('/api/databases');
+    console.log('Fetching databases list...');
+    const apiUrl = `${config.api?.baseUrl || '/api'}/databases`;
+    console.log(`Databases list API URL: ${apiUrl}`);
+    
+    const response = await fetch(apiUrl);
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Failed to list databases: ${response.status} ${response.statusText}`, errorText);
-      throw new Error(`Failed to list databases with status ${response.status}: ${errorText}`);
+      console.error(`Failed to fetch databases: ${response.status}`, errorText);
+      throw new Error(`Failed to fetch databases: ${response.status}`);
     }
     
-    return await response.json();
+    const data = await response.json();
+    console.log(`Databases list received, found ${data.results?.length || 0} databases`);
+    return data;
   } catch (error) {
-    console.error('Error listing databases:', error);
+    console.error('Error fetching databases:', error);
     throw error;
   }
 } 

@@ -111,16 +111,22 @@
     <script type="module">
         import { imageLazyLoader } from './scripts/utils/image-lazy-loader.js';
         import { articleManager } from './scripts/managers/articleManager.js';
+        import config from './scripts/config/config.js';
+        import { tableLazyLoader } from './scripts/utils/table-lazy-loader.js';
         
         // 将模块导出到全局作用域，方便调试
         window.imageLazyLoader = imageLazyLoader;
         window.articleManager = articleManager;
+        window.config = config;
+        window.tableLazyLoader = tableLazyLoader;
         
         // 页面加载完成后检查模块状态
         window.addEventListener('load', () => {
             console.log('🔍 检查模块加载状态：');
             console.log('- imageLazyLoader:', !!window.imageLazyLoader);
             console.log('- articleManager:', !!window.articleManager);
+            console.log('- config:', !!window.config);
+            console.log('- tableLazyLoader:', !!window.tableLazyLoader);
         });
     </script>
     

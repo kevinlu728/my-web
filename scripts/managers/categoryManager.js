@@ -15,26 +15,41 @@ class CategoryManager {
 
     // 更新分类列表
     updateCategories(articles) {
+        if (!articles || articles.length === 0) {
+            console.log('没有文章，不更新分类');
+            return;
+        }
+        
+        console.log(`更新分类列表，共 ${articles.length} 篇文章`);
         this.categories.clear();
         this.categories.set('all', 0); // 初始化"全部"分类
 
         // 统计每个分类的文章数量
         articles.forEach(article => {
-            let category = '未分类';
-            const categoryProp = article.properties?.Category;
+            let category = 'Uncategorized';
             
-            if (categoryProp) {
-                if (categoryProp.type === 'select' && categoryProp.select?.name) {
-                    category = categoryProp.select.name;
-                } else if (categoryProp.type === 'multi_select' && categoryProp.multi_select?.length > 0) {
-                    category = categoryProp.multi_select[0].name;
+            // 如果文章对象已经包含 category 属性，直接使用
+            if (article.category) {
+                category = article.category;
+            }
+            // 否则尝试从 properties 中提取
+            else if (article.properties) {
+                const categoryProp = article.properties.Category;
+                if (categoryProp) {
+                    if (categoryProp.select && categoryProp.select.name) {
+                        category = categoryProp.select.name;
+                    } else if (categoryProp.multi_select && Array.isArray(categoryProp.multi_select) && categoryProp.multi_select.length > 0) {
+                        category = categoryProp.multi_select[0].name;
+                    }
                 }
             }
             
+            console.log(`文章 "${article.title || '无标题'}" 的分类: ${category}`);
             this.categories.set(category, (this.categories.get(category) || 0) + 1);
             this.categories.set('all', this.categories.get('all') + 1);
         });
 
+        console.log('分类统计结果:', Object.fromEntries(this.categories));
         this.renderCategoryList();
     }
 

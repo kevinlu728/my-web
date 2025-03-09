@@ -119,56 +119,102 @@ class TableLazyLoader {
     async loadTableContent(element, blockId) {
         // 如果表格已经加载过，不再重复加载
         if (element.dataset.loaded === 'true') {
+            console.log(`表格 ${blockId} 已加载，跳过`);
             return;
         }
 
+        console.log(`开始加载表格 ${blockId} 的内容`);
+        
         try {
+            // 显示加载状态
             element.innerHTML = `
                 <div class="loading-spinner"></div>
                 <div class="loading-text">加载中...</div>
             `;
 
-            const response = await fetch(`/api/blocks/${blockId}/children`);
-            if (!response.ok) throw new Error(`获取表格数据失败: ${response.status}`);
+            // 从配置中获取 API 基础 URL
+            const config = window.config || {};
+            const apiBaseUrl = config.api?.baseUrl || '/api';
+            const apiUrl = `${apiBaseUrl}/blocks/${blockId}/children`;
             
-            const data = await response.json();
-            if (!data.results) throw new Error('无效的表格数据');
+            console.log('加载表格数据，URL:', apiUrl);
+            
+            // 添加超时处理
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
+            
+            try {
+                const response = await fetch(apiUrl, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error(`获取表格数据失败: ${response.status}`, errorText);
+                    throw new Error(`获取表格数据失败: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                if (!data.results) {
+                    console.error('无效的表格数据:', data);
+                    throw new Error('无效的表格数据');
+                }
 
-            console.log('获取到表格数据:', data);
+                console.log(`获取到表格数据: ${data.results.length} 行`);
 
-            const tableHtml = this.renderTableBlock({
-                table: { 
-                    has_column_header: true,
-                    has_row_header: false
-                },
-                children: data.results
-            });
-            
-            element.innerHTML = tableHtml;
-            
-            // 标记表格已加载
-            element.dataset.loaded = 'true';
-            
-            // 取消观察
-            if (this.observer) {
-                this.observer.unobserve(element);
+                // 渲染表格
+                const tableHtml = this.renderTableBlock({
+                    table: { 
+                        has_column_header: true,
+                        has_row_header: false
+                    },
+                    children: data.results
+                });
+                
+                element.innerHTML = tableHtml;
+                
+                // 标记表格已加载
+                element.dataset.loaded = 'true';
+                
+                // 取消观察
+                if (this.observer) {
+                    this.observer.unobserve(element);
+                }
+
+                // 调整列宽
+                this.adjustColumnWidths(element);
+                
+                console.log(`表格 ${blockId} 加载完成`);
+
+            } catch (error) {
+                clearTimeout(timeoutId);
+                
+                if (error.name === 'AbortError') {
+                    throw new Error('表格加载超时');
+                }
+                
+                throw error;
             }
-
-            // 调整列宽
-            this.adjustColumnWidths(element);
 
         } catch (error) {
             console.error('加载表格失败:', error);
             element.innerHTML = `
                 <div class="error-message">
                     <i class="fas fa-exclamation-circle"></i>
-                    <span>表格加载失败，点击重试</span>
+                    <span>表格加载失败: ${error.message}</span>
+                    <button class="retry-button">重试</button>
                 </div>
             `;
-            element.onclick = () => {
-                element.dataset.loaded = 'false'; // 重置加载状态
-                this.loadTableContent(element, blockId);
-            };
+            
+            // 添加重试按钮事件
+            const retryButton = element.querySelector('.retry-button');
+            if (retryButton) {
+                retryButton.onclick = (e) => {
+                    e.stopPropagation(); // 阻止事件冒泡
+                    console.log(`重试加载表格 ${blockId}`);
+                    element.dataset.loaded = 'false'; // 重置加载状态
+                    this.loadTableContent(element, blockId);
+                };
+            }
         }
     }
 
@@ -279,9 +325,18 @@ class TableLazyLoader {
 
     // 观察新元素
     observe(element) {
-        if (element && this.observer) {
-            this.observer.observe(element);
+        if (!element) {
+            console.warn('无法观察表格元素: 元素为空');
+            return;
         }
+        
+        if (!this.observer) {
+            console.warn('无法观察表格元素: 观察器未初始化');
+            this.initObserver();
+        }
+        
+        console.log('开始观察表格元素:', element.dataset.blockId);
+        this.observer.observe(element);
     }
 }
 

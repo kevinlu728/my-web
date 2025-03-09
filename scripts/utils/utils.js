@@ -12,6 +12,11 @@ export function debounce(func, wait = 300) {
 // 显示状态消息
 export function showStatus(message, isError = false, type = 'info') {
     const statusEl = document.getElementById('status-message');
+    if (!statusEl) {
+        console.warn('Status element not found');
+        return;
+    }
+    
     statusEl.textContent = message;
     statusEl.className = `status-message ${type}`;
     
@@ -25,24 +30,32 @@ export function showStatus(message, isError = false, type = 'info') {
 }
 
 // 显示加载中状态
-export function showLoading(element, message = '加载中...') {
-    element.innerHTML = `
-        <div class="loading">
+export function showLoading(message = '加载中...') {
+    const articleList = document.getElementById('article-list');
+    if (!articleList) {
+        console.warn('Article list element not found');
+        return;
+    }
+    
+    articleList.innerHTML = `
+        <li class="loading">
             <div class="loading-spinner"></div>
             <span>${message}</span>
-        </div>`;
+        </li>`;
 }
 
 // 显示错误信息
-export function showError(element, title, message, url = '') {
-    let content = `<p>${message}</p>`;
-    if (url) {
-        content += `<p><a href="${url}" target="_blank">点击这里在 Notion 中查看</a></p>`;
+export function showError(message) {
+    const statusEl = document.getElementById('status-message');
+    if (statusEl) {
+        statusEl.textContent = message;
+        statusEl.className = 'status-message error';
     }
     
-    element.innerHTML = `
-        <h2 class="article-title">${title}</h2>
-        <div class="article-body">
-            ${content}
-        </div>`;
+    const articleList = document.getElementById('article-list');
+    if (articleList) {
+        articleList.innerHTML = `<li class="error">${message}</li>`;
+    }
+    
+    console.error(message);
 } 

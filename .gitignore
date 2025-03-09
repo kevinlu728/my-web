@@ -11,3 +11,5 @@ scripts/config/config.development.js
 # 其他敏感文件
 *.pem
 *.key
+
+.vercel
