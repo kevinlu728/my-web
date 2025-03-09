@@ -19,12 +19,15 @@
 
 export default {
     notion: {
-        // 生产环境的值应该在部署时由构建工具注入
-        apiKey: 'PRODUCTION_API_KEY',
-        databaseId: 'PRODUCTION_DATABASE_ID'
+        // 使用实际的生产环境值
+        apiKey: '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',
+        databaseId: '1a932af826e680df8bf7f320b51930b9'
+    },
+    api: {
+        baseUrl: '/api'  // 生产环境中使用相对路径
     },
     debug: {
         enabled: false,
-        defaultDatabaseId: ''
+        defaultDatabaseId: '1a932af826e680df8bf7f320b51930b9'
     }
 }; 

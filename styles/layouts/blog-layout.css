@@ -14,7 +14,7 @@
 /* 博客页面主容器 */
 .blog-content {
     display: grid;
-    grid-template-columns: 360px 1fr;
+    grid-template-columns: 320px minmax(0, 1fr); /* 减小左栏宽度，增加右栏比例 */
     gap: 25px; /* 减小左右栏间距 */
     max-width: 1600px;
     margin: 0 auto;
@@ -40,7 +40,7 @@
 /* 右侧栏样式 */
 .blog-content .right-column {
     background: #ffffff;
-    padding: 40px;
+    padding: 40px 50px; /* 调整内边距，左右增加到50px */
     border-radius: 16px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.05);
     width: 100%;
@@ -64,6 +64,10 @@
     .breadcrumb {
         padding: 5px 20px;
     }
+    
+    .blog-content .right-column {
+        padding: 30px 40px; /* 中等屏幕上减小内边距 */
+    }
 }
 
 /* 响应式布局 - 小屏幕 */
@@ -83,7 +87,7 @@
     }
     
     .blog-content .right-column {
-        padding: 20px;
+        padding: 20px 25px; /* 小屏幕上进一步减小内边距 */
     }
     
     .breadcrumb {

@@ -202,7 +202,7 @@ class ArticleManager {
             
             // 如果请求已取消，不继续处理
             if (signal.aborted) {
-                console.log('文章加载已取消');
+                console.log('文章列表加载已取消');
                 return;
             }
             
@@ -215,7 +215,7 @@ class ArticleManager {
             this.filterAndRenderArticles();
             
             // 显示成功状态
-            showStatus('文章加载成功', false, 'success');
+            showStatus('文章列表加载成功', false, 'success');
             
             // 如果没有文章，显示提示
             if (articles.length === 0) {
@@ -227,7 +227,7 @@ class ArticleManager {
             console.error('Error loading articles:', error);
             
             // 显示错误状态
-            showError(`加载文章失败: ${error.message}`);
+            showError(`加载文章列表失败: ${error.message}`);
             
             throw error;
         } finally {

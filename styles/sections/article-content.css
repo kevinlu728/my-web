@@ -1,9 +1,9 @@
 /* 文章内容样式优化 */
 .article-body {
     /* 基础布局 */
-    max-width: 800px;
+    max-width: 100%; /* 修改为100%，充分利用右栏空间 */
     margin: 0 auto;
-    padding: 0 1rem;
+    padding: 0; /* 移除内边距 */
     
     /* 基础文字样式 */
     font-size: 16px;
@@ -86,7 +86,7 @@
 
 /* 图片样式 */
 .article-body img {
-    max-width: 50%; /* 修改为50%，缩小图片尺寸 */
+    max-width: 70%; /* 修改为70%，适应更宽的内容区域 */
     height: auto;
     border-radius: 6px;
     margin: 1.5rem auto; /* 居中显示 */
@@ -104,7 +104,7 @@
     overflow: hidden;
     border-radius: 6px;
     text-align: center; /* 居中图片容器 */
-    max-width: 90%; /* 限制宽度，使其小于文本宽度 */
+    max-width: 95%; /* 增加宽度，使其更好地适应新布局 */
 }
 
 /* 图片说明文字 */
