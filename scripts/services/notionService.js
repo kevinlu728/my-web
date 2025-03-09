@@ -247,21 +247,39 @@ export async function getDatabaseInfo(databaseId) {
 export async function testApiConnection() {
   try {
     console.log('Testing API connection...');
-    const apiUrl = `${config.api?.baseUrl || '/api'}/hello`;
+    const apiUrl = `${config.api?.baseUrl || '/api'}/test`;
     console.log(`Test API URL: ${apiUrl}`);
     
-    const response = await fetch(apiUrl);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
     
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`API connection test failed: ${response.status}`, errorText);
-      throw new Error(`API connection test failed: ${response.status}`);
+    try {
+      const response = await fetch(apiUrl, {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      console.log(`API Test Response status: ${response.status} ${response.statusText}`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`API test failed: ${response.status} ${response.statusText}`, errorText);
+        throw new Error(`API test failed with status ${response.status}: ${errorText}`);
+      }
+      
+      const data = await response.json();
+      console.log('API test successful:', data);
+      
+      return data;
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === 'AbortError') {
+        console.error('API test request timed out after 30 seconds');
+        throw new Error('API test request timed out. Please try again later.');
+      }
+      throw fetchError;
     }
-    
-    const data = await response.json();
-    console.log('API connection test successful:', data);
-    
-    return data;
   } catch (error) {
     console.error('Error testing API connection:', error);
     throw error;

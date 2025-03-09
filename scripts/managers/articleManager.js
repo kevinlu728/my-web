@@ -24,7 +24,7 @@
  */
 
 import { showStatus, showLoading, showError } from '../utils/utils.js';
-import { getArticles, getArticleContent } from '../services/notionService.js';
+import { getArticles, getArticleContent, testApiConnection } from '../services/notionService.js';
 import { categoryManager } from './categoryManager.js';
 import { renderNotionBlocks, initializeLazyLoading } from '../components/articleRenderer.js';
 import { imageLazyLoader } from '../utils/image-lazy-loader.js';
@@ -185,15 +185,23 @@ class ArticleManager {
             // 测试 API 连接
             try {
                 console.log('测试 API 连接...');
-                const testResponse = await fetch('/api/hello');
-                if (testResponse.ok) {
-                    const testData = await testResponse.json();
-                    console.log('API 测试成功:', testData);
-                } else {
-                    console.error('API 测试失败:', testResponse.status, testResponse.statusText);
+                const testData = await testApiConnection();
+                console.log('API 测试成功:', testData);
+                
+                // 显示环境信息
+                if (testData.env) {
+                    console.log('环境信息:', testData.env);
+                    if (!testData.env.NOTION_API_KEY_EXISTS) {
+                        console.warn('警告: Notion API 密钥未设置');
+                    }
+                    if (!testData.env.NOTION_DATABASE_ID_EXISTS) {
+                        console.warn('警告: Notion 数据库 ID 未设置');
+                    }
                 }
             } catch (testError) {
                 console.error('API 测试异常:', testError);
+                showError(`API 测试失败: ${testError.message}`);
+                throw testError;
             }
             
             // 获取文章列表

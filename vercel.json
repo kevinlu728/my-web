@@ -12,8 +12,20 @@
     ],
     "routes": [
       {
-        "src": "/api/(.*)",
-        "dest": "/api/$1"
+        "src": "/api/test",
+        "dest": "/api/test.js"
+      },
+      {
+        "src": "/api/hello",
+        "dest": "/api/hello.js"
+      },
+      {
+        "src": "/api/articles",
+        "dest": "/api/articles.js"
+      },
+      {
+        "src": "/api/article-content/(.*)",
+        "dest": "/api/article-content/[id].js?id=$1"
       },
       {
         "src": "/scripts/config/config\\.development\\.js",
