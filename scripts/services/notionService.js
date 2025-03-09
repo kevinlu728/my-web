@@ -33,7 +33,8 @@ export async function getArticles(databaseId) {
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'x-notion-api-key': config.notion?.apiKey || ''
       },
       body: JSON.stringify({ database_id: databaseId })
     });
@@ -159,7 +160,11 @@ export async function getArticleContent(pageId) {
     const apiUrl = `${config.api?.baseUrl || '/api'}/article-content/${pageId}`;
     console.log(`Content API URL: ${apiUrl}`);
     
-    const response = await fetch(apiUrl);
+    const response = await fetch(apiUrl, {
+      headers: {
+        'x-notion-api-key': config.notion?.apiKey || ''
+      }
+    });
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -198,7 +203,8 @@ export async function getDatabaseInfo(databaseId) {
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'x-notion-api-key': config.notion?.apiKey || ''
       },
       body: JSON.stringify({ database_id: databaseId })
     });
