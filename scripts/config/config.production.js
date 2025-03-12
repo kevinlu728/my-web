@@ -19,12 +19,12 @@
 
 export default {
     notion: {
-        // 使用实际的生产环境值
-        apiKey: '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',
-        databaseId: '1a932af826e680df8bf7f320b51930b9'
+        // 在生产环境中，我们不直接在前端使用API密钥，而是通过后端API调用
+        apiKey: '', // 前端不需要直接使用API密钥
+        databaseId: '1a932af826e680df8bf7f320b51930b9' // 默认数据库ID
     },
     api: {
-        baseUrl: '/api'  // 生产环境中使用相对路径
+        baseUrl: '/api' // 使用相对路径，指向Vercel的API函数
     },
     debug: {
         enabled: false,

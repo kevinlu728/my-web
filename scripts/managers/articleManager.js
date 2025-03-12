@@ -24,13 +24,7 @@
  */
 
 import { showStatus, showLoading, showError } from '../utils/utils.js';
-import { 
-    getArticles, 
-    getArticleContent, 
-    testApiConnection, 
-    getStaticArticles, 
-    getStaticArticleContent 
-} from '../services/notionService.js';
+import { getArticles, getArticleContent } from '../services/notionService.js';
 import { categoryManager } from './categoryManager.js';
 import { renderNotionBlocks, initializeLazyLoading } from '../components/articleRenderer.js';
 import { imageLazyLoader } from '../utils/image-lazy-loader.js';
@@ -189,84 +183,30 @@ class ArticleManager {
             console.log(`开始加载文章，数据库ID: ${this.currentDatabaseId}`);
             
             // 测试 API 连接
-            let useStaticData = false;
             try {
                 console.log('测试 API 连接...');
-                const testData = await testApiConnection();
-                console.log('API 测试成功:', testData);
-                
-                // 显示环境信息
-                if (testData.env) {
-                    console.log('环境信息:', testData.env);
-                    if (!testData.env.NOTION_API_KEY_EXISTS) {
-                        console.warn('警告: Notion API 密钥未设置');
-                        useStaticData = true;
-                    }
-                    if (!testData.env.NOTION_DATABASE_ID_EXISTS) {
-                        console.warn('警告: Notion 数据库 ID 未设置');
-                        useStaticData = true;
-                    }
+                const testResponse = await fetch('/api/hello');
+                if (testResponse.ok) {
+                    const testData = await testResponse.json();
+                    console.log('API 测试成功:', testData);
+                } else {
+                    console.error('API 测试失败:', testResponse.status, testResponse.statusText);
                 }
             } catch (testError) {
                 console.error('API 测试异常:', testError);
-                console.log('将尝试直接调用Notion API');
-                // 不强制使用静态数据，尝试直接调用API
             }
-            
-            let articles = [];
             
             // 获取文章列表
-            if (useStaticData) {
-                console.log('正在获取静态文章列表...');
-                try {
-                    const staticData = await getStaticArticles();
-                    if (staticData && staticData.results && Array.isArray(staticData.results)) {
-                        articles = staticData.results;
-                        console.log(`成功获取 ${articles.length} 篇静态文章`);
-                    } else {
-                        console.error('静态数据格式不正确:', staticData);
-                        throw new Error('静态数据格式不正确');
-                    }
-                } catch (staticError) {
-                    console.error('获取静态文章失败:', staticError);
-                    showError(`获取静态文章失败: ${staticError.message}`);
-                    // 不抛出异常，使用空数组继续
-                    articles = [];
-                }
-            } else {
-                console.log('正在从 Notion API 获取文章列表...');
-                try {
-                    // 获取原始API响应
-                    const apiData = await getArticles(this.currentDatabaseId);
-                    
-                    // 验证API响应格式
-                    if (apiData && apiData.results && Array.isArray(apiData.results)) {
-                        // 直接使用原始结果
-                        articles = apiData.results;
-                        console.log(`成功获取 ${articles.length} 篇文章`);
-                        
-                        // 打印文章标题，用于调试
-                        articles.forEach((article, index) => {
-                            const title = this.getArticleTitle(article);
-                            console.log(`文章 ${index + 1}: ${title}`);
-                        });
-                    } else {
-                        console.error('API数据格式不正确:', apiData);
-                        throw new Error('API数据格式不正确');
-                    }
-                } catch (apiError) {
-                    console.error('从API获取文章失败:', apiError);
-                    showError(`获取文章列表失败: ${apiError.message}`);
-                    // 不使用静态数据作为备用，直接返回错误
-                    throw apiError;
-                }
-            }
+            console.log('正在从 API 获取文章列表...');
+            const articles = await getArticles(this.currentDatabaseId);
             
             // 如果请求已取消，不继续处理
             if (signal.aborted) {
                 console.log('文章列表加载已取消');
                 return;
             }
+            
+            console.log(`成功获取 ${articles.length} 篇文章`);
             
             // 保存文章列表
             this.articles = articles;
@@ -275,9 +215,10 @@ class ArticleManager {
             this.filterAndRenderArticles();
             
             // 显示成功状态
-            if (articles.length > 0) {
-                showStatus(`成功获取 ${articles.length} 篇文章`, false, 'success');
-            } else {
+            showStatus('文章列表加载成功', false, 'success');
+            
+            // 如果没有文章，显示提示
+            if (articles.length === 0) {
                 showStatus('没有找到文章', false, 'info');
             }
             
@@ -295,20 +236,6 @@ class ArticleManager {
         }
     }
 
-    // 从Notion页面对象中获取文章标题
-    getArticleTitle(page) {
-        if (!page || !page.properties) return 'Untitled';
-        
-        // 尝试从 Name 或 Title 属性中获取标题
-        const titleProperty = page.properties.Name || page.properties.Title;
-        
-        if (titleProperty && titleProperty.title && Array.isArray(titleProperty.title) && titleProperty.title.length > 0) {
-            return titleProperty.title[0].plain_text || 'Untitled';
-        }
-        
-        return 'Untitled';
-    }
-
     // 搜索文章
     searchArticles(articles) {
         if (!this.searchTerm || !articles || articles.length === 0) return articles;
@@ -318,31 +245,44 @@ class ArticleManager {
 
         return articles.filter(article => {
             // 提取标题
-            const title = this.getArticleTitle(article).toLowerCase();
+            let title = '';
+            if (article.title) {
+                title = article.title;
+            } else if (article.properties && article.properties.Title) {
+                title = article.properties.Title.title?.[0]?.plain_text || '';
+            }
             
             // 提取分类
-            const category = this.getArticleCategory(article).toLowerCase();
+            const category = this.getArticleCategory(article);
             
-            // 搜索标题和分类
-            return title.includes(searchTerm) || category.includes(searchTerm);
+            // 搜索匹配
+            const titleMatch = title.toLowerCase().includes(searchTerm);
+            const categoryMatch = category.toLowerCase().includes(searchTerm);
+            
+            return titleMatch || categoryMatch;
         });
     }
 
     // 获取文章分类
     getArticleCategory(article) {
-        if (!article || !article.properties) return 'Uncategorized';
+        // 如果文章对象已经包含 category 属性，直接使用
+        if (article.category) {
+            return article.category;
+        }
         
-        // 尝试从 Category 属性中获取分类
-        const categoryProp = article.properties.Category;
-        
-        if (categoryProp) {
-            if (categoryProp.select && categoryProp.select.name) {
-                return categoryProp.select.name;
-            } else if (categoryProp.multi_select && Array.isArray(categoryProp.multi_select) && categoryProp.multi_select.length > 0) {
-                return categoryProp.multi_select[0].name;
+        // 否则尝试从 properties 中提取
+        if (article.properties) {
+            const categoryProp = article.properties.Category;
+            if (categoryProp) {
+                if (categoryProp.select && categoryProp.select.name) {
+                    return categoryProp.select.name;
+                } else if (categoryProp.multi_select && Array.isArray(categoryProp.multi_select) && categoryProp.multi_select.length > 0) {
+                    return categoryProp.multi_select[0].name;
+                }
             }
         }
         
+        // 默认分类
         return 'Uncategorized';
     }
 
@@ -420,72 +360,9 @@ class ArticleManager {
         this.filterArticles(currentCategory);
     }
 
-    // 渲染文章列表
+    // 渲染文章列表（覆盖原方法）
     renderArticleList() {
-        const articleList = document.getElementById('article-list');
-        if (!articleList) return;
-        
-        // 清空列表
-        articleList.innerHTML = '';
-        
-        // 获取过滤后的文章
-        const filteredArticles = this.filterArticles(this.currentCategory);
-        
-        if (filteredArticles.length === 0) {
-            articleList.innerHTML = '<li class="no-results">没有找到文章</li>';
-            return;
-        }
-        
-        // 创建文章列表项
-        filteredArticles.forEach(article => {
-            const li = document.createElement('li');
-            li.className = 'article-item';
-            li.dataset.id = article.id;
-            
-            const a = document.createElement('a');
-            a.href = '#';
-            
-            // 获取文章标题
-            const title = this.getArticleTitle(article);
-            
-            // 获取文章日期
-            let dateStr = '';
-            if (article.last_edited_time) {
-                const date = new Date(article.last_edited_time);
-                dateStr = `${date.getFullYear()}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`;
-            }
-            
-            // 创建标题元素
-            const titleSpan = document.createElement('span');
-            titleSpan.className = 'article-title-text';
-            
-            // 如果有搜索词，高亮显示
-            if (this.searchTerm) {
-                titleSpan.innerHTML = this.highlightSearchTerm(title);
-            } else {
-                titleSpan.textContent = title;
-            }
-            
-            // 创建日期元素
-            const dateSpan = document.createElement('span');
-            dateSpan.className = 'article-date';
-            dateSpan.textContent = dateStr;
-            
-            // 添加到链接
-            a.appendChild(titleSpan);
-            a.appendChild(dateSpan);
-            
-            // 添加点击事件
-            a.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.loadAndDisplayArticle(article.id);
-                this.updateActiveArticle(article.id);
-            });
-            
-            // 添加到列表项
-            li.appendChild(a);
-            articleList.appendChild(li);
-        });
+        this.filterAndRenderArticles();
     }
 
     // 过滤文章列表
@@ -543,94 +420,80 @@ class ArticleManager {
     // 加载和显示文章内容
     async loadAndDisplayArticle(pageId) {
         try {
-            // 取消之前的请求
-            this.cancelCurrentLoading();
-            
-            // 如果已经在加载这篇文章，不重复加载
-            if (this.loadingStatus.get(pageId) === 'loading') {
-                console.log(`文章 ${pageId} 正在加载中，不重复加载`);
-                return;
-            }
-            
-            // 标记为正在加载
-            this.loadingStatus.set(pageId, 'loading');
-            this.currentLoadingId = pageId;
+            // 初始化加载状态
+            this.isLoading = true;
+            this.hasMore = false;
+            this.nextCursor = null;
             
             // 创建新的 AbortController
             this.abortController = new AbortController();
+            this.currentLoadingId = pageId;
             
-            // 显示加载状态
-            showLoading(`正在加载文章...`);
-            
-            console.log(`开始加载文章，ID: ${pageId}`);
-            
-            // 尝试从缓存获取
-            const cachedArticle = this.getArticleFromCache(pageId);
-            if (cachedArticle) {
-                console.log(`从缓存加载文章: ${pageId}`);
-                await this.showArticle(pageId, cachedArticle);
-                this.loadingStatus.set(pageId, 'loaded');
-                return;
+            // 先尝试从缓存获取
+            const cachedData = this.getArticleFromCache(pageId);
+            if (cachedData && cachedData.isComplete) { // 只有完整加载的文章才使用缓存
+                console.log('📦 从缓存加载文章:', pageId);
+                this.isLoading = false;
+                return cachedData;
             }
+
+            console.log('🌐 从网络加载文章:', pageId);
             
-            // 从API获取文章内容
-            try {
-                const articleData = await getArticleContent(pageId);
-                
-                // 如果请求已取消，不继续处理
-                if (this.abortController && this.abortController.signal.aborted) {
-                    console.log(`文章 ${pageId} 加载已取消`);
-                    this.loadingStatus.set(pageId, 'canceled');
-                    return;
-                }
-                
-                // 缓存文章内容
-                this.setArticleCache(pageId, articleData);
-                
-                // 显示文章
-                await this.showArticle(pageId, articleData);
-                
-                // 标记为已加载
-                this.loadingStatus.set(pageId, 'loaded');
-            } catch (apiError) {
-                console.error(`从API获取文章内容失败，尝试使用静态数据:`, apiError);
-                
+            let retryCount = 0;
+            const maxRetries = 3;
+            const timeout = 10000;
+            
+            while (retryCount < maxRetries) {
                 try {
-                    const staticData = await getStaticArticleContent(pageId);
+                    const timeoutId = setTimeout(() => {
+                        if (this.abortController) {
+                            this.abortController.abort();
+                        }
+                        console.log('请求超时，正在中断...');
+                    }, timeout);
                     
-                    // 如果请求已取消，不继续处理
-                    if (this.abortController && this.abortController.signal.aborted) {
-                        console.log(`文章 ${pageId} 加载已取消`);
-                        this.loadingStatus.set(pageId, 'canceled');
-                        return;
+                    console.log(`正在发起第${retryCount + 1}次请求...`);
+                    
+                    // 使用 notionService 获取文章内容
+                    const articleData = await getArticleContent(pageId);
+                    
+                    clearTimeout(timeoutId);
+                    
+                    if (!articleData) {
+                        throw new Error('获取文章内容失败');
                     }
                     
-                    // 显示静态文章
-                    await this.showArticle(pageId, staticData);
+                    // 缓存文章内容
+                    this.setArticleCache(pageId, {
+                        ...articleData,
+                        isComplete: true
+                    });
                     
-                    // 标记为已加载
-                    this.loadingStatus.set(pageId, 'loaded');
-                } catch (staticError) {
-                    console.error('获取静态文章内容也失败:', staticError);
-                    this.loadingStatus.set(pageId, 'error');
-                    showError(`加载文章失败: ${apiError.message}`);
-                    throw apiError;
+                    this.isLoading = false;
+                    return articleData;
+                } catch (error) {
+                    retryCount++;
+                    console.error(`第${retryCount}次请求失败:`, error);
+                    
+                    if (retryCount >= maxRetries) {
+                        throw error;
+                    }
+                    
+                    // 等待一段时间后重试
+                    await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
                 }
             }
         } catch (error) {
-            console.error(`Error loading article ${pageId}:`, error);
-            this.loadingStatus.set(pageId, 'error');
-            showError(`加载文章失败: ${error.message}`);
+            console.error('加载文章失败:', error);
+            this.isLoading = false;
             throw error;
         } finally {
-            // 清除 AbortController
             this.abortController = null;
-            this.currentLoadingId = null;
         }
     }
 
     // 显示文章内容
-    async showArticle(pageId, articleData) {
+    async showArticle(pageId) {
         try {
             console.log('📄 开始加载文章:', pageId);
             const articleContainer = document.getElementById('article-container');
@@ -675,6 +538,13 @@ class ArticleManager {
             `;
 
             try {
+                const articleData = await this.loadAndDisplayArticle(pageId);
+                // 检查是否因切换文章而取消加载
+                if (!articleData) {
+                    console.log('文章加载已取消');
+                    return;
+                }
+                
                 console.log('文章数据:', articleData);
                 
                 // 设置当前页面ID和分页状态

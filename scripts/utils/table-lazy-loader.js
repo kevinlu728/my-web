@@ -114,80 +114,268 @@ class TableLazyLoader {
     async fetchTableData(tableBlock, blockId) {
         try {
             console.log(`从API获取表格数据: ${blockId}`);
-            tableBlock.innerHTML = '<div class="table-loading">正在获取表格数据...</div>';
+            
+            // 显示加载状态
+            tableBlock.innerHTML = `
+                <div class="table-loading">
+                    <div>正在获取表格数据...</div>
+                    <div class="table-info">表格ID: ${blockId}</div>
+                </div>
+            `;
 
-            // 从配置中获取 API 基础 URL
-            const config = window.config || {};
-            const apiBaseUrl = config.api?.baseUrl || '/api';
-            const apiUrl = `${apiBaseUrl}/blocks/${blockId}/children`;
+            // 添加随机参数和版本号，避免缓存
+            const timestamp = Date.now();
+            const version = '1.1.0'; 
             
-            console.log('API URL:', apiUrl);
+            // 尝试两种不同的API URL构建方式
+            const apiUrl = `/api/blocks/${blockId}/children`;
+            const directApiUrl = `${window.location.origin}/api/blocks/${blockId}/children`;
             
-            // 添加超时处理
+            // 构建带参数的URL
+            const urlWithParams = `${apiUrl}?_=${timestamp}&v=${version}`;
+            const fullUrlWithParams = `${directApiUrl}?_=${timestamp}&v=${version}&retry=true`;
+            
+            // 简化日志输出，仅保留关键信息
+            console.log('API请求URL:', apiUrl);
+            
+            // 添加请求头
+            const headers = {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            };
+            
+            // 设置较长的超时时间
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
+            const timeoutId = setTimeout(() => controller.abort(), 25000); // 25秒超时
             
+            // 首先尝试相对URL
             try {
-                const response = await fetch(apiUrl, { signal: controller.signal });
-                clearTimeout(timeoutId);
+                console.log('开始请求表格数据...');
+                
+                // 发起请求并记录时间
+                const startTime = Date.now();
+                const response = await fetch(urlWithParams, {
+                    method: 'GET',
+                    headers: headers,
+                    credentials: 'same-origin',
+                    signal: controller.signal,
+                    cache: 'no-store',
+                    mode: 'cors'
+                });
+                const endTime = Date.now();
+                
+                console.log(`API响应状态: ${response.status} ${response.statusText}，耗时: ${endTime - startTime}ms`);
+                
+                // 减少响应头的详细记录
+                // 只在非成功响应时记录响应头，有助于调试
+                if (!response.ok) {
+                    const responseHeaders = {};
+                    response.headers.forEach((value, key) => {
+                        // 只记录关键响应头
+                        if (['content-type', 'cache-control', 'content-length'].includes(key.toLowerCase())) {
+                            responseHeaders[key] = value;
+                        }
+                    });
+                    console.log('关键响应头:', responseHeaders);
+                    throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
+                }
+                
+                // 处理响应内容
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    throw new Error(`非JSON响应: ${contentType}`);
+                }
+                
+                // 读取响应内容为文本
+                const text = await response.text();
+                console.log(`API响应长度: ${text.length}字节`);
+                
+                if (!text || text.trim().length === 0) {
+                    throw new Error('空响应');
+                }
+                
+                // 解析JSON
+                try {
+                    const data = JSON.parse(text);
+                    
+                    // 检查数据格式
+                    if (!data || typeof data !== 'object') {
+                        throw new Error(`无效的响应数据格式: ${typeof data}`);
+                    }
+                    
+                    // 清理超时计时器
+                    clearTimeout(timeoutId);
+                    
+                    // 渲染表格
+                    this.processAPIResponse(tableBlock, data, blockId);
+                    return; // 成功处理，返回
+                } catch (jsonError) {
+                    console.error('JSON解析失败:', jsonError.message);
+                    // 只在开发环境下记录响应文本片段
+                    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                        console.error('响应文本片段:', text.substring(0, 200));
+                    }
+                    throw new Error(`JSON解析失败: ${jsonError.message}`);
+                }
+            } catch (firstAttemptError) {
+                // 第一次尝试失败，记录错误并尝试使用完整URL
+                console.error('第一次API请求失败:', firstAttemptError.message);
+                
+                // 尝试使用完整URL调用API
+                console.log('尝试使用完整URL重试...');
+                
+                const response = await fetch(fullUrlWithParams, {
+                    method: 'GET',
+                    headers: headers,
+                    credentials: 'same-origin',
+                    signal: controller.signal,
+                    cache: 'no-store',
+                    mode: 'cors' 
+                });
+                
+                console.log(`第二次尝试状态: ${response.status} ${response.statusText}`);
                 
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error(`获取表格数据失败: ${response.status}`, errorText);
-                    throw new Error(`获取表格数据失败: ${response.status}`);
+                    throw new Error(`两次API请求均失败: ${response.status} ${response.statusText}`);
                 }
                 
-                const data = await response.json();
-                if (!data.results) {
-                    console.error('无效的表格数据:', data);
-                    throw new Error('无效的表格数据');
-                }
-
-                console.log(`获取到表格数据: ${data.results.length} 行`);
+                const text = await response.text();
+                const data = JSON.parse(text);
                 
-                // 创建表格数据对象
-                const tableData = {
-                    rows: data.results.map(row => {
-                        if (row.table_row && row.table_row.cells) {
-                            return row.table_row.cells;
-                        }
-                        return [];
-                    }),
-                    hasColumnHeader: true, // 默认第一行为表头
-                    hasRowHeader: false
-                };
-
-                // 渲染表格
-                const tableHtml = this.renderTable(tableData);
-                tableBlock.innerHTML = tableHtml;
-                
-                // 添加表格排序功能
-                this.addTableSorting(tableBlock.querySelector('table'));
-                
-                console.log('表格加载完成');
-            } catch (error) {
+                // 清理超时计时器
                 clearTimeout(timeoutId);
                 
-                if (error.name === 'AbortError') {
-                    throw new Error('表格加载超时');
-                }
-                
-                throw error;
+                // 渲染表格
+                this.processAPIResponse(tableBlock, data, blockId);
             }
         } catch (error) {
-            console.error('从API获取表格数据失败:', error);
-            tableBlock.innerHTML = `<div class="table-error">获取表格数据失败: ${error.message}</div>`;
+            // 清理可能存在的超时计时器
+            if (timeoutId) clearTimeout(timeoutId);
+            
+            console.error('获取表格数据最终失败:', error.message);
+            
+            // 处理错误显示
+            this.handleTableError(tableBlock, blockId, error);
         }
     }
+    
+    // 处理API响应并渲染表格
+    processAPIResponse(tableBlock, data, blockId) {
+        try {
+            console.log('处理API响应数据...');
+            
+            // 检查results字段
+            if (!data.results) {
+                console.warn('响应数据缺少results字段');
+                tableBlock.innerHTML = '<div class="table-error">无效的表格数据: 缺少results字段</div>';
+                return;
+            }
+            
+            console.log(`获取到${data.results.length}行表格数据`);
+            
+            // 如果没有数据，显示空表格消息
+            if (data.results.length === 0) {
+                tableBlock.innerHTML = '<div class="table-empty">表格数据为空</div>';
+                return;
+            }
+            
+            // 创建表格数据对象
+            const tableData = {
+                rows: data.results.map(row => {
+                    // 检查是否是表格行
+                    if (row.type === 'table_row' && row.table_row && row.table_row.cells) {
+                        return row.table_row.cells;
+                    }
+                    return [[{ type: 'text', text: { content: `非表格数据: ${row.type}` } }]];
+                }),
+                hasColumnHeader: true,
+                hasRowHeader: false
+            };
+            
+            // 渲染表格
+            const tableHtml = this.renderTable(tableData);
+            tableBlock.innerHTML = tableHtml;
+            
+            // 添加表格排序功能
+            this.addTableSorting(tableBlock.querySelector('table'));
+            
+            console.log('表格加载完成');
+        } catch (error) {
+            console.error('处理API响应时出错:', error.message);
+            tableBlock.innerHTML = `<div class="table-error">处理表格数据失败: ${error.message}</div>`;
+        }
+    }
+    
+    // 处理表格错误
+    handleTableError(tableBlock, blockId, error) {
+        // 确保错误信息正确显示
+        let errorMessage = "未知错误";
+        let errorDetails = "";
+        
+        if (error) {
+            if (typeof error === 'string') {
+                errorMessage = error;
+            } else if (error instanceof Error) {
+                errorMessage = error.message || error.toString();
+                if (error.stack) {
+                    // 只提取堆栈的第一行作为详情，避免过长的堆栈信息
+                    errorDetails = error.stack.split('\n')[0];
+                }
+            } else if (typeof error === 'object') {
+                try {
+                    errorMessage = error.message || JSON.stringify(error);
+                } catch (e) {
+                    errorMessage = "无法序列化的错误对象";
+                }
+            } else {
+                errorMessage = String(error);
+            }
+        }
+        
+        console.log('最终错误信息:', errorMessage);
+        
+        // 创建错误显示元素
+        const errorContainer = document.createElement('div');
+        errorContainer.className = 'table-error-container';
+        
+        // 主要错误信息
+        const errorMessageElem = document.createElement('div');
+        errorMessageElem.className = 'table-error';
+        errorMessageElem.innerHTML = `获取表格数据失败: ${errorMessage}`;
+        errorContainer.appendChild(errorMessageElem);
+        
+        // 表格ID
+        const idInfo = document.createElement('div');
+        idInfo.className = 'table-error-details';
+        idInfo.innerHTML = `表格ID: ${blockId}`;
+        errorContainer.appendChild(idInfo);
+        
+        // 错误详情
+        if (errorDetails) {
+            const detailsElem = document.createElement('div');
+            detailsElem.className = 'table-error-details';
+            detailsElem.innerHTML = errorDetails;
+            errorContainer.appendChild(detailsElem);
+        }
+        
+        // 刷新按钮
+        const refreshButton = document.createElement('button');
+        refreshButton.className = 'table-refresh-button';
+        refreshButton.textContent = '刷新表格';
+        refreshButton.onclick = () => {
+            console.log('手动刷新表格');
+            this.fetchTableData(tableBlock, blockId);
+        };
+        errorContainer.appendChild(refreshButton);
+        
+        // 替换表格内容
+        tableBlock.innerHTML = '';
+        tableBlock.appendChild(errorContainer);
+    }
 
-    /**
-     * 渲染表格
-     * @param {Object} tableData - 表格数据对象
-     * @param {Array} tableData.rows - 表格行数据
-     * @param {boolean} tableData.hasColumnHeader - 是否有列表头
-     * @param {boolean} tableData.hasRowHeader - 是否有行表头
-     * @returns {string} 渲染后的HTML字符串
-     */
+    // 渲染表格
     renderTable(tableData) {
         const { rows, hasColumnHeader, hasRowHeader } = tableData;
         
@@ -282,6 +470,14 @@ class TableLazyLoader {
      * @returns {string} 渲染后的HTML字符串
      */
     renderCell(cell) {
+        // 内联实现HTML转义，避免调用this.escapeHtml
+        const escapeHtml = (text) => {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        };
+        
         // 处理空值
         if (cell === null || cell === undefined) {
             return '&nbsp;';
@@ -299,7 +495,7 @@ class TableLazyLoader {
         
         // 处理字符串类型
         if (typeof cell === 'string') {
-            return this.escapeHtml(cell);
+            return escapeHtml(cell);
         }
         
         // 处理数字类型
@@ -313,7 +509,7 @@ class TableLazyLoader {
             const renderedContent = cell.map(item => {
                 // 如果元素不是对象，直接返回字符串形式
                 if (typeof item !== 'object' || item === null) {
-                    return this.escapeHtml(String(item));
+                    return escapeHtml(String(item));
                 }
                 
                 // 提取文本内容
@@ -335,79 +531,28 @@ class TableLazyLoader {
                     return '';
                 }
                 
+                content = escapeHtml(content);
+                
                 // 应用文本样式
                 if (item.annotations) {
                     if (item.annotations.bold) content = `<strong>${content}</strong>`;
                     if (item.annotations.italic) content = `<em>${content}</em>`;
                     if (item.annotations.strikethrough) content = `<del>${content}</del>`;
                     if (item.annotations.underline) content = `<u>${content}</u>`;
-                    if (item.annotations.code) content = `<code>${content}</code>`;
-                    
-                    // 处理颜色
-                    if (item.annotations.color && item.annotations.color !== 'default') {
-                        content = `<span class="color-${item.annotations.color}">${content}</span>`;
-                    }
                 }
                 
-                // 处理链接
-                if (item.href) {
-                    content = `<a href="${this.escapeHtml(item.href)}" target="_blank" rel="noopener noreferrer">${content}</a>`;
-                }
-                
-                    return content;
-                }).join('');
-                
+                return content;
+            }).join('');
+            
             return renderedContent || '&nbsp;';
         }
         
         // 处理对象类型
-        if (typeof cell === 'object') {
-            // 处理不同类型的对象
-            if (cell.type === 'text') {
-                return this.escapeHtml(cell.text?.content || cell.plain_text || '') || '&nbsp;';
-            }
-            
-            if (cell.type === 'link') {
-                const url = cell.url || '';
-                const text = cell.text || cell.url || '';
-                return `<a href="${this.escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${this.escapeHtml(text)}</a>`;
-            }
-            
-            // 尝试从对象的不同属性中提取文本
-            if (cell.plain_text) {
-                return this.escapeHtml(cell.plain_text) || '&nbsp;';
-            }
-            
-            if (cell.content) {
-                return this.escapeHtml(cell.content) || '&nbsp;';
-            }
-            
-            if (cell.text) {
-                if (typeof cell.text === 'string') {
-                    return this.escapeHtml(cell.text) || '&nbsp;';
-                } else if (typeof cell.text === 'object' && cell.text.content) {
-                    return this.escapeHtml(cell.text.content) || '&nbsp;';
-                }
-            }
+        if (typeof cell === 'object' && cell !== null) {
+            return escapeHtml(JSON.stringify(cell));
         }
         
-        // 如果无法识别类型，尝试转换为字符串
-        try {
-            const stringValue = JSON.stringify(cell);
-            return stringValue !== '{}' && stringValue !== '[]' 
-                ? this.escapeHtml(stringValue) 
-                : '&nbsp;';
-        } catch (e) {
-            console.error('无法渲染单元格:', e);
-            return '&nbsp;';
-        }
-    }
-
-    // 转义HTML
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+        return escapeHtml(String(cell));
     }
 
     // 添加表格排序功能

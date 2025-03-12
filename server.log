@@ -2,26 +2,249 @@
 监控系统已设置
 服务器运行在 http://127.0.0.1:8000
 测试端点: http://127.0.0.1:8000/api/hello
-2025-03-09T21:05:41.630Z - GET /hello
-2025-03-09T21:05:41.633Z - GET /hello
-2025-03-09T21:05:41.642Z - POST /articles
+2025-03-11T23:16:50.394Z - GET /hello
+2025-03-11T23:16:50.399Z - GET /hello
+2025-03-11T23:16:50.412Z - POST /articles
 Request body: { database_id: '1a932af826e680df8bf7f320b51930b9' }
 Using database ID: 1a932af826e680df8bf7f320b51930b9
-2025-03-09T21:05:41.677Z - POST /articles
+2025-03-11T23:16:50.440Z - POST /articles
 Request body: { database_id: '1a932af826e680df8bf7f320b51930b9' }
 Using database ID: 1a932af826e680df8bf7f320b51930b9
 Notion API POST databases/1a932af826e680df8bf7f320b51930b9/query: 200
 Notion API response received
-Found 6 articles
+Found 12 articles
 Notion API POST databases/1a932af826e680df8bf7f320b51930b9/query: 200
 Notion API response received
-Found 6 articles
-2025-03-09T21:05:43.716Z - GET /blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children
+Found 12 articles
+2025-03-11T23:16:55.597Z - GET /blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?_=1741735015590
 获取块的子块数据，块ID: 1af32af8-26e6-80d8-a11a-edc916fbdc4b
 Notion API GET blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?page_size=100: 200
 成功获取块的子块数据，共 6 个子块
-2025-03-09T21:05:44.394Z - GET /blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children
+2025-03-11T23:16:57.490Z - GET /blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?_=1741735017483
 获取块的子块数据，块ID: 1af32af8-26e6-80d8-a11a-edc916fbdc4b
 Notion API GET blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?page_size=100: 200
 成功获取块的子块数据，共 6 个子块
-收到 SIGTERM 信号，正在关闭服务器...
+2025-03-11T23:21:20.571Z - GET /hello
+2025-03-11T23:21:20.573Z - GET /hello
+2025-03-11T23:21:20.578Z - POST /articles
+Request body: { database_id: '1a932af826e680df8bf7f320b51930b9' }
+Using database ID: 1a932af826e680df8bf7f320b51930b9
+Using cached data for databases/1a932af826e680df8bf7f320b51930b9/query
+Notion API response received
+Found 12 articles
+2025-03-11T23:21:20.580Z - POST /articles
+Request body: { database_id: '1a932af826e680df8bf7f320b51930b9' }
+Using database ID: 1a932af826e680df8bf7f320b51930b9
+Using cached data for databases/1a932af826e680df8bf7f320b51930b9/query
+Notion API response received
+Found 12 articles
+2025-03-11T23:21:23.690Z - GET /blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?_=1741735283684
+获取块的子块数据，块ID: 1af32af8-26e6-80d8-a11a-edc916fbdc4b
+2025-03-11T23:21:24.737Z - GET /blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?_=1741735284731
+获取块的子块数据，块ID: 1af32af8-26e6-80d8-a11a-edc916fbdc4b
+Notion API GET blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?page_size=100: 200
+成功获取块的子块数据，共 6 个子块
+Notion API GET blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?page_size=100: 200
+成功获取块的子块数据，共 6 个子块
+Request started: {"method":"GET","url":"/assets/favicon.ico","requestId":"0qg78o"}
+Request completed: {"method":"GET","url":"/assets/favicon.ico","requestId":"0qg78o","statusCode":404,"duration":3}
+2025-03-11T23:34:15.806Z - GET /hello
+2025-03-11T23:34:15.808Z - GET /hello
+2025-03-11T23:34:15.809Z - POST /articles
+Request body: { database_id: '1a932af826e680df8bf7f320b51930b9' }
+Using database ID: 1a932af826e680df8bf7f320b51930b9
+2025-03-11T23:34:15.815Z - POST /articles
+Request body: { database_id: '1a932af826e680df8bf7f320b51930b9' }
+Using database ID: 1a932af826e680df8bf7f320b51930b9
+Notion API POST databases/1a932af826e680df8bf7f320b51930b9/query: 200
+Notion API response received
+Found 12 articles
+Notion API POST databases/1a932af826e680df8bf7f320b51930b9/query: 200
+Notion API response received
+Found 12 articles
+2025-03-11T23:34:18.987Z - GET /hello
+2025-03-11T23:34:18.990Z - GET /hello
+2025-03-11T23:34:18.991Z - POST /articles
+Request body: { database_id: '1a932af826e680df8bf7f320b51930b9' }
+Using database ID: 1a932af826e680df8bf7f320b51930b9
+Using cached data for databases/1a932af826e680df8bf7f320b51930b9/query
+Notion API response received
+Found 12 articles
+2025-03-11T23:34:18.993Z - POST /articles
+Request body: { database_id: '1a932af826e680df8bf7f320b51930b9' }
+Using database ID: 1a932af826e680df8bf7f320b51930b9
+Using cached data for databases/1a932af826e680df8bf7f320b51930b9/query
+Notion API response received
+Found 12 articles
+2025-03-11T23:34:22.825Z - GET /blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?_=1741736062823
+获取块的子块数据，块ID: 1af32af8-26e6-80d8-a11a-edc916fbdc4b
+2025-03-11T23:34:23.608Z - GET /blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?_=1741736063601
+获取块的子块数据，块ID: 1af32af8-26e6-80d8-a11a-edc916fbdc4b
+Notion API GET blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?page_size=100: 200
+成功获取块的子块数据，共 6 个子块
+Notion API GET blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?page_size=100: 200
+成功获取块的子块数据，共 6 个子块
+[ALERT] low_success_rate: Success rate 0.00% below threshold 95%
+[ALERT] low_success_rate: Success rate 0.00% below threshold 95%
+[ALERT] low_success_rate: Success rate 0.00% below threshold 95%
+[ALERT] low_success_rate: Success rate 0.00% below threshold 95%
+[ALERT] low_success_rate: Success rate 0.00% below threshold 95%
+[ALERT] low_success_rate: Success rate 0.00% below threshold 95%
+2025-03-12T00:02:12.400Z - GET /hello
+2025-03-12T00:02:12.404Z - GET /hello
+Request started: {"method":"GET","url":"/assets/favicon.ico","requestId":"pegjy"}
+Request completed: {"method":"GET","url":"/assets/favicon.ico","requestId":"pegjy","statusCode":404,"duration":2}
+2025-03-12T00:02:12.407Z - POST /articles
+Request body: { database_id: '1a932af826e680df8bf7f320b51930b9' }
+Using database ID: 1a932af826e680df8bf7f320b51930b9
+2025-03-12T00:02:12.414Z - POST /articles
+Request body: { database_id: '1a932af826e680df8bf7f320b51930b9' }
+Using database ID: 1a932af826e680df8bf7f320b51930b9
+Notion API POST databases/1a932af826e680df8bf7f320b51930b9/query: 200
+Notion API response received
+Found 12 articles
+Notion API POST databases/1a932af826e680df8bf7f320b51930b9/query: 200
+Notion API response received
+Found 12 articles
+2025-03-12T00:02:16.793Z - GET /article-content/1ae32af8-26e6-80b5-a33b-f88ffc495766
+Fetching article content for page 1ae32af8-26e6-80b5-a33b-f88ffc495766
+Notion API GET pages/1ae32af8-26e6-80b5-a33b-f88ffc495766: 200
+2025-03-12T00:02:17.130Z - GET /blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?_=1741737737126
+获取块的子块数据，块ID: 1af32af8-26e6-80d8-a11a-edc916fbdc4b
+Notion API GET blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?page_size=100: 200
+成功获取块的子块数据，共 6 个子块
+2025-03-12T00:02:17.870Z - GET /blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?_=1741737737866
+获取块的子块数据，块ID: 1af32af8-26e6-80d8-a11a-edc916fbdc4b
+Notion API GET blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?page_size=100: 200
+成功获取块的子块数据，共 6 个子块
+[ALERT] low_success_rate: Success rate 0.00% below threshold 95%
+[ALERT] low_success_rate: Success rate 0.00% below threshold 95%
+[ALERT] low_success_rate: Success rate 0.00% below threshold 95%
+[ALERT] low_success_rate: Success rate 0.00% below threshold 95%
+[ALERT] low_success_rate: Success rate 0.00% below threshold 95%
+[ALERT] low_success_rate: Success rate 0.00% below threshold 95%
+[ALERT] low_success_rate: Success rate 0.00% below threshold 95%
+[ALERT] low_success_rate: Success rate 0.00% below threshold 95%
+[ALERT] low_success_rate: Success rate 0.00% below threshold 95%
+[ALERT] low_success_rate: Success rate 0.00% below threshold 95%
+[ALERT] low_success_rate: Success rate 0.00% below threshold 95%
+[ALERT] low_success_rate: Success rate 0.00% below threshold 95%
+[ALERT] low_success_rate: Success rate 0.00% below threshold 95%
+[ALERT] low_success_rate: Success rate 0.00% below threshold 95%
+2025-03-12T01:16:53.080Z - GET /hello
+2025-03-12T01:16:53.091Z - POST /articles
+Request body: { database_id: '1a932af826e680df8bf7f320b51930b9' }
+Using database ID: 1a932af826e680df8bf7f320b51930b9
+2025-03-12T01:16:53.095Z - GET /hello
+Request started: {"method":"GET","url":"/assets/favicon.ico","requestId":"bab5cr"}
+Request completed: {"method":"GET","url":"/assets/favicon.ico","requestId":"bab5cr","statusCode":404,"duration":1}
+2025-03-12T01:16:53.097Z - POST /articles
+Request body: { database_id: '1a932af826e680df8bf7f320b51930b9' }
+Using database ID: 1a932af826e680df8bf7f320b51930b9
+Notion API POST databases/1a932af826e680df8bf7f320b51930b9/query: 200
+Notion API response received
+Found 12 articles
+Notion API POST databases/1a932af826e680df8bf7f320b51930b9/query: 200
+Notion API response received
+Found 12 articles
+2025-03-12T01:16:56.608Z - GET /article-content/1ae32af8-26e6-80b5-a33b-f88ffc495766
+Fetching article content for page 1ae32af8-26e6-80b5-a33b-f88ffc495766
+Notion API GET pages/1ae32af8-26e6-80b5-a33b-f88ffc495766: 200
+2025-03-12T01:16:57.075Z - GET /blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?_=1741742217073&v=1.1.0&debug=true
+获取块的子块数据，块ID: 1af32af8-26e6-80d8-a11a-edc916fbdc4b
+Notion API GET blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?page_size=100: 200
+成功获取块的子块数据，共 6 个子块
+2025-03-12T01:16:57.862Z - GET /blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?_=1741742217859&v=1.1.0&debug=true
+获取块的子块数据，块ID: 1af32af8-26e6-80d8-a11a-edc916fbdc4b
+Notion API GET blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?page_size=100: 200
+成功获取块的子块数据，共 6 个子块
+2025-03-12T01:22:14.574Z - GET /article-content/1a932af8-26e6-80d7-ae44-f8dcea6e7b31
+Fetching article content for page 1a932af8-26e6-80d7-ae44-f8dcea6e7b31
+Notion API GET pages/1a932af8-26e6-80d7-ae44-f8dcea6e7b31: 200
+2025-03-12T01:22:26.023Z - GET /blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?_=1741742546020&v=1.1.0&debug=true
+获取块的子块数据，块ID: 1af32af8-26e6-80d8-a11a-edc916fbdc4b
+Notion API GET blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?page_size=100: 200
+成功获取块的子块数据，共 6 个子块
+[ALERT] low_success_rate: Success rate 0.00% below threshold 95%
+2025-03-12T01:23:14.946Z - GET /article-content/1a932af8-26e6-80d7-ae44-f8dcea6e7b31?page_size=10&cursor=1ab32af8-26e6-8025-8830-ebfd293435ce
+Fetching article content for page 1a932af8-26e6-80d7-ae44-f8dcea6e7b31
+Notion API GET pages/1a932af8-26e6-80d7-ae44-f8dcea6e7b31: 200
+2025-03-12T01:23:18.382Z - GET /article-content/1a932af8-26e6-80d7-ae44-f8dcea6e7b31?page_size=10&cursor=1ab32af8-26e6-800e-bf1d-c6f95f504432
+Fetching article content for page 1a932af8-26e6-80d7-ae44-f8dcea6e7b31
+Notion API GET pages/1a932af8-26e6-80d7-ae44-f8dcea6e7b31: 200
+2025-03-12T01:23:22.455Z - GET /blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?_=1741742602453&v=1.1.0&debug=true
+获取块的子块数据，块ID: 1af32af8-26e6-80d8-a11a-edc916fbdc4b
+Notion API GET blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?page_size=100: 200
+成功获取块的子块数据，共 6 个子块
+2025-03-12T01:23:23.906Z - GET /article-content/1a932af8-26e6-80d7-ae44-f8dcea6e7b31
+Fetching article content for page 1a932af8-26e6-80d7-ae44-f8dcea6e7b31
+Notion API GET pages/1a932af8-26e6-80d7-ae44-f8dcea6e7b31: 200
+2025-03-12T01:24:54.426Z - GET /hello
+2025-03-12T01:24:54.427Z - GET /hello
+2025-03-12T01:24:54.430Z - POST /articles
+Request body: { database_id: '1a932af826e680df8bf7f320b51930b9' }
+Using database ID: 1a932af826e680df8bf7f320b51930b9
+2025-03-12T01:24:54.436Z - POST /articles
+Request body: { database_id: '1a932af826e680df8bf7f320b51930b9' }
+Using database ID: 1a932af826e680df8bf7f320b51930b9
+Notion API POST databases/1a932af826e680df8bf7f320b51930b9/query: 200
+Notion API response received
+Found 12 articles
+Notion API POST databases/1a932af826e680df8bf7f320b51930b9/query: 200
+Notion API response received
+Found 12 articles
+2025-03-12T01:24:59.845Z - GET /blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?_=1741742699843&v=1.1.0&retry=true
+获取块的子块数据，块ID: 1af32af8-26e6-80d8-a11a-edc916fbdc4b
+Notion API GET blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?page_size=100: 200
+成功获取块的子块数据，共 6 个子块
+2025-03-12T01:25:04.041Z - GET /blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?_=1741742704037&v=1.1.0&retry=true
+获取块的子块数据，块ID: 1af32af8-26e6-80d8-a11a-edc916fbdc4b
+Notion API GET blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?page_size=100: 200
+成功获取块的子块数据，共 6 个子块
+2025-03-12T01:25:10.259Z - GET /hello
+2025-03-12T01:25:10.263Z - POST /articles
+Request body: { database_id: '1a932af826e680df8bf7f320b51930b9' }
+Using database ID: 1a932af826e680df8bf7f320b51930b9
+Using cached data for databases/1a932af826e680df8bf7f320b51930b9/query
+Notion API response received
+Found 12 articles
+2025-03-12T01:25:10.405Z - GET /hello
+Request started: {"method":"GET","url":"/assets/favicon.ico","requestId":"arbpr"}
+Request completed: {"method":"GET","url":"/assets/favicon.ico","requestId":"arbpr","statusCode":404,"duration":0}
+2025-03-12T01:25:10.408Z - POST /articles
+Request body: { database_id: '1a932af826e680df8bf7f320b51930b9' }
+Using database ID: 1a932af826e680df8bf7f320b51930b9
+Using cached data for databases/1a932af826e680df8bf7f320b51930b9/query
+Notion API response received
+Found 12 articles
+2025-03-12T01:25:13.205Z - GET /blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?_=1741742713199&v=1.1.0&retry=true
+获取块的子块数据，块ID: 1af32af8-26e6-80d8-a11a-edc916fbdc4b
+Notion API GET blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?page_size=100: 200
+成功获取块的子块数据，共 6 个子块
+2025-03-12T01:25:23.905Z - GET /blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?_=1741742723902&v=1.1.0&retry=true
+获取块的子块数据，块ID: 1af32af8-26e6-80d8-a11a-edc916fbdc4b
+Notion API GET blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?page_size=100: 200
+成功获取块的子块数据，共 6 个子块
+[ALERT] low_success_rate: Success rate 0.00% below threshold 95%
+2025-03-12T01:29:20.223Z - GET /hello
+2025-03-12T01:29:20.224Z - GET /hello
+2025-03-12T01:29:20.228Z - POST /articles
+Request body: { database_id: '1a932af826e680df8bf7f320b51930b9' }
+Using database ID: 1a932af826e680df8bf7f320b51930b9
+Using cached data for databases/1a932af826e680df8bf7f320b51930b9/query
+Notion API response received
+Found 12 articles
+2025-03-12T01:29:20.230Z - POST /articles
+Request body: { database_id: '1a932af826e680df8bf7f320b51930b9' }
+Using database ID: 1a932af826e680df8bf7f320b51930b9
+Using cached data for databases/1a932af826e680df8bf7f320b51930b9/query
+Notion API response received
+Found 12 articles
+2025-03-12T01:29:22.136Z - GET /blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?_=1741742962132&v=1.1.0
+获取块的子块数据，块ID: 1af32af8-26e6-80d8-a11a-edc916fbdc4b
+2025-03-12T01:29:24.489Z - GET /blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?_=1741742964484&v=1.1.0
+获取块的子块数据，块ID: 1af32af8-26e6-80d8-a11a-edc916fbdc4b
+Notion API GET blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?page_size=100: 200
+成功获取块的子块数据，共 6 个子块
+Notion API GET blocks/1af32af8-26e6-80d8-a11a-edc916fbdc4b/children?page_size=100: 200
+成功获取块的子块数据，共 6 个子块

@@ -20,34 +20,16 @@
  * 该模块导出单个配置对象，可被其他模块导入使用。
  */
 
-// 导入生产环境配置
+// 导入环境配置
+import devConfig from './config.development.js';
 import prodConfig from './config.production.js';
 
 // 判断当前环境
 const isDevelopment = window.location.hostname === 'localhost' || 
                      window.location.hostname === '127.0.0.1';
 
-// 创建配置对象
-let config = prodConfig;
-
-// 在开发环境中尝试加载开发配置
-if (isDevelopment) {
-    try {
-        // 动态导入开发环境配置
-        import('./config.development.js')
-            .then(module => {
-                // 成功加载开发环境配置
-                Object.assign(config, module.default);
-                console.log('开发环境配置已加载');
-            })
-            .catch(error => {
-                // 加载失败时使用生产配置
-                console.warn('无法加载开发环境配置，将使用生产环境配置', error);
-            });
-    } catch (error) {
-        console.warn('加载配置时出错，将使用生产环境配置', error);
-    }
-}
+// 根据环境选择配置
+const config = isDevelopment ? devConfig : prodConfig;
 
 // 添加一些通用的配置方法
 const configManager = {

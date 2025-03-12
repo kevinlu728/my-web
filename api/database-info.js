@@ -1,6 +1,6 @@
 /**
- * @file articles.js
- * @description 文章列表API端点
+ * @file database-info.js
+ * @description 数据库信息API端点
  * @author 陆凯
  * @created 2024-03-09
  * @updated 2024-03-10
@@ -27,29 +27,22 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    console.log('Request body:', req.body);
-    const databaseId = req.body?.database_id || notionService.config.defaultDatabaseId;
-    console.log('Using database ID:', databaseId);
+    const { database_id } = req.body;
     
-    const data = await notionService.queryDatabase(databaseId);
-    console.log('Notion API response received');
-    
-    if (data.results?.length > 0) {
-      console.log(`Found ${data.results.length} articles`);
-      data.results.sort((a, b) => {
-        const timeA = new Date(a.created_time || 0);
-        const timeB = new Date(b.created_time || 0);
-        return timeB - timeA;
-      });
-    } else {
-      console.log('No articles found in response');
+    if (!database_id) {
+      return res.status(400).json({ error: '缺少数据库ID' });
     }
+    
+    console.log(`获取数据库信息，数据库ID: ${database_id}`);
+    
+    const data = await notionService.getDatabaseInfo(database_id);
+    console.log(`成功获取数据库信息: ${database_id}`);
     
     res.status(200).json(data);
   } catch (error) {
-    console.error('Error fetching articles:', error);
-    res.status(error.message.includes('超时') ? 504 : 500).json({ 
-      error: 'Failed to fetch articles', 
+    console.error('获取数据库信息失败:', error);
+    res.status(500).json({ 
+      error: '获取数据库信息失败', 
       message: error.message 
     });
   }

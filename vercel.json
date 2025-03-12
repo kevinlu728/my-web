@@ -12,28 +12,35 @@
     ],
     "routes": [
       {
-        "src": "/api/test",
-        "dest": "/api/test.js"
-      },
-      {
         "src": "/api/hello",
         "dest": "/api/hello.js"
       },
       {
         "src": "/api/articles",
+        "methods": ["POST", "OPTIONS"],
         "dest": "/api/articles.js"
       },
       {
-        "src": "/api/static-articles",
-        "dest": "/api/static-articles.js"
+        "src": "/api/article-content/([^/]+)",
+        "dest": "/api/article-content/[pageId].js?pageId=$1"
       },
       {
-        "src": "/api/static-article-content",
-        "dest": "/api/static-article-content.js"
+        "src": "/api/blocks/([^/]+)/children",
+        "dest": "/api/blocks/[blockId]/children.js?blockId=$1"
       },
       {
-        "src": "/api/article-content/(.*)",
-        "dest": "/api/article-content/[id].js?id=$1"
+        "src": "/api/database-info",
+        "methods": ["POST", "OPTIONS"],
+        "dest": "/api/database-info.js"
+      },
+      {
+        "src": "/api/databases",
+        "dest": "/api/databases.js"
+      },
+      {
+        "src": "/api/clear-cache",
+        "methods": ["POST", "OPTIONS"],
+        "dest": "/api/clear-cache.js"
       },
       {
         "src": "/scripts/config/config\\.development\\.js",
@@ -43,8 +50,15 @@
         }
       },
       {
-        "src": "/scripts/core/(.*)\\.js",
-        "dest": "/scripts/core/$1.js"
+        "src": "/scripts/config/config\\.production\\.js",
+        "dest": "/scripts/config/config.production.js",
+        "headers": {
+          "cache-control": "no-cache, no-store, must-revalidate"
+        }
+      },
+      {
+        "src": "/scripts/(.*)\\.js",
+        "dest": "/scripts/$1.js"
       },
       {
         "src": "/styles/(.*)",
