@@ -39,7 +39,7 @@ export async function getArticles(databaseId) {
       body: JSON.stringify({ 
         database_id: databaseId, // 原始参数名
         databaseId: databaseId,  // 新参数名
-        limit: 100 
+        limit: 10 
       })
     });
     
@@ -47,7 +47,7 @@ export async function getArticles(databaseId) {
     console.log('Request params:', { 
       database_id: databaseId, 
       databaseId: databaseId, 
-      limit: 100 
+      limit: 10 
     });
     
     if (!response.ok) {
@@ -57,7 +57,7 @@ export async function getArticles(databaseId) {
       console.error('详细错误信息:', {
         method: 'POST',
         url: apiUrl,
-        params: { database_id: databaseId, databaseId: databaseId, limit: 100 },
+        params: { database_id: databaseId, databaseId: databaseId, limit: 10 },
         statusCode: response.status,
         statusText: response.statusText,
         headers: Object.fromEntries([...response.headers]),
@@ -122,7 +122,7 @@ export async function getArticleContent(pageId) {
     }
     
     // 使用新的统一内容API端点
-    const apiUrl = `${config.api?.baseUrl || '/api'}/article-content/${pageId}`;
+    const apiUrl = `${config.api?.baseUrl || '/api'}/content/${pageId}?type=article`;
     console.log(`Content API URL: ${apiUrl}`);
     
     const response = await fetch(apiUrl);

@@ -578,56 +578,49 @@ function renderBlock(block) {
     }
 }
 
-// 更新初始化懒加载函数以包含公式渲染
+// 初始化懒加载功能
 export function initializeLazyLoading(container) {
-    // 查找并处理所有懒加载块
-    const tablePlaceholders = container.querySelectorAll('.lazy-block.table-block');
-    const codePlaceholders = container.querySelectorAll('.lazy-block.code-block');
-
-    // 处理表格懒加载
-    if (tablePlaceholders.length > 0) {
-        console.log(`找到 ${tablePlaceholders.length} 个表格块，初始化懒加载`);
-        tableLazyLoader.processAllTables();
+    if (!container) {
+        console.warn('无法初始化懒加载：容器不存在');
+        return;
     }
-
-    // 处理代码块懒加载
-    if (codePlaceholders.length > 0) {
-        console.log(`找到 ${codePlaceholders.length} 个代码块，初始化懒加载`);
-        codeLazyLoader.processAllCodeBlocks();
-    }
-
-    // 等待KaTeX加载完成后渲染公式
-    if (window.katex && window.renderMathInElement) {
-        try {
-            window.renderMathInElement(container, {
-                delimiters: [
-                    {left: '$$', right: '$$', display: true},
-                    {left: '$', right: '$', display: false}
-                ],
-                throwOnError: false,
-                strict: false,
-                trust: true,
-                macros: {
-                    "\\log": "\\log",
-                    "\\exp": "\\exp",
-                    "\\sqrt": "\\sqrt",
-                    "\\sum": "\\sum",
-                    "\\prod": "\\prod"
-                }
-            });
-        } catch (error) {
-            console.error('公式渲染失败:', error);
+    
+    console.log('初始化懒加载功能...');
+    
+    // 标记容器已初始化
+    container.dataset.lazyInitialized = 'true';
+    
+    // 初始化代码块懒加载
+    const codeBlocks = container.querySelectorAll('.lazy-block.code-block');
+    console.log(`找到 ${codeBlocks.length} 个代码块待懒加载`);
+    
+    if (codeBlocks.length > 0 && window.codeLazyLoader) {
+        console.log('处理代码块...');
+        // 确保codeLazyLoader可用
+        if (typeof window.codeLazyLoader.processAllCodeBlocks === 'function') {
+            window.codeLazyLoader.processAllCodeBlocks(container);
+        } else if (typeof codeLazyLoader !== 'undefined' && typeof codeLazyLoader.processAllCodeBlocks === 'function') {
+            codeLazyLoader.processAllCodeBlocks(container);
+        } else {
+            console.error('codeLazyLoader不可用或processAllCodeBlocks方法不存在');
         }
-    } else {
-        // 如果KaTeX还未加载，等待加载完成后再渲染
-        const checkKaTeX = setInterval(() => {
-            if (window.katex && window.renderMathInElement) {
-                clearInterval(checkKaTeX);
-                initializeLazyLoading(container);
-            }
-        }, 100);
-        
-        // 设置超时，避免无限等待
-        setTimeout(() => clearInterval(checkKaTeX), 5000);
     }
+    
+    // 初始化表格懒加载
+    const tableBlocks = container.querySelectorAll('.lazy-block.table-block');
+    console.log(`找到 ${tableBlocks.length} 个表格待懒加载`);
+    
+    if (tableBlocks.length > 0) {
+        console.log('处理表格...');
+        // 确保tableLazyLoader可用
+        if (typeof window.tableLazyLoader !== 'undefined' && typeof window.tableLazyLoader.processAllTables === 'function') {
+            window.tableLazyLoader.processAllTables(container);
+        } else if (typeof tableLazyLoader !== 'undefined' && typeof tableLazyLoader.processAllTables === 'function') {
+            tableLazyLoader.processAllTables(container);
+        } else {
+            console.error('tableLazyLoader不可用或processAllTables方法不存在');
+        }
+    }
+    
+    console.log('懒加载初始化完成');
 } 

@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "whatwg-url": "5.0.0",
+    "webidl-conversions": "3.0.1",
+    "tr46": "0.0.3"
+  }
+} 

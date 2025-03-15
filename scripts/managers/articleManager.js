@@ -191,6 +191,7 @@ class ArticleManager {
                     console.log('API 测试成功:', testData);
                 } else {
                     console.error('API 测试失败:', testResponse.status, testResponse.statusText);
+                    showError(`API连接测试失败: ${testResponse.status} ${testResponse.statusText}`);
                 }
             } catch (testError) {
                 console.error('API 测试异常:', testError);
@@ -198,18 +199,28 @@ class ArticleManager {
             
             // 获取文章列表
             console.log('正在从 API 获取文章列表...');
-            const articles = await getArticles(this.currentDatabaseId);
+            const result = await getArticles(this.currentDatabaseId);
             
             // 如果请求已取消，不继续处理
             if (signal.aborted) {
                 console.log('文章列表加载已取消');
-                return;
+                return [];
             }
             
-            console.log(`成功获取 ${articles.length} 篇文章`);
+            // 处理新的响应格式
+            const articles = result.articles;
+            const hasMore = result.hasMore;
+            const nextCursor = result.nextCursor;
             
-            // 保存文章列表
+            console.log(`成功获取 ${articles.length} 篇文章，hasMore: ${hasMore}, nextCursor: ${nextCursor}`);
+            
+            // 保存文章列表和分页信息
             this.articles = articles;
+            this.hasMore = hasMore;
+            this.nextCursor = nextCursor;
+            
+            // 处理原始Notion数据，提取所需字段
+            this.processArticleData();
             
             // 应用搜索过滤
             this.filterAndRenderArticles();
@@ -222,18 +233,128 @@ class ArticleManager {
                 showStatus('没有找到文章', false, 'info');
             }
             
-            return articles;
+            return this.articles;
         } catch (error) {
             console.error('Error loading articles:', error);
             
             // 显示错误状态
             showError(`加载文章列表失败: ${error.message}`);
             
-            throw error;
+            // 尝试显示更加用户友好的错误信息
+            if (error.message.includes('failed with status 500')) {
+                showError('服务器内部错误，请稍后再试或联系管理员');
+            } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+                showError('网络连接错误，请检查您的网络连接');
+            }
+            
+            return [];
         } finally {
             // 清除 AbortController
             this.abortController = null;
         }
+    }
+
+    // 处理文章数据，转换为应用需要的格式
+    processArticleData() {
+        if (!this.articles || !Array.isArray(this.articles)) {
+            console.error('无效的文章数据:', this.articles);
+            return;
+        }
+        
+        console.log('处理文章数据...');
+        const processedArticles = [];
+        
+        for (const page of this.articles) {
+            try {
+                // 确保页面有 ID
+                if (!page.id) {
+                    console.error('文章缺少ID:', page);
+                    continue;
+                }
+                
+                // 提取标题
+                let title = 'Untitled';
+                
+                // 尝试从 properties 中获取标题
+                if (page.properties) {
+                    // 尝试从 Name 或 Title 属性中获取标题
+                    const titleProperty = page.properties.Name || page.properties.Title;
+                    
+                    if (titleProperty && titleProperty.title && Array.isArray(titleProperty.title) && titleProperty.title.length > 0) {
+                        title = titleProperty.title.map(t => t.plain_text || '').join('');
+                    }
+                }
+                
+                // 提取 URL
+                let url = '';
+                if (page.url) {
+                    url = page.url;
+                } else if (page.public_url) {
+                    url = page.public_url;
+                }
+                
+                // 使用原始 ID
+                const pageId = page.id;
+                
+                // 提取创建时间
+                const createdTime = page.created_time ? new Date(page.created_time) : new Date();
+                
+                // 提取最后编辑时间
+                const lastEditedTime = page.last_edited_time ? new Date(page.last_edited_time) : new Date();
+                
+                // 提取分类
+                let category = 'Uncategorized';
+                if (page.properties && page.properties.Category) {
+                    const categoryProp = page.properties.Category;
+                    
+                    if (categoryProp.select && categoryProp.select.name) {
+                        category = categoryProp.select.name;
+                    } else if (categoryProp.multi_select && Array.isArray(categoryProp.multi_select) && categoryProp.multi_select.length > 0) {
+                        category = categoryProp.multi_select.map(c => c.name).join(', ');
+                    }
+                }
+                
+                // 提取发布时间
+                let publishDate = null;
+                if (page.properties && page.properties['Publish Date'] && page.properties['Publish Date'].date) {
+                    publishDate = page.properties['Publish Date'].date.start;
+                }
+                
+                // 构建文章对象
+                const article = {
+                    id: pageId,
+                    title: title,
+                    url: url,
+                    created_time: page.created_time,
+                    last_edited_time: page.last_edited_time,
+                    publish_date: publishDate,
+                    category: category,
+                    properties: page.properties, // 保留原始属性以备后用
+                    originalPage: page // 保留原始页面数据
+                };
+                
+                processedArticles.push(article);
+            } catch (error) {
+                console.error('处理文章数据时出错:', error, page);
+            }
+        }
+        
+        // 按发布时间排序，没有发布时间的排在最后
+        processedArticles.sort((a, b) => {
+            // 如果两篇文章都有发布时间，按发布时间降序排序
+            if (a.publish_date && b.publish_date) {
+                return new Date(b.publish_date) - new Date(a.publish_date);
+            }
+            // 如果只有 a 有发布时间，a 排在前面
+            if (a.publish_date) return -1;
+            // 如果只有 b 有发布时间，b 排在前面
+            if (b.publish_date) return 1;
+            // 如果都没有发布时间，按创建时间降序排序
+            return new Date(b.created_time) - new Date(a.created_time);
+        });
+        
+        console.log(`处理完成，共 ${processedArticles.length} 篇文章`);
+        this.articles = processedArticles;
     }
 
     // 搜索文章
@@ -419,16 +540,25 @@ class ArticleManager {
 
     // 加载和显示文章内容
     async loadAndDisplayArticle(pageId) {
+        // 检查ID有效性
+        if (!pageId || pageId === 'undefined' || pageId === 'null') {
+            console.error('Invalid pageId in loadAndDisplayArticle:', pageId);
+            throw new Error('无效的文章ID');
+        }
+        
+        // 初始化加载状态
+        this.isLoading = true;
+        this.hasMore = false;
+        this.nextCursor = null;
+        
+        // 创建新的 AbortController
+        this.abortController = new AbortController();
+        this.currentLoadingId = pageId;
+        
+        // 打印详细的请求信息
+        console.log(`🔍 文章ID详情 - 长度: ${pageId.length}, 格式: ${pageId.includes('-') ? '含连字符' : '无连字符'}`);
+        
         try {
-            // 初始化加载状态
-            this.isLoading = true;
-            this.hasMore = false;
-            this.nextCursor = null;
-            
-            // 创建新的 AbortController
-            this.abortController = new AbortController();
-            this.currentLoadingId = pageId;
-            
             // 先尝试从缓存获取
             const cachedData = this.getArticleFromCache(pageId);
             if (cachedData && cachedData.isComplete) { // 只有完整加载的文章才使用缓存
@@ -439,65 +569,76 @@ class ArticleManager {
 
             console.log('🌐 从网络加载文章:', pageId);
             
-            let retryCount = 0;
-            const maxRetries = 3;
-            const timeout = 10000;
+            // 从API获取文章
+            const articleData = await getArticleContent(pageId);
+            console.log('API返回的文章内容:', articleData);
             
-            while (retryCount < maxRetries) {
-                try {
-                    const timeoutId = setTimeout(() => {
-                        if (this.abortController) {
-                            this.abortController.abort();
-                        }
-                        console.log('请求超时，正在中断...');
-                    }, timeout);
-                    
-                    console.log(`正在发起第${retryCount + 1}次请求...`);
-                    
-                    // 使用 notionService 获取文章内容
-                    const articleData = await getArticleContent(pageId);
-                    
-                    clearTimeout(timeoutId);
-                    
-                    if (!articleData) {
-                        throw new Error('获取文章内容失败');
-                    }
-                    
-                    // 缓存文章内容
-                    this.setArticleCache(pageId, {
-                        ...articleData,
-                        isComplete: true
-                    });
-                    
-                    this.isLoading = false;
-                    return articleData;
-                } catch (error) {
-                    retryCount++;
-                    console.error(`第${retryCount}次请求失败:`, error);
-                    
-                    if (retryCount >= maxRetries) {
-                        throw error;
-                    }
-                    
-                    // 等待一段时间后重试
-                    await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
-                }
+            // 检查article结构是否有效
+            if (!articleData || !articleData.blocks) {
+                throw new Error('无效的文章内容');
             }
+            
+            // 缓存文章内容
+            this.setArticleCache(pageId, {
+                ...articleData,
+                isComplete: true
+            });
+            
+            this.isLoading = false;
+            return articleData;
         } catch (error) {
             console.error('加载文章失败:', error);
             this.isLoading = false;
             throw error;
         } finally {
-            this.abortController = null;
+            if (this.currentLoadingId === pageId) {
+                this.abortController = null;
+            }
         }
+    }
+    
+    // 格式化页面ID，确保使用正确的格式
+    getFormattedPageId(pageId) {
+        // 如果ID包含连字符，直接返回
+        if (pageId.includes('-')) {
+            return pageId;
+        }
+        
+        // 如果ID是纯数字字符串，这可能是错误的ID
+        if (/^\d+$/.test(pageId)) {
+            console.warn(`发现纯数字ID: ${pageId}，这可能不是有效的Notion页面ID`);
+            return pageId;
+        }
+        
+        // 如果ID是32个字符但没有连字符，添加连字符
+        if (pageId.length === 32) {
+            // 按照Notion UUID格式添加连字符: 8-4-4-4-12
+            return `${pageId.substring(0, 8)}-${pageId.substring(8, 12)}-${pageId.substring(12, 16)}-${pageId.substring(16, 20)}-${pageId.substring(20)}`;
+        }
+        
+        // 其他情况，尽量返回原始ID
+        return pageId;
     }
 
     // 显示文章内容
     async showArticle(pageId) {
         try {
-            console.log('📄 开始加载文章:', pageId);
+            console.log('开始加载文章:', pageId);
             const articleContainer = document.getElementById('article-container');
             if (!articleContainer) return;
+
+            // 防止无效ID或重复加载
+            if (!pageId || pageId === 'undefined' || pageId === 'null') {
+                console.error('Invalid pageId provided:', pageId);
+                showError('无效的文章ID');
+                return false;
+            }
+            
+            // 防止重复加载同一篇文章
+            if (this.currentLoadingId === pageId && this.isLoading) {
+                console.log(`文章 ${pageId} 正在加载中，忽略重复请求`);
+                return false;
+            }
 
             // 更新选中状态
             this.updateActiveArticle(pageId);
@@ -519,6 +660,10 @@ class ArticleManager {
                 behavior: 'instant' // 使用 'instant' 而不是 'smooth' 以避免视觉干扰
             });
 
+            // 记录当前正在加载的文章ID
+            this.currentLoadingId = pageId;
+            this.isLoading = true;
+
             // 显示加载状态
             articleContainer.innerHTML = `
                 <div class="article-loading">
@@ -538,6 +683,13 @@ class ArticleManager {
             `;
 
             try {
+                // 更新URL，但不触发页面重载
+                if (history.pushState) {
+                    const newurl = window.location.protocol + "//" + window.location.host + 
+                               window.location.pathname + `?article=${pageId}`;
+                    window.history.pushState({path: newurl}, '', newurl);
+                }
+                
                 const articleData = await this.loadAndDisplayArticle(pageId);
                 // 检查是否因切换文章而取消加载
                 if (!articleData) {
@@ -580,7 +732,7 @@ class ArticleManager {
                 // 更新DOM
                 articleContainer.innerHTML = `
                     <h1 class="article-title">${title}</h1>
-                    <div class="article-body">
+                    <div class="article-body" data-article-id="${articleData.page?.id || ''}">
                         ${contentHtml}
                     </div>
                     ${this.hasMore ? '<div class="load-more-container"><div class="loading-spinner"></div></div>' : ''}
@@ -592,30 +744,10 @@ class ArticleManager {
                     console.log('🖼️ 处理文章中的图片...');
                     imageLazyLoader.processImages(articleBody);
                     initializeLazyLoading(articleBody);
-                    
-                    // 初始化表格懒加载
-                    console.log('初始化表格懒加载...');
-                    const tablePlaceholders = articleBody.querySelectorAll('.lazy-block.table-block');
-                    console.log(`找到 ${tablePlaceholders.length} 个表格占位符`);
-                    
-                    if (tablePlaceholders.length > 0) {
-                        if (window.tableLazyLoader && typeof window.tableLazyLoader.processAllTables === 'function') {
-                            console.log('使用表格懒加载器处理所有表格...');
-                            window.tableLazyLoader.processAllTables();
-                        } else {
-                            console.warn('tableLazyLoader 不可用或缺少processAllTables方法，无法初始化表格懒加载');
-                        }
-                    }
                 }
-
+                
                 // 处理加载更多功能
-                if (!this.hasMore) {
-                    console.log('没有更多内容，移除加载指示器');
-                    const loadMoreContainer = articleContainer.querySelector('.load-more-container');
-                    if (loadMoreContainer) {
-                        loadMoreContainer.remove();
-                    }
-                } else {
+                if (this.hasMore) {
                     console.log('设置滚动监听以加载更多内容');
                     this.scrollHandler = this.throttle(() => {
                         if (this.isLoading || !this.hasMore) {
@@ -636,6 +768,12 @@ class ArticleManager {
                     }, 200);
                     
                     window.addEventListener('scroll', this.scrollHandler);
+                } else {
+                    console.log('没有更多内容，移除加载指示器');
+                    const loadMoreContainer = articleContainer.querySelector('.load-more-container');
+                    if (loadMoreContainer) {
+                        loadMoreContainer.remove();
+                    }
                 }
                 
                 return true;
@@ -649,6 +787,9 @@ class ArticleManager {
                     </div>
                 `;
                 return false;
+            } finally {
+                // 重置加载状态
+                this.isLoading = false;
             }
         } catch (error) {
             console.error('显示文章失败:', error);
@@ -690,8 +831,8 @@ class ArticleManager {
             console.log('下一页游标:', this.nextCursor);
 
             try {
-                // 使用 notionService 获取更多内容
-                const apiUrl = `${config.api?.baseUrl || '/api'}/article-content/${this.currentPageId}?page_size=10${this.nextCursor ? `&cursor=${this.nextCursor}` : ''}`;
+                // 使用新的统一API端点
+                const apiUrl = `${config.api?.baseUrl || '/api'}/content/${this.currentPageId}?type=article&page_size=10${this.nextCursor ? `&cursor=${this.nextCursor}` : ''}`;
                 console.log('加载更多内容 URL:', apiUrl);
                 
                 const response = await fetch(apiUrl);
@@ -1046,6 +1187,81 @@ class ArticleManager {
         const activeArticle = document.querySelector(`.article-item[data-article-id="${pageId}"]`);
         if (activeArticle) {
             activeArticle.classList.add('active');
+        }
+    }
+
+    // 高亮活动文章
+    highlightActiveArticle(pageId) {
+        // 移除所有文章的选中状态
+        document.querySelectorAll('.article-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        
+        // 添加新的选中状态
+        const activeArticle = document.querySelector(`.article-item[data-article-id="${pageId}"]`);
+        if (activeArticle) {
+            activeArticle.classList.add('active');
+        }
+    }
+
+    /**
+     * 显示文章内容
+     * @param {Object} article 文章对象
+     */
+    displayArticleContent(article) {
+        console.log('开始显示文章内容:', article);
+        
+        if (!article || !article.blocks) {
+            console.error('无效的文章内容');
+            showError('无效的文章内容');
+            return false;
+        }
+        
+        try {
+            // 获取文章容器
+            const articleContainer = document.getElementById('article-container');
+            if (!articleContainer) {
+                console.error('找不到文章容器');
+                return false;
+            }
+            
+            // 提取标题
+            let title = '无标题';
+            if (article.page && article.page.properties) {
+                const titleProp = article.page.properties.Title || article.page.properties.Name;
+                if (titleProp && titleProp.title && titleProp.title.length > 0) {
+                    title = titleProp.title[0].plain_text;
+                }
+            }
+            
+            // 使用文章渲染器渲染内容
+            const contentHtml = renderNotionBlocks(article.blocks);
+            
+            // 更新DOM
+            articleContainer.innerHTML = `
+                <h1 class="article-title">${title}</h1>
+                <div class="article-body" data-article-id="${article.page?.id || ''}">
+                    ${contentHtml || '<p>该文章暂无内容</p>'}
+                </div>
+            `;
+            
+            // 初始化懒加载
+            const articleBody = articleContainer.querySelector('.article-body');
+            if (articleBody) {
+                // 处理图片懒加载
+                if (window.imageLazyLoader) {
+                    imageLazyLoader.processImages(articleBody);
+                }
+                
+                // 处理代码块和表格懒加载
+                initializeLazyLoading(articleBody);
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('显示文章内容失败:', error);
+            showError(`显示文章内容失败: ${error.message}`);
+            return false;
         }
     }
 }

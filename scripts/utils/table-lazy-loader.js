@@ -631,8 +631,9 @@ class TableLazyLoader {
     }
 
     // 处理页面中的所有表格
-    processAllTables() {
-        const tableBlocks = document.querySelectorAll('.lazy-block.table-block');
+    processAllTables(container = document) {
+        // 接受可选的容器参数，默认为整个文档
+        const tableBlocks = container.querySelectorAll('.lazy-block.table-block');
         
         if (tableBlocks.length === 0) {
             console.log('没有找到表格块');
@@ -640,6 +641,11 @@ class TableLazyLoader {
         }
         
         console.log(`找到 ${tableBlocks.length} 个表格块`);
+        
+        // 如果之前已存在观察器，先断开与所有元素的连接
+        if (this.observer) {
+            this.observer.disconnect();
+        }
         
         tableBlocks.forEach(tableBlock => {
             // 检查表格是否已经加载
@@ -663,3 +669,9 @@ class TableLazyLoader {
 
 // 创建单例
 export const tableLazyLoader = new TableLazyLoader();
+
+// 将实例添加到全局对象，确保可以在全局范围内访问
+if (typeof window !== 'undefined') {
+    window.tableLazyLoader = tableLazyLoader;
+    console.log('表格懒加载器已注册为全局对象');
+}

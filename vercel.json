@@ -1,88 +1,94 @@
 {
-    "version": 2,
-    "builds": [
-      {
-        "src": "api/**/*.js",
-        "use": "@vercel/node"
-      },
-      {
-        "src": "**/*",
-        "use": "@vercel/static"
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/api-routes.js",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": [
+          "node_modules/whatwg-url/**",
+          "node_modules/webidl-conversions/**",
+          "node_modules/tr46/**",
+          "api/package.json"
+        ],
+        "buildCommand": "npm run prebuild",
+        "nodeVersion": "22.x"
       }
-    ],
-    "routes": [
-      {
-        "src": "/api/hello",
-        "dest": "/api/hello.js"
+    },
+    {
+      "src": "**/*",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(hello|databases|status)",
+      "dest": "/api/api-routes.js"
+    },
+    {
+      "src": "/api/articles",
+      "methods": ["POST", "OPTIONS"],
+      "dest": "/api/api-routes.js"
+    },
+    {
+      "src": "/api/article-content/([^/]+)",
+      "dest": "/api/api-routes.js?pageId=$1&type=article-content"
+    },
+    {
+      "src": "/api/content/([^/]+)",
+      "dest": "/api/api-routes.js?pageId=$1&type=article-content"
+    },
+    {
+      "src": "/api/blocks/([^/]+)/children",
+      "dest": "/api/api-routes.js?blockId=$1&type=block-children"
+    },
+    {
+      "src": "/api/database-info",
+      "methods": ["POST", "OPTIONS"],
+      "dest": "/api/api-routes.js"
+    },
+    {
+      "src": "/api/clear-cache",
+      "methods": ["POST", "OPTIONS"],
+      "dest": "/api/api-routes.js"
+    },
+    {
+      "src": "/styles/(.*)",
+      "headers": {
+        "content-type": "text/css",
+        "cache-control": "public, max-age=31536000, immutable"
       },
-      {
-        "src": "/api/articles",
-        "methods": ["POST", "OPTIONS"],
-        "dest": "/api/articles.js"
+      "dest": "/styles/$1"
+    },
+    {
+      "src": "/scripts/config/config\\.development\\.js",
+      "dest": "/scripts/config/config.development.js"
+    },
+    {
+      "src": "/scripts/config/config\\.production\\.js",
+      "dest": "/scripts/config/config.production.js"
+    },
+    {
+      "src": "/scripts/(.*)",
+      "dest": "/scripts/$1"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)\\.css$",
+      "headers": { 
+        "content-type": "text/css" 
       },
-      {
-        "src": "/api/article-content/([^/]+)",
-        "dest": "/api/article-content/[pageId].js?pageId=$1"
-      },
-      {
-        "src": "/api/blocks/([^/]+)/children",
-        "dest": "/api/blocks/[blockId]/children.js?blockId=$1"
-      },
-      {
-        "src": "/api/database-info",
-        "methods": ["POST", "OPTIONS"],
-        "dest": "/api/database-info.js"
-      },
-      {
-        "src": "/api/databases",
-        "dest": "/api/databases.js"
-      },
-      {
-        "src": "/api/clear-cache",
-        "methods": ["POST", "OPTIONS"],
-        "dest": "/api/clear-cache.js"
-      },
-      {
-        "src": "/scripts/config/config\\.development\\.js",
-        "dest": "/scripts/config/config.development.js",
-        "headers": {
-          "cache-control": "no-cache, no-store, must-revalidate"
-        }
-      },
-      {
-        "src": "/scripts/config/config\\.production\\.js",
-        "dest": "/scripts/config/config.production.js",
-        "headers": {
-          "cache-control": "no-cache, no-store, must-revalidate"
-        }
-      },
-      {
-        "src": "/scripts/(.*)\\.js",
-        "dest": "/scripts/$1.js"
-      },
-      {
-        "src": "/styles/(.*)",
-        "headers": {
-          "cache-control": "public, max-age=31536000, immutable"
-        },
-        "dest": "/styles/$1"
-      },
-      {
-        "handle": "filesystem"
-      },
-      {
-        "src": "/(.*)\\.html",
-        "dest": "/$1.html"
-      },
-      {
-        "src": "/(.*)",
-        "dest": "/$1",
-        "headers": {
-          "x-content-type-options": "nosniff",
-          "x-frame-options": "DENY",
-          "x-xss-protection": "1; mode=block",
-          "referrer-policy": "strict-origin-when-cross-origin"
-        }
-      }
-    ]
-  }
+      "dest": "/$1.css"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ]
+}
