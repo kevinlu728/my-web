@@ -22,3 +22,5 @@ backups/
 *.key
 
 .vercel
+
+*.log
