@@ -275,6 +275,7 @@
         // 导入所需模块
         import { imageLazyLoader } from './scripts/utils/image-lazy-loader.js';
         import { articleManager } from './scripts/managers/articleManager.js';
+        import { categoryManager } from './scripts/managers/categoryManager.js';
         import config from './scripts/config/config.js';
         import { tableLazyLoader } from './scripts/utils/table-lazy-loader.js';
         import { codeLazyLoader } from './scripts/utils/code-lazy-loader.js';
@@ -283,6 +284,7 @@
         // 将模块导出到全局作用域，方便调试
         window.imageLazyLoader = imageLazyLoader;
         window.articleManager = articleManager;
+        window.categoryManager = categoryManager;
         window.config = config;
         window.tableLazyLoader = tableLazyLoader;
         window.codeLazyLoader = codeLazyLoader;
@@ -296,6 +298,7 @@
             console.log('🔍 检查模块加载状态：');
             console.log('- imageLazyLoader:', !!window.imageLazyLoader);
             console.log('- articleManager:', !!window.articleManager);
+            console.log('- categoryManager:', !!window.categoryManager);
             console.log('- config:', !!window.config);
             console.log('- tableLazyLoader:', !!window.tableLazyLoader);
             console.log('- codeLazyLoader:', !!window.codeLazyLoader);

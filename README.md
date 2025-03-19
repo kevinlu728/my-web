@@ -11,6 +11,7 @@
 - **Notion内容渲染**：支持Notion中的大部分块类型
 - **代码高亮**：支持多种编程语言的语法高亮
 - **图片懒加载**：优化页面加载性能
+- **双环境测试**：支持Express和Vercel Dev两种测试环境
 
 ## 快速开始
 
@@ -23,8 +24,24 @@
 NOTION_API_KEY=your_notion_api_key
 NOTION_DATABASE_ID=your_notion_database_id
 ```
-4. 启动服务器：`./start-server.sh`
-5. 访问 http://localhost:8000
+4. 启动Express服务器：`./start-express.sh` 或启动Vercel Dev环境：`./start-verceldev.sh`
+5. 访问 Express环境：http://localhost:8000 或 Vercel Dev环境：http://localhost:3000
+
+### 测试环境选择
+
+项目提供两种测试环境：
+
+#### Express环境 (端口8000)
+- 适用于：本地开发、API功能测试、使用测试工具
+- 启动方式：`./start-express.sh`
+- 停止方式：`./stop-express.sh`
+- 测试工具：`./tools/test-by-express.sh`
+
+#### Vercel Dev环境 (端口3000)
+- 适用于：部署前测试、验证Vercel配置、路由测试
+- 启动方式：`./start-verceldev.sh`
+- 停止方式：`./stop-verceldev.sh`
+- 测试工具：`./tools/test-by-verceldev.sh`
 
 ### Vercel部署
 
@@ -60,19 +77,28 @@ my-web/
 │   └── utils/                # 服务器工具函数
 ├── styles/                   # CSS样式
 ├── tools/                    # 工具脚本
-│   ├── api-test-tool.sh      # API测试工具
+│   ├── test-by-express.sh    # Express环境API测试工具
+│   ├── test-by-verceldev.sh  # Vercel Dev环境API测试工具
 │   └── deployment-checker.sh # 部署前检查工具
-├── start-server.sh           # 启动服务器脚本
-├── stop-server.sh            # 停止服务器脚本
+├── start-express.sh          # 启动Express服务器脚本
+├── stop-express.sh           # 停止Express服务器脚本
+├── start-verceldev.sh        # 启动Vercel Dev服务器脚本
+├── stop-verceldev.sh         # 停止Vercel Dev服务器脚本
 ├── vercel.json               # Vercel配置
 └── tech-blog.html            # 博客页面
 ```
 
 ## 主要工具脚本
 
-- **start-server.sh**: 启动本地开发服务器
-- **stop-server.sh**: 停止本地开发服务器
-- **tools/api-test-tool.sh**: 统一API测试工具，用于测试各个API端点
+### 服务器管理脚本
+- **start-express.sh**: 启动Express开发服务器（端口8000）
+- **stop-express.sh**: 停止Express开发服务器
+- **start-verceldev.sh**: 启动Vercel Dev环境（端口3000）
+- **stop-verceldev.sh**: 停止Vercel Dev环境
+
+### 测试工具
+- **tools/test-by-express.sh**: Express环境API测试工具，用于测试各个API端点
+- **tools/test-by-verceldev.sh**: Vercel Dev环境API测试工具，用于测试Vercel配置和路由规则
 - **tools/deployment-checker.sh**: 部署前检查工具，确保配置正确
 
 ## API架构
@@ -86,6 +112,36 @@ my-web/
 - `/api/database-info` - 获取数据库信息
 - `/api/databases` - 获取数据库列表
 - `/api/clear-cache` - 清除缓存
+
+## API测试说明
+
+### Express环境测试
+适用于本地开发和API功能测试：
+
+```bash
+# 启动Express服务器
+./start-express.sh
+
+# 运行测试工具
+./tools/test-by-express.sh
+
+# 测试完成后停止服务器
+./stop-express.sh
+```
+
+### Vercel Dev环境测试
+适用于部署前测试和验证Vercel配置：
+
+```bash
+# 启动Vercel Dev服务器
+./start-verceldev.sh
+
+# 运行测试工具
+./tools/test-by-verceldev.sh
+
+# 测试完成后停止服务器
+./stop-verceldev.sh
+```
 
 ## 贡献
 
@@ -125,30 +181,13 @@ cd my-web
 3. 编辑 `config.development.js`，填入你的 Notion API 密钥和数据库 ID
 
 ### 4. 运行项目
-- 使用任何 HTTP 服务器运行项目，例如：
-  ```bash
-  # 使用 Python 的简单 HTTP 服务器
-  python -m http.server 8000
-  
-  # 或使用 Node.js 的 http-server
-  npx http-server
-  ```
-- 访问 `http://localhost:8000` 查看网站
+使用提供的脚本启动服务器：
+```bash
+# Express环境（端口8000）
+./start-express.sh
 
-## 项目结构
-
-```
-my-web/
-├── assets/           # 静态资源（图片等）
-├── scripts/
-│   ├── config/      # 配置文件
-│   ├── components/  # 组件脚本
-│   ├── services/    # 服务层（API 调用等）
-│   ├── managers/    # 管理层（业务逻辑）
-│   ├── utils/       # 工具函数
-│   └── core/        # 核心脚本
-├── styles/          # CSS 样式文件
-└── *.html           # HTML 页面
+# 或者 Vercel Dev环境（端口3000）
+./start-verceldev.sh
 ```
 
 ## 配置文件说明
@@ -182,74 +221,3 @@ my-web/
 2. 创建特性分支
 3. 提交改动
 4. 发起 Pull Request
-
-## API测试脚本
-
-项目提供了以下脚本来帮助测试API：
-
-### 综合测试工具
-
-使用综合测试工具：
-
-```bash
-./test-api.sh
-```
-
-这个工具提供了交互式菜单，可以选择：
-1. 启动服务器
-2. 测试GET API端点
-3. 测试POST API端点
-4. 查看服务器日志
-5. 停止服务器
-
-### 单独使用测试脚本
-
-#### 启动服务器
-
-```bash
-./start-server.sh
-```
-
-这个脚本会启动本地服务器，并显示可用的API端点。
-
-#### 测试GET类型API
-
-```bash
-./test-get-api.sh
-```
-
-这个脚本会测试所有GET类型的API端点，如`/api/hello`、`/api/status`等。
-
-#### 测试POST类型API
-
-```bash
-./test-post-api.sh
-```
-
-这个脚本会测试所有POST类型的API端点，如`/api/articles`、`/api/clear-cache`等。
-
-#### 停止服务器
-
-```bash
-./stop-server.sh
-```
-
-这个脚本会停止运行中的服务器，并询问是否需要清除日志文件。
-
-### 手动API测试
-
-您也可以使用curl或Postman等工具手动测试API：
-
-#### GET请求示例
-
-```bash
-curl http://127.0.0.1:8000/api/hello
-```
-
-#### POST请求示例
-
-```bash
-curl -X POST -H "Content-Type: application/json" -d '{}' http://127.0.0.1:8000/api/articles
-```
-
-注意：POST接口需要使用正确的请求方法和Content-Type头，否则会返回405错误（方法不允许）。

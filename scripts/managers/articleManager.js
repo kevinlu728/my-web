@@ -43,6 +43,8 @@ class ArticleManager {
             'Test': '测试',
             'Computer Basis': '计算机基础',
             'Data Structure and Algorithm': '数据结构和算法',
+            'Programming Language': '编程语言',
+            'Mobile Tech': '终端技术',
         };
         this.initializeSearch();
         
@@ -1021,7 +1023,7 @@ class ArticleManager {
         // 添加最新文章
         const recentArticlesContainer = document.getElementById('welcome-recent-articles');
         if (recentArticlesContainer) {
-            // 按发布时间排序并获取最新的3篇文章
+            // 按发布时间排序并获取最新的5篇文章
             const recentArticles = [...this.articles]
                 .filter(article => article.publish_date || article.created_time) // 确保有日期
                 .sort((a, b) => {
@@ -1036,7 +1038,7 @@ class ArticleManager {
                     // 如果都没有发布时间，按创建时间降序排序
                     return new Date(b.created_time) - new Date(a.created_time);
                 })
-                .slice(0, 3);
+                .slice(0, 5);
 
             recentArticlesContainer.innerHTML = recentArticles
                 .map(article => {
