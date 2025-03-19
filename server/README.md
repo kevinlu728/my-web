@@ -1,95 +1,144 @@
-# 服务器文件结构说明
+# 服务器目录说明
 
-## 目录结构
+本目录包含本地开发环境的服务器代码，基于Express框架构建。服务器负责提供API接口、静态文件服务，以及与Notion API的交互功能。本地开发时主要使用此目录的代码，而线上环境则使用/api目录的对应实现。
+
+## 1. server目录和api目录的关系
+
+**重要说明**：本项目采用双环境架构，分别为：
+- `server/` 目录 - 主要用于本地开发环境，基于Express服务器
+- `api/` 目录 - 主要用于Vercel线上环境，基于无服务器函数
+
+两个目录中存在一些共享代码，核心逻辑已统一到api目录中。修改API功能时应遵循以下原则：
+
+1. **核心服务实现修改**：
+   - 只修改 `api/services/notion-service.js` 文件，这是两个环境共享的核心实现
+   - **不要修改** `server/api/notion-service.mjs`，它现在只是一个包装器
+
+2. **API路由和处理逻辑**：
+   - 本地环境: 修改 `server/api/notion-api.mjs` 中的路由定义
+   - Vercel环境: 修改 `api/api-routes.js` 中的处理逻辑
+   - **不要修改** `server/api/routes/` 目录下的文件，它们已被弃用
+
+## 2. 目录结构
 
 ```
 server/
 ├── core/                      # 核心服务器功能
 │   └── server.mjs             # 主服务器入口文件
 ├── api/                       # API相关功能
-│   ├── notion-api.mjs         # Notion API 客户端
-│   ├── notion-service.mjs     # Notion 服务封装
-│   └── routes/                # API路由定义
-│       ├── hello.js           # 测试路由
-│       ├── articles.js        # 文章列表路由
-│       ├── databases.js       # 数据库路由
-│       ├── notion-test.js     # Notion测试路由
-│       ├── article-content/   # 文章内容路由
-│       │   └── [pageId].js    # 根据页面ID获取文章内容
-│       └── blocks/            # 块处理路由
-│           └── [blockId]/     # 块ID处理
-│               └── children.js # 获取块子元素
+│   ├── notion-api.mjs         # Express路由定义（现用）
+│   ├── notion-adapter.mjs     # 适配器，连接到api目录的实现
+│   ├── notion-service.mjs     # 服务包装器（包装api/services的实现）
+│   └── routes/                # 旧路由定义（已弃用）
+│       ├── hello.js           # 测试路由（已弃用）
+│       ├── articles.js        # 文章列表路由（已弃用）
+│       ├── databases.js       # 数据库路由（已弃用）
+│       └── ...                # 其他已弃用路由
 └── utils/                     # 工具函数
     ├── monitoring.mjs         # 监控和日志工具
     └── static-server.mjs      # 静态文件服务器
 ```
 
-## 服务器文件说明
+## 3. 文件说明
 
 ### 核心文件
 
 - **core/server.mjs**: 服务器的主入口点，负责初始化和启动HTTP服务器，配置中间件和路由
+- **api/notion-api.mjs**: 当前使用的Express路由定义，包含所有API端点
+- **api/notion-adapter.mjs**: 适配器，桥接ES模块和CommonJS模块，导入api目录的共享实现
 
-### API文件
+### API调用链示例
 
-- **api/notion-api.mjs**: Notion API的客户端封装，处理与Notion API的直接通信
-- **api/notion-service.mjs**: 提供高级服务接口，封装Notion API的调用逻辑
+以获取数据库列表功能为例，调用链如下：
 
-### 路由文件
-
-- **api/routes/articles.js**: 处理文章列表的获取和过滤
-- **api/routes/article-content/[pageId].js**: 根据页面ID获取完整的文章内容
-- **api/routes/blocks/[blockId]/children.js**: 获取特定块的子元素
-
-### 工具文件
-
-- **utils/monitoring.mjs**: 提供监控、日志记录和性能跟踪功能
-- **utils/static-server.mjs**: 处理静态文件的服务，如HTML、CSS、JavaScript文件
-
-## 服务器架构
-
-服务器采用模块化设计，主要分为以下几个部分：
-
-1. **HTTP服务器**: 处理客户端请求和响应
-2. **API路由**: 定义各种API端点和处理逻辑
-3. **Notion集成**: 与Notion API交互，获取和处理数据
-4. **静态文件服务**: 提供前端静态资源
-
-## 数据流
-
-1. 客户端发送请求到服务器
-2. 服务器根据URL路径匹配相应的路由处理器
-3. 路由处理器调用相应的服务（如Notion服务）获取数据
-4. 服务将数据返回给路由处理器
-5. 路由处理器格式化数据并发送响应给客户端
-
-## 开发指南
-
-### 添加新路由
-
-1. 在 `api/routes/` 目录下创建新的路由文件
-2. 导出一个处理函数，接收 `req` 和 `res` 参数
-3. 在 `core/server.mjs` 中注册新路由
-
-### 使用Notion服务
-
-```javascript
-import { notionService } from '../notion-service.mjs';
-
-export default async function handler(req, res) {
-  try {
-    const data = await notionService.someMethod();
-    res.json({ success: true, data });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-}
+```
+客户端请求 
+-> server/core/server.mjs 
+-> notionApiRouter (/api/database 端点) 
+-> server/api/notion-api.mjs
+-> databaseHandlers.getDatabases 
+-> api/internal/database-handlers.js 
+-> notionService.listDatabases 
+-> api/services/notion-service.js
+-> Notion API
 ```
 
-## 重构历史
+## 4. 开发指南
 
-### 2024-03-09
+### 启动服务器
 
+```bash
+node server/core/server.mjs
+```
+
+### 添加新API端点
+
+1. 在 `server/api/notion-api.mjs` 中添加新的路由处理
+2. 同时在 `api/api-routes.js` 中添加对应的处理逻辑
+3. 如果需要，在 `api/internal/` 目录下添加新的处理器
+4. 在 `api/services/notion-service.js` 中添加核心服务方法
+
+### 服务调用示例
+
+```javascript
+// 在notion-api.mjs中
+import { databaseHandlers } from './notion-adapter.mjs';
+
+router.get('/database', async (req, res) => {
+  try {
+    return await databaseHandlers.getDatabases(req, res);
+  } catch (error) {
+    console.error('数据库API错误:', error);
+    return res.status(500).json({ error: '数据库操作失败' });
+  }
+});
+```
+
+## 5. 注意事项
+
+- 服务器采用模块化设计，主要使用ES模块
+- 核心实现已统一到api目录，本地环境通过适配器调用
+- **不要直接修改** `server/api/routes/` 目录下的文件，它们已被弃用
+- 始终优先修改 `api/services/notion-service.js` 中的服务实现
+
+### 环境兼容性问题解决
+
+在修改API相关功能时，需要注意以下几点以确保本地和线上环境的一致性：
+
+1. **修改核心服务实现**: 
+   - 只修改 `api/services/notion-service.js`
+   - 修改后测试本地和线上环境的行为是否一致
+
+2. **添加新API端点**: 
+   - 修改 `server/api/notion-api.mjs` 和 `api/api-routes.js`
+   - 保持两个环境的请求/响应模式一致
+
+3. **配置变更**: 
+   - 确保本地环境和Vercel环境的环境变量保持同步
+   - 使用共享的配置文件，尽量避免环境特定的配置逻辑
+
+## 6. 已知问题与重构历史
+
+### 已知问题
+
+1. **代码冗余**: 
+   - `server/api/routes/` 目录仍然存在，但已不再使用
+   - 两个环境的路由实现方式不同（Express vs Serverless）
+
+2. **不一致的路由结构**: 
+   - 本地环境使用Express路由器
+   - Vercel环境使用api-routes.js
+   - 这种不一致性增加了维护负担
+
+### 重构历史
+
+#### 2024-03-15
+- 统一了API，使本地和Vercel环境共享相同的核心服务实现
+- 将Notion服务核心实现移动到 `api/services/notion-service.js`
+- 添加了`notion-adapter.mjs`适配器，连接本地环境到共享实现
+- 重写了`notion-api.mjs`，废弃了`routes/`目录下的旧实现
+
+#### 2024-03-09
 - 优化了静态文件服务器的性能
 - 改进了Notion API的错误处理
 - 添加了监控和日志记录功能

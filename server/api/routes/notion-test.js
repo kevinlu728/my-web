@@ -4,6 +4,16 @@
  * @author 陆凯
  * @created 2024-03-09
  * @updated 2024-03-10
+ * 
+ * @deprecated 此文件已弃用，不再使用。请勿修改此文件。
+ * 新实现位于 api/services/notion-service.js (核心实现)，
+ * 相关测试功能现已集成到 /api/hello 和 /api/status 端点中。
+ * 本地环境的路由定义现在位于 server/api/notion-api.mjs。
+ * 
+ * 调用链：
+ * 客户端请求 -> server/core/server.mjs -> notionApiRouter -> 
+ * server/api/notion-api.mjs -> helloHandlers.getHello -> 
+ * api/internal/hello-handlers.js -> 返回响应
  */
 
 // Notion API 测试接口

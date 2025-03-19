@@ -4,6 +4,17 @@
  * @author 陆凯
  * @created 2024-03-09
  * @updated 2024-03-10
+ * 
+ * @deprecated 此文件已弃用，不再使用。请勿修改此文件。
+ * 新实现位于 api/services/notion-service.js (核心实现) 和
+ * api/internal/database-handlers.js (处理器)。
+ * 本地环境的路由定义现在位于 server/api/notion-api.mjs。
+ * 
+ * 调用链：
+ * 客户端请求 -> server/core/server.mjs -> notionApiRouter -> 
+ * server/api/notion-api.mjs -> databaseHandlers.getDatabases -> 
+ * api/internal/database-handlers.js -> notionService.listDatabases ->
+ * api/services/notion-service.js -> Notion API
  */
 
 // Notion API 数据库列表接口
