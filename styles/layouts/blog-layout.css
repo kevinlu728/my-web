@@ -15,11 +15,11 @@
 .blog-content {
     display: grid;
     grid-template-columns: minmax(250px, 1fr) minmax(0, 4fr); /* 左右比例约为1:4 */
-    gap: 25px; /* 减小左右栏间距 */
+    gap: 30px; /* 增加左右栏间距，提高分隔感 */
     max-width: 100%; /* 修改为100%，让页面横向撑满 */
     width: 100%;
     margin: 0 auto;
-    padding: 20px 20px 40px; /* 减小左右边距 */
+    padding: 0 30px 30px; /* 移除顶部内边距，保留左右和底部内边距 */
     min-height: calc(100vh - 60px);
     position: relative;
     z-index: 1;
@@ -28,7 +28,7 @@
 /* 左侧栏样式 */
 .blog-content .left-column {
     background: #ffffff;
-    padding: 25px; /* 减小内边距 */
+    padding: 30px; /* 统一与整体容器内边距 */
     border-radius: 16px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.05);
     position: sticky;
@@ -41,7 +41,7 @@
 /* 右侧栏样式 */
 .blog-content .right-column {
     background: #ffffff;
-    padding: 40px 50px; /* 调整内边距，左右增加到50px */
+    padding: 30px 40px; /* 调整内边距，保持侧面与整体容器一致 */
     border-radius: 16px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.05);
     width: 100%;
@@ -56,7 +56,7 @@
 
 /* 面包屑导航样式 */
 .breadcrumb {
-    padding: 5px 20px; /* 减小左右内边距，与主容器对齐 */
+    padding: 0 30px 10px; /* 移除顶部内边距，调整左右和底部内边距 */
     margin: 0;
     background-color: transparent;
 }
@@ -65,16 +65,21 @@
 @media (max-width: 1200px) {
     .blog-content {
         grid-template-columns: minmax(220px, 1fr) minmax(0, 3fr); /* 调整比例 */
-        padding: 15px 20px 20px;
-        gap: 20px;
+        padding: 0 25px 25px; /* 移除顶部内边距 */
+        gap: 25px;
     }
     
     .breadcrumb {
-        padding: 5px 20px;
+        padding: 0 25px 10px; /* 移除顶部内边距 */
+    }
+    
+    .blog-content .left-column,
+    .blog-content .right-column {
+        padding: 25px; /* 统一内边距 */
     }
     
     .blog-content .right-column {
-        padding: 30px 40px; /* 中等屏幕上减小内边距 */
+        padding: 25px 35px; /* 侧面稍大 */
     }
 }
 
@@ -82,15 +87,15 @@
 @media (max-width: 768px) {
     .blog-content {
         grid-template-columns: 1fr; /* 单列布局 */
-        padding: 10px 15px 20px; /* 减小顶部间距 */
-        gap: 15px;
+        padding: 0 20px 20px; /* 移除顶部内边距 */
+        gap: 20px;
     }
     
     .blog-content .left-column {
         position: relative;
         top: 0;
         max-height: none;
-        margin-bottom: 15px;
+        margin-bottom: 0; /* 移除底部边距，由gap控制 */
         padding: 20px;
     }
     
@@ -99,6 +104,6 @@
     }
     
     .breadcrumb {
-        padding: 5px 15px;
+        padding: 0 20px 10px; /* 移除顶部内边距 */
     }
 } 

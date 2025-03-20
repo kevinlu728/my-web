@@ -888,25 +888,84 @@ class ArticleManager {
                 // 处理加载更多功能
                 if (this.hasMore) {
                     console.log('设置滚动监听以加载更多内容');
+                    
+                    // 增加节流时间，从200ms增加到500ms，减少触发频率
                     this.scrollHandler = this.throttle(() => {
                         if (this.isLoading || !this.hasMore) {
-                            console.log('跳过加载：', this.isLoading ? '正在加载中' : '没有更多内容');
+                            // 减少日志输出，仅在调试模式时输出
+                            if (config.debug) {
+                                console.log('跳过加载：', this.isLoading ? '正在加载中' : '没有更多内容');
+                            }
                             return;
                         }
 
                         const loadMoreContainer = document.querySelector('.load-more-container');
                         if (!loadMoreContainer) return;
 
+                        // 优化检测条件，保留最可靠的两个条件
+                        
+                        // 1. 检测滚动位置是否接近页面底部（以百分比计算）- 最可靠的方法
+                        const scrollPosition = window.scrollY + window.innerHeight;
+                        const totalHeight = document.documentElement.scrollHeight;
+                        const scrollPercentage = (scrollPosition / totalHeight) * 100;
+                        // 降低灵敏度，从85%降低到90%
+                        const isNearPageBottom = scrollPercentage > 90;
+                        
+                        // 2. 备用检测：加载容器是否接近视口底部
                         const containerRect = loadMoreContainer.getBoundingClientRect();
-                        const isNearBottom = containerRect.top <= window.innerHeight + 100;
+                        const isNearViewportBottom = containerRect.top <= window.innerHeight + 200;
 
-                        if (isNearBottom) {
-                            console.log('触发加载更多内容...');
-                            this.loadMoreContent();
+                        // 减少调试日志，仅在调试模式或触发加载时输出
+                        if (isNearPageBottom && config.debug) {
+                            console.log('滚动检测：', {
+                                '滚动百分比': scrollPercentage.toFixed(2) + '%',
+                                '接近页面底部': isNearPageBottom
+                            });
                         }
-                    }, 200);
+
+                        // 使用最可靠的条件作为主要触发条件
+                        if (isNearPageBottom || (isNearViewportBottom && containerRect.bottom > 0)) {
+                            console.log('触发加载更多内容 - 滚动位置: ' + scrollPercentage.toFixed(2) + '%');
+                            
+                            // 平滑加载过程：先将加载指示器显示为"准备加载"状态
+                            if (loadMoreContainer) {
+                                // 使用CSS class控制状态，而不是直接修改innerHTML
+                                loadMoreContainer.classList.add('loading-prepare');
+                                
+                                // 延迟小段时间再实际触发加载，减少连续触发
+                                setTimeout(() => {
+                                    // 再次检查状态，避免延迟期间状态改变
+                                    if (!this.isLoading && this.hasMore) {
+                                        this.loadMoreContent();
+                                    }
+                                }, 100);
+                            }
+                        }
+                    }, 500);
                     
                     window.addEventListener('scroll', this.scrollHandler);
+                    
+                    // 添加CSS来控制加载器的平滑过渡
+                    if (!document.getElementById('smooth-loader-style')) {
+                        const style = document.createElement('style');
+                        style.id = 'smooth-loader-style';
+                        style.innerHTML = `
+                            .load-more-container {
+                                transition: opacity 0.3s ease;
+                                opacity: 0.6;
+                            }
+                            .load-more-container.loading-prepare {
+                                opacity: 1;
+                            }
+                            .loading-spinner {
+                                transition: transform 0.3s ease;
+                            }
+                            .loading-prepare .loading-spinner {
+                                transform: scale(1.1);
+                            }
+                        `;
+                        document.head.appendChild(style);
+                    }
                 } else {
                     console.log('没有更多内容，移除加载指示器');
                     const loadMoreContainer = articleContainer.querySelector('.load-more-container');

@@ -24,3 +24,5 @@ backups/
 .vercel
 
 *.log
+
+*.code-workspace
