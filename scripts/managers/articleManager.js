@@ -319,22 +319,25 @@ class ArticleManager {
         // 获取当前分类
         const currentCategory = categoryManager.getCurrentCategory();
         
-        // 如果是查看全部文章，更新分类下的文章数量
+        // 如果有搜索词，应用搜索功能
+        if (this.searchTerm) {
+            console.log(`使用搜索词过滤: "${this.searchTerm}"`);
+            this.performSearch();
+            return;  // 搜索模式下不进行其他处理
+        }
+        
+        // 如果没有搜索词，则完全交由categoryManager处理类别显示
+        console.log(`交由categoryManager处理分类: "${currentCategory}"`);
+        
+        // 如果当前是查看全部文章
         if (currentCategory === 'all') {
             categoryManager.updateCategories(this.articles);
+        } 
+        // 如果是特定分类，让categoryManager处理显示
+        else {
+            // 注意：这里不做任何额外处理，因为categoryManager.updateActiveState已经
+            // 在点击分类时被调用，并且会处理UI更新
         }
-        
-        // 如果有搜索词，应用搜索过滤
-        let filteredArticles = this.articles;
-        if (this.searchTerm) {
-            filteredArticles = searchArticles(this.articles, this.searchTerm);
-        }
-        
-        // 使用renderArticleList工具函数渲染文章列表
-        renderArticleList(filteredArticles, this.searchTerm, this.currentLoadingId);
-        
-        // 使用filterArticleListByCategory工具函数应用分类过滤
-        filterArticleListByCategory(currentCategory);
     }
 
     // 渲染文章列表（覆盖原方法）

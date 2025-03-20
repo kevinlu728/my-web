@@ -359,7 +359,27 @@ class CategoryManager {
 
     // 选择分类
     selectCategory(category) {
+        console.log(`选择分类: ${category}`);
+        if (!category) {
+            console.warn('分类名称为空');
+            return;
+        }
+        
+        // 只更新激活状态，保持树形结构不变
         this.updateActiveState(category);
+        
+        // 如果是特定分类，展开该分类节点，确保用户能看到分类下的文章
+        if (category !== 'all') {
+            const categoryNode = document.querySelector(`#article-tree .category-tree-item[data-category="${category}"]`);
+            if (categoryNode && !categoryNode.classList.contains('expanded')) {
+                console.log(`展开分类节点: ${category}`);
+                categoryNode.classList.add('expanded');
+                this.expandedCategories.add(category);
+                
+                // 确保加载该分类下的文章
+                this.loadArticlesForCategory(category, categoryNode);
+            }
+        }
     }
 }
 

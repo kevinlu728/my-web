@@ -48,13 +48,13 @@ export function showStatus(message, isError = false, type = 'info') {
 
 // 显示加载中状态
 export function showLoading(message = '加载中...') {
-    const articleList = document.getElementById('article-list');
-    if (!articleList) {
-        console.warn('Article list element not found');
+    const treeChildren = document.querySelector('#article-tree .root-item > .tree-children');
+    if (!treeChildren) {
+        console.warn('文章列表元素未找到');
         return;
     }
     
-    articleList.innerHTML = `
+    treeChildren.innerHTML = `
         <li class="loading">
             <div class="loading-spinner"></div>
             <span>${message}</span>
@@ -69,9 +69,9 @@ export function showError(message) {
         statusEl.className = 'status-message error';
     }
     
-    const articleList = document.getElementById('article-list');
-    if (articleList) {
-        articleList.innerHTML = `<li class="error">${message}</li>`;
+    const treeChildren = document.querySelector('#article-tree .root-item > .tree-children');
+    if (treeChildren) {
+        treeChildren.innerHTML = `<li class="error">${message}</li>`;
     }
     
     console.error(message);

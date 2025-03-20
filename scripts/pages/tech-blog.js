@@ -104,7 +104,7 @@ async function initializePage() {
     // 设置分类变更回调
     categoryManager.setOnCategoryChange((category) => {
         console.log('分类变更为:', category);
-        articleManager.filterArticles(category);
+        articleManager.filterAndRenderArticles();
     });
 
     // 创建API服务包装函数，优先使用apiService，失败时回退到原始服务

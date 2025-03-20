@@ -54,9 +54,20 @@ export function renderArticleListItem(article, searchTerm = '', currentArticleId
  * @param {string} currentArticleId 当前显示的文章ID
  * @param {string} containerId 容器ID
  */
-export function renderArticleList(articles, searchTerm = '', currentArticleId = null, containerId = 'article-list') {
-    const articleList = document.getElementById(containerId);
-    if (!articleList) return;
+export function renderArticleList(articles, searchTerm = '', currentArticleId = null, containerId = 'article-tree') {
+    // 修改为使用article-tree中的子元素
+    const articleTree = document.getElementById(containerId);
+    if (!articleTree) {
+        console.warn('文章树元素不存在');
+        return;
+    }
+    
+    // 获取根节点的子元素容器
+    const articleList = articleTree.querySelector('.root-item > .tree-children');
+    if (!articleList) {
+        console.warn('文章列表子元素不存在');
+        return;
+    }
 
     // 如果没有文章，显示提示
     if (!articles || articles.length === 0) {
@@ -73,49 +84,14 @@ export function renderArticleList(articles, searchTerm = '', currentArticleId = 
 /**
  * 过滤文章列表显示
  * @param {string} category 分类名称
- * @param {string} listContainerId 列表容器ID
  * @returns {number} 可见文章数量
+ * @deprecated 该函数已废弃，分类显示完全由categoryManager处理
  */
-export function filterArticleListByCategory(category, listContainerId = 'article-list') {
-    console.log(`过滤文章列表，分类: ${category}`);
-    const articleList = document.getElementById(listContainerId);
-    if (!articleList) {
-        console.warn('文章列表元素不存在');
-        return 0;
-    }
-
-    const articles = Array.from(articleList.children);
-    console.log(`文章列表中有 ${articles.length} 篇文章`);
-    
-    let visibleCount = 0;
-    articles.forEach(article => {
-        if (article.classList.contains('loading') || article.classList.contains('no-results')) {
-            console.log('跳过特殊元素:', article.className);
-            return;
-        }
-        
-        const articleCategory = article.dataset.category;
-        const shouldShow = category === 'all' || articleCategory === category;
-        
-        if (shouldShow) {
-            article.style.display = '';
-            visibleCount++;
-        } else {
-            article.style.display = 'none';
-        }
-    });
-    
-    console.log(`过滤后显示 ${visibleCount} 篇文章`);
-    
-    // 如果没有可见的文章，显示提示
-    if (visibleCount === 0 && articles.length > 0) {
-        const noResultsElement = document.createElement('li');
-        noResultsElement.className = 'no-results';
-        noResultsElement.textContent = `没有 "${category}" 分类的文章`;
-        articleList.appendChild(noResultsElement);
-    }
-    
-    return visibleCount;
+export function filterArticleListByCategory(category) {
+    // 该函数已废弃，不做任何操作
+    // 分类过滤完全由categoryManager处理
+    console.log(`filterArticleListByCategory已废弃，分类 "${category}" 由categoryManager处理`);
+    return -1;
 }
 
 /**

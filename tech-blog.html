@@ -41,61 +41,98 @@
     <script>
         // 加载脚本的函数，支持备用CDN
         function loadScript(src, backupSrc) {
-            const script = document.createElement('script');
-            script.async = false; // 保持执行顺序
-            script.defer = true;
-            script.src = src;
-            script.onerror = function() {
-                console.warn(`加载脚本失败: ${src}`);
-                if (backupSrc) {
-                    console.log(`尝试备用源: ${backupSrc}`);
-                    this.src = backupSrc;
-                }
-            };
-            document.head.appendChild(script);
-            return script;
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.async = false; // 保持执行顺序
+                script.src = src;
+                script.onload = () => resolve(script);
+                script.onerror = function() {
+                    console.warn(`加载脚本失败: ${src}`);
+                    if (backupSrc) {
+                        console.log(`尝试备用源: ${backupSrc}`);
+                        this.src = backupSrc;
+                        // 备用源也有可能失败，但我们不再尝试其他备用
+                    } else {
+                        reject(new Error(`Failed to load script: ${src}`));
+                    }
+                };
+                document.head.appendChild(script);
+            });
         }
         
-        // 加载Prism.js及其组件
-        const prismCore = loadScript(
-            'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js',
-            'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js'
-        );
-        
-        // 确保组件在核心库加载后加载
-        prismCore.onload = function() {
-            // 确保加载顺序，先加载依赖项
-            const javaScript = loadScript(
-                'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js',
-                'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js'
-            );
-            
-            javaScript.onload = function() {
-                // 在JavaScript加载后再加载C++
-                loadScript(
+        // 按顺序加载Prism及其组件
+        async function loadPrismComponents() {
+            try {
+                // 首先加载核心库
+                console.log('加载Prism核心库...');
+                await loadScript(
+                    'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js',
+                    'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js'
+                );
+                console.log('Prism核心库加载完成');
+                
+                // 确保Prism对象存在
+                if (typeof Prism === 'undefined') {
+                    console.error('Prism核心库加载失败 - Prism对象未定义');
+                    return;
+                }
+                
+                // 然后加载各种语言支持
+                console.log('加载语言组件...');
+                
+                // 基础语言
+                await loadScript(
+                    'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-markup.min.js',
+                    'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js'
+                );
+                
+                await loadScript(
+                    'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-css.min.js',
+                    'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js'
+                );
+                
+                await loadScript(
+                    'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js',
+                    'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js'
+                );
+                
+                // C语言必须在C++之前
+                await loadScript(
                     'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-c.min.js',
                     'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-c.min.js'
-                ).onload = function() {
-                    // C语言是C++的依赖项，所以在C加载后再加载C++
-                    loadScript(
-                        'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-cpp.min.js',
-                        'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-cpp.min.js'
-                    );
-                };
-            };
-            
-            // 加载其他语言
-            loadScript(
-                'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-java.min.js',
-                'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js'
-            );
-            
-            // 添加Python支持
-            loadScript(
-                'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js',
-                'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js'
-            );
-        };
+                );
+                
+                // 加载C++
+                await loadScript(
+                    'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-cpp.min.js',
+                    'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-cpp.min.js'
+                );
+                
+                // 其他语言
+                await loadScript(
+                    'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-java.min.js',
+                    'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js'
+                );
+                
+                await loadScript(
+                    'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js',
+                    'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js'
+                );
+                
+                console.log('所有Prism组件加载完成');
+                
+                // 如果页面上已经有代码块，手动触发高亮
+                if (typeof Prism.highlightAll === 'function') {
+                    Prism.highlightAll();
+                }
+                
+            } catch (error) {
+                console.error('加载Prism组件时出错:', error);
+            }
+        }
+        
+        // 开始加载
+        loadPrismComponents();
     </script>
     
     <!-- KaTeX - 添加备用CDN和加载失败处理 -->
