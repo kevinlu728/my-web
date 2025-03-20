@@ -420,12 +420,16 @@ function initEnvironmentInfo() {
     const envModeEl = document.getElementById('env-mode');
     const apiImplEl = document.getElementById('api-impl');
     
+    // 导入配置对象 (如果没有全局引用的话)
+    const config = window.config || {};
+    
     if (apiVersionEl) {
         apiVersionEl.textContent = '2022-06-28';  // 默认值
     }
     
     if (envModeEl) {
-        envModeEl.textContent = process.env.NODE_ENV || '开发';
+        // 使用配置对象的 getEnvironment 方法，而不是 process.env
+        envModeEl.textContent = config.getEnvironment ? config.getEnvironment() : '开发';
     }
     
     if (apiImplEl) {
@@ -462,6 +466,9 @@ function updateEnvironmentInfo(data = {}) {
 // 从API获取并更新环境信息
 async function updateEnvironmentInfoFromAPI() {
     try {
+        // 导入配置对象 (如果没有全局引用的话)
+        const config = window.config || {};
+        
         // 如果apiService可用
         if (window.apiService && typeof window.apiService.testConnection === 'function') {
             const result = await window.apiService.testConnection();
@@ -470,7 +477,10 @@ async function updateEnvironmentInfoFromAPI() {
                 const data = result.data || {};
                 const implementation = result.implementation || data.service?.implementation || '标准';
                 const apiVersion = data.apiVersion || data.service?.apiVersion || data.env?.apiVersion || '2022-06-28';
-                const environment = data.env?.nodeEnv || process.env.NODE_ENV || '开发';
+                
+                // 使用配置对象，而不是 process.env
+                const environment = data.env?.nodeEnv || 
+                    (config.getEnvironment ? config.getEnvironment() : '开发');
                 
                 updateEnvironmentInfo({
                     apiVersion,
