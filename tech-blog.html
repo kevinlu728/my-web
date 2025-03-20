@@ -230,6 +230,9 @@
                         <span class="toggle-slider"></span>
                     </label>
                     <span class="debug-toggle-text">调试模式</span>
+                    <span class="keyboard-shortcut" id="debug-shortcut">
+                        Ctrl+Shift+D
+                    </span>
                 </div>
                 <!-- 调试面板 -->
                 <div id="debug-panel">
@@ -249,6 +252,24 @@
                         <button id="debug-btn">数据库信息</button>
                         <button id="test-api-btn">测试API</button>
                         <button id="list-db-btn">所有数据库</button>
+                    </div>
+                    <div id="debug-env-info" class="debug-env-info">
+                        <div class="env-title">环境信息</div>
+                        <div class="env-item">
+                            <span class="env-label">API版本:</span>
+                            <span class="env-value" id="api-version">获取中...</span>
+                        </div>
+                        <div class="env-item">
+                            <span class="env-label">运行环境:</span>
+                            <span class="env-value" id="env-mode">开发</span>
+                        </div>
+                        <div class="env-item">
+                            <span class="env-label">API实现:</span>
+                            <span class="env-value" id="api-impl">标准</span>
+                        </div>
+                    </div>
+                    <div class="version-info">
+                        <span>调试面板版本: 1.1.0</span>
                     </div>
                 </div>
             </div>
@@ -309,6 +330,13 @@
             console.log('- config:', !!window.config);
             console.log('- tableLazyLoader:', !!window.tableLazyLoader);
             console.log('- codeLazyLoader:', !!window.codeLazyLoader);
+
+            // 设置正确的快捷键文本
+            const shortcutEl = document.getElementById('debug-shortcut');
+            if (shortcutEl) {
+                const isMac = navigator.platform.indexOf('Mac') !== -1;
+                shortcutEl.textContent = isMac ? '⌘+Shift+D' : 'Ctrl+Shift+D';
+            }
         });
     </script>
 </body>

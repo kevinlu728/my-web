@@ -94,6 +94,7 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     border: 1px solid #e5e7eb;
     animation: slideDown 0.3s ease;
+    position: relative;
 }
 
 /* API配置区域样式 */
@@ -161,6 +162,18 @@
     transform: translateY(-1px);
 }
 
+/* 自动选择API按钮样式 */
+#api-select-btn {
+    background: #dbeafe !important;
+    border-color: #93c5fd !important;
+    color: #1e40af !important;
+}
+
+#api-select-btn:hover {
+    background: #bfdbfe !important;
+    border-color: #60a5fa !important;
+}
+
 /* 更新配置按钮 */
 #update-config-btn {
     padding: 8px 16px !important;
@@ -185,6 +198,82 @@
     color: #64748b;
     margin-top: 8px;
     line-height: 1.5;
+}
+
+/* 集成指南样式 */
+.integration-guide {
+    display: none;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    z-index: 100;
+    padding: 20px;
+    border: 1px solid #e2e8f0;
+    animation: fadeIn 0.3s ease;
+}
+
+.guide-content {
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+.guide-content h4 {
+    font-size: 16px;
+    color: #1e40af;
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+.guide-content p {
+    font-size: 14px;
+    color: #334155;
+    line-height: 1.6;
+    margin-bottom: 12px;
+}
+
+.guide-content ol, .guide-content ul {
+    padding-left: 20px;
+    margin-bottom: 15px;
+}
+
+.guide-content li {
+    font-size: 14px;
+    color: #334155;
+    margin-bottom: 8px;
+    line-height: 1.6;
+}
+
+.guide-content a {
+    color: #3b82f6;
+    text-decoration: none;
+}
+
+.guide-content a:hover {
+    text-decoration: underline;
+}
+
+.close-guide-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 6px 12px;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.close-guide-btn:hover {
+    background: #e2e8f0;
+    color: #334155;
 }
 
 /* 动画效果 */
@@ -222,4 +311,56 @@
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+/* 键盘快捷键提示 */
+.keyboard-shortcut {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #f1f5f9;
+    color: #64748b;
+    font-size: 11px;
+    font-family: monospace;
+}
+
+/* 环境信息区域 */
+.debug-env-info {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 6px;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    font-size: 13px;
+}
+
+.env-title {
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.env-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.env-label {
+    color: #64748b;
+}
+
+.env-value {
+    color: #334155;
+    font-family: monospace;
+}
+
+/* 版本信息 */
+.version-info {
+    margin-top: 10px;
+    font-size: 11px;
+    color: #94a3b8;
+    text-align: right;
 } 
