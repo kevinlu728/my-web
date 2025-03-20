@@ -157,28 +157,34 @@ class ComponentManager {
      * 初始化聊天窗口组件的事件监听器
      */
     static initChatWidgetEvents() {
-        const chatToggle = document.getElementById('chat-toggle');
+        const chatToggle = document.getElementById('chat-toggle') || document.querySelector('.chat-toggle');
         const chatContainer = document.querySelector('.chat-container');
-        const minimizeBtn = document.getElementById('minimize-btn');
-        const closeBtn = document.getElementById('close-btn');
+        const minimizeBtn = document.getElementById('minimize-btn') || document.querySelector('.minimize-btn');
+        const closeBtn = document.getElementById('close-btn') || document.querySelector('.chat-close-btn');
         
         if (chatToggle && chatContainer && minimizeBtn && closeBtn) {
+            console.log('ComponentManager: 聊天组件事件初始化成功');
             chatToggle.addEventListener('click', () => {
-                chatContainer.style.display = 'block';
+                console.log('ComponentManager: 聊天图标被点击');
+                chatContainer.style.display = 'flex';
                 chatToggle.style.display = 'none';
             });
             
             minimizeBtn.addEventListener('click', () => {
+                console.log('ComponentManager: 最小化按钮被点击');
                 chatContainer.style.display = 'none';
                 chatToggle.style.display = 'block';
             });
             
             closeBtn.addEventListener('click', () => {
-                const chatWidget = document.getElementById('chat-widget-container');
+                console.log('ComponentManager: 关闭按钮被点击');
+                const chatWidget = document.getElementById('chat-widget') || document.querySelector('.chat-widget');
                 if (chatWidget) {
                     chatWidget.style.display = 'none';
                 }
             });
+        } else {
+            console.warn('ComponentManager: 聊天组件事件初始化失败，找不到必要的DOM元素');
         }
     }
     
@@ -190,11 +196,11 @@ class ComponentManager {
     static async initialize() {
         console.log('开始初始化所有组件...');
         
-        // 第一步：初始化JavaScript功能组件
-        this.initJsComponents();
-        
-        // 第二步：加载HTML UI组件
+        // 第一步：加载HTML UI组件
         await this.loadHtmlComponents();
+        
+        // 第二步：初始化JavaScript功能组件
+        this.initJsComponents();
         
         // 第三步：为HTML组件初始化事件监听器
         this.initializeHtmlComponentEvents();

@@ -12,35 +12,31 @@
 -->
 
 <!-- 聊天组件 -->
-<div class="chat-widget" aria-label="AI助手聊天窗口" role="dialog" aria-modal="false">
-    <button class="chat-toggle" aria-label="打开聊天" aria-expanded="false" aria-controls="chat-container">
+<div id="chat-widget" class="chat-widget" aria-label="AI助手聊天窗口" role="dialog" aria-modal="false">
+    <button id="chat-toggle" class="chat-toggle" aria-label="打开聊天" aria-expanded="false" aria-controls="chat-container">
         <i class="fas fa-comments" aria-hidden="true"></i>
     </button>
     
-    <div id="chat-container" class="chat-container" aria-hidden="true">
+    <div class="chat-container" aria-hidden="true">
         <div class="chat-header" role="heading" aria-level="3">
             <h3>与AI助手对话</h3>
             <div class="chat-controls">
-                <button class="minimize-btn" aria-label="最小化聊天窗口">
+                <button id="minimize-btn" class="minimize-btn" aria-label="最小化聊天窗口">
                     <i class="fas fa-minus" aria-hidden="true"></i>
                 </button>
-                <button class="chat-close-btn" aria-label="关闭聊天窗口">
+                <button id="close-btn" class="chat-close-btn" aria-label="关闭聊天窗口">
                     <i class="fas fa-times" aria-hidden="true"></i>
                 </button>
             </div>
         </div>
         
-        <div class="chat-messages" role="log" aria-live="polite" aria-atomic="false">
-            <!-- 默认欢迎消息 -->
-            <div class="message bot-message">
-                <div class="message-content">
-                    👋 你好！我是Kevin的AI助手，有什么我可以帮忙的吗？
-                </div>
-            </div>
+        <div id="chat-messages" class="chat-messages" role="log" aria-live="polite" aria-atomic="false">
+            <!-- 默认欢迎消息，不在HTML中预设，改为在JS中添加 -->
         </div>
         
         <div class="chat-input">
             <textarea 
+                id="chat-input-field"
                 class="chat-input-field"
                 placeholder="输入消息..." 
                 rows="1"
@@ -48,7 +44,7 @@
                 role="textbox"
                 aria-multiline="true"
             ></textarea>
-            <button class="send-btn" aria-label="发送消息">
+            <button id="send-btn" class="send-btn" aria-label="发送消息">
                 <i class="fas fa-paper-plane" aria-hidden="true"></i>
                 <span class="sending-indicator" aria-hidden="true"></span>
             </button>
@@ -59,5 +55,10 @@
             <button class="quick-reply-btn" tabindex="0">查看项目</button>
             <button class="quick-reply-btn" tabindex="0">联系方式</button>
         </div>
+        
+        <!-- 调整大小的控制柄 -->
+        <div id="resize-handle" class="resize-handle" aria-label="调整聊天窗口大小">
+            <i class="fas fa-grip-lines-diagonal" aria-hidden="true"></i>
+        </div>
     </div>
-</div> 
+</div>

@@ -23,6 +23,30 @@ export function initContactModals() {
     
     // 初始化联系方式弹窗
     initContactModal();
+    
+    // 绑定首页联系按钮（确保所有页面中的联系按钮都能正确绑定）
+    bindContactButtons();
+}
+
+// 确保所有联系按钮都能正确绑定点击事件
+function bindContactButtons() {
+    // 延迟执行以确保DOM已完全加载
+    setTimeout(() => {
+        const contactBtns = document.querySelectorAll('.contact-btn');
+        const contactModal = document.getElementById('contact-modal');
+        
+        if (contactBtns.length > 0 && contactModal) {
+            contactBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    console.log('联系按钮被点击');
+                    contactModal.style.display = 'flex';
+                });
+            });
+            console.log(`已成功绑定 ${contactBtns.length} 个联系按钮`);
+        } else {
+            console.warn('未找到联系按钮或联系模态框，请检查HTML结构');
+        }
+    }, 500);
 }
 
 // 微信二维码弹窗
@@ -31,12 +55,32 @@ function initWechatModal() {
     const wechatModal = document.getElementById('wechat-modal');
     
     if (wechatLink && wechatModal) {
+        // 获取关闭按钮
+        const closeBtn = wechatModal.querySelector('.close-btn');
+        
         wechatLink.addEventListener('click', () => {
+            console.log('微信链接被点击');
             wechatModal.style.display = 'flex';
         });
 
+        // 点击关闭按钮关闭弹窗
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                console.log('微信弹窗关闭按钮被点击');
+                wechatModal.style.display = 'none';
+            });
+        }
+
+        // 点击弹窗背景关闭
         wechatModal.addEventListener('click', (e) => {
             if (e.target === wechatModal) {
+                wechatModal.style.display = 'none';
+            }
+        });
+        
+        // 添加ESC键关闭功能
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && wechatModal.style.display === 'flex') {
                 wechatModal.style.display = 'none';
             }
         });
@@ -64,6 +108,13 @@ function initContactModal() {
 
         contactModal.addEventListener('click', (e) => {
             if (e.target === contactModal) {
+                contactModal.style.display = 'none';
+            }
+        });
+        
+        // 添加ESC键关闭功能
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && contactModal.style.display === 'flex') {
                 contactModal.style.display = 'none';
             }
         });

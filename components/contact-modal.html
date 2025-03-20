@@ -14,6 +14,9 @@
 <!-- 联系方式模态框 -->
 <div class="contact-modal" id="contact-modal" role="dialog" aria-labelledby="contact-modal-title" aria-modal="true" aria-hidden="true" tabindex="-1">
     <div class="contact-container" role="document">
+        <button class="close-btn" aria-label="关闭联系方式窗口" data-dismiss="modal">
+            <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
         <h3 id="contact-modal-title">联系方式</h3>
         <div class="contact-methods">
             <div class="contact-method">
@@ -32,7 +35,6 @@
                 <a href="https://www.linkedin.com/in/kevinlu728/" target="_blank" rel="noopener noreferrer" aria-label="访问Kevin的领英主页">Kevin的领英主页</a>
             </div>
         </div>
-        <button class="close-btn" aria-label="关闭联系方式窗口" data-dismiss="modal">关闭</button>
         <span class="keyboard-hint">按ESC键关闭</span>
     </div>
 </div>
@@ -40,11 +42,11 @@
 <!-- 微信二维码模态框 -->
 <div class="qr-modal" id="wechat-modal" role="dialog" aria-labelledby="wechat-modal-title" aria-modal="true" aria-hidden="true" tabindex="-1">
     <div class="qr-container" role="document">
-        <img src="assets/wechat-qr.jpg" alt="微信二维码" class="qr-code" loading="lazy" width="300" height="300">
-        <div class="qr-title" id="wechat-modal-title">扫码添加微信</div>
         <button class="close-btn" aria-label="关闭二维码窗口" data-dismiss="modal">
             <i class="fas fa-times" aria-hidden="true"></i>
         </button>
+        <img src="assets/wechat-qr.jpg" alt="微信二维码" class="qr-code" loading="lazy" width="300" height="300">
+        <div class="qr-title" id="wechat-modal-title">扫码添加微信</div>
         <span class="keyboard-hint">按ESC键关闭</span>
     </div>
 </div> 
