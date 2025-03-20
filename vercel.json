@@ -7,6 +7,8 @@
       "config": {
         "includeFiles": [
           "node_modules/@notionhq/client/**",
+          "node_modules/dotenv/**",
+          "node_modules/cors/**",
           "node_modules/whatwg-url/**",
           "node_modules/webidl-conversions/**",
           "node_modules/tr46/**",
