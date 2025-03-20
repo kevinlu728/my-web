@@ -72,6 +72,14 @@ class ArticleManager {
                 return null;
             }
 
+            // 增加调试日志，查看缓存内容
+            console.log('缓存数据概览:', {
+                有页面信息: !!data.page,
+                块数量: data.blocks?.length || 0,
+                有更多: data.hasMore,
+                是否完整: data.isFullyLoaded
+            });
+
             return data;
         } catch (error) {
             console.warn('读取缓存失败:', error);
@@ -86,6 +94,15 @@ class ArticleManager {
                 data,
                 timestamp: Date.now()
             };
+            
+            // 添加调试日志
+            console.log('写入缓存:', {
+                页面ID: pageId,
+                块数量: data.blocks?.length || 0,
+                是否有更多: data.hasMore,
+                是否完整加载: data.isFullyLoaded
+            });
+            
             localStorage.setItem(cacheKey, JSON.stringify(cacheData));
         } catch (error) {
             console.warn('写入缓存失败:', error);
@@ -700,8 +717,22 @@ class ArticleManager {
         try {
             // 先尝试从缓存获取
             const cachedData = this.getArticleFromCache(pageId);
-            if (cachedData && cachedData.isComplete) { // 只有完整加载的文章才使用缓存
+            
+            // 修改缓存使用逻辑：既使用分页完整加载的缓存，也使用首页加载的缓存
+            if (cachedData) {
                 console.log('📦 从缓存加载文章:', pageId);
+                
+                // 保存缓存中的分页状态
+                this.hasMore = cachedData.hasMore;
+                this.nextCursor = cachedData.nextCursor;
+                
+                // 如果文章已完全加载，则不需要显示加载更多
+                if (cachedData.isFullyLoaded === true) {
+                    console.log('🎉 文章已完全加载，无需分页请求');
+                    this.hasMore = false;
+                    this.nextCursor = null;
+                }
+                
                 this.isLoading = false;
                 return cachedData;
             }
@@ -717,10 +748,10 @@ class ArticleManager {
                 throw new Error('无效的文章内容');
             }
             
-            // 缓存文章内容
+            // 修改缓存文章内容的方式：标记是否完整加载
             this.setArticleCache(pageId, {
                 ...articleData,
-                isComplete: true
+                isFullyLoaded: !articleData.hasMore // 只有当没有更多内容时才标记为完全加载
             });
             
             this.isLoading = false;
@@ -1054,13 +1085,25 @@ class ArticleManager {
                     this.loadedBlocks = this.loadedBlocks || [];
                     this.loadedBlocks = this.loadedBlocks.concat(data.blocks);
                     
-                    // 更新缓存
+                    // 修改缓存更新方式：获取现有缓存，合并内容再更新
+                    const cachedData = this.getArticleFromCache(this.currentPageId) || {};
+                    const mergedBlocks = (cachedData.blocks || []).concat(data.blocks);
+                    
+                    // 更新缓存，正确标记是否完全加载
                     const articleData = {
-                        page: data.page,
-                        blocks: this.loadedBlocks,
+                        page: data.page || cachedData.page,
+                        blocks: mergedBlocks,
                         hasMore: this.hasMore,
-                        nextCursor: this.nextCursor
+                        nextCursor: this.nextCursor,
+                        isFullyLoaded: !this.hasMore // 如果没有更多内容，标记为完全加载
                     };
+                    
+                    console.log('更新缓存:', {
+                        总块数: mergedBlocks.length,
+                        是否有更多: this.hasMore,
+                        是否完整加载: !this.hasMore
+                    });
+                    
                     this.setArticleCache(this.currentPageId, articleData);
                     
                     // 渲染新内容

@@ -387,7 +387,7 @@ function renderTableBlock(block) {
 
 // 渲染单个块
 function renderBlock(block) {
-    console.log('渲染块:', block.type, block.id);
+    // console.log('渲染块:', block.type, block.id);  先注释掉，否则日志太多
     
     if (!block || !block.type) {
         console.warn('无效的块:', block);
