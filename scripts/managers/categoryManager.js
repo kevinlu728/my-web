@@ -28,7 +28,11 @@ class CategoryManager {
     constructor() {
         this.categories = new Map();
         this.currentCategory = 'all';
+        this.currentArticleId = null;
+        this.expandedCategories = new Set();
         this.onCategoryChange = null;
+        this.onArticleSelect = null;
+        this.articles = [];
     }
 
     // 获取分类的显示名称
@@ -44,6 +48,7 @@ class CategoryManager {
         }
         
         console.log(`更新分类列表，共 ${articles.length} 篇文章`);
+        this.articles = articles;
         this.categories.clear();
         this.categories.set('all', 0); // 初始化"全部"分类
 
@@ -73,53 +78,268 @@ class CategoryManager {
         });
 
         console.log('分类统计结果:', Object.fromEntries(this.categories));
-        this.renderCategoryList();
+        this.renderArticleTree();
     }
 
-    // 渲染分类列表UI
-    renderCategoryList() {
-        const categoryList = document.getElementById('category-list');
-        if (!categoryList) return;
+    // 渲染文章树形列表
+    renderArticleTree() {
+        const articleTree = document.getElementById('article-tree');
+        if (!articleTree) return;
 
-        categoryList.innerHTML = Array.from(this.categories.entries())
-            .sort((a, b) => {
-                // 确保"全部文章"始终在最前面
-                if (a[0] === 'all') return -1;
-                if (b[0] === 'all') return 1;
-                return a[0].localeCompare(b[0]); // 其他分类按字母顺序排序
-            })
-            .map(([category, count]) => `
-                <li class="category-item ${category === this.currentCategory ? 'active' : ''}" 
-                    data-category="${category}">
-                    <span class="category-name">${this.getCategoryDisplayName(category)}</span>
-                    <span class="category-count">(${count})</span>
-                </li>
-            `).join('');
+        // 清除除根节点以外的所有内容
+        const rootItem = articleTree.querySelector('.root-item');
+        if (!rootItem) return;
 
-        this.bindCategoryEvents();
-    }
+        // 更新根节点信息
+        const rootItemContent = rootItem.querySelector('.item-count');
+        if (rootItemContent) {
+            rootItemContent.textContent = `(${this.categories.get('all') || 0})`;
+        }
 
-    // 绑定分类点击事件
-    bindCategoryEvents() {
-        const categoryList = document.getElementById('category-list');
-        if (!categoryList) return;
+        // 清除所有子项
+        const treeChildren = rootItem.querySelector('.tree-children');
+        if (treeChildren) {
+            treeChildren.innerHTML = '';
 
-        categoryList.querySelectorAll('.category-item').forEach(item => {
-            item.addEventListener('click', () => {
-                this.currentCategory = item.dataset.category;
-                this.updateCategoryActive();
-                if (this.onCategoryChange) {
-                    this.onCategoryChange(this.currentCategory);
+            // 使用自定义顺序排序分类
+            const sortedCategories = Array.from(this.categories.entries())
+                .filter(([category]) => category !== 'all')
+                .sort((a, b) => {
+                    // 获取分类顺序，如果没有配置则默认为50
+                    const orderA = categoryConfig.order[a[0]] || 50;
+                    const orderB = categoryConfig.order[b[0]] || 50;
+                    
+                    // 按顺序值排序（升序）
+                    if (orderA !== orderB) {
+                        return orderA - orderB;
+                    }
+                    
+                    // 如果顺序值相同，则按名称字母顺序排序
+                    return a[0].localeCompare(b[0]);
+                });
+
+            sortedCategories.forEach(([category, count]) => {
+                // 创建分类节点
+                const categoryNode = document.createElement('li');
+                categoryNode.className = 'tree-item category-tree-item';
+                categoryNode.dataset.category = category;
+                
+                // 检查是否应该展开该分类
+                if (this.expandedCategories.has(category)) {
+                    categoryNode.classList.add('expanded');
+                }
+
+                // 创建分类内容
+                categoryNode.innerHTML = `
+                    <div class="tree-item-content">
+                        <span class="tree-toggle"><i class="fas fa-chevron-right"></i></span>
+                        <span class="item-name">${this.getCategoryDisplayName(category)}</span>
+                        <span class="item-count">(${count})</span>
+                    </div>
+                    <ul class="tree-children">
+                        <!-- 文章将在这里动态添加 -->
+                    </ul>
+                `;
+
+                // 添加分类点击事件
+                const categoryContent = categoryNode.querySelector('.tree-item-content');
+                categoryContent.addEventListener('click', (e) => {
+                    // 阻止事件冒泡
+                    e.stopPropagation();
+                    
+                    // 切换展开/折叠状态
+                    categoryNode.classList.toggle('expanded');
+                    
+                    // 记录展开状态
+                    if (categoryNode.classList.contains('expanded')) {
+                        this.expandedCategories.add(category);
+                        // 加载该分类下的文章
+                        this.loadArticlesForCategory(category, categoryNode);
+                    } else {
+                        this.expandedCategories.delete(category);
+                    }
+                    
+                    // 更新激活状态
+                    this.updateActiveState(category);
+                });
+
+                // 将分类节点添加到树中
+                treeChildren.appendChild(categoryNode);
+                
+                // 如果该分类已展开，加载其文章
+                if (this.expandedCategories.has(category)) {
+                    this.loadArticlesForCategory(category, categoryNode);
                 }
             });
+        }
+
+        // 为根节点添加点击事件
+        const rootContent = rootItem.querySelector('.tree-item-content');
+        if (rootContent) {
+            rootContent.addEventListener('click', (e) => {
+                e.stopPropagation();
+                rootItem.classList.toggle('expanded');
+                this.updateActiveState('all');
+            });
+        }
+
+        // 默认展开根节点
+        rootItem.classList.add('expanded');
+    }
+
+    // 加载特定分类下的文章
+    loadArticlesForCategory(category, categoryNode) {
+        if (!this.articles || !categoryNode) return;
+        
+        const articlesContainer = categoryNode.querySelector('.tree-children');
+        if (!articlesContainer) return;
+        
+        // 清空现有文章
+        articlesContainer.innerHTML = '';
+        
+        // 过滤属于该分类的文章
+        const filteredArticles = this.articles.filter(article => {
+            let articleCategory = '';
+            
+            if (article.category) {
+                articleCategory = article.category;
+            } else if (article.properties && article.properties.Category) {
+                const categoryProp = article.properties.Category;
+                if (categoryProp.select && categoryProp.select.name) {
+                    articleCategory = categoryProp.select.name;
+                } else if (categoryProp.multi_select && categoryProp.multi_select.length > 0) {
+                    articleCategory = categoryProp.multi_select[0].name;
+                }
+            }
+            
+            return articleCategory === category;
+        });
+        
+        console.log(`${category} 分类下的文章:`, filteredArticles.length);
+        
+        if (filteredArticles.length === 0) {
+            articlesContainer.innerHTML = '<li class="no-results">该分类下暂无文章</li>';
+            return;
+        }
+        
+        // 添加文章到分类下
+        filteredArticles.forEach(article => {
+            const articleNode = document.createElement('li');
+            articleNode.className = 'tree-item article-tree-item';
+            articleNode.dataset.articleId = article.id;
+            
+            // 如果当前正在查看这篇文章，标记为激活状态
+            if (this.currentArticleId === article.id) {
+                articleNode.classList.add('active');
+            }
+            
+            // 提取文章标题
+            const title = article.title || 'Untitled';
+            
+            // 不再显示日期
+            articleNode.innerHTML = `
+                <div class="tree-item-content">
+                    <span class="item-name">${title}</span>
+                </div>
+            `;
+            
+            // 添加文章点击事件
+            articleNode.querySelector('.tree-item-content').addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.currentArticleId = article.id;
+                this.updateActiveState(null, article.id);
+                
+                // 触发文章选择回调
+                if (this.onArticleSelect) {
+                    this.onArticleSelect(article.id);
+                }
+            });
+            
+            articlesContainer.appendChild(articleNode);
         });
     }
 
-    // 更新分类的激活状态
-    updateCategoryActive() {
-        document.querySelectorAll('.category-item').forEach(item => {
-            item.classList.toggle('active', item.dataset.category === this.currentCategory);
-        });
+    // 更新激活状态
+    updateActiveState(category = null, articleId = null) {
+        // 更新分类激活状态
+        if (category) {
+            this.currentCategory = category;
+            
+            // 移除所有激活状态
+            document.querySelectorAll('#article-tree .tree-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // 设置新的激活状态
+            if (category === 'all') {
+                document.querySelector('#article-tree .root-item').classList.add('active');
+            } else {
+                document.querySelector(`#article-tree .category-tree-item[data-category="${category}"]`)?.classList.add('active');
+            }
+            
+            // 触发分类变更回调
+            if (this.onCategoryChange) {
+                this.onCategoryChange(category);
+            }
+        }
+        
+        // 更新文章激活状态
+        if (articleId) {
+            this.currentArticleId = articleId;
+            
+            // 移除所有文章的激活状态
+            document.querySelectorAll('#article-tree .article-tree-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // 设置新的激活状态
+            document.querySelector(`#article-tree .article-tree-item[data-article-id="${articleId}"]`)?.classList.add('active');
+            
+            // 重置分类激活状态
+            document.querySelectorAll('#article-tree .category-tree-item').forEach(item => {
+                item.classList.remove('active');
+            });
+        }
+    }
+
+    // 展开到指定文章
+    expandToArticle(articleId) {
+        if (!articleId) return;
+        
+        // 查找文章所属的分类
+        const article = this.articles.find(a => a.id === articleId);
+        if (!article) return;
+        
+        let category = 'Uncategorized';
+        if (article.category) {
+            category = article.category;
+        } else if (article.properties && article.properties.Category) {
+            const categoryProp = article.properties.Category;
+            if (categoryProp.select && categoryProp.select.name) {
+                category = categoryProp.select.name;
+            } else if (categoryProp.multi_select && categoryProp.multi_select.length > 0) {
+                category = categoryProp.multi_select[0].name;
+            }
+        }
+        
+        // 展开根节点
+        const rootItem = document.querySelector('#article-tree .root-item');
+        if (rootItem) {
+            rootItem.classList.add('expanded');
+        }
+        
+        // 展开分类节点
+        const categoryNode = document.querySelector(`#article-tree .category-tree-item[data-category="${category}"]`);
+        if (categoryNode) {
+            categoryNode.classList.add('expanded');
+            this.expandedCategories.add(category);
+            
+            // 加载分类下的文章
+            this.loadArticlesForCategory(category, categoryNode);
+            
+            // 更新激活状态
+            this.updateActiveState(null, articleId);
+        }
     }
 
     // 获取当前选中的分类
@@ -132,13 +352,14 @@ class CategoryManager {
         this.onCategoryChange = callback;
     }
 
+    // 设置文章选择的回调函数
+    setOnArticleSelect(callback) {
+        this.onArticleSelect = callback;
+    }
+
     // 选择分类
     selectCategory(category) {
-        this.currentCategory = category;
-        this.updateCategoryActive();
-        if (this.onCategoryChange) {
-            this.onCategoryChange(this.currentCategory);
-        }
+        this.updateActiveState(category);
     }
 }
 

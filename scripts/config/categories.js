@@ -26,7 +26,19 @@ export const categoryConfig = {
         'Data Structure and Algorithm': '数据结构和算法',
         'Programming Language': '编程语言',
         'Mobile Tech': '终端技术',
+        'Architect': '架构设计',
         '未分类': '未分类'
+    },
+    
+    // 分类的显示顺序配置（值越小越靠前）
+    order: {
+        'Computer Basis': 1,       // 计算机基础排在最前面
+        'Data Structure and Algorithm': 2,  // 数据结构和算法第二
+        'Programming Language': 3,  // 编程语言第三
+        'Architect': 4,            // 架构设计第四
+        'Mobile Tech': 5,          // 终端技术第五
+        'Test': 99,                // 测试排在末尾
+        '未分类': 100              // 未分类永远在最后
     },
     
     // 分类颜色配置
@@ -55,6 +67,11 @@ export const categoryConfig = {
             bg: '#fffde7',      // 柔和的浅黄色背景
             color: '#f9a825',   // 深黄色文字
             hoverBg: '#fff9c4'  // 悬停时的背景色
+        },
+        'Architect': {
+            bg: '#f3e5f5',      // 柔和的浅紫色背景
+            color: '#8e24aa',   // 深紫色文字
+            hoverBg: '#e1bee7'  // 悬停时的背景色
         },
         'default': {
             bg: '#f8f9fa',

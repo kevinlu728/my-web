@@ -121,6 +121,17 @@ class ArticleManager {
                 console.log('更新分类列表...');
                 categoryManager.updateCategories(articles);
                 
+                // 设置分类变更和文章选择回调
+                categoryManager.setOnCategoryChange((category) => {
+                    console.log('分类变更:', category);
+                    this.filterAndRenderArticles();
+                });
+                
+                categoryManager.setOnArticleSelect((articleId) => {
+                    console.log('文章选择:', articleId);
+                    this.showArticle(articleId);
+                });
+                
                 // 显示欢迎页面
                 console.log('显示欢迎页面...');
                 this.showWelcomePage();
@@ -145,7 +156,12 @@ class ArticleManager {
             searchInput.addEventListener('input', (e) => {
                 this.searchTerm = e.target.value.trim().toLowerCase();
                 this.updateClearButton();
-                this.filterAndRenderArticles();
+                
+                if (this.searchTerm) {
+                    this.performSearch();
+                } else {
+                    this.resetSearch();
+                }
             });
         }
         
@@ -155,7 +171,7 @@ class ArticleManager {
                     searchInput.value = '';
                     this.searchTerm = '';
                     this.updateClearButton();
-                    this.filterAndRenderArticles();
+                    this.resetSearch();
                 }
             });
         }
@@ -167,6 +183,120 @@ class ArticleManager {
         if (clearButton) {
             clearButton.classList.toggle('visible', this.searchTerm.length > 0);
         }
+    }
+
+    // 执行搜索
+    performSearch() {
+        if (!this.articles || this.articles.length === 0) return;
+        
+        console.log(`执行搜索，关键词: "${this.searchTerm}"`);
+        
+        // 搜索匹配的文章
+        const searchResults = this.searchArticles(this.articles);
+        console.log(`找到 ${searchResults.length} 篇匹配的文章`);
+        
+        if (searchResults.length === 0) {
+            // 显示无结果提示
+            const rootChildren = document.querySelector('#article-tree .root-item > .tree-children');
+            if (rootChildren) {
+                rootChildren.innerHTML = `<li class="no-results">没有找到与 "${this.searchTerm}" 相关的文章</li>`;
+            }
+            return;
+        }
+        
+        // 找出搜索结果中涉及的所有分类
+        const categories = new Set();
+        searchResults.forEach(article => {
+            categories.add(article.category || 'Uncategorized');
+        });
+        
+        // 在树中展示搜索结果
+        const rootItem = document.querySelector('#article-tree .root-item');
+        if (rootItem) {
+            // 确保根节点展开
+            rootItem.classList.add('expanded');
+            
+            // 更新根节点计数
+            const rootCount = rootItem.querySelector('.item-count');
+            if (rootCount) {
+                rootCount.textContent = `(${searchResults.length})`;
+            }
+            
+            // 清空并重建分类节点
+            const rootChildren = rootItem.querySelector('.tree-children');
+            if (rootChildren) {
+                rootChildren.innerHTML = '';
+                
+                // 为每个包含搜索结果的分类创建节点
+                Array.from(categories).sort().forEach(category => {
+                    // 过滤该分类下的搜索结果
+                    const categoryResults = searchResults.filter(article => 
+                        (article.category || 'Uncategorized') === category
+                    );
+                    
+                    if (categoryResults.length === 0) return;
+                    
+                    // 创建分类节点
+                    const categoryNode = document.createElement('li');
+                    categoryNode.className = 'tree-item category-tree-item expanded';
+                    categoryNode.dataset.category = category;
+                    
+                    // 创建分类内容
+                    categoryNode.innerHTML = `
+                        <div class="tree-item-content">
+                            <span class="tree-toggle"><i class="fas fa-chevron-right"></i></span>
+                            <span class="item-name">${this.getCategoryDisplayName(category)}</span>
+                            <span class="item-count">(${categoryResults.length})</span>
+                        </div>
+                        <ul class="tree-children">
+                            <!-- 搜索结果将在这里动态添加 -->
+                        </ul>
+                    `;
+                    
+                    // 添加分类点击事件
+                    const categoryContent = categoryNode.querySelector('.tree-item-content');
+                    categoryContent.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        categoryNode.classList.toggle('expanded');
+                    });
+                    
+                    // 添加该分类下的搜索结果
+                    const categoryChildren = categoryNode.querySelector('.tree-children');
+                    categoryResults.forEach(article => {
+                        const articleNode = document.createElement('li');
+                        articleNode.className = 'tree-item article-tree-item';
+                        articleNode.dataset.articleId = article.id;
+                        
+                        // 提取并高亮标题
+                        const title = article.title || 'Untitled';
+                        const highlightedTitle = this.highlightSearchTerm(title);
+                        
+                        // 不再显示日期
+                        articleNode.innerHTML = `
+                            <div class="tree-item-content">
+                                <span class="item-name">${highlightedTitle}</span>
+                            </div>
+                        `;
+                        
+                        // 添加文章点击事件
+                        articleNode.querySelector('.tree-item-content').addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            this.showArticle(article.id);
+                        });
+                        
+                        categoryChildren.appendChild(articleNode);
+                    });
+                    
+                    rootChildren.appendChild(categoryNode);
+                });
+            }
+        }
+    }
+
+    // 重置搜索
+    resetSearch() {
+        console.log('重置搜索...');
+        categoryManager.updateCategories(this.articles);
     }
 
     // 加载文章列表
@@ -228,7 +358,7 @@ class ArticleManager {
             this.filterAndRenderArticles();
             
             // 显示成功状态
-            showStatus('文章列表加载成功', false, 'success');
+            // showStatus('文章列表加载成功', false, 'success');
             
             // 如果没有文章，显示提示
             if (articles.length === 0) {
@@ -441,6 +571,13 @@ class ArticleManager {
             }
         }
         
+        console.log('过滤后的文章数量:', filteredArticles.length);
+        
+        // 如果是查看全部文章，更新分类下的文章数量
+        if (currentCategory === 'all') {
+            categoryManager.updateCategories(filteredArticles);
+        }
+        
         console.log('渲染文章列表:', filteredArticles);
         
         // 渲染文章列表
@@ -642,8 +779,8 @@ class ArticleManager {
                 return false;
             }
 
-            // 更新选中状态
-            this.updateActiveArticle(pageId);
+            // 更新树中的选中状态
+            categoryManager.updateActiveState(null, pageId);
 
             // 如果正在加载其他文章，先取消那个加载
             if (this.currentLoadingId && this.currentLoadingId !== pageId) {
@@ -659,7 +796,7 @@ class ArticleManager {
             // 重置滚动位置
             window.scrollTo({
                 top: 0,
-                behavior: 'instant' // 使用 'instant' 而不是 'smooth' 以避免视觉干扰
+                behavior: 'instant' 
             });
 
             // 记录当前正在加载的文章ID

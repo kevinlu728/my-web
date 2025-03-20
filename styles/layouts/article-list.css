@@ -53,6 +53,181 @@
     opacity: 0.8;
 }
 
+/* 树形文章列表样式 */
+.article-tree-container {
+    margin-bottom: 2.5rem;
+    padding: 0;
+}
+
+.article-tree-container h2 {
+    color: #34495e;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+#article-tree {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border-radius: 0;
+    background-color: transparent;
+    border: none;
+    padding: 0.5rem 0;
+}
+
+.tree-item {
+    margin-bottom: 0.25rem;
+    transition: all 0.2s ease;
+}
+
+.tree-item-content {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.8rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: transparent;
+    color: #4a5568;
+    position: relative;
+    overflow: hidden;
+    margin: 0 0.3rem;
+}
+
+.tree-item-content:hover {
+    background: #f1f5f9;
+}
+
+.tree-item-content::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #4299e1;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+}
+
+.tree-item-content:hover::after {
+    transform: scaleX(1);
+}
+
+.root-item > .tree-item-content {
+    font-weight: 600;
+    background: transparent;
+    border-bottom: 1px solid #e9ecef;
+    margin-bottom: 0.5rem;
+    color: #2d3748;
+}
+
+.category-tree-item > .tree-item-content {
+    color: #2d3748;
+    font-weight: 500;
+}
+
+.article-tree-item > .tree-item-content {
+    margin-left: 1.8rem;
+    padding-left: 0.8rem;
+    border-left: none;
+}
+
+.tree-toggle {
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.3rem;
+    transition: transform 0.2s ease;
+    opacity: 0.5;
+}
+
+.tree-toggle i {
+    font-size: 0.75rem;
+    color: #bbc4d4;
+    transition: transform 0.3s ease;
+}
+
+.tree-item-content:hover .tree-toggle {
+    opacity: 0.7;
+}
+
+.tree-item.expanded > .tree-item-content .tree-toggle {
+    transform: rotate(90deg);
+}
+
+.item-name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.item-count {
+    margin-left: 8px;
+    font-size: 0.85em;
+    color: #a0aec0;
+}
+
+.tree-children {
+    list-style: none;
+    padding-left: 1.2rem;
+    margin: 0.2rem 0 0.2rem 0.3rem;
+    display: none;
+    position: relative;
+}
+
+.tree-item.expanded > .tree-children {
+    display: block;
+}
+
+/* 激活状态样式 */
+.tree-item.active > .tree-item-content {
+    background: #f0f9ff;
+    color: #3182ce;
+    border-color: transparent;
+    box-shadow: none;
+}
+
+.tree-item.active > .tree-item-content .tree-toggle i {
+    color: #3182ce;
+}
+
+.article-tree-item.active > .tree-item-content {
+    background: #f0f7fa;
+    color: #0891b2;
+    font-weight: 500;
+    box-shadow: none;
+}
+
+.article-tree-item.active > .tree-item-content::after {
+    transform: scaleX(1);
+    background: #319795;
+}
+
+.article-tree-item.active .item-name {
+    color: #2c7a7b;
+}
+
+.article-tree-item.active .item-date {
+    color: #4fd1c5;
+}
+
+/* 展开/折叠动画 */
+.tree-children {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.tree-item.expanded > .tree-children {
+    max-height: 1000px;
+}
+
 /* 文章列表样式 */
 #article-list {
     padding: 0;
@@ -364,4 +539,105 @@
 
 .error-message i {
     font-size: 24px;
+}
+
+/* 树形文章列表样式补充 */
+.item-date {
+    color: #a0aec0;
+    font-size: 0.85em;
+    margin-left: 8px;
+}
+
+/* 树形列表动画效果 */
+.tree-item-content {
+    position: relative;
+    overflow: hidden;
+}
+
+.tree-item-content::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #4299e1;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+}
+
+.tree-item-content:hover::after {
+    transform: scaleX(1);
+}
+
+/* 树形结构层级连线 */
+.tree-children {
+    position: relative;
+}
+
+.article-tree-item {
+    position: relative;
+}
+
+/* 无结果提示样式 */
+.tree-children .no-results {
+    color: #a0aec0;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    font-style: italic;
+}
+
+/* 搜索高亮 */
+.tree-item .search-highlight {
+    background-color: rgba(99, 179, 237, 0.2);
+    padding: 0.1em 0.2em;
+    border-radius: 2px;
+}
+
+/* 加载中状态 */
+.tree-children .loading {
+    display: flex;
+    align-items: center;
+    color: #a0aec0;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+}
+
+.tree-children .loading::before {
+    content: '';
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    margin-right: 0.5rem;
+    border: 2px solid #e2e8f0;
+    border-top-color: #4299e1;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .tree-item-content {
+        padding: 0.4rem 0.6rem;
+    }
+    
+    .article-tree-item > .tree-item-content {
+        margin-left: 1rem;
+        padding-left: 0.8rem;
+    }
+}
+
+/* 确保动画平滑 */
+@keyframes tree-expand {
+    from { max-height: 0; }
+    to { max-height: 1000px; }
+}
+
+.tree-children {
+    transition: all 0.3s ease-out;
+}
+
+.tree-item.expanded > .tree-children {
+    animation: tree-expand 0.3s ease-out forwards;
 } 

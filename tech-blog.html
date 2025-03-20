@@ -204,21 +204,23 @@
                 </div>
             </div>
 
-            <!-- 分类列表 -->
-            <div class="categories-section">
-                <h2>文章分类</h2>
-                <ul id="category-list">
-                    <li class="category-item active" data-category="all">
-                        <span class="category-name">全部文章</span>
-                        <span class="category-count">(0)</span>
+            <!-- 文章树形列表 -->
+            <div class="article-tree-container">
+                <ul id="article-tree">
+                    <li class="tree-item root-item active" data-category="all">
+                        <div class="tree-item-content">
+                            <span class="tree-toggle"><i class="fas fa-chevron-right"></i></span>
+                            <span class="item-name">全部文章</span>
+                            <span class="item-count">(0)</span>
+                        </div>
+                        <ul class="tree-children">
+                            <!-- 分类和文章将通过JavaScript动态填充 -->
+                            <li class="loading">加载中...</li>
+                        </ul>
                     </li>
                 </ul>
             </div>
 
-            <h2>文章列表</h2>
-            <ul id="article-list">
-                <li class="loading">加载中...</li>
-            </ul>
             <div id="status-message" class="status-text"></div>
             <!-- 调试开关和面板 -->
             <div class="debug-section">
@@ -288,6 +290,11 @@
         window.config = config;
         window.tableLazyLoader = tableLazyLoader;
         window.codeLazyLoader = codeLazyLoader;
+        
+        // 将showArticle方法挂载到window对象上，使其可以在全局调用
+        window.showArticle = function(articleId) {
+            return articleManager.showArticle(articleId);
+        };
         
         // 页面加载完成后初始化
         document.addEventListener('DOMContentLoaded', () => {
