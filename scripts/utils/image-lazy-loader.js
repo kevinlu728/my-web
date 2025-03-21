@@ -85,12 +85,11 @@ class ImageLazyLoader {
                 <div class="modal-close">&times;</div>
                 <div class="modal-zoom">
                     <button class="zoom-in">+</button>
+                    <div class="zoom-level">100%</div>
                     <button class="zoom-out">-</button>
                 </div>
-                <div class="modal-loading">
-                    <div class="progress-bar">
-                        <div class="progress"></div>
-                    </div>
+                <div class="modal-scale-bar">
+                    <div class="scale-indicator" style="width: 33.3%"></div>
                 </div>
             </div>
         `;
@@ -121,6 +120,7 @@ class ImageLazyLoader {
                 margin: auto;
                 max-width: 90%;
                 max-height: 90%;
+                padding-bottom: 50px; /* 为底部控件留出空间 */
             }
             
             .modal-content img {
@@ -129,6 +129,7 @@ class ImageLazyLoader {
                 object-fit: contain;
                 transform-origin: center;
                 transition: transform 0.3s ease;
+                margin-bottom: 20px; /* 与底部控件保持距离 */
             }
             
             .modal-close {
@@ -143,9 +144,10 @@ class ImageLazyLoader {
             
             .modal-zoom {
                 position: absolute;
-                bottom: -40px;
+                bottom: 20px;
                 right: 0;
                 display: flex;
+                align-items: center;
                 gap: 10px;
             }
             
@@ -160,25 +162,26 @@ class ImageLazyLoader {
                 line-height: 1;
             }
             
-            .modal-loading {
+            .zoom-level {
+                color: white;
+                font-size: 14px;
+                min-width: 50px;
+                text-align: center;
+            }
+            
+            .modal-scale-bar {
                 position: absolute;
-                bottom: -20px;
+                bottom: 0;
                 left: 0;
                 width: 100%;
                 height: 4px;
                 background: rgba(255, 255, 255, 0.2);
             }
             
-            .progress-bar {
-                width: 100%;
-                height: 100%;
-                background: rgba(255, 255, 255, 0.1);
-            }
-            
-            .progress {
-                width: 0%;
+            .scale-indicator {
                 height: 100%;
                 background: #3498db;
+                width: 33.3%; /* 默认 1.0 缩放比例 */
                 transition: width 0.3s ease;
             }
 
@@ -206,6 +209,19 @@ class ImageLazyLoader {
                 0% { transform: rotate(0deg); }
                 100% { transform: rotate(360deg); }
             }
+            
+            /* 适配移动设备 */
+            @media (max-width: 768px) {
+                .modal-content {
+                    padding-bottom: 60px; /* 移动设备上增加更多空间 */
+                }
+                
+                .modal-zoom {
+                    bottom: 25px;
+                    right: 50%;
+                    transform: translateX(50%); /* 居中显示 */
+                }
+            }
         `;
         
         document.head.appendChild(style);
@@ -226,16 +242,40 @@ class ImageLazyLoader {
         const img = this.modalContainer.querySelector('img');
         const zoomIn = this.modalContainer.querySelector('.zoom-in');
         const zoomOut = this.modalContainer.querySelector('.zoom-out');
+        const zoomLevel = this.modalContainer.querySelector('.zoom-level');
+        const scaleIndicator = this.modalContainer.querySelector('.scale-indicator');
+        
+        // 缩放相关变量
         let scale = 1;
+        const minScale = 0.5;
+        const maxScale = 3;
+        
+        // 更新缩放显示
+        const updateZoomDisplay = () => {
+            // 更新百分比文本
+            zoomLevel.textContent = `${Math.round(scale * 100)}%`;
+            
+            // 更新进度条
+            // 将缩放范围（0.5到3）映射到宽度范围（0%到100%）
+            const scaleRange = maxScale - minScale;
+            const scalePosition = scale - minScale;
+            const scalePercentage = (scalePosition / scaleRange) * 100;
+            scaleIndicator.style.width = `${scalePercentage}%`;
+        };
+        
+        // 初始化显示
+        updateZoomDisplay();
         
         zoomIn.addEventListener('click', () => {
-            scale = Math.min(scale * 1.2, 3);
+            scale = Math.min(scale * 1.2, maxScale);
             img.style.transform = `scale(${scale})`;
+            updateZoomDisplay();
         });
         
         zoomOut.addEventListener('click', () => {
-            scale = Math.max(scale / 1.2, 0.5);
+            scale = Math.max(scale / 1.2, minScale);
             img.style.transform = `scale(${scale})`;
+            updateZoomDisplay();
         });
     }
 
@@ -282,32 +322,22 @@ class ImageLazyLoader {
      */
     openModal(imgSrc) {
         const modalImg = this.modalContainer.querySelector('img');
-        const progress = this.modalContainer.querySelector('.progress');
+        const scaleIndicator = this.modalContainer.querySelector('.scale-indicator');
+        const zoomLevel = this.modalContainer.querySelector('.zoom-level');
         
         // 重置缩放
         modalImg.style.transform = 'scale(1)';
-        progress.style.width = '0%';
+        scaleIndicator.style.width = '33.3%'; // 恢复到默认宽度（对应缩放比例1.0）
+        zoomLevel.textContent = '100%';
         
         // 加载新图片
         const tempImg = new Image();
         tempImg.onload = () => {
             modalImg.src = imgSrc;
             this.modalContainer.classList.add('active');
-            progress.style.width = '100%';
         };
         
         tempImg.src = imgSrc;
-        
-        // 模拟进度条
-        let width = 0;
-        const interval = setInterval(() => {
-            if (width >= 90) {
-                clearInterval(interval);
-            } else {
-                width++;
-                progress.style.width = width + '%';
-            }
-        }, 20);
     }
 
     /**

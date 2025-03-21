@@ -33,7 +33,7 @@ const CLOUDINARY_CLOUD_NAME = 'demo'; // 使用 Cloudinary 的演示账号，实
 export function optimizeImageUrl(originalUrl, options = {}) {
     // 默认选项
     const defaultOptions = {
-        scale: 0.3,         // 默认缩放比例为原图的 50%
+        scale: 0.5,         // 默认缩放比例为原图的 50%
         quality: 'auto',    // 自动质量
         format: 'auto',     // 自动格式（WebP/AVIF 等）
         fetchFormat: 'auto' // 自动选择最佳格式
@@ -76,17 +76,17 @@ export function getOptimalImageSettings(img) {
     const viewportWidth = window.innerWidth;
     
     // 根据设备和容器大小确定合适的缩放比例
-    let scale = 0.3; // 默认缩放比例为原图的 50%
+    let scale = 0.5; // 默认缩放比例为原图的 50%
     
     if (viewportWidth < 768) {
         // 移动设备
-        scale = 0.2; // 缩小到原图的 50%
+        scale = 0.4; // 缩小到原图的 40%
     } else if (containerWidth < 600) {
         // 小容器
-        scale = 0.25; // 缩小到原图的 55%
+        scale = 0.45; // 缩小到原图的 45%
     } else if (containerWidth > 1200) {
         // 大容器
-        scale = 0.35; // 缩小到原图的 65%
+        scale = 0.6; // 缩小到原图的 60%
     }
     
     return {
