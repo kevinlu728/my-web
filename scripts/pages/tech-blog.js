@@ -70,6 +70,23 @@ async function initializePage() {
         articleManager.showArticle = async function(pageId) {
             console.log('📄 准备加载文章:', pageId);
             
+            // 首先确保移除占位内容
+            const container = document.getElementById('article-container');
+            if (container && container.querySelector('.placeholder-content')) {
+                console.log('移除占位内容...');
+                // 添加淡出效果
+                const placeholder = container.querySelector('.placeholder-content');
+                placeholder.style.transition = 'opacity 0.3s ease';
+                placeholder.style.opacity = '0';
+                
+                // 等待淡出动画完成后移除元素
+                setTimeout(() => {
+                    if (placeholder.parentNode === container) {
+                        container.removeChild(placeholder);
+                    }
+                }, 300);
+            }
+            
             try {
                 const result = await originalShowArticle.call(this, pageId);
                 console.log('✅ 文章加载成功');
@@ -91,12 +108,68 @@ async function initializePage() {
                 return result;
             } catch (error) {
                 console.error('❌ 文章加载失败:', error);
+                
+                // 如果加载失败，恢复占位内容
+                if (container && !container.querySelector('.placeholder-content')) {
+                    container.innerHTML = `
+                        <div class="placeholder-content">
+                            <div class="placeholder-image"></div>
+                            <div class="placeholder-text">加载失败</div>
+                            <div class="placeholder-hint">无法加载所请求的文章，请稍后再试或选择其他文章</div>
+                        </div>
+                    `;
+                }
+                
                 throw error;
             }
         };
         console.log('✅ articleManager.showArticle 方法扩展完成');
     } else {
         console.error('❌ articleManager 或 showArticle 方法未找到');
+    }
+
+    // 重写 showWelcomePage 方法，使用新的占位图样式
+    if (articleManager && articleManager.showWelcomePage) {
+        const originalShowWelcomePage = articleManager.showWelcomePage;
+        articleManager.showWelcomePage = function() {
+            console.log('显示欢迎页...');
+            
+            const container = document.getElementById('article-container');
+            if (container) {
+                // 检查是否已存在占位图
+                let placeholder = container.querySelector('.placeholder-content');
+                
+                // 如果不存在占位图，才创建新的占位图
+                if (!placeholder) {
+                    container.innerHTML = `
+                        <div class="placeholder-content">
+                            <div class="placeholder-image"></div>
+                            <div class="placeholder-text">正在准备内容</div>
+                            <div class="placeholder-hint">欢迎页面加载中，请稍候片刻...</div>
+                        </div>
+                    `;
+                    placeholder = container.querySelector('.placeholder-content');
+                }
+                
+                // 短暂延迟后加载实际欢迎页内容
+                setTimeout(() => {
+                    // 移除占位图（带动画效果）
+                    if (placeholder) {
+                        placeholder.style.transition = 'opacity 0.3s ease';
+                        placeholder.style.opacity = '0';
+                        
+                        setTimeout(() => {
+                            // 调用原始的欢迎页显示方法
+                            originalShowWelcomePage.call(this);
+                        }, 300);
+                    } else {
+                        // 如果没有找到占位图，直接调用原始方法
+                        originalShowWelcomePage.call(this);
+                    }
+                }, 800); // 短暂延迟，让用户可以看到过渡效果
+            }
+        };
+        console.log('✅ articleManager.showWelcomePage 方法扩展完成');
     }
 
     // 初始化文章管理器
@@ -217,6 +290,9 @@ window.addEventListener('load', () => {
     initializePage().catch(error => {
         console.error('❌ 初始化失败:', error);
     });
+    
+    // 添加返回顶部按钮
+    initializeBackToTop();
 });
 
 // 如果 articleManager 有一个 displayArticleContent 方法
@@ -312,6 +388,21 @@ function initializeResizableLeftColumn() {
             if (width >= 200 && width <= window.innerWidth * 0.4) {
                 leftColumn.style.width = width + 'px';
                 leftColumn.style.flex = `0 0 ${width}px`;
+                
+                // 同时初始化拖动手柄和右栏的位置
+                const leftPadding = 20; // 左侧内边距
+                const handleWidth = 3; // 拖动手柄宽度（从6px减小到3px）
+                
+                // 初始化拖动手柄位置
+                if (resizeHandle) {
+                    resizeHandle.style.left = `${leftPadding + width}px`;
+                }
+                
+                // 初始化右栏的左边距
+                const rightColumn = document.querySelector('.right-column');
+                if (rightColumn) {
+                    rightColumn.style.marginLeft = `${leftPadding + width + handleWidth}px`;
+                }
             }
         } catch (e) {
             console.error('解析保存的宽度值时出错:', e);
@@ -343,6 +434,22 @@ function initializeResizableLeftColumn() {
         const defaultWidth = 250;
         leftColumn.style.width = `${defaultWidth}px`;
         leftColumn.style.flex = `0 0 ${defaultWidth}px`;
+        
+        // 同时更新拖动手柄和右栏的位置
+        const leftPadding = 20; // 左侧内边距
+        const handleWidth = 3; // 拖动手柄宽度（从6px减小到3px）
+        
+        // 更新拖动手柄位置
+        if (resizeHandle) {
+            resizeHandle.style.left = `${leftPadding + defaultWidth}px`;
+        }
+        
+        // 更新右栏的左边距
+        const rightColumn = document.querySelector('.right-column');
+        if (rightColumn) {
+            rightColumn.style.marginLeft = `${leftPadding + defaultWidth + handleWidth}px`;
+        }
+        
         localStorage.setItem('leftColumnWidth', String(defaultWidth));
     });
     
@@ -400,6 +507,23 @@ function initializeResizableLeftColumn() {
         leftColumn.style.width = `${newWidth}px`;
         leftColumn.style.flex = `0 0 ${newWidth}px`;
         
+        // 同时更新拖动手柄和右栏的位置
+        const leftPadding = 20; // 左侧内边距
+        const handleWidth = 3; // 拖动手柄宽度（从6px减小到3px）
+        
+        // 更新拖动手柄位置
+        if (resizeHandle) {
+            resizeHandle.style.transition = 'none';
+            resizeHandle.style.left = `${leftPadding + newWidth}px`;
+        }
+        
+        // 更新右栏的左边距
+        const rightColumn = document.querySelector('.right-column');
+        if (rightColumn) {
+            rightColumn.style.transition = 'none';
+            rightColumn.style.marginLeft = `${leftPadding + newWidth + handleWidth}px`;
+        }
+        
         // 请求动画帧以确保平滑渲染
         requestAnimationFrame(() => {
             document.body.style.cursor = 'col-resize';
@@ -419,6 +543,16 @@ function initializeResizableLeftColumn() {
         
         // 恢复过渡效果
         leftColumn.style.transition = '';
+        
+        // 恢复拖动手柄和右栏的过渡效果
+        if (resizeHandle) {
+            resizeHandle.style.transition = '';
+        }
+        
+        const rightColumn = document.querySelector('.right-column');
+        if (rightColumn) {
+            rightColumn.style.transition = '';
+        }
         
         // 移除全局事件监听器
         document.removeEventListener('mousemove', handleDrag);
@@ -496,6 +630,79 @@ function initializeArticleSearch() {
 function initializeArticleList() {
     // 这个函数在实际代码中应该会被实现
     console.log('initializeArticleList: 未实现的函数');
+}
+
+/**
+ * 初始化返回顶部按钮
+ * 当页面滚动超过一定距离时显示按钮，点击按钮可平滑回到顶部
+ */
+function initializeBackToTop() {
+    console.log('初始化返回顶部按钮...');
+    
+    // 创建按钮元素
+    const backToTopBtn = document.createElement('div');
+    backToTopBtn.className = 'back-to-top';
+    backToTopBtn.innerHTML = `
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M7.41 15.41L12 10.83L16.59 15.41L18 14L12 8L6 14L7.41 15.41Z"/>
+        </svg>
+    `;
+    document.body.appendChild(backToTopBtn);
+    
+    // 检查按钮是否添加成功
+    if (!document.querySelector('.back-to-top')) {
+        console.error('返回顶部按钮创建失败');
+        return;
+    }
+    
+    console.log('✅ 返回顶部按钮创建成功');
+    
+    // 监听滚动事件，控制按钮显示隐藏
+    let scrollThreshold = 300; // 滚动超过300px显示按钮
+    let scrollingTimer;
+    
+    window.addEventListener('scroll', () => {
+        clearTimeout(scrollingTimer);
+        
+        // 检查是否超过阈值
+        if (window.scrollY > scrollThreshold) {
+            backToTopBtn.classList.add('visible');
+        } else {
+            backToTopBtn.classList.remove('visible');
+        }
+        
+        // 延迟一段时间后检查是否停止滚动
+        scrollingTimer = setTimeout(() => {
+            // 这里可以添加额外的逻辑，比如一段时间不滚动后隐藏按钮
+        }, 200);
+    });
+    
+    // 点击按钮回到顶部
+    backToTopBtn.addEventListener('click', () => {
+        console.log('点击返回顶部');
+        
+        // 平滑滚动回顶部
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+        
+        // 聚焦到页面顶部的元素（可选）
+        const firstFocusableElement = document.querySelector('h1, h2, p, .article-title');
+        if (firstFocusableElement) {
+            setTimeout(() => {
+                firstFocusableElement.setAttribute('tabindex', '-1');
+                firstFocusableElement.focus();
+                
+                // 移除tabindex，保持DOM干净
+                setTimeout(() => {
+                    firstFocusableElement.removeAttribute('tabindex');
+                }, 100);
+            }, 500);
+        }
+    });
+    
+    console.log('✅ 返回顶部按钮初始化完成');
 }
 
 // 导出函数供外部使用

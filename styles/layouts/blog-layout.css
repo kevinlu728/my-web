@@ -28,6 +28,7 @@
     margin-top: 50px; /* 减小顶部外边距，更接近底部间距 */
     border-top: 1px solid rgba(0, 0, 0, 0.05); /* 添加顶部细微分隔线 */
     padding-top: 20px; /* 添加顶部内边距 */
+    overflow-x: hidden; /* 防止水平方向滚动 */
 }
 
 /* 左侧栏样式 */
@@ -36,20 +37,19 @@
     padding: 25px; /* 减小内边距 */
     border-radius: 12px 0 0 12px; /* 左侧圆角 */
     box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08); /* 更细腻的阴影 */
-    position: relative; /* 改为相对定位 */
-    top: 0; /* 重置顶部距离 */
-    overflow-y: auto;
+    position: fixed; /* 保持固定定位 */
+    top: 70px; /* 与顶部间距保持一致 */
+    left: 20px; /* 添加左侧定位 */
+    height: calc(100vh - 90px); /* 设置高度与内容区域一致 */
+    overflow-y: auto; /* 如果左侧内容过多允许滚动 */
     overflow-x: hidden;
-    flex: 0 0 250px; /* 固定宽度 */
     width: 250px; /* 初始宽度 */
-    transition: width 0.2s ease, flex 0.2s ease; /* 更快的过渡 */
     z-index: 2;
-    margin-right: 0; /* 确保没有右边距 */
-    min-height: 500px; /* 设置最小高度 */
     border: 1px solid rgba(0, 0, 0, 0.05); /* 添加细微边框 */
     border-right: none; /* 移除右边框，与拖动手柄衔接 */
     display: flex; /* 添加flex布局 */
     flex-direction: column; /* 垂直排列 */
+    transition: width 0.2s ease; /* 添加宽度变化的过渡效果 */
 }
 
 /* 左侧栏内容容器 */
@@ -72,26 +72,27 @@
 
 /* 仿飞书风格的拖动手柄 */
 .resize-handle {
-    width: 10px; /* 增加宽度，提高可点击区域 */
+    width: 3px; /* 进一步减小宽度，使左右栏之间距离更接近 */
     cursor: col-resize;
     background-color: rgba(245, 250, 255, 0.1); /* 微弱背景色 */
-    position: relative;
+    position: fixed; /* 保持固定定位 */
+    left: calc(20px + 250px); /* 以左侧内边距+左侧栏宽度计算，确保动态更新 */
+    top: 70px; /* 与左侧栏顶部对齐 */
+    height: calc(100vh - 90px); /* 与左侧栏高度一致 */
     z-index: 10;
     margin: 0;
     padding: 0;
-    align-self: stretch; /* 确保高度拉伸 */
-    height: auto; /* 高度自动 */
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.2s ease;
+    transition: left 0.2s ease, width 0.2s ease; /* 添加宽度过渡效果 */
     box-sizing: border-box; /* 确保宽度计算包含边框 */
 }
 
 /* 拖动手柄的分隔线 */
 .separator-line {
     position: absolute;
-    width: 2px; /* 稍增加宽度 */
+    width: 2px; /* 保持线条宽度 */
     height: 100%; /* 确保占满全高 */
     background-color: #e8eef5; /* 更淡的灰蓝色 */
     left: 50%;
@@ -104,6 +105,7 @@
 /* 拖动手柄悬停效果 */
 .resize-handle:hover {
     background-color: rgba(207, 232, 252, 0.3); /* 稍增加背景色 */
+    width: 8px; /* 悬停时稍微增加宽度，增强可用性 */
 }
 
 .resize-handle:hover .separator-line {
@@ -115,6 +117,7 @@
 /* 拖动状态 */
 .resize-handle.active {
     background-color: rgba(207, 232, 252, 0.5); /* 明显的背景色 */
+    width: 8px; /* 拖动时保持增加的宽度 */
 }
 
 .resize-handle.active .separator-line {
@@ -133,21 +136,20 @@
     flex: 1; /* 填充剩余空间 */
     min-width: 0; /* 允许收缩 */
     z-index: 1;
-    margin-left: 0; /* 确保没有左边距 */
-    position: relative; /* 改为相对定位 */
-    top: 0; /* 重置顶部距离 */
-    min-height: 500px; /* 设置最小高度 */
+    margin-left: calc(20px + 250px + 3px); /* 左侧内边距 + 左侧栏宽度 + 减小后的拖动手柄宽度 */
+    position: relative; /* 保持相对定位 */
     border: 1px solid rgba(0, 0, 0, 0.05); /* 添加细微边框 */
     border-left: none; /* 移除左边框，与拖动手柄衔接 */
     display: flex; /* 添加flex布局 */
     flex-direction: column; /* 垂直排列 */
+    overflow: visible; /* 允许内容自然溢出 */
+    transition: margin-left 0.2s ease; /* 添加边距变化的过渡效果 */
 }
 
 /* 右侧栏文章容器 */
 .blog-content .right-column #article-container {
     flex: 1; /* 占据所有可用空间 */
-    overflow-y: auto; /* 内容溢出时显示滚动条 */
-    min-height: 450px; /* 确保最小高度 */
+    overflow: visible; /* 内容自然溢出，使用页面主滚动条 */
 }
 
 /* 文章标题 */
@@ -260,14 +262,21 @@
     
     .blog-content .left-column {
         padding: 20px; /* 减小内边距 */
-        flex-basis: 220px; /* 稍微减小基础宽度 */
-        max-width: 35%; /* 允许更大的最大宽度比例 */
-        min-height: 450px; /* 稍微减小最小高度 */
+        width: 220px; /* 稍微减小宽度 */
+        top: 65px; /* 与顶部间距保持一致 */
+        height: calc(100vh - 85px); /* 调整高度 */
+    }
+    
+    .resize-handle {
+        left: 240px; /* 更新拖动手柄位置 */
+        top: 65px; /* 与左侧栏顶部对齐 */
+        height: calc(100vh - 85px); /* 与左侧栏高度一致 */
+        width: 3px; /* 保持与非响应式版本相同的宽度 */
     }
     
     .blog-content .right-column {
         padding: 20px 25px; /* 减小内边距 */
-        min-height: 450px; /* 稍微减小最小高度 */
+        margin-left: calc(220px + 3px); /* 更新左边距，使用减小后的拖动手柄宽度 */
     }
 }
 
@@ -282,40 +291,27 @@
     }
     
     .blog-content .left-column {
-        position: relative; /* 保持相对定位 */
+        position: relative; /* 小屏幕下改回相对定位 */
         top: 0;
-        max-height: none;
+        left: 0;
+        height: auto; /* 自动高度 */
         padding: 15px; /* 减小内边距 */
-        flex: none !important;
         width: 100% !important; /* 强制宽度100% */
-        max-width: none; /* 移除最大宽度限制 */
         border-radius: 12px; /* 恢复完整圆角 */
         margin-bottom: 15px;
-        transition: none; /* 禁用过渡效果 */
-        border: 1px solid rgba(0, 0, 0, 0.05); /* 恢复完整边框 */
-        min-height: 350px; /* 减小最小高度 */
+        min-height: 350px; /* 设置最小高度 */
     }
     
     .blog-content .right-column {
         padding: 15px 20px; /* 减小内边距 */
         width: 100%; /* 确保宽度100% */
+        margin-left: 0; /* 重置左边距 */
         border-radius: 12px; /* 恢复完整圆角 */
         border: 1px solid rgba(0, 0, 0, 0.05); /* 恢复完整边框 */
-        min-height: 400px; /* 减小最小高度 */
     }
     
     .resize-handle {
         display: none !important; /* 在小屏设备上隐藏调整手柄 */
-    }
-
-    .separator-line {
-        display: none !important; /* 在小屏设备上隐藏分隔线 */
-    }
-    
-    /* 调整小屏幕下的内容容器 */
-    .blog-content .left-column .article-tree-container,
-    .blog-content .right-column #article-container {
-        min-height: 300px; /* 减小最小高度 */
     }
 }
 
@@ -324,6 +320,29 @@
     padding-left: 0;
     margin: 0;
     list-style: none;
+}
+
+/* 自定义滚动条样式 - 为左侧栏和文章列表容器添加更细更淡的滚动条 */
+.blog-content .left-column::-webkit-scrollbar,
+.article-tree-container::-webkit-scrollbar {
+    width: 5px; /* 更细的滚动条 */
+}
+
+.blog-content .left-column::-webkit-scrollbar-track,
+.article-tree-container::-webkit-scrollbar-track {
+    background: rgba(240, 245, 250, 0.4); /* 非常淡的背景色 */
+    border-radius: 6px;
+}
+
+.blog-content .left-column::-webkit-scrollbar-thumb,
+.article-tree-container::-webkit-scrollbar-thumb {
+    background: rgba(180, 190, 210, 0.35); /* 淡灰蓝色的滑块，低透明度 */
+    border-radius: 6px;
+}
+
+.blog-content .left-column::-webkit-scrollbar-thumb:hover,
+.article-tree-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(160, 175, 200, 0.5); /* 悬停时稍微深一点，但仍然很淡 */
 }
 
 .article-tree-container .tree-item {
@@ -420,4 +439,175 @@
 
 .search-box input:not(:placeholder-shown) + .search-clear {
     display: block;
+}
+
+/* 返回顶部按钮 */
+.back-to-top {
+    position: fixed;
+    right: 30px;
+    bottom: 30px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background-color: rgba(71, 132, 196, 0.85); /* 修改为更柔和的蓝色，降低饱和度和不透明度 */
+    color: white;
+    box-shadow: 0 4px 10px rgba(71, 132, 196, 0.25); /* 匹配的阴影颜色 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px);
+    z-index: 100;
+}
+
+.back-to-top.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.back-to-top:hover {
+    background-color: rgba(95, 149, 194, 0.9); /* 更柔和的悬停颜色 */
+    box-shadow: 0 6px 15px rgba(95, 149, 194, 0.3);
+    transform: translateY(-3px);
+}
+
+.back-to-top:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(95, 149, 194, 0.3);
+}
+
+.back-to-top svg {
+    width: 24px;
+    height: 24px;
+    fill: currentColor;
+}
+
+/* 返回顶部按钮的响应式设计 */
+@media (max-width: 768px) {
+    .back-to-top {
+        right: 20px;
+        bottom: 20px;
+        width: 42px;
+        height: 42px;
+    }
+    
+    .back-to-top svg {
+        width: 20px;
+        height: 20px;
+    }
+}
+
+/* 文章内容区域的占位样式 */
+.placeholder-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 130px); /* 填满整个右栏高度 */
+    width: 100%;
+    background-color: #ffffff; /* 与右栏背景色一致 */
+    border-radius: 0; /* 移除圆角，与右栏一致 */
+    margin: 0; /* 移除外边距 */
+    padding: 30px;
+    text-align: center;
+    border: none; /* 移除虚线边框 */
+    position: absolute; /* 绝对定位 */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.placeholder-image {
+    width: 180px;
+    height: 180px;
+    background-color: #f2f5fa; /* 非常浅的灰蓝色背景 */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 25px;
+    position: relative;
+    overflow: visible; /* 允许内容溢出 */
+}
+
+/* 重新设计CSS图标 - 矩形部分 */
+.placeholder-image::before {
+    content: "";
+    position: absolute;
+    width: 100px; /* 增大矩形宽度 */
+    height: 80px; /* 增大矩形高度 */
+    background: #dde4ed; /* 很浅的灰蓝色矩形 */
+    border-radius: 10px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -40%); /* 居中偏上 */
+}
+
+/* 重新设计CSS图标 - 圆形部分 */
+.placeholder-image::after {
+    content: "";
+    position: absolute;
+    width: 50px; /* 增大圆形尺寸 */
+    height: 50px; /* 增大圆形尺寸 */
+    border-radius: 50%;
+    background: #a6b6c7; /* 中等灰蓝色圆形 */
+    top: 20%; /* 将圆形位置往上移 */
+    left: 50%;
+    transform: translateX(-50%); /* 水平居中 */
+}
+
+.placeholder-text {
+    color: #8090a0; /* 调整为更柔和的文本颜色 */
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 1.6;
+    margin-top: 10px; /* 增加与图像的间距 */
+}
+
+.placeholder-hint {
+    color: #a0b0c0; /* 调整为更柔和的文本颜色 */
+    font-size: 14px;
+    margin-top: 10px;
+    max-width: 80%;
+}
+
+/* 简化呼吸动画效果，使其更加细微 */
+@keyframes breathing {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.01); }
+    100% { transform: scale(1); }
+}
+
+.placeholder-image {
+    animation: breathing 3s infinite ease-in-out;
+}
+
+/* 响应式布局下的占位图调整 */
+@media (max-width: 768px) {
+    .placeholder-content {
+        min-height: 350px; /* 较小的最小高度 */
+        position: relative; /* 恢复正常文档流 */
+    }
+    
+    .placeholder-image {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .placeholder-image::before {
+        width: 80px;
+        height: 60px;
+    }
+    
+    .placeholder-image::after {
+        width: 40px;
+        height: 40px;
+        top: 25px;
+        left: 45px;
+    }
 } 
