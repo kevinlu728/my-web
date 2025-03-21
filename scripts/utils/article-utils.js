@@ -6,6 +6,8 @@
  * @created 2024-03-20
  */
 
+import { UrlUtils } from './url-utils.js';
+
 /**
  * 节流函数 - 限制函数在特定时间内只能执行一次
  * @param {Function} func 要执行的函数
@@ -126,23 +128,18 @@ export function extractCategoryFromProperties(properties) {
  * 从URL中提取查询参数
  * @param {string} paramName 参数名
  * @returns {string|null} 参数值或null
+ * @deprecated 请使用 UrlUtils.getParam 代替
  */
 export function getQueryParam(paramName) {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get(paramName);
+    return UrlUtils.getParam(paramName);
 }
 
 /**
  * 更新URL查询参数而不重新加载页面
  * @param {string} paramName 参数名
  * @param {string} value 参数值
+ * @deprecated 请使用 UrlUtils.updateParam 代替
  */
 export function updateUrlParam(paramName, value) {
-    if (history.pushState) {
-        const searchParams = new URLSearchParams(window.location.search);
-        searchParams.set(paramName, value);
-        const newurl = window.location.protocol + "//" + window.location.host + 
-                       window.location.pathname + '?' + searchParams.toString();
-        window.history.pushState({path: newurl}, '', newurl);
-    }
+    UrlUtils.updateParam(paramName, value);
 } 

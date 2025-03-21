@@ -23,6 +23,7 @@
  */
 
 import { categoryConfig } from '../config/categories.js';
+import { UrlUtils } from '../utils/url-utils.js';
 
 class CategoryManager {
     constructor() {
@@ -273,8 +274,12 @@ class CategoryManager {
             // 设置新的激活状态
             if (category === 'all') {
                 document.querySelector('#article-tree .root-item').classList.add('active');
+                // 从URL中移除分类参数
+                UrlUtils.removeParam('category');
             } else {
                 document.querySelector(`#article-tree .category-tree-item[data-category="${category}"]`)?.classList.add('active');
+                // 更新URL分类参数
+                UrlUtils.updateParam('category', category);
             }
             
             // 触发分类变更回调

@@ -30,7 +30,7 @@ import { categoryManager } from './categoryManager.js';
 import { renderNotionBlocks, initializeLazyLoading } from '../components/articleRenderer.js';
 
 // 导入工具函数
-import { throttle, highlightSearchTerm, getFormattedPageId, updateUrlParam } from '../utils/article-utils.js';
+import { throttle, highlightSearchTerm, getFormattedPageId } from '../utils/article-utils.js';
 import { ArticleCache } from '../utils/article-cache.js';
 import { processArticleListData, searchArticles, filterArticlesByCategory } from '../utils/article-data-processor.js';
 import { 
@@ -43,6 +43,7 @@ import {
     updateLoadMoreStatus 
 } from '../utils/article-ui.js';
 import { renderWelcomePage } from '../components/welcomePageRenderer.js';
+import { UrlUtils } from '../utils/url-utils.js';
 
 import { imageLazyLoader } from '../utils/image-lazy-loader.js';
 import { categoryConfig } from '../config/categories.js';
@@ -644,7 +645,7 @@ class ArticleManager {
 
             try {
                 // 更新URL参数
-                updateUrlParam('article', pageId);
+                UrlUtils.updateParam('article', pageId);
                 
                 // 加载文章数据
                 const articleData = await this.loadAndDisplayArticle(pageId);
@@ -880,9 +881,14 @@ class ArticleManager {
                     this.showArticle(articleId);
                 });
                 
-                // 显示欢迎页面
-                console.log('显示欢迎页面...');
-                this.showWelcomePage();
+                // 从URL初始化状态
+                await this.initializeFromUrl();
+                
+                // 如果URL中没有指定文章，则显示欢迎页面
+                if (!this.currentPageId) {
+                    console.log('显示欢迎页面...');
+                    this.showWelcomePage();
+                }
             } else {
                 console.log('没有文章，不更新分类');
             }
@@ -892,6 +898,35 @@ class ArticleManager {
             console.error('初始化失败:', error);
             showError('初始化失败: ' + error.message);
             throw error;
+        }
+    }
+    
+    // 从URL初始化状态
+    async initializeFromUrl() {
+        try {
+            // 获取URL中的文章ID参数
+            const articleId = UrlUtils.getParam('article');
+            
+            // 如果URL中有文章ID，则加载该文章
+            if (articleId) {
+                console.log('从URL加载文章:', articleId);
+                this.currentPageId = articleId;
+                await this.showArticle(articleId);
+                return true;
+            }
+            
+            // 获取类别参数
+            const category = UrlUtils.getParam('category');
+            if (category) {
+                console.log('从URL选择类别:', category);
+                categoryManager.selectCategory(category);
+                return true;
+            }
+            
+            return false;
+        } catch (error) {
+            console.error('从URL初始化失败:', error);
+            return false;
         }
     }
 
