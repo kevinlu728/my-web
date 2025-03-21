@@ -31,7 +31,9 @@ import { initializeLazyLoading } from '../components/articleRenderer.js';
 
 console.log('🚀 tech-blog.js 开始加载...');
 
-// 初始化页面
+/**
+ * 初始化页面
+ */
 async function initializePage() {
     console.log('开始初始化页面...');
     
@@ -189,6 +191,18 @@ async function initializePage() {
     }
 
     console.log('✅ 页面初始化完成！');
+    
+    // 初始化辅助功能
+    setupDebugShortcut();
+    initializeHelpPopup();
+    initializeArticleSearch();
+    initializeArticleList();
+    
+    // 初始化左栏宽度调整功能
+    initializeResizableLeftColumn();
+    
+    // 为页面图片应用样式（如果有的话）
+    applyImageStyles();
 }
 
 // 导出显示文章的全局函数
@@ -276,7 +290,213 @@ articleManager.displayArticle = function(articleId) {
     }, 500);
 };
 
-// 导出函数以便其他模块使用
-export { applyImageStyles };
+/**
+ * 初始化可调整宽度的左侧栏
+ * 允许用户拖动调整左侧导航栏的宽度，实现类似飞书文档的丝滑体验
+ */
+function initializeResizableLeftColumn() {
+    const leftColumn = document.querySelector('.left-column');
+    const resizeHandle = document.querySelector('.resize-handle');
+    const separatorLine = document.querySelector('.separator-line');
+    
+    if (!leftColumn || !resizeHandle) {
+        console.warn('初始化拖动功能失败: 未找到必要的DOM元素');
+        return;
+    }
+    
+    // 从本地存储中获取保存的宽度
+    const savedWidth = localStorage.getItem('leftColumnWidth');
+    if (savedWidth) {
+        try {
+            const width = parseInt(savedWidth, 10);
+            if (width >= 200 && width <= window.innerWidth * 0.4) {
+                leftColumn.style.width = width + 'px';
+                leftColumn.style.flex = `0 0 ${width}px`;
+            }
+        } catch (e) {
+            console.error('解析保存的宽度值时出错:', e);
+        }
+    }
+    
+    let isResizing = false;
+    let startPageX;
+    let startWidth;
+    
+    // 添加特殊的拖动指示器，类似飞书文档
+    function showDragIndicator() {
+        // 显示分隔线，确保它在全高的区域内可见
+        if (separatorLine) {
+            separatorLine.style.height = '100%';
+            separatorLine.style.opacity = '1';
+        }
+    }
+    
+    // 隐藏拖动指示器
+    function hideDragIndicator() {
+        if (separatorLine) {
+            separatorLine.style.opacity = '0.6';
+        }
+    }
+    
+    // 双击重置宽度
+    resizeHandle.addEventListener('dblclick', () => {
+        const defaultWidth = 250;
+        leftColumn.style.width = `${defaultWidth}px`;
+        leftColumn.style.flex = `0 0 ${defaultWidth}px`;
+        localStorage.setItem('leftColumnWidth', String(defaultWidth));
+    });
+    
+    // 处理拖动开始
+    function handleDragStart(e) {
+        e.preventDefault();
+        
+        // 如果是触摸事件，获取第一个触摸点
+        startPageX = e.pageX || (e.touches && e.touches[0].pageX);
+        startWidth = leftColumn.offsetWidth;
+        
+        isResizing = true;
+        document.body.style.cursor = 'col-resize';
+        resizeHandle.classList.add('active');
+        
+        // 显示拖动指示器
+        showDragIndicator();
+        
+        // 添加全局事件监听器
+        document.addEventListener('mousemove', handleDrag);
+        document.addEventListener('touchmove', handleDrag, { passive: false });
+        document.addEventListener('mouseup', handleDragEnd);
+        document.addEventListener('touchend', handleDragEnd);
+        
+        // 阻止文本选择，提升拖动体验
+        document.body.style.userSelect = 'none';
+        document.body.style.webkitUserSelect = 'none';
+        document.body.style.msUserSelect = 'none';
+    }
+    
+    // 处理拖动过程
+    function handleDrag(e) {
+        if (!isResizing) return;
+        
+        e.preventDefault();
+        const pageX = e.pageX || (e.touches && e.touches[0].pageX);
+        
+        if (!pageX) return;
+        
+        const deltaX = pageX - startPageX;
+        let newWidth = startWidth + deltaX;
+        
+        // 设置最小和最大宽度限制
+        const minWidth = 200;
+        const maxWidth = Math.min(window.innerWidth * 0.4, 480); // 最大宽度不超过40%或480px
+        
+        if (newWidth < minWidth) {
+            newWidth = minWidth;
+        } else if (newWidth > maxWidth) {
+            newWidth = maxWidth;
+        }
+        
+        // 立即应用新宽度，无需动画过渡
+        leftColumn.style.transition = 'none';
+        leftColumn.style.width = `${newWidth}px`;
+        leftColumn.style.flex = `0 0 ${newWidth}px`;
+        
+        // 请求动画帧以确保平滑渲染
+        requestAnimationFrame(() => {
+            document.body.style.cursor = 'col-resize';
+        });
+    }
+    
+    // 处理拖动结束
+    function handleDragEnd() {
+        if (!isResizing) return;
+        
+        isResizing = false;
+        document.body.style.cursor = '';
+        resizeHandle.classList.remove('active');
+        
+        // 隐藏拖动指示器
+        hideDragIndicator();
+        
+        // 恢复过渡效果
+        leftColumn.style.transition = '';
+        
+        // 移除全局事件监听器
+        document.removeEventListener('mousemove', handleDrag);
+        document.removeEventListener('touchmove', handleDrag);
+        document.removeEventListener('mouseup', handleDragEnd);
+        document.removeEventListener('touchend', handleDragEnd);
+        
+        // 恢复文本选择功能
+        document.body.style.userSelect = '';
+        document.body.style.webkitUserSelect = '';
+        document.body.style.msUserSelect = '';
+        
+        // 保存当前宽度到本地存储
+        localStorage.setItem('leftColumnWidth', String(leftColumn.offsetWidth));
+    }
+    
+    // 注册事件监听器
+    resizeHandle.addEventListener('mousedown', handleDragStart);
+    resizeHandle.addEventListener('touchstart', handleDragStart, { passive: false });
+    
+    // 窗口大小变化时调整
+    window.addEventListener('resize', () => {
+        const maxWidth = Math.min(window.innerWidth * 0.4, 480);
+        const currentWidth = leftColumn.offsetWidth;
+        
+        if (currentWidth > maxWidth) {
+            leftColumn.style.width = `${maxWidth}px`;
+            leftColumn.style.flex = `0 0 ${maxWidth}px`;
+            localStorage.setItem('leftColumnWidth', String(maxWidth));
+        }
+    });
+}
 
-export { initializePage }; 
+// 当DOM加载完成时，确保拖动手柄正确初始化
+document.addEventListener('DOMContentLoaded', () => {
+    // 稍微延迟以确保所有样式已加载
+    setTimeout(() => {
+        const leftColumn = document.querySelector('.left-column');
+        const resizeHandle = document.querySelector('.resize-handle');
+        
+        if (leftColumn && resizeHandle) {
+            // 确保拖动手柄是可见的
+            resizeHandle.style.visibility = 'visible';
+        }
+    }, 100);
+});
+
+/**
+ * 设置调试模式快捷键
+ */
+function setupDebugShortcut() {
+    // 这个函数在实际代码中应该会被实现
+    console.log('setupDebugShortcut: 未实现的函数');
+}
+
+/**
+ * 初始化帮助弹窗
+ */
+function initializeHelpPopup() {
+    // 这个函数在实际代码中应该会被实现
+    console.log('initializeHelpPopup: 未实现的函数');
+}
+
+/**
+ * 初始化文章搜索功能
+ */
+function initializeArticleSearch() {
+    // 这个函数在实际代码中应该会被实现
+    console.log('initializeArticleSearch: 未实现的函数');
+}
+
+/**
+ * 初始化文章列表
+ */
+function initializeArticleList() {
+    // 这个函数在实际代码中应该会被实现
+    console.log('initializeArticleList: 未实现的函数');
+}
+
+// 导出函数供外部使用
+export { initializePage, applyImageStyles }; 

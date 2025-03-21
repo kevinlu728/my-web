@@ -3,9 +3,10 @@
     top: 0;
     left: 0;
     right: 0;
-    background-color: rgba(255, 255, 255, 0.95);
+    background-color: rgba(255, 255, 255, 0.98);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     z-index: 1000;
+    height: 60px;
 }
 
 .nav-container {
@@ -15,6 +16,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    height: 100%;
 }
 
 .logo a {
@@ -28,6 +30,9 @@
     display: flex;
     list-style: none;
     gap: 2rem;
+    margin: 0;
+    padding: 0;
+    background-color: transparent;
 }
 
 .nav-menu a {
@@ -35,6 +40,9 @@
     text-decoration: none;
     font-weight: 500;
     transition: color 0.3s;
+    position: relative;
+    z-index: 2;
+    background-color: transparent;
 }
 
 .nav-menu a:hover {
@@ -46,6 +54,29 @@
     background: none;
     border: none;
     cursor: pointer;
+    padding: 5px;
+    z-index: 10;
+}
+
+.hamburger span {
+    display: block;
+    width: 25px;
+    height: 3px;
+    margin: 5px 0;
+    background-color: var(--primary-color);
+    transition: all 0.3s ease;
+}
+
+.hamburger.active span:nth-child(1) {
+    transform: rotate(45deg) translate(5px, 6px);
+}
+
+.hamburger.active span:nth-child(2) {
+    opacity: 0;
+}
+
+.hamburger.active span:nth-child(3) {
+    transform: rotate(-45deg) translate(5px, -6px);
 }
 
 .web-title {
@@ -76,10 +107,11 @@
         top: 100%;
         left: 0;
         right: 0;
-        background-color: white;
+        background-color: rgba(255, 255, 255, 0.98);
         flex-direction: column;
         padding: 1rem;
         text-align: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
 
     .nav-menu.active {

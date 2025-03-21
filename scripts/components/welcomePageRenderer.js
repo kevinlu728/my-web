@@ -199,111 +199,141 @@ function renderRecentArticles(articles, onArticleSelect) {
  * 添加欢迎页面样式
  */
 function addWelcomePageStyles() {
+    // 移除已存在的样式标签
     const existingStyle = document.getElementById('welcome-page-style');
-    if (!existingStyle) {
-        const style = document.createElement('style');
-        style.id = 'welcome-page-style';
-        style.textContent = `
-            .welcome-page {
-                padding: 2rem;
-                max-width: 800px;
-                margin: 0 auto;
-            }
-            
-            .welcome-header {
-                text-align: center;
-                margin-bottom: 3rem;
-                padding-bottom: 2rem;
-                border-bottom: 1px solid #eee;
-            }
-            
-            .welcome-header h1 {
-                font-size: 2.5rem;
-                color: #2c3e50;
-                margin-bottom: 1rem;
-            }
-            
-            .welcome-subtitle {
-                font-size: 1.2rem;
-                color: #7f8c8d;
-            }
-            
-            .welcome-section {
-                margin-bottom: 2.5rem;
-            }
-            
-            .welcome-section h2 {
-                font-size: 1.5rem;
-                color: #2c3e50;
-                margin-bottom: 1rem;
-                border-left: 4px solid #3498db;
-                padding-left: 10px;
-            }
-            
-            .welcome-section ul {
-                padding-left: 1.5rem;
-            }
-            
-            .welcome-section li {
-                margin-bottom: 0.5rem;
-                color: #34495e;
-            }
-            
-            .category-tags {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 0.8rem;
-                margin-top: 1rem;
-            }
-            
-            .category-tag {
-                padding: 0.4rem 1rem;
-                border-radius: 20px;
-                font-size: 0.9rem;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                border: none;
-            }
-            
-            .category-tag:hover {
-                transform: translateY(-1px);
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            }
-            
-            .recent-articles {
-                margin-top: 1rem;
-            }
-            
-            .recent-article-item {
-                padding: 1rem;
-                border-radius: 8px;
-                margin-bottom: 1rem;
-                background-color: #f8f9fa;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
-            
-            .recent-article-item:hover {
-                background-color: #e9ecef;
-                transform: translateY(-2px);
-                box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            }
-            
-            .recent-article-title {
-                font-weight: 500;
-                color: #2c3e50;
-            }
-            
-            .recent-article-date {
-                font-size: 0.85rem;
-                color: #7f8c8d;
-            }
-        `;
-        document.head.appendChild(style);
+    if (existingStyle) {
+        existingStyle.parentNode.removeChild(existingStyle);
     }
+    
+    // 创建全新的样式标签
+    const styleElement = document.createElement('style');
+    styleElement.id = 'welcome-page-style';
+    styleElement.textContent = `
+        .welcome-page {
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .welcome-header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .welcome-header h1 {
+            font-size: 2.5rem;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+        
+        .welcome-subtitle {
+            font-size: 1.2rem;
+            color: #7f8c8d;
+        }
+        
+        .welcome-section {
+            margin-bottom: 2.5rem;
+        }
+        
+        .welcome-section h2 {
+            font-size: 1.5rem;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            border-left: 4px solid #3498db;
+            padding-left: 10px;
+        }
+        
+        .welcome-section ul {
+            padding-left: 1.5rem;
+        }
+        
+        .welcome-section li {
+            margin-bottom: 0.5rem;
+            color: #34495e;
+        }
+        
+        .category-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem !important; /* 适中间距 */
+            margin-top: 1.2rem !important; /* 适中上边距 */
+        }
+        
+        .category-tag {
+            padding: 0.5rem 1.2rem !important; /* 适中内边距 */
+            border-radius: 20px !important; /* 适中圆角 */
+            font-size: 1rem !important; /* 适中字体 */
+            font-weight: 500 !important; /* 减轻字重 */
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important; /* 减轻阴影 */
+            min-width: 60px !important; /* 减小最小宽度 */
+            text-align: center !important;
+        }
+        
+        .category-tag:hover {
+            transform: translateY(-2px) !important; /* 减小悬停效果 */
+            box-shadow: 0 3px 6px rgba(0,0,0,0.15) !important;
+        }
+        
+        .recent-articles {
+            margin-top: 1rem;
+        }
+        
+        .recent-article-item {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            background-color: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .recent-article-item:hover {
+            background-color: #e9ecef;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .recent-article-title {
+            font-weight: 500;
+            color: #2c3e50;
+        }
+        
+        .recent-article-date {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+        }
+    `;
+    
+    // 添加到文档头部
+    document.head.appendChild(styleElement);
+    
+    // 为确保样式优先级，也直接对当前页面中的元素设置样式
+    setTimeout(() => {
+        const tags = document.querySelectorAll('.category-tag');
+        tags.forEach(tag => {
+            tag.style.padding = '0.5rem 1.2rem';
+            tag.style.fontSize = '1rem'; 
+            tag.style.fontWeight = '500';
+            tag.style.borderRadius = '20px';
+            tag.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            tag.style.minWidth = '60px';
+            tag.style.textAlign = 'center';
+        });
+        
+        const tagContainer = document.querySelector('.category-tags');
+        if (tagContainer) {
+            tagContainer.style.gap = '1rem';
+            tagContainer.style.marginTop = '1.2rem';
+        }
+    }, 0);
 }
 
 /**

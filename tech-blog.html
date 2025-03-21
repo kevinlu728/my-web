@@ -208,26 +208,23 @@
 </head>
 <body class="article-page">
     <header class="header">
-        <div class="nav-container">
-            <div class="web-title">云 栖 思 渊</div>
-            <nav>
-                <ul class="nav-menu">
-                    <li><a href="index.html">首页</a></li>
-                    <li><a href="tech-blog.html" aria-current="page">技术沉淀</a></li>
-                    <li><a href="/blog">生活点滴</a></li>
-                    <li><a href="/contact">联系方式</a></li>
-                </ul>
-            </nav>
-        </div>
+        <nav class="nav-container">
+            <div class="web-title">
+                云 栖 思 渊
+            </div>
+            <button class="hamburger" aria-label="菜单">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <ul class="nav-menu">
+                <li><a href="index.html">首页</a></li>
+                <li><a href="tech-blog.html" aria-current="page">技术沉淀</a></li>
+                <li><a href="blog">生活点滴</a></li>
+                <li><a href="contact">联系方式</a></li>
+            </ul>
+        </nav>
     </header>
-    
-    <!-- 面包屑导航 -->
-    <nav class="breadcrumb" aria-label="面包屑导航">
-        <ol>
-            <li><a href="index.html">首页</a></li>
-            <li aria-current="page">技术沉淀</li>
-        </ol>
-    </nav>
     
     <main class="blog-content">
         <div class="left-column">
@@ -247,6 +244,7 @@
                     <li class="tree-item root-item active" data-category="all">
                         <div class="tree-item-content">
                             <span class="tree-toggle"><i class="fas fa-chevron-right"></i></span>
+                            <span class="root-icon"><i class="fas fa-folder"></i></span>
                             <span class="item-name">全部文章</span>
                             <span class="item-count">(0)</span>
                         </div>
@@ -311,6 +309,9 @@
                 </div>
             </div>
         </div>
+        <div class="resize-handle" title="拖动此处调整左侧栏宽度 (双击可重置)">
+            <div class="separator-line"></div>
+        </div>
         <div class="right-column">
             <div id="article-container">
                 <h2 class="article-title">温故知新，回望前行</h2>
@@ -321,25 +322,20 @@
         </div>
     </main>
 
-    <footer class="footer">
-        <div class="copyright">
-            © 2024 陆凯 - All rights reserved
-        </div>
-    </footer>
-
     <!-- 先加载依赖 -->
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js" defer></script>
     
     <!-- 使用统一的模块加载方式 -->
     <script type="module">
-        // 导入所需模块
-        import { imageLazyLoader } from './scripts/utils/image-lazy-loader.js';
-        import { articleManager } from './scripts/managers/articleManager.js';
-        import { categoryManager } from './scripts/managers/categoryManager.js';
-        import config from './scripts/config/config.js';
-        import { tableLazyLoader } from './scripts/utils/table-lazy-loader.js';
-        import { codeLazyLoader } from './scripts/utils/code-lazy-loader.js';
-        import { initializePage } from './scripts/pages/tech-blog.js';
+        // 导入必要的模块
+        import config from './scripts/config/config.js?v=1.0.1';
+        import { articleManager } from './scripts/managers/articleManager.js?v=1.0.1';
+        import { categoryManager } from './scripts/managers/categoryManager.js?v=1.0.1';
+        import { imageLazyLoader } from './scripts/utils/image-lazy-loader.js?v=1.0.1';
+        import { tableLazyLoader } from './scripts/utils/table-lazy-loader.js?v=1.0.1';
+        import { codeLazyLoader } from './scripts/utils/code-lazy-loader.js?v=1.0.1';
+        import { initializePage } from './scripts/pages/tech-blog.js?v=1.0.1';
+        import { initNavigation } from './scripts/components/navigation.js?v=1.0.1';
         
         // 将模块导出到全局作用域，方便调试
         window.imageLazyLoader = imageLazyLoader;
@@ -357,7 +353,47 @@
         // 页面加载完成后初始化
         document.addEventListener('DOMContentLoaded', () => {
             console.log('初始化技术博客页面...');
+            
+            // 进行详细的依赖检查
+            console.log('🔍 检查模块导入状态：');
+            console.log('- config:', typeof config !== 'undefined' ? '✅已加载' : '❌未加载');
+            console.log('- articleManager:', typeof articleManager !== 'undefined' ? '✅已加载' : '❌未加载');
+            console.log('- categoryManager:', typeof categoryManager !== 'undefined' ? '✅已加载' : '❌未加载');
+            console.log('- imageLazyLoader:', typeof imageLazyLoader !== 'undefined' ? '✅已加载' : '❌未加载');
+            console.log('- tableLazyLoader:', typeof tableLazyLoader !== 'undefined' ? '✅已加载' : '❌未加载');
+            console.log('- codeLazyLoader:', typeof codeLazyLoader !== 'undefined' ? '✅已加载' : '❌未加载');
+            console.log('- initializePage:', typeof initializePage !== 'undefined' ? '✅已加载' : '❌未加载');
+            console.log('- initNavigation:', typeof initNavigation !== 'undefined' ? '✅已加载' : '❌未加载');
+            
+            // 确保所有导入的模块都已加载
+            if (!articleManager || !categoryManager) {
+                console.error('关键模块加载失败，请检查控制台错误');
+                const errorContainer = document.getElementById('article-container');
+                if (errorContainer) {
+                    errorContainer.innerHTML = `
+                        <div class="error-message">
+                            <h2>加载出错</h2>
+                            <p>很抱歉，页面加载失败。</p>
+                            <p>以下是常见的解决方法：</p>
+                            <ul style="text-align: left; margin: 1rem auto; max-width: 400px;">
+                                <li>尝试清除浏览器缓存后刷新页面</li>
+                                <li>检查您的网络连接</li>
+                                <li>尝试使用其他浏览器访问</li>
+                                <li>如果问题持续存在，请联系网站管理员</li>
+                            </ul>
+                            <div class="error-actions">
+                                <button onclick="location.reload()">刷新页面</button>
+                                <button onclick="location.reload(true)">强制刷新（清除缓存）</button>
+                            </div>
+                        </div>
+                    `;
+                }
+                return;
+            }
+            
+            // 初始化页面组件
             initializePage();
+            initNavigation(); // 初始化导航
             
             // 检查模块加载状态
             console.log('🔍 检查模块加载状态：');
@@ -376,5 +412,54 @@
             }
         });
     </script>
+    
+    <style>
+    /* 添加错误消息样式 */
+    .error-message {
+        padding: 2rem;
+        text-align: center;
+        background-color: #fff3f3;
+        border-radius: 8px;
+        margin: 2rem auto;
+        max-width: 600px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .error-message h2 {
+        color: #e53935;
+        margin-bottom: 1rem;
+    }
+    
+    .error-message button {
+        background-color: #3370ff;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-top: 1rem;
+        font-size: 1rem;
+    }
+    
+    .error-message button:hover {
+        background-color: #2952cc;
+    }
+    
+    .error-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin-top: 1rem;
+    }
+    
+    .error-message ul {
+        list-style-type: circle;
+        padding-left: 20px;
+    }
+    
+    .error-message li {
+        margin-bottom: 8px;
+    }
+    </style>
 </body>
 </html> 

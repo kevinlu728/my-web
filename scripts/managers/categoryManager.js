@@ -144,6 +144,7 @@ class CategoryManager {
                 categoryNode.innerHTML = `
                     <div class="tree-item-content">
                         <span class="tree-toggle"><i class="fas fa-chevron-right"></i></span>
+                        <span class="category-icon"><i class="fas fa-tag"></i></span>
                         <span class="item-name">${this.getCategoryDisplayName(category)}</span>
                         <span class="item-count">(${count})</span>
                     </div>
@@ -289,9 +290,10 @@ class CategoryManager {
             // 提取文章标题
             const title = article.title || 'Untitled';
             
-            // 不再显示日期
+            // 添加文档图标和标题
             articleNode.innerHTML = `
                 <div class="tree-item-content">
+                    <span class="article-icon"><i class="fas fa-file-alt"></i></span>
                     <span class="item-name">${title}</span>
                 </div>
             `;

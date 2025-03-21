@@ -53,10 +53,51 @@
     opacity: 0.8;
 }
 
+/* 分类图标样式 */
+.category-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.5rem;
+    color: #a0aec0;
+    font-size: 0.9rem;
+    transition: color 0.3s ease;
+}
+
+/* 选中状态下的分类图标高亮 */
+.category-tree-item.active .category-icon {
+    color: #0891b2;
+}
+
+.category-tree-item:hover .category-icon {
+    color: #4a5568;
+}
+
+/* 文章图标样式 */
+.article-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.5rem;
+    color: #a0aec0;
+    font-size: 0.9rem;
+    transition: color 0.3s ease;
+}
+
+/* 选中状态下的文章图标高亮 */
+.article-tree-item.active .article-icon {
+    color: #0891b2;
+}
+
+.article-tree-item:hover .article-icon {
+    color: #4a5568;
+}
+
 /* 树形文章列表样式 */
 .article-tree-container {
     margin-bottom: 2.5rem;
     padding: 0;
+    width: 100%;
 }
 
 .article-tree-container h2 {
@@ -74,11 +115,13 @@
     background-color: transparent;
     border: none;
     padding: 0.5rem 0;
+    width: 100%;
 }
 
 .tree-item {
     margin-bottom: 0.25rem;
     transition: all 0.2s ease;
+    width: 100%;
 }
 
 .tree-item-content {
@@ -92,7 +135,7 @@
     color: #4a5568;
     position: relative;
     overflow: hidden;
-    margin: 0 0.3rem;
+    margin: 0 0;
 }
 
 .tree-item-content:hover {
@@ -130,7 +173,7 @@
 }
 
 .article-tree-item > .tree-item-content {
-    margin-left: 1.8rem;
+    margin-left: 1.2rem;
     padding-left: 0.8rem;
     border-left: none;
 }
@@ -189,7 +232,7 @@
 
 .tree-children {
     list-style: none;
-    padding-left: 1.2rem;
+    padding-left: 0.8rem;
     margin: 0.2rem 0 0.2rem 0.3rem;
     display: none;
     position: relative;
@@ -327,17 +370,19 @@
 .search-section {
     margin-bottom: 2rem;
     padding: 0;
+    width: 100%;
 }
 
 .search-box {
     position: relative;
     display: flex;
     align-items: center;
+    width: 100%;
 }
 
 #article-search {
     width: 100%;
-    padding: 0.8rem 2.5rem 0.8rem 1rem;
+    padding: 0.8rem 2.5rem 0.8rem 0.8rem;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
     font-size: 0.95rem;
@@ -432,8 +477,21 @@
     }
     
     #article-search {
-        padding: 0.6rem 2.2rem 0.6rem 0.8rem;
+        padding: 0.6rem 2.2rem 0.6rem 0.6rem;
         font-size: 0.9rem;
+    }
+
+    .tree-item-content {
+        padding: 0.4rem 0.6rem;
+    }
+    
+    .article-tree-item > .tree-item-content {
+        margin-left: 0.8rem;
+        padding-left: 0.6rem;
+    }
+    
+    .tree-children {
+        padding-left: 0.6rem;
     }
 }
 
@@ -659,4 +717,24 @@
 
 .tree-item.expanded > .tree-children {
     animation: tree-expand 0.3s ease-out forwards;
+}
+
+/* 根目录图标样式 */
+.root-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.5rem;
+    color: #a0aec0;
+    font-size: 0.9rem;
+    transition: color 0.3s ease;
+}
+
+/* 选中状态下的根目录图标高亮 */
+.root-item.active .root-icon {
+    color: #0891b2;
+}
+
+.root-item:hover .root-icon {
+    color: #4a5568;
 } 
