@@ -83,13 +83,16 @@ class CategoryManager {
     }
 
     // 渲染文章树形列表
-    renderArticleTree() {
+    renderArticleTree(isRerender = false) {
         const articleTree = document.getElementById('article-tree');
         if (!articleTree) return;
 
         // 清除除根节点以外的所有内容
         const rootItem = articleTree.querySelector('.root-item');
         if (!rootItem) return;
+
+        // 检查是否是处于全部收起状态
+        const isAllCollapsed = rootItem.classList.contains('all-collapsed');
 
         // 更新根节点信息
         const rootItemContent = rootItem.querySelector('.item-count');
@@ -100,6 +103,13 @@ class CategoryManager {
         // 清除所有子项
         const treeChildren = rootItem.querySelector('.tree-children');
         if (treeChildren) {
+            // 如果是全部收起状态，则不渲染任何子项
+            if (isAllCollapsed) {
+                treeChildren.innerHTML = '';
+                console.log('全部收起状态，不渲染子分类');
+                return;
+            }
+
             treeChildren.innerHTML = '';
 
             // 使用自定义顺序排序分类
@@ -174,18 +184,60 @@ class CategoryManager {
             });
         }
 
-        // 为根节点添加点击事件
-        const rootContent = rootItem.querySelector('.tree-item-content');
-        if (rootContent) {
-            rootContent.addEventListener('click', (e) => {
-                e.stopPropagation();
-                rootItem.classList.toggle('expanded');
-                this.updateActiveState('all');
-            });
+        // 只在初始化时（非重新渲染）添加根节点点击事件
+        if (!isRerender) {
+            // 为根节点添加点击事件
+            const rootContent = rootItem.querySelector('.tree-item-content');
+            if (rootContent) {
+                // 移除现有的事件监听器（如果有）
+                rootContent.replaceWith(rootContent.cloneNode(true));
+                const newRootContent = rootItem.querySelector('.tree-item-content');
+                
+                newRootContent.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    
+                    // 简化判断条件：只要不处于全部收起状态，点击就收起
+                    // 如果已经是收起状态，点击则展开
+                    if (!rootItem.classList.contains('all-collapsed')) {
+                        // 当用户点击"全部文章"，收起整个列表
+                        console.log('收起整个文章列表');
+                        
+                        // 标记为全部收起状态，移除展开类，确保箭头指向正确
+                        rootItem.classList.add('all-collapsed');
+                        rootItem.classList.remove('expanded');
+                        
+                        // 清空已展开分类集合
+                        this.expandedCategories.clear();
+                        
+                        // 清空所有子分类节点
+                        const treeChildren = rootItem.querySelector('.tree-children');
+                        if (treeChildren) {
+                            treeChildren.innerHTML = '';
+                        }
+                    } else {
+                        // 当用户从收起状态点击，则展开并显示分类
+                        console.log('展开文章列表，显示所有分类');
+                        
+                        // 移除全部收起状态，添加展开状态
+                        rootItem.classList.remove('all-collapsed');
+                        rootItem.classList.add('expanded');
+                        
+                        // 重新渲染分类列表
+                        this.renderArticleTree(true);
+                    }
+                    
+                    // 更新激活状态，高亮"全部文章"
+                    this.updateActiveState('all');
+                });
+            }
         }
 
-        // 默认展开根节点
-        rootItem.classList.add('expanded');
+        // 默认展开根节点（除非处于全部收起状态）
+        if (!isAllCollapsed) {
+            rootItem.classList.add('expanded');
+        } else {
+            rootItem.classList.remove('expanded');
+        }
     }
 
     // 加载特定分类下的文章
@@ -273,10 +325,16 @@ class CategoryManager {
             
             // 设置新的激活状态
             if (category === 'all') {
-                document.querySelector('#article-tree .root-item').classList.add('active');
+                const rootItem = document.querySelector('#article-tree .root-item');
+                rootItem.classList.add('active');
+                
                 // 从URL中移除分类参数
                 UrlUtils.removeParam('category');
             } else {
+                // 如果选择了特定分类，确保不处于全部收起状态
+                const rootItem = document.querySelector('#article-tree .root-item');
+                rootItem.classList.remove('all-collapsed');
+                
                 document.querySelector(`#article-tree .category-tree-item[data-category="${category}"]`)?.classList.add('active');
                 // 更新URL分类参数
                 UrlUtils.updateParam('category', category);
@@ -304,6 +362,10 @@ class CategoryManager {
             document.querySelectorAll('#article-tree .category-tree-item').forEach(item => {
                 item.classList.remove('active');
             });
+            
+            // 如果选择了文章，确保不处于全部收起状态
+            const rootItem = document.querySelector('#article-tree .root-item');
+            rootItem.classList.remove('all-collapsed');
         }
     }
 

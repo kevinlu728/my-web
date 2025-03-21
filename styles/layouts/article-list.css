@@ -146,18 +146,32 @@
     opacity: 0.5;
 }
 
+/* 基本箭头样式 - 所有箭头默认向右 */
 .tree-toggle i {
     font-size: 0.75rem;
     color: #bbc4d4;
     transition: transform 0.3s ease;
+    transform: rotate(0deg); /* 默认向右 */
+    display: inline-block; /* 确保变换有效 */
 }
 
 .tree-item-content:hover .tree-toggle {
     opacity: 0.7;
 }
 
-.tree-item.expanded > .tree-item-content .tree-toggle {
-    transform: rotate(90deg);
+/* 展开状态下的箭头 - 所有展开的项目箭头向下 */
+.tree-item.expanded > .tree-item-content .tree-toggle i {
+    transform: rotate(90deg); /* 旋转为向下 */
+}
+
+/* 全部收起状态下的箭头 - 指向右侧，表示可以再次展开 */
+#article-tree .root-item.all-collapsed > .tree-item-content .tree-toggle i {
+    transform: rotate(0deg); /* 向右 */
+}
+
+/* 全部收起状态下隐藏子项 */
+#article-tree .root-item.all-collapsed > .tree-children {
+    display: none !important;
 }
 
 .item-name {
@@ -191,6 +205,11 @@
     color: #3182ce;
     border-color: transparent;
     box-shadow: none;
+}
+
+/* 只高亮标题部分，而不是整个根节点 */
+#article-tree .root-item.active {
+    background-color: transparent;
 }
 
 .tree-item.active > .tree-item-content .tree-toggle i {
