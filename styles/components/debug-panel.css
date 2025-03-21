@@ -84,27 +84,76 @@
     box-shadow: 0 0 1px #93C5FD;
 }
 
-/* 调试面板容器 */
+/* 调试面板容器 - 现在是浮动面板 */
 #debug-panel {
     display: none;
-    margin-bottom: 20px;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 380px;
     padding: 15px;
     background: #ffffff;
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
     border: 1px solid #e5e7eb;
-    animation: slideDown 0.3s ease;
-    position: relative;
+    animation: slideUp 0.3s ease;
+    z-index: 1000;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+/* 可拖动提示条 */
+#debug-panel::before {
+    content: "";
+    position: absolute;
+    top: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50px;
+    height: 4px;
+    background-color: #e2e8f0;
+    border-radius: 4px;
+    cursor: grab;
+}
+
+/* 滚动条美化 */
+#debug-panel::-webkit-scrollbar {
+    width: 5px;
+}
+
+#debug-panel::-webkit-scrollbar-track {
+    background: rgba(240, 245, 250, 0.4);
+    border-radius: 6px;
+}
+
+#debug-panel::-webkit-scrollbar-thumb {
+    background: rgba(180, 190, 210, 0.35);
+    border-radius: 6px;
+}
+
+#debug-panel::-webkit-scrollbar-thumb:hover {
+    background: rgba(160, 175, 200, 0.5);
+}
+
+/* 向上滑动动画 */
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 替换原有的滑动动画 */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 /* API配置区域样式 */
 #api-config {
-    margin-bottom: 15px;
-    padding: 15px;
-    background-color: #f8fafc !important;
-    border: 1px solid #e2e8f0 !important;
-    border-radius: 8px !important;
-    color: #334155 !important;
+    margin-bottom: 16px;
+    padding: 14px;
+    border-radius: 8px;
+    background-color: #fafafa;
+    border: 1px solid #e5e7eb;
 }
 
 #api-config .config-item {
@@ -135,9 +184,9 @@
 /* 调试控制按钮 */
 #debug-controls {
     display: flex;
-    gap: 8px;
     flex-wrap: wrap;
-    margin-bottom: 15px;
+    gap: 8px;
+    margin-bottom: 16px;
 }
 
 #debug-controls button {
@@ -276,12 +325,6 @@
     color: #334155;
 }
 
-/* 动画效果 */
-@keyframes slideDown {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
 /* 状态消息样式 */
 .status-message {
     padding: 10px 15px;
@@ -308,11 +351,6 @@
     border: 1px solid #bae6fd;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
 /* 键盘快捷键提示 */
 .keyboard-shortcut {
     display: inline-block;
@@ -327,18 +365,19 @@
 
 /* 环境信息区域 */
 .debug-env-info {
-    margin-top: 12px;
-    padding: 12px;
-    border-radius: 6px;
+    margin-bottom: 16px;
+    padding: 14px;
+    border-radius: 8px;
     background-color: #f8fafc;
     border: 1px solid #e2e8f0;
     font-size: 13px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
 .env-title {
     font-weight: 600;
     color: #334155;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     font-size: 14px;
 }
 
@@ -359,8 +398,115 @@
 
 /* 版本信息 */
 .version-info {
-    margin-top: 10px;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid #f1f5f9;
     font-size: 11px;
     color: #94a3b8;
     text-align: right;
+}
+
+/* 资源监控部分样式 */
+.resource-monitor-section {
+    margin-top: 15px;
+    padding: 15px;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+
+.resource-monitor-section .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.resource-status-title {
+    font-weight: 600;
+    color: #334155;
+    font-size: 14px;
+}
+
+.resource-status-title.has-error {
+    color: #e53e3e;
+}
+
+.resource-status-alert {
+    color: #e53e3e;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.7; }
+    50% { opacity: 1; }
+    100% { opacity: 0.7; }
+}
+
+.resource-status-container {
+    max-height: 150px;
+    overflow-y: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background-color: #ffffff;
+    padding: 8px;
+}
+
+.resource-status-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.resource-status-item {
+    display: flex;
+    align-items: center;
+    padding: 5px 8px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 13px;
+}
+
+.resource-status-item:last-child {
+    border-bottom: none;
+}
+
+.resource-status-item .status-icon {
+    margin-right: 8px;
+    font-size: 12px;
+}
+
+.resource-status-item .status-loading {
+    color: #f59e0b;
+}
+
+.resource-status-item .status-success {
+    color: #10b981;
+}
+
+.resource-status-item .status-error {
+    color: #ef4444;
+}
+
+.resource-status-item .resource-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #334155;
+}
+
+.clear-resources-btn {
+    padding: 4px 8px;
+    font-size: 12px;
+    background-color: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.clear-resources-btn:hover {
+    background-color: #e2e8f0;
+    color: #334155;
 } 

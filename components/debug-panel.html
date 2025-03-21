@@ -1,0 +1,71 @@
+<!-- 调试面板组件 -->
+<!-- 
+  使用方法：
+  1. 在HTML head中引入样式： <link rel="stylesheet" href="./styles/components/debug-panel.css">
+  2. 在合适位置引入此组件： <div id="debug-panel-container"></div>
+  3. 在JS中加载组件： 
+     document.getElementById('debug-panel-container').innerHTML = await fetch('./components/debug-panel.html').then(res => res.text());
+  4. 初始化组件功能： import { initDebugPanel } from './scripts/components/debugPanel.js';
+-->
+
+<!-- 调试开关部分 - 通常放在侧边栏等位置 -->
+<div class="debug-section">
+    <div class="debug-toggle">
+        <label class="toggle-switch">
+            <input type="checkbox" id="debug-mode-toggle">
+            <span class="toggle-slider"></span>
+        </label>
+        <span class="debug-toggle-text">调试模式</span>
+        <span class="keyboard-shortcut" id="debug-shortcut">
+            Ctrl+Shift+D
+        </span>
+    </div>
+</div>
+
+<!-- 调试面板部分 - 浮动面板，会显示在页面底部 -->
+<div id="debug-panel" class="floating-debug-panel">
+    <!-- 环境信息部分 -->
+    <div id="debug-env-info" class="debug-env-info">
+        <div class="env-title">环境信息</div>
+        <div class="env-item">
+            <span class="env-label">API版本:</span>
+            <span class="env-value" id="api-version">获取中...</span>
+        </div>
+        <div class="env-item">
+            <span class="env-label">运行环境:</span>
+            <span class="env-value" id="env-mode">开发</span>
+        </div>
+        <div class="env-item">
+            <span class="env-label">API实现:</span>
+            <span class="env-value" id="api-impl">标准</span>
+        </div>
+    </div>
+    
+    <!-- 数据库配置部分 -->
+    <div id="api-config">
+        <div class="config-item">
+            <label for="database-id">数据库 ID:</label>
+            <input type="text" id="database-id" value="1a932af826e680df8bf7f320b51930b9">
+        </div>
+        <button id="update-config-btn">更新配置</button>
+        <div class="hint">
+            <strong>提示：</strong> 遇到 404 错误请确保集成已与数据库共享。
+            <a href="#" id="show-integration-guide">查看帮助</a>
+        </div>
+    </div>
+    
+    <!-- 调试控制按钮 -->
+    <div id="debug-controls">
+        <button id="refresh-btn">刷新列表</button>
+        <button id="debug-btn">数据库信息</button>
+        <button id="test-api-btn">测试API</button>
+        <button id="list-db-btn">所有数据库</button>
+    </div>
+    
+    <!-- 版本信息 -->
+    <div class="version-info">
+        <span>调试面板版本: 1.2.0</span>
+    </div>
+    
+    <!-- 资源监控部分由JS动态创建 -->
+</div> 

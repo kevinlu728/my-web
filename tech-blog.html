@@ -175,21 +175,70 @@
     <!-- 先加载API服务 -->
     <script src="./scripts/api-service.js"></script>
     
-    <!-- 字体图标 -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <!-- 字体图标 - 添加错误处理和备用CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" 
+          onerror="this.onerror=null;this.href='https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.min.css';">
     
-    <!-- 数学公式支持 -->
-    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- 数学公式支持 - 使用loadScript函数加载 -->
+    <script>
+        // 延迟加载MathJax，避免阻塞页面渲染
+        document.addEventListener('DOMContentLoaded', function() {
+            loadScript(
+                'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js',
+                'https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js'
+            ).catch(function(error) {
+                console.warn('无法加载MathJax库:', error);
+                // 页面可以正常工作，只是不会渲染数学公式
+            });
+        });
+    </script>
     
-    <!-- 图表支持 -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- 图表支持 - 使用loadScript函数加载 -->
+    <script>
+        // 延迟加载Chart.js
+        document.addEventListener('DOMContentLoaded', function() {
+            loadScript(
+                'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',
+                'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js'
+            ).catch(function(error) {
+                console.warn('无法加载Chart.js库:', error);
+                // 页面可以正常工作，只是不会渲染图表
+            });
+        });
+    </script>
     
-    <!-- Mermaid图表支持 -->
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <!-- Mermaid图表支持 - 使用loadScript函数加载 -->
+    <script>
+        // 延迟加载Mermaid
+        document.addEventListener('DOMContentLoaded', function() {
+            loadScript(
+                'https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js',
+                'https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js'
+            ).catch(function(error) {
+                console.warn('无法加载Mermaid库:', error);
+                // 页面可以正常工作，只是不会渲染流程图
+            });
+        });
+    </script>
     
-    <!-- 标签云 -->
-    <script src="https://cdn.jsdelivr.net/npm/d3@7.8.5/dist/d3.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/d3-cloud@1.2.5/build/d3.layout.cloud.min.js"></script>
+    <!-- 标签云 - 使用loadScript函数加载 -->
+    <script>
+        // 延迟加载D3.js及其依赖
+        document.addEventListener('DOMContentLoaded', function() {
+            loadScript(
+                'https://cdn.jsdelivr.net/npm/d3@7.8.5/dist/d3.min.js',
+                'https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js'
+            ).then(function() {
+                return loadScript(
+                    'https://cdn.jsdelivr.net/npm/d3-cloud@1.2.5/build/d3.layout.cloud.min.js',
+                    'https://cdnjs.cloudflare.com/ajax/libs/d3-cloud/1.2.5/d3.layout.cloud.min.js'
+                );
+            }).catch(function(error) {
+                console.warn('无法加载D3.js或d3-cloud库:', error);
+                // 页面可以正常工作，只是不会渲染标签云
+            });
+        });
+    </script>
     
     <!-- 结构化数据 -->
     <script type="application/ld+json">
@@ -257,57 +306,9 @@
             </div>
 
             <div id="status-message" class="status-text"></div>
-            <!-- 调试开关和面板 -->
-            <div class="debug-section">
-                <div class="debug-toggle">
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="debug-mode-toggle">
-                        <span class="toggle-slider"></span>
-                    </label>
-                    <span class="debug-toggle-text">调试模式</span>
-                    <span class="keyboard-shortcut" id="debug-shortcut">
-                        Ctrl+Shift+D
-                    </span>
-                </div>
-                <!-- 调试面板 -->
-                <div id="debug-panel">
-                    <div id="api-config">
-                        <div class="config-item">
-                            <label for="database-id">数据库 ID:</label>
-                            <input type="text" id="database-id" value="1a932af826e680df8bf7f320b51930b9">
-                        </div>
-                        <button id="update-config-btn">更新配置</button>
-                        <div class="hint">
-                            <strong>提示：</strong> 遇到 404 错误请确保集成已与数据库共享。
-                            <a href="#" id="show-integration-guide">查看帮助</a>
-                        </div>
-                    </div>
-                    <div id="debug-controls">
-                        <button id="refresh-btn">刷新列表</button>
-                        <button id="debug-btn">数据库信息</button>
-                        <button id="test-api-btn">测试API</button>
-                        <button id="list-db-btn">所有数据库</button>
-                    </div>
-                    <div id="debug-env-info" class="debug-env-info">
-                        <div class="env-title">环境信息</div>
-                        <div class="env-item">
-                            <span class="env-label">API版本:</span>
-                            <span class="env-value" id="api-version">获取中...</span>
-                        </div>
-                        <div class="env-item">
-                            <span class="env-label">运行环境:</span>
-                            <span class="env-value" id="env-mode">开发</span>
-                        </div>
-                        <div class="env-item">
-                            <span class="env-label">API实现:</span>
-                            <span class="env-value" id="api-impl">标准</span>
-                        </div>
-                    </div>
-                    <div class="version-info">
-                        <span>调试面板版本: 1.1.0</span>
-                    </div>
-                </div>
-            </div>
+            
+            <!-- 调试面板开关容器 -->
+            <div id="debug-toggle-container"></div>
         </div>
         <div class="resize-handle" title="拖动此处调整左侧栏宽度 (双击可重置)">
             <div class="separator-line"></div>
@@ -324,8 +325,22 @@
         </div>
     </main>
 
-    <!-- 先加载依赖 -->
-    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js" defer></script>
+    <!-- 调试面板容器 -->
+    <div id="debug-panel-container"></div>
+
+    <!-- 先加载依赖 - 使用loadScript函数加载particles.js -->
+    <script>
+        // 延迟加载particles.js
+        document.addEventListener('DOMContentLoaded', function() {
+            loadScript(
+                'https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js',
+                'https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js'
+            ).catch(function(error) {
+                console.warn('无法加载particles.js库:', error);
+                // 页面可以正常工作，只是不会显示粒子效果
+            });
+        });
+    </script>
     
     <!-- 使用统一的模块加载方式 -->
     <script type="module">
@@ -338,6 +353,7 @@
         import { codeLazyLoader } from './scripts/utils/code-lazy-loader.js?v=1.0.1';
         import { initializePage } from './scripts/pages/tech-blog.js?v=1.0.1';
         import { initNavigation } from './scripts/components/navigation.js?v=1.0.1';
+        import { loadDebugPanel } from './scripts/components/debugPanelLoader.js?v=1.0.0';
         
         // 将模块导出到全局作用域，方便调试
         window.imageLazyLoader = imageLazyLoader;
@@ -366,6 +382,7 @@
             console.log('- codeLazyLoader:', typeof codeLazyLoader !== 'undefined' ? '✅已加载' : '❌未加载');
             console.log('- initializePage:', typeof initializePage !== 'undefined' ? '✅已加载' : '❌未加载');
             console.log('- initNavigation:', typeof initNavigation !== 'undefined' ? '✅已加载' : '❌未加载');
+            console.log('- loadDebugPanel:', typeof loadDebugPanel !== 'undefined' ? '✅已加载' : '❌未加载');
             
             // 确保所有导入的模块都已加载
             if (!articleManager || !categoryManager) {
@@ -397,6 +414,44 @@
             initializePage();
             initNavigation(); // 初始化导航
             
+            // 加载调试面板组件
+            loadDebugPanel({
+                containerId: 'debug-toggle-container',
+                panelContainerId: 'debug-panel-container',
+                databaseId: config.databaseId || '1a932af826e680df8bf7f320b51930b9',
+                callbacks: {
+                    onConfigUpdate: (newDbId) => {
+                        // 更新配置并刷新页面
+                        config.databaseId = newDbId;
+                        localStorage.setItem('notion-database-id', newDbId);
+                        console.log('数据库ID已更新，将在刷新后生效');
+                    },
+                    onRefresh: () => {
+                        // 刷新文章列表
+                        categoryManager.refreshCategories();
+                        articleManager.refreshArticles();
+                    },
+                    showStatus: (message, isError) => {
+                        // 显示状态消息
+                        const statusEl = document.getElementById('status-message');
+                        if (statusEl) {
+                            statusEl.textContent = message;
+                            statusEl.className = 'status-text ' + (isError ? 'error' : 'success');
+                            statusEl.style.display = 'block';
+                            
+                            // 自动隐藏消息
+                            setTimeout(() => {
+                                statusEl.style.opacity = '0';
+                                setTimeout(() => {
+                                    statusEl.style.display = 'none';
+                                    statusEl.style.opacity = '1';
+                                }, 500);
+                            }, 3000);
+                        }
+                    }
+                }
+            });
+            
             // 检查模块加载状态
             console.log('🔍 检查模块加载状态：');
             console.log('- imageLazyLoader:', !!window.imageLazyLoader);
@@ -405,13 +460,6 @@
             console.log('- config:', !!window.config);
             console.log('- tableLazyLoader:', !!window.tableLazyLoader);
             console.log('- codeLazyLoader:', !!window.codeLazyLoader);
-
-            // 设置正确的快捷键文本
-            const shortcutEl = document.getElementById('debug-shortcut');
-            if (shortcutEl) {
-                const isMac = navigator.platform.indexOf('Mac') !== -1;
-                shortcutEl.textContent = isMac ? '⌘+Shift+D' : 'Ctrl+Shift+D';
-            }
         });
     </script>
     
@@ -463,5 +511,14 @@
         margin-bottom: 8px;
     }
     </style>
+
+    <!-- 添加资源加载状态提示元素 - 已移除，功能已整合到调试面板 -->
+
+    <script>
+        // 页面加载完成后初始化资源状态跟踪
+        document.addEventListener('DOMContentLoaded', function() {
+            // resourceStatus.init(); - 已移除，调试面板会自动初始化
+        });
+    </script>
 </body>
 </html> 

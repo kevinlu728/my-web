@@ -2,9 +2,9 @@
  * @file debugPanel.js
  * @description 调试面板组件，提供开发过程中的调试工具
  * @author 陆凯
- * @version 1.1.0
+ * @version 1.2.0
  * @created 2024-03-07
- * @updated 2024-03-21
+ * @updated 2024-06-20
  * 
  * 该组件提供了一个可折叠的调试面板，用于开发过程中查看和调试网站状态：
  * - 显示当前页面加载的资源
@@ -13,10 +13,138 @@
  * - 支持日志输出和错误捕获
  * - 测试API连接
  * - 管理数据库配置
+ * - 监控外部资源加载状态
  * 
  * 调试面板仅在开发环境中可见，生产环境自动禁用。
  * 可通过键盘快捷键切换面板显示状态。
  */
+
+// 资源加载状态跟踪对象
+const resourceStatus = {
+    resources: {},
+    statusElement: null,
+    listElement: null,
+    
+    // 添加资源记录
+    addResource: function(name, url) {
+        const resourceId = name.toLowerCase().replace(/[^a-z0-9]/g, '-');
+        this.resources[resourceId] = {
+            name: name,
+            url: url,
+            status: 'loading',
+            startTime: new Date().getTime()
+        };
+        
+        this.updateStatusUI();
+        return resourceId;
+    },
+    
+    // 更新资源状态
+    updateResource: function(resourceId, status) {
+        if (this.resources[resourceId]) {
+            this.resources[resourceId].status = status;
+            this.resources[resourceId].endTime = new Date().getTime();
+            this.updateStatusUI();
+        }
+    },
+    
+    // 更新UI显示
+    updateStatusUI: function() {
+        if (!this.listElement) return;
+        
+        // 清空列表
+        this.listElement.innerHTML = '';
+        
+        // 按状态排序：错误 > 加载中 > 成功
+        const sortedResources = Object.values(this.resources).sort((a, b) => {
+            const priority = { 'error': 0, 'loading': 1, 'success': 2 };
+            return priority[a.status] - priority[b.status];
+        });
+        
+        // 添加每个资源的状态
+        sortedResources.forEach(resource => {
+            const item = document.createElement('li');
+            item.className = 'resource-status-item';
+            
+            let statusIcon = '';
+            if (resource.status === 'loading') {
+                statusIcon = '<i class="status-icon status-loading fas fa-spinner fa-spin"></i>';
+            } else if (resource.status === 'success') {
+                statusIcon = '<i class="status-icon status-success fas fa-check"></i>';
+            } else if (resource.status === 'error') {
+                statusIcon = '<i class="status-icon status-error fas fa-times"></i>';
+            }
+            
+            item.innerHTML = `
+                ${statusIcon}
+                <span class="resource-name">${resource.name}</span>
+            `;
+            
+            this.listElement.appendChild(item);
+        });
+        
+        // 更新错误和加载中资源的计数
+        const hasFailedResources = Object.values(this.resources).some(res => res.status === 'error');
+        const hasLoadingResources = Object.values(this.resources).some(res => res.status === 'loading');
+        
+        // 如果有任何加载失败的资源，更新标题
+        const statusTitle = document.querySelector('.resource-status-title');
+        if (statusTitle) {
+            if (hasFailedResources) {
+                statusTitle.innerHTML = '资源加载状态 <span class="resource-status-alert">⚠️</span>';
+                statusTitle.classList.add('has-error');
+            } else if (!hasLoadingResources) {
+                statusTitle.innerHTML = '资源加载状态 ✅';
+                statusTitle.classList.remove('has-error');
+            } else {
+                statusTitle.innerHTML = '资源加载状态';
+                statusTitle.classList.remove('has-error');
+            }
+        }
+    },
+    
+    // 初始化资源状态监控
+    init: function() {
+        // 创建原始loadScript函数的扩展版本
+        const originalLoadScript = window.loadScript;
+        window.loadScript = (src, backupSrc) => {
+            const resourceName = src.split('/').pop();
+            const resourceId = this.addResource(resourceName, src);
+            
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.async = false; // 保持执行顺序
+                script.src = src;
+                
+                script.onload = () => {
+                    this.updateResource(resourceId, 'success');
+                    resolve(script);
+                };
+                
+                script.onerror = function() {
+                    console.warn(`加载脚本失败: ${src}`);
+                    
+                    if (backupSrc) {
+                        console.log(`尝试备用源: ${backupSrc}`);
+                        this.src = backupSrc;
+                        
+                        // 备用源也可能失败
+                        this.onerror = function() {
+                            console.error(`备用源也加载失败: ${backupSrc}`);
+                            resourceStatus.updateResource(resourceId, 'error');
+                            reject(new Error(`Failed to load script from main and backup sources: ${src}, ${backupSrc}`));
+                        };
+                    } else {
+                        resourceStatus.updateResource(resourceId, 'error');
+                        reject(new Error(`Failed to load script: ${src}`));
+                    }
+                };
+                
+                document.head.appendChild(script);
+            });
+        };
+    }
+};
 
 // 初始化调试面板
 export function initDebugPanel(currentDatabaseId, { 
@@ -75,6 +203,9 @@ export function initDebugPanel(currentDatabaseId, {
     // 清除旧事件监听器
     clearOldListeners();
     
+    // 初始化环境信息区域 (优先初始化)
+    initEnvironmentInfo();
+    
     // 初始化数据库 ID 输入框
     document.getElementById('database-id').value = currentDatabaseId;
     
@@ -82,6 +213,9 @@ export function initDebugPanel(currentDatabaseId, {
     const debugPanel = document.getElementById('debug-panel');
     const debugMode = localStorage.getItem('debug-mode') === 'true';
     debugPanel.style.display = debugMode ? 'block' : 'none';
+    
+    // 设置面板拖拽功能
+    initDraggablePanel(debugPanel);
     
     // 添加键盘快捷键切换调试面板 (Ctrl+Shift+D 或 Mac上的 Command+Shift+D)
     // 使用命名函数便于后续移除
@@ -408,8 +542,11 @@ export function initDebugPanel(currentDatabaseId, {
         }
     }
     
-    // 初始化环境信息区域
-    initEnvironmentInfo();
+    // 初始化资源加载监控区域
+    initResourceMonitor();
+    
+    // 初始化资源加载状态跟踪
+    resourceStatus.init();
     
     console.log('调试面板初始化完成');
 }
@@ -436,10 +573,49 @@ function initEnvironmentInfo() {
         apiImplEl.textContent = window.apiService?.implementation || '标准';
     }
     
-    // 第一次打开时自动更新环境信息
+    // 第一次打开时立即更新环境信息
     if (localStorage.getItem('debug-mode') === 'true') {
-        updateEnvironmentInfoFromAPI();
+        // 立即尝试获取环境信息，不等待其他初始化
+        setTimeout(() => updateEnvironmentInfoFromAPI(), 0);
     }
+}
+
+// 初始化资源加载监控区域
+function initResourceMonitor() {
+    // 获取调试面板
+    const debugPanel = document.getElementById('debug-panel');
+    if (!debugPanel) return;
+    
+    // 创建资源监控部分
+    const resourceMonitorSection = document.createElement('div');
+    resourceMonitorSection.id = 'resource-monitor';
+    resourceMonitorSection.className = 'resource-monitor-section';
+    
+    // 添加标题和内容
+    resourceMonitorSection.innerHTML = `
+        <div class="section-header">
+            <div class="resource-status-title">资源加载状态</div>
+            <button id="clear-resources-btn" class="clear-resources-btn">清除</button>
+        </div>
+        <div class="resource-status-container">
+            <ul id="resource-status-list" class="resource-status-list"></ul>
+        </div>
+    `;
+    
+    // 添加到调试面板
+    debugPanel.appendChild(resourceMonitorSection);
+    
+    // 设置资源状态的列表元素引用
+    resourceStatus.listElement = document.getElementById('resource-status-list');
+    
+    // 添加清除按钮事件
+    document.getElementById('clear-resources-btn').addEventListener('click', function() {
+        resourceStatus.resources = {};
+        resourceStatus.updateStatusUI();
+    });
+    
+    // 初始化资源列表
+    resourceStatus.updateStatusUI();
 }
 
 // 更新环境信息
@@ -491,5 +667,85 @@ async function updateEnvironmentInfoFromAPI() {
         }
     } catch (error) {
         console.error('获取环境信息失败:', error);
+    }
+}
+
+// 初始化可拖拽面板
+function initDraggablePanel(panel) {
+    if (!panel) return;
+    
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    let isDragging = false;
+    
+    panel.addEventListener('mousedown', function(e) {
+        // 只有点击顶部区域才能拖动（高度30px）
+        const rect = panel.getBoundingClientRect();
+        if (e.clientY - rect.top > 30) return;
+        
+        e.preventDefault();
+        isDragging = true;
+        
+        // 获取鼠标位置
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        
+        // 添加移动和停止事件监听器
+        document.addEventListener('mousemove', dragMove);
+        document.addEventListener('mouseup', dragStop);
+        
+        // 添加拖动时的样式
+        panel.style.cursor = 'grabbing';
+    });
+    
+    function dragMove(e) {
+        if (!isDragging) return;
+        e.preventDefault();
+        
+        // 计算新位置
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        
+        // 设置面板新位置
+        const newTop = (panel.offsetTop - pos2);
+        const newLeft = (panel.offsetLeft - pos1);
+        
+        // 确保面板不会超出视图边界
+        const maxTop = window.innerHeight - 60; // 保证至少有拖动条在视口内
+        const maxLeft = window.innerWidth - 60;
+        
+        panel.style.top = Math.min(Math.max(0, newTop), maxTop) + 'px';
+        panel.style.left = Math.min(Math.max(0, newLeft), maxLeft) + 'px';
+        
+        // 移动面板时移除bottom和right的定位，改为使用top和left
+        panel.style.bottom = 'auto';
+        panel.style.right = 'auto';
+    }
+    
+    function dragStop() {
+        isDragging = false;
+        document.removeEventListener('mousemove', dragMove);
+        document.removeEventListener('mouseup', dragStop);
+        panel.style.cursor = '';
+        
+        // 保存面板位置到localStorage
+        localStorage.setItem('debug-panel-position', JSON.stringify({
+            top: panel.style.top,
+            left: panel.style.left
+        }));
+    }
+    
+    // 恢复上次保存的位置
+    try {
+        const savedPosition = JSON.parse(localStorage.getItem('debug-panel-position'));
+        if (savedPosition && savedPosition.top && savedPosition.left) {
+            panel.style.top = savedPosition.top;
+            panel.style.left = savedPosition.left;
+            panel.style.bottom = 'auto';
+            panel.style.right = 'auto';
+        }
+    } catch (error) {
+        console.warn('恢复调试面板位置失败:', error);
     }
 } 
