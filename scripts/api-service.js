@@ -1,5 +1,17 @@
 /**
+ * @file api-service.js
+ * @description 前端API服务客户端，负责前端应用与后端API之间的通信
+ *              支持标准API和直接API两种实现方式，具有自动重试和API实现切换功能
+ * @author 陆凯
+ * @version 1.1.0
+ * @created 2024-03-15
+ * @updated 2024-06-28
+ */
+
+/**
  * 创建API服务实例
+ * 该服务是前端与后端API之间的桥梁，提供统一的接口访问方式
+ * 支持自动选择最佳API实现方式并在出错时进行切换
  */
 class ApiService {
   constructor() {
@@ -56,6 +68,9 @@ class ApiService {
 
   /**
    * 测试API连接
+   * 检查后端API服务是否可用，获取API状态信息
+   * 是所有其他API方法的基础，如果此方法成功则表示API服务可用
+   * @returns {Promise<Object>} 包含成功状态和API信息的对象
    */
   async testConnection() {
     try {
@@ -241,6 +256,57 @@ class ApiService {
     } catch (error) {
       console.error('获取块内容失败:', error);
       throw error;
+    }
+  }
+
+  /**
+   * 获取数据库信息
+   * @param {string} databaseId - 数据库ID
+   * @returns {Promise<Object>} 数据库信息
+   */
+  async getDatabaseInfo(databaseId) {
+    if (!databaseId) {
+      return { success: false, error: '缺少数据库ID' };
+    }
+    
+    try {
+      console.log(`获取数据库信息: ${databaseId}`);
+      const endpoint = `/database-info`;
+      
+      const options = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ database_id: databaseId })
+      };
+      
+      return await this.executeRequest(endpoint, options);
+    } catch (error) {
+      console.error('获取数据库信息失败:', error);
+      return { 
+        success: false, 
+        error: `获取数据库信息失败: ${error.message}` 
+      };
+    }
+  }
+  
+  /**
+   * 获取所有数据库列表
+   * @returns {Promise<Object>} 数据库列表
+   */
+  async getDatabases() {
+    try {
+      console.log('获取所有数据库列表');
+      const endpoint = `/databases`;
+      
+      return await this.executeRequest(endpoint);
+    } catch (error) {
+      console.error('获取数据库列表失败:', error);
+      return { 
+        success: false, 
+        error: `获取数据库列表失败: ${error.message}` 
+      };
     }
   }
 }
