@@ -34,6 +34,15 @@ export function showStatus(message, isError = false, type = 'info') {
         return;
     }
     
+    // 如果消息为空，直接隐藏整个状态条
+    if (!message || message.trim() === '') {
+        statusEl.style.display = 'none';
+        return;
+    }
+    
+    // 确保状态条可见
+    statusEl.style.display = 'block';
+    
     statusEl.textContent = message;
     statusEl.className = `status-message ${type}`;
     

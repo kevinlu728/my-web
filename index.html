@@ -18,16 +18,34 @@
     <meta name="twitter:title" content="云栖思渊">
     <meta name="twitter:description" content="终端技术架构专家与AI终端工程化先行者的个人网站">
     <meta name="twitter:image" content="https://yourdomain.com/assets/profile.jpeg">
-    <!-- CSS资源 -->
-    <link rel="stylesheet" href="/styles/main.css">
-    <link rel="stylesheet" href="/styles/components/header.css">
-    <link rel="stylesheet" href="/styles/components/footer.css">
-    <!-- Font Awesome -->
+    
+    <!-- 预加载策略 - 核心CSS使用preload -->
+    <link rel="preload" href="./styles/main.css" as="style">
+    
+    <!-- CSS资源 - 使用相对路径 -->
+    <link rel="stylesheet" href="./styles/main.css">
+    <link rel="stylesheet" href="./styles/components/header.css">
+    <link rel="stylesheet" href="./styles/components/footer.css">
+    
+    <!-- 对于首页，直接加载关键图标和UI库，不使用资源加载器 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Iconfont -->
     <link rel="stylesheet" href="//at.alicdn.com/t/c/font_4447411_ky6yxhm8dc.css">
+    
     <!-- 网站图标 -->
     <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
+    
+    <!-- 先加载资源加载器但不用于首页核心资源 -->
+    <script type="module">
+        // 立即加载资源加载器
+        import { resourceLoader } from './scripts/utils/resource-loader.js';
+        // 在全局作用域中暴露资源加载器
+        window.resourceLoader = resourceLoader;
+        console.log('✅ 资源加载器已预加载');
+    </script>
+    
+    <!-- 直接加载粒子效果库 - 首页必备 -->
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
     
     <!-- API服务 -->
     <script src="./scripts/api-service.js"></script>
@@ -116,7 +134,34 @@
     }
     </script>
 
-    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js" ></script>
+    <!-- 直接初始化粒子效果 - 不依赖资源加载器 -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            if (window.particlesJS) {
+                particlesJS('particles-js', {
+                    particles: {
+                        number: { value: 80, density: { enable: true, value_area: 800 } },
+                        color: { value: '#3370ff' },
+                        opacity: { value: 0.5, random: false },
+                        size: { value: 3, random: true },
+                        line_linked: { enable: true, distance: 150, color: '#3370ff', opacity: 0.4, width: 1 },
+                        move: { enable: true, speed: 2, direction: 'none', random: false, straight: false, out_mode: 'out', bounce: false }
+                    },
+                    interactivity: {
+                        detect_on: 'canvas',
+                        events: { onhover: { enable: true, mode: 'grab' }, onclick: { enable: true, mode: 'push' }, resize: true },
+                        modes: { grab: { distance: 140, line_linked: { opacity: 1 } }, push: { particles_nb: 4 } }
+                    },
+                    retina_detect: true
+                });
+                console.log('✅ 粒子效果已初始化');
+            } else {
+                console.error('❌ particles.js 库未加载');
+            }
+        });
+    </script>
+    
+    <!-- 确保componentManager最后加载 -->
     <script src="scripts/core/componentManager.js" type="module"></script>
 </body>
 </html>

@@ -28,6 +28,8 @@ import { articleManager } from '../managers/articleManager.js';
 import config from '../config/config.js';
 import { imageLazyLoader } from '../utils/image-lazy-loader.js';
 import { initializeLazyLoading } from '../components/articleRenderer.js';
+// 导入资源加载器
+import { resourceLoader } from '../utils/resource-loader.js';
 
 console.log('🚀 tech-blog.js 开始加载...');
 
@@ -36,6 +38,9 @@ console.log('🚀 tech-blog.js 开始加载...');
  */
 async function initializePage() {
     console.log('开始初始化页面...');
+    
+    // 预加载关键资源，确保它们可用
+    preloadCriticalResources();
     
     // 检查依赖项
     console.log('检查依赖项：');
@@ -70,8 +75,16 @@ async function initializePage() {
         articleManager.showArticle = async function(pageId) {
             console.log('📄 准备加载文章:', pageId);
             
-            // 首先确保移除占位内容
+            // 检查是否已经加载了相同的文章
             const container = document.getElementById('article-container');
+            const articleBody = container.querySelector('.article-body');
+            
+            if (articleBody && articleBody.getAttribute('data-article-id') === pageId) {
+                console.log('文章已加载，跳过重复加载:', pageId);
+                return; // 如果已经加载了相同的文章，跳过
+            }
+            
+            // 移除占位内容
             if (container && container.querySelector('.placeholder-content')) {
                 console.log('移除占位内容...');
                 // 添加淡出效果
@@ -87,41 +100,8 @@ async function initializePage() {
                 }, 300);
             }
             
-            try {
-                const result = await originalShowArticle.call(this, pageId);
-                console.log('✅ 文章加载成功');
-                
-                // 处理文章中的图片和懒加载内容
-                setTimeout(() => {
-                    const articleBody = document.querySelector('.article-body');
-                    if (articleBody) {
-                        console.log('🖼️ 处理文章中的图片...');
-                        imageLazyLoader.processImages(articleBody);
-                        
-                        console.log('🔄 初始化代码块和表格懒加载...');
-                        initializeLazyLoading(articleBody);
-                    } else {
-                        console.warn('⚠️ 未找到文章内容区域');
-                    }
-                }, 100);
-                
-                return result;
-            } catch (error) {
-                console.error('❌ 文章加载失败:', error);
-                
-                // 如果加载失败，恢复占位内容
-                if (container && !container.querySelector('.placeholder-content')) {
-                    container.innerHTML = `
-                        <div class="placeholder-content">
-                            <div class="placeholder-image"></div>
-                            <div class="placeholder-text">加载失败</div>
-                            <div class="placeholder-hint">无法加载所请求的文章，请稍后再试或选择其他文章</div>
-                        </div>
-                    `;
-                }
-                
-                throw error;
-            }
+            // 调用原始方法加载文章
+            return originalShowArticle.call(this, pageId);
         };
         console.log('✅ articleManager.showArticle 方法扩展完成');
     } else {
@@ -136,6 +116,14 @@ async function initializePage() {
             
             const container = document.getElementById('article-container');
             if (container) {
+                // 检查是否已有内容(不是占位图)
+                if (container.querySelector('.welcome-page') || 
+                    container.querySelector('.article-body')) {
+                    // 如果已经有欢迎页或文章内容，直接返回，避免重复渲染
+                    console.log('已有页面内容，跳过欢迎页重新渲染');
+                    return;
+                }
+                
                 // 检查是否已存在占位图
                 let placeholder = container.querySelector('.placeholder-content');
                 
@@ -151,22 +139,10 @@ async function initializePage() {
                     placeholder = container.querySelector('.placeholder-content');
                 }
                 
-                // 短暂延迟后加载实际欢迎页内容
+                // 直接调用原始方法显示欢迎页内容，仅保留很短的延迟
                 setTimeout(() => {
-                    // 移除占位图（带动画效果）
-                    if (placeholder) {
-                        placeholder.style.transition = 'opacity 0.3s ease';
-                        placeholder.style.opacity = '0';
-                        
-                        setTimeout(() => {
-                            // 调用原始的欢迎页显示方法
-                            originalShowWelcomePage.call(this);
-                        }, 300);
-                    } else {
-                        // 如果没有找到占位图，直接调用原始方法
-                        originalShowWelcomePage.call(this);
-                    }
-                }, 800); // 短暂延迟，让用户可以看到过渡效果
+                    originalShowWelcomePage.call(this);
+                }, 100);
             }
         };
         console.log('✅ articleManager.showWelcomePage 方法扩展完成');
@@ -276,6 +252,9 @@ async function initializePage() {
     
     // 为页面图片应用样式（如果有的话）
     applyImageStyles();
+    
+    // 清除"正在初始化页面..."的状态消息
+    showStatus('', false);
 }
 
 // 导出显示文章的全局函数
@@ -284,11 +263,32 @@ window.showArticle = async (pageId) => {
     return articleManager.showArticle(pageId);
 };
 
+// 设置一个标志来跟踪初始化是否已完成
+let pageInitialized = false;
+
 // 页面加载完成后初始化
 window.addEventListener('load', () => {
     console.log('📃 页面加载完成，开始初始化...');
+    
+    // 避免重复初始化
+    if (pageInitialized) {
+        console.log('页面已经初始化，跳过重复初始化');
+        return;
+    }
+    
+    // 显示加载状态提示
+    showStatus('正在初始化页面...', false);
+    
+    // 初始化页面
     initializePage().catch(error => {
         console.error('❌ 初始化失败:', error);
+        showStatus('页面初始化失败，请刷新重试', true, 'error');
+    }).finally(() => {
+        // 初始化完成，设置标志
+        pageInitialized = true;
+        
+        // 清除加载状态消息
+        showStatus('', false);
     });
     
     // 添加返回顶部按钮
@@ -703,6 +703,36 @@ function initializeBackToTop() {
     });
     
     console.log('✅ 返回顶部按钮初始化完成');
+}
+
+/**
+ * 预加载关键资源
+ * 确保页面关键样式和脚本资源都可用
+ */
+function preloadCriticalResources() {
+    // 检查资源加载器是否可用
+    if (!resourceLoader) {
+        console.warn('⚠️ 资源加载器不可用，跳过预加载');
+        return;
+    }
+
+    console.log('🔍 开始预加载关键资源...');
+    
+    // 不再使用直接的URL列表，而是使用资源加载器的内置方法
+    // 资源加载器会自动从资源配置中获取关键资源
+    resourceLoader.preloadCriticalResources();
+    
+    // 对于重要的CSS资源，确保它们在页面加载后被立即加载
+    // 使用新的加载高优先级资源方法
+    setTimeout(() => {
+        resourceLoader.loadHighPriorityResources()
+            .then(() => {
+                console.log('✅ 高优先级资源加载完成');
+            })
+            .catch(error => {
+                console.warn('⚠️ 加载高优先级资源时出错:', error);
+            });
+    }, 500);
 }
 
 // 导出函数供外部使用

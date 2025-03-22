@@ -31,23 +31,39 @@ class ComponentManager {
     static initJsComponents() {
         console.log('初始化JavaScript功能组件...');
         
-        // 初始化导航菜单
-        initNavigation();
-        console.log('导航菜单已初始化');
+        try {
+            // 初始化导航菜单
+            initNavigation();
+            console.log('✅ 导航菜单已初始化');
+        } catch (error) {
+            console.error('❌ 导航菜单初始化失败:', error);
+        }
         
-        // 初始化粒子背景
-        initParticleBackground();
-        console.log('粒子背景已初始化');
+        try {
+            // 初始化粒子背景
+            initParticleBackground();
+            console.log('✅ 粒子背景已初始化'); // 这个日志已在组件内部输出
+        } catch (error) {
+            console.error('❌ 粒子背景初始化失败:', error);
+        }
         
-        // 初始化联系方式弹窗
-        initContactModals();
-        console.log('联系方式弹窗已初始化');
+        try {
+            // 初始化联系方式弹窗
+            initContactModals();
+            console.log('✅ 联系方式弹窗已初始化');
+        } catch (error) {
+            console.error('❌ 联系方式弹窗初始化失败:', error);
+        }
         
-        // 初始化聊天组件
-        initChatWidget();
-        console.log('聊天组件已初始化');
+        try {
+            // 初始化聊天组件
+            initChatWidget();
+            console.log('✅ 聊天组件已初始化');
+        } catch (error) {
+            console.error('❌ 聊天组件初始化失败:', error);
+        }
         
-        console.log('所有JavaScript功能组件初始化完成');
+        console.log('所有JavaScript功能组件初始化已完成（可能有部分失败）');
     }
     
     /**
@@ -60,19 +76,20 @@ class ComponentManager {
         try {
             const container = document.getElementById(containerId);
             if (!container) {
-                console.warn(`容器 ${containerId} 不存在，跳过加载组件`);
+                console.warn(`⚠️ 容器 ${containerId} 不存在，跳过加载组件 ${componentPath}`);
                 return;
             }
             
-            console.log(`加载HTML组件: ${componentPath} 到 ${containerId}`);
+            console.log(`🔄 加载HTML组件: ${componentPath} 到 ${containerId}`);
             const response = await fetch(componentPath);
             if (!response.ok) {
-                throw new Error(`Failed to load component from ${componentPath}`);
+                throw new Error(`加载失败: ${response.status} ${response.statusText}`);
             }
             const html = await response.text();
             container.innerHTML = html;
+            console.log(`✅ 成功加载HTML组件: ${componentPath}`);
         } catch (error) {
-            console.error(`Error loading component: ${error}`, componentPath);
+            console.error(`❌ 加载组件失败 ${componentPath}:`, error);
         }
     }
     
@@ -82,34 +99,55 @@ class ComponentManager {
      * @returns {Promise<void>}
      */
     static async loadHtmlComponents() {
-        console.log('加载HTML UI组件...');
+        console.log('🔄 加载HTML UI组件...');
         
         // 加载所有组件
-        await Promise.all([
+        const results = await Promise.allSettled([
             this.loadHtmlComponent('social-links-container', './components/social-links.html'),
             this.loadHtmlComponent('contact-modal-container', './components/contact-modal.html'),
             this.loadHtmlComponent('chat-widget-container', './components/chat-widget.html')
         ]);
         
-        console.log('所有HTML UI组件加载完成');
+        // 检查结果
+        const failed = results.filter(r => r.status === 'rejected').length;
+        if (failed > 0) {
+            console.warn(`⚠️ ${failed}个HTML组件加载失败`);
+        }
+        
+        console.log(`✅ HTML UI组件加载完成 (成功: ${results.length - failed}, 失败: ${failed})`);
     }
     
     /**
      * 为加载的HTML组件初始化事件监听器
      */
     static initializeHtmlComponentEvents() {
-        console.log('初始化HTML组件事件监听器...');
+        console.log('🔄 初始化HTML组件事件监听器...');
         
-        // 初始化社交链接组件事件
-        this.initSocialLinksEvents();
+        try {
+            // 初始化社交链接组件事件
+            this.initSocialLinksEvents();
+            console.log('✅ 社交链接组件事件已初始化');
+        } catch (error) {
+            console.error('❌ 社交链接组件事件初始化失败:', error);
+        }
         
-        // 初始化联系模态框组件事件
-        this.initContactModalEvents();
+        try {
+            // 初始化联系模态框组件事件
+            this.initContactModalEvents();
+            console.log('✅ 联系模态框组件事件已初始化');
+        } catch (error) {
+            console.error('❌ 联系模态框组件事件初始化失败:', error);
+        }
         
-        // 初始化聊天窗口组件事件
-        this.initChatWidgetEvents();
+        try {
+            // 初始化聊天窗口组件事件
+            this.initChatWidgetEvents();
+            console.log('✅ 聊天窗口组件事件已初始化');
+        } catch (error) {
+            console.error('❌ 聊天窗口组件事件初始化失败:', error);
+        }
         
-        console.log('所有HTML组件事件监听器初始化完成');
+        console.log('✅ 所有HTML组件事件监听器初始化已完成（可能有部分失败）');
     }
     
     /**
@@ -117,13 +155,20 @@ class ComponentManager {
      */
     static initSocialLinksEvents() {
         const socialLinks = document.querySelectorAll('.social-link');
+        if (socialLinks.length === 0) {
+            console.warn('⚠️ 未找到社交链接元素，无法绑定事件');
+            return;
+        }
+        
         socialLinks.forEach(link => {
             link.addEventListener('click', (e) => {
                 const platform = link.getAttribute('data-platform');
-                console.log(`点击了社交链接: ${platform}`);
+                console.log(`👆 点击了社交链接: ${platform}`);
                 // 可以添加分析跟踪或其他功能
             });
         });
+        
+        console.log(`✅ 已为${socialLinks.length}个社交链接绑定事件`);
     }
     
     /**
@@ -134,20 +179,33 @@ class ComponentManager {
         const wechatModal = document.getElementById('wechat-modal');
         const contactCloseBtn = document.querySelector('.contact-modal .close-btn');
         
+        if (!wechatLink) {
+            console.warn('⚠️ 未找到微信链接元素 (#wechat-link)');
+        }
+        
+        if (!wechatModal) {
+            console.warn('⚠️ 未找到微信模态框元素 (#wechat-modal)');
+        }
+        
         if (wechatLink && wechatModal) {
             wechatLink.addEventListener('click', () => {
                 wechatModal.style.display = 'flex';
+                console.log('👆 打开微信二维码模态框');
             });
             
             if (contactCloseBtn) {
                 contactCloseBtn.addEventListener('click', () => {
                     wechatModal.style.display = 'none';
+                    console.log('👆 关闭微信二维码模态框');
                 });
+            } else {
+                console.warn('⚠️ 未找到模态框关闭按钮');
             }
             
             wechatModal.addEventListener('click', (e) => {
                 if (e.target === wechatModal) {
                     wechatModal.style.display = 'none';
+                    console.log('👆 点击外部区域关闭微信二维码模态框');
                 }
             });
         }
@@ -162,29 +220,46 @@ class ComponentManager {
         const minimizeBtn = document.getElementById('minimize-btn') || document.querySelector('.minimize-btn');
         const closeBtn = document.getElementById('close-btn') || document.querySelector('.chat-close-btn');
         
+        if (!chatToggle) {
+            console.warn('⚠️ 未找到聊天切换按钮元素');
+        }
+        
+        if (!chatContainer) {
+            console.warn('⚠️ 未找到聊天容器元素');
+        }
+        
+        if (!minimizeBtn) {
+            console.warn('⚠️ 未找到最小化按钮元素');
+        }
+        
+        if (!closeBtn) {
+            console.warn('⚠️ 未找到关闭按钮元素');
+        }
+        
         if (chatToggle && chatContainer && minimizeBtn && closeBtn) {
-            console.log('ComponentManager: 聊天组件事件初始化成功');
+            console.log('✅ 聊天组件事件初始化成功');
+            
             chatToggle.addEventListener('click', () => {
-                console.log('ComponentManager: 聊天图标被点击');
+                console.log('👆 聊天图标被点击');
                 chatContainer.style.display = 'flex';
                 chatToggle.style.display = 'none';
             });
             
             minimizeBtn.addEventListener('click', () => {
-                console.log('ComponentManager: 最小化按钮被点击');
+                console.log('👆 最小化按钮被点击');
                 chatContainer.style.display = 'none';
                 chatToggle.style.display = 'block';
             });
             
             closeBtn.addEventListener('click', () => {
-                console.log('ComponentManager: 关闭按钮被点击');
+                console.log('👆 关闭按钮被点击');
                 const chatWidget = document.getElementById('chat-widget') || document.querySelector('.chat-widget');
                 if (chatWidget) {
                     chatWidget.style.display = 'none';
                 }
             });
         } else {
-            console.warn('ComponentManager: 聊天组件事件初始化失败，找不到必要的DOM元素');
+            console.warn('⚠️ 聊天组件事件初始化失败，找不到必要的DOM元素');
         }
     }
     
@@ -194,7 +269,7 @@ class ComponentManager {
      * @returns {Promise<void>}
      */
     static async initialize() {
-        console.log('开始初始化所有组件...');
+        console.log('🚀 开始初始化所有组件...');
         
         // 第一步：加载HTML UI组件
         await this.loadHtmlComponents();
@@ -205,14 +280,14 @@ class ComponentManager {
         // 第三步：为HTML组件初始化事件监听器
         this.initializeHtmlComponentEvents();
         
-        console.log('所有组件初始化完成！');
+        console.log('🎉 所有组件初始化完成！');
     }
 }
 
 // 当DOM加载完成后初始化所有组件
 document.addEventListener('DOMContentLoaded', () => {
     ComponentManager.initialize().catch(error => {
-        console.error('组件初始化失败:', error);
+        console.error('❌ 组件初始化失败:', error);
     });
 });
 

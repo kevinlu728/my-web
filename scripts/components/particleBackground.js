@@ -17,67 +17,81 @@
 
 export function initParticleBackground() {
     const particlesContainer = document.getElementById('particles-js');
-    if (!particlesContainer) return;
+    if (!particlesContainer) {
+        console.warn('粒子背景容器不存在，跳过初始化');
+        return;
+    }
     
-    particlesJS("particles-js", {
-        particles: {
-            number: { 
-                value: 120,
-                density: { 
-                    enable: true, 
-                    value_area: 800 
-                } 
-            },
-            color: { value: "#3498db" },
-            shape: { type: "circle" },
-            opacity: { 
-                value: 0.6,
-                random: false 
-            },
-            size: { 
-                value: 4,
-                random: true 
-            },
-            line_linked: {
-                enable: true,
-                distance: 150,
-                color: "#3498db",
-                opacity: 0.3,
-                width: 1
-            },
-            move: { 
-                enable: true, 
-                speed: 2,
-                direction: "none",
-                random: true,
-                straight: false,
-                out_mode: "bounce"
-            },
-        },
-        interactivity: {
-            detect_on: "canvas",
-            events: { 
-                onhover: { 
-                    enable: true, 
-                    mode: "grab" 
+    // 检查粒子库是否已加载
+    if (typeof particlesJS === 'undefined') {
+        console.error('particles.js 库未加载，无法初始化粒子背景');
+        return;
+    }
+    
+    try {
+        particlesJS("particles-js", {
+            particles: {
+                number: { 
+                    value: 120,
+                    density: { 
+                        enable: true, 
+                        value_area: 800 
+                    } 
                 },
-                onclick: {
+                color: { value: "#3498db" },
+                shape: { type: "circle" },
+                opacity: { 
+                    value: 0.6,
+                    random: false 
+                },
+                size: { 
+                    value: 4,
+                    random: true 
+                },
+                line_linked: {
                     enable: true,
-                    mode: "push"
+                    distance: 150,
+                    color: "#3498db",
+                    opacity: 0.3,
+                    width: 1
                 },
-                resize: true
+                move: { 
+                    enable: true, 
+                    speed: 2,
+                    direction: "none",
+                    random: true,
+                    straight: false,
+                    out_mode: "bounce"
+                },
             },
-            modes: {
-                grab: {
-                    distance: 140,
-                    line_linked: {
-                        opacity: 0.6
+            interactivity: {
+                detect_on: "canvas",
+                events: { 
+                    onhover: { 
+                        enable: true, 
+                        mode: "grab" 
+                    },
+                    onclick: {
+                        enable: true,
+                        mode: "push"
+                    },
+                    resize: true
+                },
+                modes: {
+                    grab: {
+                        distance: 140,
+                        line_linked: {
+                            opacity: 0.6
+                        }
                     }
                 }
-            }
-        },
-        retina_detect: true
-    });
+            },
+            retina_detect: true
+        });
+        console.log('✅ 粒子背景初始化成功');
+    } catch (error) {
+        console.error('粒子背景初始化失败:', error);
+    }
 }
 
 export default { initParticleBackground }; 
