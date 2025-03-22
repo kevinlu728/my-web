@@ -17,13 +17,13 @@ styles/
 ├── layouts/                # 页面布局样式
 │   ├── home-layout.css     # 首页布局
 │   ├── blog-layout.css     # 博客页面布局
-│   └── article-list.css    # 文章列表样式
+│   └── left-column-layout.css # 左侧栏布局样式
 └── sections/               # 页面区块样式
     ├── profile.css         # 个人资料区块
     ├── intro.css           # 介绍区块
     ├── career.css          # 职业经历区块
     ├── collaboration.css   # 合作区块
-    └── article-content.css # 文章内容样式
+    └── article.css         # 文章内容和通用分页加载样式
 ```
 
 ## 样式文件说明
@@ -36,11 +36,11 @@ styles/
 ### 布局文件
 
 - **blog-layout.css**: 博客页面的统一布局样式，包括网格布局、左右栏样式和响应式调整
-- **article-list.css**: 文章列表和分类的样式
+- **left-column-layout.css**: 左侧栏布局样式，包括搜索框、分类列表等
 
 ### 内容文件
 
-- **article-content.css**: 文章内容的样式，包括标题、段落、列表、代码块等
+- **article.css**: 文章内容的样式，包括标题、段落、列表、代码块和通用分页加载样式
 
 ## 样式优先级
 

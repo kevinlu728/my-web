@@ -65,7 +65,7 @@ export function showLoading(message = '加载中...') {
     
     treeChildren.innerHTML = `
         <li class="loading">
-            <div class="loading-spinner"></div>
+            <div class="resource-loading-spinner"></div>
             <span>${message}</span>
         </li>`;
 }

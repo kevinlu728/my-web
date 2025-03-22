@@ -130,7 +130,7 @@
 /* 右侧栏样式 */
 .blog-content .right-column {
     background: #ffffff;
-    padding: 25px 35px; /* 减小内边距 */
+    padding: 25px 35px; /* 恢复为原始值 */
     border-radius: 0 12px 12px 0; /* 右侧圆角 */
     box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08); /* 更细腻的阴影 */
     flex: 1; /* 填充剩余空间 */
@@ -154,7 +154,7 @@
 
 /* 文章标题 */
 .blog-content .right-column .article-title {
-    margin-top: 0; /* 移除顶部边距 */
+    margin-top: 0; /* 恢复为原始值 */
     margin-bottom: 20px; /* 与内容保持距离 */
     font-size: 28px; /* 增大标题字体 */
     font-weight: 600; /* 较粗的字重 */
@@ -180,7 +180,7 @@
 
 /* 文章内容区域 - 新增，提高可读性 */
 .article-body {
-    max-width: 1200px; /* 限制内容最大宽度，保持可读性 */
+    max-width: 1200px; /* 恢复为原始值 */
     margin: 0 auto;
     line-height: 1.8;
     color: #444;
@@ -275,7 +275,7 @@
     }
     
     .blog-content .right-column {
-        padding: 20px 25px; /* 减小内边距 */
+        padding: 20px 25px; /* 恢复为原始值 */
         margin-left: calc(220px + 3px); /* 更新左边距，使用减小后的拖动手柄宽度 */
     }
 }
@@ -303,7 +303,7 @@
     }
     
     .blog-content .right-column {
-        padding: 15px 20px; /* 减小内边距 */
+        padding: 15px 20px; /* 恢复为原始值 */
         width: 100%; /* 确保宽度100% */
         margin-left: 0; /* 重置左边距 */
         border-radius: 12px; /* 恢复完整圆角 */

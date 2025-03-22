@@ -28,19 +28,70 @@
     <link rel="stylesheet" href="./styles/components/footer.css">
     <link rel="stylesheet" href="./styles/layouts/blog-layout.css">
     <link rel="stylesheet" href="./styles/components/debug-panel.css">
-    <link rel="stylesheet" href="./styles/layouts/article-list.css">
+    <link rel="stylesheet" href="./styles/layouts/left-column-layout.css">
     <link rel="stylesheet" href="./styles/components/code-block.css">
     <link rel="stylesheet" href="./styles/components/table-block.css">
-    <link rel="stylesheet" href="./styles/sections/article-content.css">
+    <link rel="stylesheet" href="./styles/sections/article.css">
+    
+    <!-- 加载遮罩样式 - 很小，直接内联不会影响性能 -->
+    <style>
+        .content-loading-mask {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255,255,255,0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            transition: opacity 0.3s ease;
+        }
+        
+        @keyframes spinner {
+            to {transform: rotate(360deg);}
+        }
+        
+        .global-loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(0,0,0,0.1);
+            border-radius: 50%;
+            border-top-color: #0366d6;
+            animation: spinner 1s ease-in-out infinite;
+            margin: 20px auto;
+        }
+        
+        .global-loading-text {
+            margin-top: 16px;
+            font-size: 16px;
+            color: #333;
+        }
+    </style>
+    
+    <!-- 资源加载器初始化 -->
+    <script type="module">
+        // 导入资源加载器
+        import { resourceLoader } from './scripts/utils/resource-loader.js';
+        
+        // DOM加载完成后初始化资源加载策略
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 DOM加载完成，优先处理内容渲染');
+            // 优先处理内容渲染 - 这部分已在initResourceLoadingStrategy中执行，无需重复
+            // resourceLoader.prioritizeContentRendering();
+        });
+    </script>
     
     <!-- FontAwesome - 使用集中资源管理加载 -->
     <script type="module">
         // 导入资源加载器
         import { resourceLoader } from './scripts/utils/resource-loader.js';
         
-        // 加载FontAwesome CSS
-        resourceLoader.loadResource('styles', 'font-awesome').then(() => {
-            console.log('✅ FontAwesome CSS 加载成功');
+        // 加载FontAwesome CSS，但不阻塞内容
+        resourceLoader.loadCssNonBlocking('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css', {
+            priority: 'medium'
         });
     </script>
     
@@ -110,11 +161,13 @@
         // 立即执行：提前标记重要元素的资源组属性
         (function() {
             // 为body添加animation资源组标记
-            document.body.setAttribute('data-resource-group', 'animation');
+            if (!document.body.hasAttribute('data-resource-group')) {
+                document.body.setAttribute('data-resource-group', 'animation');
+            }
             
             // 为文章容器添加core资源组标记
             const articleContainer = document.getElementById('article-container');
-            if (articleContainer) {
+            if (articleContainer && !articleContainer.hasAttribute('data-resource-group')) {
                 articleContainer.setAttribute('data-resource-group', 'core');
             }
             
@@ -136,12 +189,6 @@
             // 为保险起见，也添加到DOMContentLoaded事件
             document.addEventListener('DOMContentLoaded', setupEarlyResourceGroups);
         })();
-        
-        // 确保资源加载策略初始化
-        if (!resourceLoader.isInitialized) {
-            console.log('📌 初始化资源加载策略');
-            resourceLoader.initResourceLoadingStrategy();
-        }
     </script>
     
     <!-- 结构化数据 -->
@@ -324,6 +371,10 @@
         </div>
         <div class="right-column">
             <div id="article-container" data-resource-group="core">
+                <div class="content-loading-mask">
+                    <div class="global-loading-spinner"></div>
+                    <div class="global-loading-text">正在加载内容，请稍候...</div>
+                </div>
                 <!-- 初始显示占位图，不再显示简单欢迎语 -->
                 <div class="placeholder-content">
                     <div class="placeholder-image"></div>
@@ -336,30 +387,6 @@
 
     <!-- 调试面板容器 -->
     <div id="debug-panel-container"></div>
-
-    <!-- Particles.js 加载 - 使用资源加载器 -->
-    <script type="module">
-        // 导入资源加载器
-        import { resourceLoader } from './scripts/utils/resource-loader.js';
-        
-        // 为页面添加Particles.js触发元素
-        document.body.setAttribute('data-resource-group', 'animation');
-        
-        // 页面完全加载后，检查并确保动画资源已加载
-        window.addEventListener('load', function() {
-            setTimeout(() => {
-                if (!window.particlesJS) {
-                    console.log('🔄 确保粒子效果资源已加载');
-                    // 使用低优先级加载粒子效果
-                    resourceLoader.loadResource('scripts', 'particles').then(() => {
-                        console.log('✅ Particles.js 加载成功');
-                    }).catch(error => {
-                        console.warn('无法加载particles.js库:', error);
-                    });
-                }
-            }, 1000); // 给予足够时间让资源加载策略工作
-        });
-    </script>
     
     <!-- 使用统一的模块加载方式 -->
     <script type="module">
@@ -378,7 +405,8 @@
         // 确保资源加载器已初始化
         if (!resourceLoader.isInitialized) {
             console.log('🚀 初始化资源加载策略 (主模块)');
-            resourceLoader.initResourceLoadingStrategy();
+            // 资源加载策略已在页面早期初始化，这里不需要重复
+            // resourceLoader.initResourceLoadingStrategy();
         }
         
         // 为正确加载Particles.js，确保body具有资源组标记
@@ -409,142 +437,20 @@
         document.addEventListener('DOMContentLoaded', () => {
             console.log('初始化技术博客页面组件...');
             
-            // 进行详细的依赖检查
-            console.log('🔍 检查模块导入状态：');
-            console.log('- config:', typeof config !== 'undefined' ? '✅已加载' : '❌未加载');
-            console.log('- articleManager:', typeof articleManager !== 'undefined' ? '✅已加载' : '❌未加载');
-            console.log('- categoryManager:', typeof categoryManager !== 'undefined' ? '✅已加载' : '❌未加载');
-            console.log('- imageLazyLoader:', typeof imageLazyLoader !== 'undefined' ? '✅已加载' : '❌未加载');
-            console.log('- tableLazyLoader:', typeof tableLazyLoader !== 'undefined' ? '✅已加载' : '❌未加载');
-            console.log('- codeLazyLoader:', typeof codeLazyLoader !== 'undefined' ? '✅已加载' : '❌未加载');
-            console.log('- initializePage:', typeof initializePage !== 'undefined' ? '✅已加载' : '❌未加载');
-            console.log('- initNavigation:', typeof initNavigation !== 'undefined' ? '✅已加载' : '❌未加载');
-            console.log('- loadDebugPanel:', typeof loadDebugPanel !== 'undefined' ? '✅已加载' : '❌未加载');
-            
-            // 确保所有导入的模块都已加载
-            if (!articleManager || !categoryManager) {
-                console.error('关键模块加载失败，请检查控制台错误');
-                const errorContainer = document.getElementById('article-container');
-                if (errorContainer) {
-                    errorContainer.innerHTML = `
-                        <div class="error-message">
-                            <h2>加载出错</h2>
-                            <p>很抱歉，页面加载失败。</p>
-                            <p>以下是常见的解决方法：</p>
-                            <ul style="text-align: left; margin: 1rem auto; max-width: 400px;">
-                                <li>尝试清除浏览器缓存后刷新页面</li>
-                                <li>检查您的网络连接</li>
-                                <li>尝试使用其他浏览器访问</li>
-                                <li>如果问题持续存在，请联系网站管理员</li>
-                            </ul>
-                            <div class="error-actions">
-                                <button onclick="location.reload()">刷新页面</button>
-                                <button onclick="location.reload(true)">强制刷新（清除缓存）</button>
-                            </div>
-                        </div>
-                    `
-                }
-                return;
-            }
-            
-            // 只初始化导航和调试面板，页面初始化由tech-blog.js的window.load事件处理
-            initNavigation(); // 初始化导航
-            
             // 加载调试面板组件
             loadDebugPanel({
-                containerId: 'debug-toggle-container',
-                panelContainerId: 'debug-panel-container',
-                databaseId: config.databaseId || '1a932af826e680df8bf7f320b51930b9',
-                callbacks: {
-                    onConfigUpdate: (newDbId) => {
-                        // 更新配置并刷新页面
-                        config.databaseId = newDbId;
-                        localStorage.setItem('notion-database-id', newDbId);
-                        console.log('数据库ID已更新，将在刷新后生效');
-                    },
-                    onRefresh: () => {
-                        // 刷新文章列表
-                        categoryManager.refreshCategories();
-                        articleManager.refreshArticles();
-                    },
-                    showStatus: (message, isError) => {
-                        // 显示状态消息
-                        const statusEl = document.getElementById('status-message');
-                        if (statusEl) {
-                            statusEl.textContent = message;
-                            statusEl.className = 'status-text ' + (isError ? 'error' : 'success');
-                            statusEl.style.display = 'block';
-                            
-                            // 自动隐藏消息
-                            setTimeout(() => {
-                                statusEl.style.opacity = '0';
-                                setTimeout(() => {
-                                    statusEl.style.display = 'none';
-                                    statusEl.style.opacity = '1';
-                                }, 500);
-                            }, 3000);
-                        }
-                    }
-                }
+                databaseId: config.notion.databaseId || config.debug.defaultDatabaseId
+            }).catch(err => {
+                console.error('加载调试面板时出错:', err);
             });
-        });
-    </script>
-    
-    <style>
-    /* 添加错误消息样式 */
-    .error-message {
-        padding: 2rem;
-        text-align: center;
-        background-color: #fff3f3;
-        border-radius: 8px;
-        margin: 2rem auto;
-        max-width: 600px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    
-    .error-message h2 {
-        color: #e53935;
-        margin-bottom: 1rem;
-    }
-    
-    .error-message button {
-        background-color: #3370ff;
-        color: white;
-        border: none;
-        padding: 0.5rem 1rem;
-        border-radius: 4px;
-        cursor: pointer;
-        margin-top: 1rem;
-        font-size: 1rem;
-    }
-    
-    .error-message button:hover {
-        background-color: #2952cc;
-    }
-    
-    .error-actions {
-        display: flex;
-        gap: 10px;
-        justify-content: center;
-        margin-top: 1rem;
-    }
-    
-    .error-message ul {
-        list-style-type: circle;
-        padding-left: 20px;
-    }
-    
-    .error-message li {
-        margin-bottom: 8px;
-    }
-    </style>
-
-    <!-- 添加资源加载状态提示元素 - 已移除，功能已整合到调试面板 -->
-
-    <script>
-        // 页面加载完成后初始化资源状态跟踪
-        document.addEventListener('DOMContentLoaded', function() {
-            // resourceStatus.init(); - 已移除，调试面板会自动初始化
+            
+            // 初始化页面
+            initializePage().catch(err => {
+                console.error('初始化页面时出错:', err);
+            });
+            
+            // 初始化导航
+            initNavigation();
         });
     </script>
 </body>

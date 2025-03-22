@@ -39,9 +39,6 @@ console.log('🚀 tech-blog.js 开始加载...');
 async function initializePage() {
     console.log('开始初始化页面...');
     
-    // 预加载关键资源，确保它们可用
-    preloadCriticalResources();
-    
     // 检查依赖项
     console.log('检查依赖项：');
     console.log('- imageLazyLoader:', !!imageLazyLoader);
@@ -52,6 +49,9 @@ async function initializePage() {
     const currentDatabaseId = config.notion.databaseId || config.debug.defaultDatabaseId;
     console.log('当前数据库ID:', currentDatabaseId);
 
+    // 直接处理加载遮罩
+    handleLoadingMask('fade');
+    
     // 检查API服务可用性
     if (window.apiService) {
         console.log('✅ 检测到apiService，将使用API服务自动选择功能');
@@ -253,6 +253,9 @@ async function initializePage() {
     // 为页面图片应用样式（如果有的话）
     applyImageStyles();
     
+    // 彻底移除加载遮罩
+    handleLoadingMask('remove');
+    
     // 清除"正在初始化页面..."的状态消息
     showStatus('', false);
 }
@@ -279,17 +282,37 @@ window.addEventListener('load', () => {
     // 显示加载状态提示
     showStatus('正在初始化页面...', false);
     
-    // 初始化页面
-    initializePage().catch(error => {
-        console.error('❌ 初始化失败:', error);
-        showStatus('页面初始化失败，请刷新重试', true, 'error');
-    }).finally(() => {
-        // 初始化完成，设置标志
-        pageInitialized = true;
-        
-        // 清除加载状态消息
-        showStatus('', false);
-    });
+    // 监听资源加载器的内容解锁事件
+    document.addEventListener('content-unblocked', () => {
+        console.log('🎉 内容已解锁，开始初始化页面');
+        // 初始化页面
+        initializePage().catch(error => {
+            console.error('❌ 初始化失败:', error);
+            showStatus('页面初始化失败，请刷新重试', true, 'error');
+        }).finally(() => {
+            // 初始化完成，设置标志
+            pageInitialized = true;
+            
+            // 清除加载状态消息
+            showStatus('', false);
+        });
+    }, { once: true });
+    
+    // 检查是否使用资源加载器解锁了内容
+    if (window.contentUnblocked) {
+        console.log('内容已经被解锁，立即初始化页面');
+        // 触发内容解锁事件
+        document.dispatchEvent(new Event('content-unblocked'));
+    } else {
+        console.log('等待内容解锁事件...');
+        // 增加超时保护，防止事件未触发
+        setTimeout(() => {
+            if (!pageInitialized) {
+                console.warn('⚠️ 内容解锁事件在10秒内未触发，强制初始化页面');
+                document.dispatchEvent(new Event('content-unblocked'));
+            }
+        }, 10000);
+    }
     
     // 添加返回顶部按钮
     initializeBackToTop();
@@ -706,9 +729,42 @@ function initializeBackToTop() {
 }
 
 /**
- * 预加载关键资源
- * 确保页面关键样式和脚本资源都可用
+ * 处理加载遮罩
+ * @param {string} action - 'fade' 淡出遮罩，'remove' 彻底移除遮罩
  */
+function handleLoadingMask(action = 'fade') {
+    const container = document.getElementById('article-container');
+    if (!container) {
+        console.warn('未找到文章容器，无法处理加载遮罩');
+        return;
+    }
+    
+    const mask = container.querySelector('.content-loading-mask');
+    if (!mask) {
+        console.log('加载遮罩不存在或已被移除');
+        return;
+    }
+    
+    if (action === 'fade') {
+        console.log('淡出加载遮罩...');
+        mask.style.transition = 'opacity 0.3s ease';
+        mask.style.opacity = '0';
+    } else if (action === 'remove') {
+        console.log('彻底移除加载遮罩...');
+        // 先确保淡出效果完成
+        mask.style.transition = 'opacity 0.3s ease';
+        mask.style.opacity = '0';
+        
+        // 延迟移除元素，等待淡出动画完成
+        setTimeout(() => {
+            if (mask.parentNode) {
+                mask.parentNode.removeChild(mask);
+            }
+        }, 350);
+    }
+}
+
+// 预加载关键资源，使用资源加载器的非阻塞加载机制
 function preloadCriticalResources() {
     // 检查资源加载器是否可用
     if (!resourceLoader) {
@@ -716,24 +772,24 @@ function preloadCriticalResources() {
         return;
     }
 
-    console.log('🔍 开始预加载关键资源...');
+    console.log('🔍 使用非阻塞方式加载关键资源...');
     
-    // 不再使用直接的URL列表，而是使用资源加载器的内置方法
-    // 资源加载器会自动从资源配置中获取关键资源
-    resourceLoader.preloadCriticalResources();
-    
-    // 对于重要的CSS资源，确保它们在页面加载后被立即加载
-    // 使用新的加载高优先级资源方法
-    setTimeout(() => {
-        resourceLoader.loadHighPriorityResources()
-            .then(() => {
-                console.log('✅ 高优先级资源加载完成');
-            })
-            .catch(error => {
-                console.warn('⚠️ 加载高优先级资源时出错:', error);
-            });
-    }, 500);
+    try {
+        // 调用资源加载器的非阻塞核心内容加载
+        resourceLoader.loadNonBlockingCoreContent();
+        console.log('✅ 非阻塞核心内容加载已启动');
+    } catch (error) {
+        console.error('❌ 非阻塞资源加载失败:', error);
+        // 设置全局标志，指示内容已解锁，以便初始化可以继续
+        window.contentUnblocked = true;
+    }
 }
+
+// 在页面DOM加载完成后预加载关键资源
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM内容已加载，准备预加载关键资源');
+    preloadCriticalResources();
+});
 
 // 导出函数供外部使用
 export { initializePage, applyImageStyles }; 

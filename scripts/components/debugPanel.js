@@ -207,7 +207,12 @@ export function initDebugPanel(currentDatabaseId, {
     initEnvironmentInfo();
     
     // 初始化数据库 ID 输入框
-    document.getElementById('database-id').value = currentDatabaseId;
+    const databaseIdInput = document.getElementById('database-id');
+    if (databaseIdInput) {
+        databaseIdInput.value = currentDatabaseId;
+    } else {
+        console.warn('数据库ID输入框元素不存在，无法设置初始值');
+    }
     
     // 显示面板状态
     const debugPanel = document.getElementById('debug-panel');
@@ -241,252 +246,300 @@ export function initDebugPanel(currentDatabaseId, {
     document.addEventListener('keydown', window._debugPanelKeyHandler);
     
     // 添加更新配置按钮事件
-    document.getElementById('update-config-btn').addEventListener('click', function() {
-        // 防止重复点击
-        if (this.disabled) return;
-        this.disabled = true;
-        
-        const databaseIdInput = document.getElementById('database-id');
-        const newDatabaseId = databaseIdInput.value.trim();
-        
-        if (!newDatabaseId) {
-            showStatus('数据库 ID 不能为空', true);
-            this.disabled = false;
-            return;
-        }
-        
-        showStatus(`配置已更新，数据库 ID: ${newDatabaseId}`);
-        onConfigUpdate(newDatabaseId);
-        this.disabled = false;
-    });
-    
-    // 添加集成指南显示/隐藏事件
-    document.getElementById('show-integration-guide').addEventListener('click', function(e) {
-        e.preventDefault();
-        
-        // 检查集成指南容器是否存在，如果不存在则创建
-        let guideContainer = document.getElementById('integration-guide');
-        if (!guideContainer) {
-            guideContainer = document.createElement('div');
-            guideContainer.id = 'integration-guide';
-            guideContainer.className = 'integration-guide';
+    const updateConfigBtn = document.getElementById('update-config-btn');
+    if (updateConfigBtn) {
+        updateConfigBtn.addEventListener('click', function() {
+            // 防止重复点击
+            if (this.disabled) return;
+            this.disabled = true;
             
-            // 创建关闭按钮
-            const closeButton = document.createElement('button');
-            closeButton.className = 'close-guide-btn';
-            closeButton.textContent = '关闭';
-            closeButton.addEventListener('click', function() {
-                guideContainer.style.display = 'none';
-            });
+            const databaseIdInput = document.getElementById('database-id');
+            const newDatabaseId = databaseIdInput ? databaseIdInput.value.trim() : '';
             
-            // 创建指南内容
-            const guideContent = document.createElement('div');
-            guideContent.className = 'guide-content';
-            guideContent.innerHTML = `
-                <h4>Notion API 集成指南</h4>
-                <p>要正确使用 Notion API，请确保：</p>
-                <ol>
-                    <li>在 <a href="https://www.notion.so/my-integrations" target="_blank">Notion Integrations</a> 页面创建集成</li>
-                    <li>获取 API 密钥并设置在项目配置中</li>
-                    <li>在 Notion 数据库页面点击 "分享" 按钮，将数据库与集成共享</li>
-                    <li>复制数据库 ID (在数据库 URL 中找到，格式为 32 个字符的字符串)</li>
-                </ol>
-                <p>更多信息可以参考 <a href="https://developers.notion.com/docs" target="_blank">Notion API 文档</a></p>
-            `;
-            
-            // 添加到容器
-            guideContainer.appendChild(closeButton);
-            guideContainer.appendChild(guideContent);
-            
-            // 添加到页面
-            document.getElementById('debug-panel').appendChild(guideContainer);
-        }
-        
-        // 显示集成指南
-        guideContainer.style.display = 'block';
-    });
-    
-    // 添加刷新按钮事件
-    document.getElementById('refresh-btn').addEventListener('click', function() {
-        // 防止重复点击
-        if (this.disabled) return;
-        this.disabled = true;
-        
-        onRefresh();
-        
-        // 延迟恢复按钮，防止频繁点击
-        setTimeout(() => {
-            this.disabled = false;
-        }, 1000);
-    });
-    
-    // 添加调试按钮事件
-    document.getElementById('debug-btn').addEventListener('click', async function() {
-        // 防止重复点击
-        if (this.disabled) return;
-        this.disabled = true;
-        
-        try {
-            const databaseId = document.getElementById('database-id').value.trim();
-            if (!databaseId) {
-                showStatus('数据库 ID 不能为空', true);
+            if (!newDatabaseId) {
+                showStatus('数据库ID不能为空', true);
                 this.disabled = false;
                 return;
             }
             
-            showStatus('正在获取数据库信息...');
-            const data = await getDatabaseInfo(databaseId);
-            console.log('Database Info:', data);
+            console.log('更新数据库ID:', newDatabaseId);
+            onConfigUpdate(newDatabaseId);
+            showStatus('配置已更新', false);
             
-            let infoMessage = '';
+            // 1秒后恢复按钮
+            setTimeout(() => {
+                this.disabled = false;
+            }, 1000);
+        });
+    } else {
+        console.warn('更新配置按钮不存在，无法绑定事件');
+    }
+    
+    // 添加查看集成指南按钮事件
+    const guideBtn = document.getElementById('show-integration-guide');
+    if (guideBtn) {
+        guideBtn.addEventListener('click', function(e) {
+            e.preventDefault();
             
-            if (data.success === false) {
-                infoMessage = `获取数据库信息失败: ${data.error || '未知错误'}`;
-                showStatus(infoMessage, true);
+            let guideContainer = document.getElementById('integration-guide');
+            
+            if (!guideContainer) {
+                // 创建集成指南
+                guideContainer = document.createElement('div');
+                guideContainer.id = 'integration-guide';
+                guideContainer.className = 'integration-guide';
+                guideContainer.innerHTML = `
+                    <div class="guide-header">
+                        <h3>集成指南</h3>
+                        <button class="close-guide-btn">×</button>
+                    </div>
+                    <div class="guide-content">
+                        <p>要访问数据库，请确保已完成以下步骤：</p>
+                        <ol>
+                            <li>创建 Notion 集成并获取 Secret Token</li>
+                            <li>在数据库页面点击 "共享" 并添加集成</li>
+                            <li>复制数据库 ID (URL中32位字符串)</li>
+                        </ol>
+                        <p>更多信息请参考 <a href="https://developers.notion.com/docs" target="_blank">Notion API 文档</a></p>
+                    </div>
+                `;
+                
+                // 添加关闭指南事件
+                guideContainer.querySelector('.close-guide-btn').addEventListener('click', function() {
+                    guideContainer.remove();
+                });
+                
+                const debugPanel = document.getElementById('debug-panel');
+                if (debugPanel) {
+                    debugPanel.appendChild(guideContainer);
+                } else {
+                    document.body.appendChild(guideContainer);
+                }
             } else {
-                // 创建数据库信息摘要
-                const dbName = data.title?.[0]?.plain_text || data.title || '无标题数据库';
-                const createdTime = data.created_time ? new Date(data.created_time).toLocaleString() : '未知';
-                const lastEditedTime = data.last_edited_time ? new Date(data.last_edited_time).toLocaleString() : '未知';
+                // 如果已存在，则移除
+                guideContainer.remove();
+            }
+        });
+    } else {
+        console.warn('集成指南按钮不存在，无法绑定事件');
+    }
+    
+    // 添加刷新按钮事件
+    const refreshBtn = document.getElementById('refresh-btn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+            // 防止重复点击
+            if (this.disabled) return;
+            this.disabled = true;
+            
+            console.log('刷新数据请求');
+            onRefresh();
+            
+            // 1秒后恢复按钮
+            setTimeout(() => {
+                this.disabled = false;
+            }, 1000);
+        });
+    } else {
+        console.warn('刷新按钮不存在，无法绑定事件');
+    }
+    
+    // 添加调试按钮事件
+    const debugBtn = document.getElementById('debug-btn');
+    if (debugBtn) {
+        debugBtn.addEventListener('click', async function() {
+            // 防止重复点击
+            if (this.disabled) return;
+            this.disabled = true;
+            
+            try {
+                const databaseIdInput = document.getElementById('database-id');
+                const databaseId = databaseIdInput ? databaseIdInput.value.trim() : '';
                 
-                infoMessage = `数据库: ${dbName}\n`;
-                infoMessage += `ID: ${databaseId}\n`;
-                infoMessage += `创建时间: ${createdTime}\n`;
-                infoMessage += `最后编辑: ${lastEditedTime}\n`;
+                if (!databaseId) {
+                    showStatus('数据库ID不能为空', true);
+                    this.disabled = false;
+                    return;
+                }
                 
-                if (data.properties) {
-                    infoMessage += `\n字段数量: ${Object.keys(data.properties).length}\n`;
-                    infoMessage += '字段列表:\n';
+                showStatus('正在获取数据库信息...', false);
+                console.log('获取数据库信息:', databaseId);
+                
+                const result = await getDatabaseInfo(databaseId);
+                
+                if (result.success) {
+                    console.log('数据库信息:', result);
                     
-                    for (const [key, prop] of Object.entries(data.properties)) {
-                        infoMessage += `- ${key} (${prop.type})\n`;
-                    }
+                    // 格式化并显示数据库信息
+                    const title = result.data.title || '未命名数据库';
+                    const properties = Object.keys(result.data.properties || {}).join(', ') || '无属性';
+                    
+                    showStatus(`数据库: ${title}\n包含属性: ${properties}`, false);
+                } else {
+                    showStatus(`获取失败: ${result.error || '未知错误'}`, true);
+                    console.error('获取数据库信息失败:', result.error);
                 }
-                
-                showStatus('数据库信息获取成功');
+            } catch (error) {
+                showStatus(`获取失败: ${error.message || '未知错误'}`, true);
+                console.error('获取数据库信息错误:', error);
+            } finally {
+                // 1秒后恢复按钮
+                setTimeout(() => {
+                    this.disabled = false;
+                }, 1000);
             }
-            
-            alert(infoMessage || '数据库信息已在控制台输出');
-        } catch (error) {
-            console.error('Error fetching database info:', error);
-            showStatus(`获取数据库信息失败: ${error.message}`, true);
-            alert(`获取数据库信息失败: ${error.message}`);
-        } finally {
-            this.disabled = false;
-        }
-    });
+        });
+    } else {
+        console.warn('调试按钮不存在，无法绑定事件');
+    }
     
-    // 添加测试 API 连接按钮事件
-    document.getElementById('test-api-btn').addEventListener('click', async function() {
-        // 防止重复点击
-        if (this.disabled) return;
-        this.disabled = true;
-        
-        try {
-            showStatus('正在测试 API 连接...');
-            const data = await testApiConnection();
-            console.log('API Test Result:', data);
+    // 添加测试API按钮事件
+    const testApiBtn = document.getElementById('test-api-btn');
+    if (testApiBtn) {
+        testApiBtn.addEventListener('click', async function() {
+            // 防止重复点击
+            if (this.disabled) return;
+            this.disabled = true;
             
-            // 处理不同格式的返回结果
-            let infoMessage = '';
-            
-            if (data.success === false) {
-                infoMessage = `API 连接测试失败: ${data.error || '未知错误'}`;
-                showStatus(infoMessage, true);
-            } else {
-                // 尝试获取API服务的实现信息
-                const implementation = data.implementation || (data.service?.implementation) || '标准实现';
-                const apiVersion = data.apiVersion || data.service?.apiVersion || data.env?.apiVersion || '未知';
-                const timestamp = data.timestamp || data.time || new Date().toISOString();
+            try {
+                showStatus('正在测试API连接...', false);
+                console.log('测试API连接');
                 
-                infoMessage = '✅ API 连接测试成功\n\n';
-                infoMessage += `API实现: ${implementation}\n`;
-                infoMessage += `API版本: ${apiVersion}\n`;
-                infoMessage += `测试时间: ${new Date(timestamp).toLocaleString()}\n`;
+                const result = await testApiConnection();
                 
-                // 添加其他可能有用的信息
-                if (data.service) {
-                    infoMessage += `服务状态: ${data.service.connected ? '已连接' : '未连接'}\n`;
-                }
-                
-                if (data.env) {
-                    infoMessage += `\n环境信息:\n`;
-                    infoMessage += `- 环境: ${data.env.nodeEnv || '未知'}\n`;
-                    infoMessage += `- Notion Key: ${data.env.hasNotionKey ? '已设置' : '未设置'}\n`;
-                    infoMessage += `- Notion DB: ${data.env.hasNotionDb ? '已设置' : '未设置'}\n`;
-                }
-                
-                showStatus('API 连接测试成功');
-            }
-            
-            alert(infoMessage || 'API 连接测试成功，详情请查看控制台');
-        } catch (error) {
-            console.error('Error testing API:', error);
-            showStatus(`API 连接测试失败: ${error.message}`, true);
-            alert(`API 连接测试失败: ${error.message}`);
-        } finally {
-            this.disabled = false;
-        }
-    });
-    
-    // 添加列出数据库按钮事件
-    document.getElementById('list-db-btn').addEventListener('click', async function() {
-        // 防止重复点击
-        if (this.disabled) return;
-        this.disabled = true;
-        
-        try {
-            showStatus('正在获取数据库列表...');
-            const data = await getDatabases();
-            console.log('Databases:', data);
-            
-            let dbInfo = '';
-            
-            if (data.success === false) {
-                dbInfo = `获取数据库列表失败: ${data.error || '未知错误'}`;
-                showStatus(dbInfo, true);
-            } else {
-                dbInfo = '找到的数据库:\n\n';
-                
-                if (data.results && data.results.length > 0) {
-                    data.results.forEach((db, index) => {
-                        let title = '无标题';
-                        
-                        // 尝试从不同属性中获取标题
-                        if (db.title && Array.isArray(db.title) && db.title.length > 0) {
-                            title = db.title[0].plain_text || title;
-                        } else if (db.properties && db.properties.title) {
-                            title = '数据库 ' + (index + 1);
-                        }
-                        
-                        // 添加创建时间信息
-                        const createdTime = db.created_time 
-                            ? new Date(db.created_time).toLocaleString()
-                            : '未知时间';
-                        
-                        dbInfo += `${index + 1}. ${title}\n`;
-                        dbInfo += `   ID: ${db.id}\n`;
-                        dbInfo += `   创建于: ${createdTime}\n\n`;
+                if (result.success) {
+                    showStatus(`API连接成功!\n实现类型: ${result.implementation || '标准'}`, false);
+                    console.log('API连接成功:', result);
+                    
+                    // 更新环境信息
+                    updateEnvironmentInfo({
+                        apiVersion: result.version || '未知',
+                        apiImpl: result.implementation || '标准'
                     });
                 } else {
-                    dbInfo += '没有找到数据库，或您没有访问权限\n\n';
-                    dbInfo += '请确保：\n';
-                    dbInfo += '1. Notion API密钥已正确设置\n';
-                    dbInfo += '2. 您的集成已与至少一个数据库共享\n';
+                    showStatus(`API连接失败: ${result.error || '未知错误'}`, true);
+                    console.error('API连接测试失败:', result.error);
                 }
-                
-                showStatus(`已找到 ${data.results ? data.results.length : 0} 个数据库`);
+            } catch (error) {
+                showStatus(`API连接错误: ${error.message || '未知错误'}`, true);
+                console.error('API连接测试错误:', error);
+            } finally {
+                // 1秒后恢复按钮
+                setTimeout(() => {
+                    this.disabled = false;
+                }, 1000);
             }
+        });
+    } else {
+        console.warn('测试API按钮不存在，无法绑定事件');
+    }
+    
+    // 添加获取所有数据库按钮事件
+    const listDbBtn = document.getElementById('list-db-btn');
+    if (listDbBtn) {
+        listDbBtn.addEventListener('click', async function() {
+            // 防止重复点击
+            if (this.disabled) return;
+            this.disabled = true;
             
-            alert(dbInfo);
-        } catch (error) {
-            console.error('Error listing databases:', error);
-            showStatus(`获取数据库列表失败: ${error.message}`, true);
-            alert(`获取数据库列表失败: ${error.message}`);
-        } finally {
-            this.disabled = false;
-        }
-    });
+            try {
+                showStatus('正在获取所有数据库...', false);
+                console.log('获取所有数据库');
+                
+                const result = await getDatabases();
+                
+                if (result.success) {
+                    const dbCount = result.results ? result.results.length : 0;
+                    console.log(`找到 ${dbCount} 个数据库:`, result.results);
+                    
+                    if (dbCount > 0) {
+                        // 格式化并显示可用数据库
+                        let dbInfo = `找到 ${dbCount} 个数据库:\n`;
+                        
+                        result.results.forEach((db, index) => {
+                            const title = db.title || '未命名数据库 #' + (index + 1);
+                            dbInfo += `${index + 1}. ${title} (${db.id})\n`;
+                        });
+                        
+                        showStatus(dbInfo, false);
+                        
+                        // 添加API选择按钮
+                        let apiSelectBtn = document.getElementById('api-select-btn');
+                        
+                        if (!apiSelectBtn) {
+                            apiSelectBtn = document.createElement('button');
+                            apiSelectBtn.id = 'api-select-btn';
+                            apiSelectBtn.textContent = '选择数据库';
+                            
+                            const debugControls = document.getElementById('debug-controls');
+                            if (debugControls) {
+                                debugControls.appendChild(apiSelectBtn);
+                            }
+                        }
+                        
+                        // 更新按钮事件
+                        apiSelectBtn.onclick = function() {
+                            // 创建选择菜单
+                            const selectMenu = document.createElement('div');
+                            selectMenu.className = 'api-select-menu';
+                            
+                            // 添加数据库选项
+                            result.results.forEach(db => {
+                                const option = document.createElement('div');
+                                option.className = 'api-select-option';
+                                option.textContent = db.title || '未命名数据库';
+                                option.setAttribute('data-id', db.id);
+                                
+                                option.onclick = function() {
+                                    const dbId = this.getAttribute('data-id');
+                                    const databaseIdInput = document.getElementById('database-id');
+                                    if (databaseIdInput) {
+                                        databaseIdInput.value = dbId;
+                                    }
+                                    selectMenu.remove();
+                                };
+                                
+                                selectMenu.appendChild(option);
+                            });
+                            
+                            // 添加关闭按钮
+                            const closeBtn = document.createElement('div');
+                            closeBtn.className = 'api-select-close';
+                            closeBtn.textContent = '关闭';
+                            closeBtn.onclick = function() {
+                                selectMenu.remove();
+                            };
+                            
+                            selectMenu.appendChild(closeBtn);
+                            
+                            // 添加到面板
+                            const debugPanel = document.getElementById('debug-panel');
+                            if (debugPanel) {
+                                debugPanel.appendChild(selectMenu);
+                            } else {
+                                document.body.appendChild(selectMenu);
+                            }
+                        };
+                    } else {
+                        showStatus('未找到可用的数据库', true);
+                    }
+                } else {
+                    showStatus(`获取失败: ${result.error || '未知错误'}`, true);
+                    console.error('获取数据库列表失败:', result.error);
+                }
+            } catch (error) {
+                showStatus(`获取失败: ${error.message || '未知错误'}`, true);
+                console.error('获取数据库列表错误:', error);
+            } finally {
+                // 1秒后恢复按钮
+                setTimeout(() => {
+                    this.disabled = false;
+                }, 1000);
+            }
+        });
+    } else {
+        console.warn('列出数据库按钮不存在，无法绑定事件');
+    }
     
     // 如果window.apiService存在，添加API选择功能
     if (window.apiService && typeof window.apiService.autoSelectBestApi === 'function') {
@@ -557,6 +610,11 @@ function initEnvironmentInfo() {
     const envModeEl = document.getElementById('env-mode');
     const apiImplEl = document.getElementById('api-impl');
     
+    if (!apiVersionEl && !envModeEl && !apiImplEl) {
+        console.warn('未找到环境信息显示元素，无法初始化环境信息区域');
+        return;
+    }
+    
     // 导入配置对象 (如果没有全局引用的话)
     const config = window.config || {};
     
@@ -626,6 +684,12 @@ function updateEnvironmentInfo(data = {}) {
     
     if (!data) return;
     
+    // 如果没有找到环境信息元素，记录警告并退出
+    if (!apiVersionEl && !envModeEl && !apiImplEl) {
+        console.warn('未找到环境信息显示元素，无法更新环境信息');
+        return;
+    }
+    
     if (apiVersionEl && data.apiVersion) {
         apiVersionEl.textContent = data.apiVersion;
     }
@@ -634,8 +698,8 @@ function updateEnvironmentInfo(data = {}) {
         envModeEl.textContent = data.environment;
     }
     
-    if (apiImplEl && data.implementation) {
-        apiImplEl.textContent = data.implementation;
+    if (apiImplEl && (data.apiImpl || data.implementation)) {
+        apiImplEl.textContent = data.apiImpl || data.implementation;
     }
 }
 
@@ -645,28 +709,29 @@ async function updateEnvironmentInfoFromAPI() {
         // 导入配置对象 (如果没有全局引用的话)
         const config = window.config || {};
         
-        // 如果apiService可用
-        if (window.apiService && typeof window.apiService.testConnection === 'function') {
-            const result = await window.apiService.testConnection();
+        // 检查是否有apiService可用
+        if (!window.apiService || typeof window.apiService.testConnection !== 'function') {
+            console.warn('API服务不可用，无法更新环境信息');
+            return;
+        }
+        
+        // 调用API获取环境信息
+        const result = await window.apiService.testConnection();
+        
+        if (result.success) {
+            // 更新环境信息UI
+            updateEnvironmentInfo({
+                apiVersion: result.version || result.apiVersion,
+                environment: result.environment || config.getEnvironment?.() || '开发',
+                apiImpl: result.implementation || result.apiImpl
+            });
             
-            if (result.success) {
-                const data = result.data || {};
-                const implementation = result.implementation || data.service?.implementation || '标准';
-                const apiVersion = data.apiVersion || data.service?.apiVersion || data.env?.apiVersion || '2022-06-28';
-                
-                // 使用配置对象，而不是 process.env
-                const environment = data.env?.nodeEnv || 
-                    (config.getEnvironment ? config.getEnvironment() : '开发');
-                
-                updateEnvironmentInfo({
-                    apiVersion,
-                    environment,
-                    implementation
-                });
-            }
+            console.log('环境信息更新成功:', result);
+        } else {
+            console.warn('无法从API获取环境信息:', result.error);
         }
     } catch (error) {
-        console.error('获取环境信息失败:', error);
+        console.error('更新环境信息时出错:', error);
     }
 }
 

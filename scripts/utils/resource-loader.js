@@ -22,6 +22,13 @@ class ResourceLoader {
         this.resourceConfig = resourceConfig;
         this.cdnMappings = {};
         this.isInitialized = false;
+        this.timeoutHandlers = new Map(); // 存储超时处理器
+        this.resourceTimeouts = {
+            critical: 3000,   // 关键资源等待3秒
+            high: 5000,       // 高优先级资源等待5秒
+            medium: 8000,     // 中等优先级资源等待8秒
+            low: 15000        // 低优先级资源等待15秒
+        };
         
         // 从资源配置中初始化CDN映射
         this.initializeCdnMappings();
@@ -593,6 +600,329 @@ class ResourceLoader {
     }
     
     /**
+     * 启用资源加载的超时处理
+     * 对于阻塞页面加载的资源，设置超时自动继续
+     * @param {string} resourceType - 资源类型
+     * @param {string} url - 资源URL
+     * @param {string} priority - 资源优先级
+     */
+    setResourceTimeout(resourceType, url, priority = 'medium') {
+        // 如果已经有超时处理器，先清除
+        if (this.timeoutHandlers.has(url)) {
+            clearTimeout(this.timeoutHandlers.get(url));
+        }
+        
+        // 根据优先级确定超时时间
+        const timeout = this.resourceTimeouts[priority] || 5000;
+        
+        // 设置新的超时处理器
+        const handler = setTimeout(() => {
+            console.warn(`⏱️ 资源加载超时 (${timeout}ms): ${url}`);
+            
+            // 移除超时处理器
+            this.timeoutHandlers.delete(url);
+            
+            // 把资源标记为已加载，即使实际上可能失败了
+            // 这样可以防止无限等待，让页面渲染继续
+            this.loadedResources.add(url);
+            
+            // 发送自定义事件通知资源超时
+            const event = new CustomEvent('resource-timeout', {
+                detail: { 
+                    url, 
+                    resourceType,
+                    priority,
+                    timeoutMs: timeout
+                }
+            });
+            document.dispatchEvent(event);
+            
+            // 对于关键资源，尝试注入基本功能样式
+            if (priority === 'critical') {
+                const resourceName = this.getResourceBaseName(url);
+                this.handleCriticalResourceFailure(resourceName);
+            }
+        }, timeout);
+        
+        // 保存超时处理器
+        this.timeoutHandlers.set(url, handler);
+        
+        return handler;
+    }
+    
+    /**
+     * 取消资源的超时处理
+     * @param {string} url - 资源URL
+     */
+    clearResourceTimeout(url) {
+        if (this.timeoutHandlers.has(url)) {
+            clearTimeout(this.timeoutHandlers.get(url));
+            this.timeoutHandlers.delete(url);
+        }
+    }
+
+    /**
+     * 加载无阻塞核心内容
+     * 这个方法确保即使外部资源加载失败，页面内容也能显示
+     */
+    loadNonBlockingCoreContent() {
+        console.log('🚀 初始化非阻塞核心内容加载...');
+        
+        // 立即解除内容加载阻塞，不等待任何资源
+        // 这确保内容渲染和资源加载完全并行
+        setTimeout(() => {
+            this.unblockContentLoading();
+            // 设置全局标志，通知其他组件内容已解锁
+            window.contentUnblocked = true;
+        }, 100);
+        
+        // 为关键样式注入内联替代，确保基本样式立即可用
+        this.injectCriticalInlineStyles();
+        
+        // 处理关键资源预加载，但设置短超时
+        const criticalResources = this.getCriticalResources();
+        
+        // 对关键资源使用非阻塞方式加载
+        criticalResources.forEach(resource => {
+            if (!resource || !resource.primary) return;
+            
+            // 根据资源类型确定加载方法
+            const url = resource.primary;
+            if (typeof url === 'string') {
+                if (url.endsWith('.css')) {
+                    // 使用非阻塞方式加载CSS
+                    this.loadCssNonBlocking(url, resource);
+                } else if (url.endsWith('.js')) {
+                    // 对于核心脚本，使用async加载
+                    const script = document.createElement('script');
+                    script.async = true;
+                    script.src = url;
+                    document.head.appendChild(script);
+                }
+            }
+        });
+        
+        // 处理任何关键资源的超时
+        document.addEventListener('resource-timeout', event => {
+            const { url, resourceType, priority } = event.detail;
+            console.warn(`⚠️ 资源 ${url} (${priority}) 加载超时`);
+            
+            // 对于CSS，为缺失的样式注入最小替代
+            if (resourceType === 'styles') {
+                const resourceName = this.getResourceBaseName(url);
+                this.handleCriticalResourceFailure(resourceName);
+            }
+        }, { once: false });
+        
+        // 然后加载其他高优先级资源，但是在后台进行，不阻塞内容显示
+        setTimeout(() => {
+            this.loadHighPriorityResources()
+                .catch(error => console.warn('加载高优先级资源时出错:', error));
+        }, 300);
+        
+        return Promise.resolve(true); // 立即返回，不阻塞内容加载
+    }
+    
+    /**
+     * 解除内容加载阻塞
+     * 移除阻塞内容显示的CSS和其他限制
+     */
+    unblockContentLoading() {
+        // 移除可能阻塞内容显示的样式
+        const contentBlockers = document.querySelectorAll('.content-loading-mask, .loading-overlay');
+        contentBlockers.forEach(el => {
+            // 平滑过渡
+            el.style.transition = 'opacity 0.3s ease';
+            el.style.opacity = '0';
+            
+            // 延迟后移除元素
+            setTimeout(() => {
+                if (el.parentNode) el.parentNode.removeChild(el);
+            }, 350);
+        });
+        
+        // 添加自定义事件通知页面内容可以显示了
+        document.dispatchEvent(new CustomEvent('content-unblocked'));
+        
+        console.log('🎉 内容加载阻塞已解除，页面内容可以显示');
+    }
+    
+    /**
+     * 非阻塞方式加载CSS
+     * @param {string} url - CSS文件URL
+     * @param {object} resource - 资源对象
+     */
+    loadCssNonBlocking(url, resource) {
+        // 检查URL是否有效
+        if (!url || typeof url !== 'string') {
+            console.warn('⚠️ 尝试加载无效的CSS URL:', url);
+            return;
+        }
+        
+        // 跳过已加载的资源
+        if (this.loadedResources.has(url)) {
+            return;
+        }
+        
+        // 获取资源优先级
+        let priority = 'medium';
+        if (resource && resource.priority) {
+            priority = resource.priority;
+        }
+        
+        // 设置加载超时
+        this.setResourceTimeout('styles', url, priority);
+        
+        // 创建<link>元素但使用media="print"和onload切换技术
+        // 这样CSS不会阻塞渲染
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = url;
+        link.media = 'print'; // 初始不应用，不阻塞
+        
+        // 添加自定义属性
+        if (resource && resource.attributes) {
+            Object.entries(resource.attributes).forEach(([key, value]) => {
+                link.setAttribute(key, value);
+            });
+        }
+        
+        // 设置onload事件，当CSS加载完成时应用样式
+        link.onload = () => {
+            // 清除超时处理器
+            this.clearResourceTimeout(url);
+            
+            // 样式已加载，现在应用它
+            link.media = 'all';
+            this.loadedResources.add(url);
+            console.log(`✅ 非阻塞加载CSS完成: ${url}`);
+        };
+        
+        link.onerror = () => {
+            // 清除超时处理器
+            this.clearResourceTimeout(url);
+            
+            // 记录错误但不阻塞
+            this.handleResourceError(link, url);
+            console.warn(`❌ 非阻塞CSS加载失败: ${url}`);
+        };
+        
+        // 添加到文档
+        document.head.appendChild(link);
+    }
+    
+    /**
+     * 优先加载基本样式并解除内容阻塞
+     * 这个方法确保基本样式尽快加载，而页面内容不被阻塞
+     */
+    prioritizeContentRendering() {
+        console.log('🚀 优先处理内容渲染...');
+        
+        // 为关键样式注入内联替代，确保基本样式立即可用
+        this.injectCriticalInlineStyles();
+        
+        // 立即解除内容阻塞
+        setTimeout(() => {
+            this.unblockContentLoading();
+            // 设置全局标志，通知其他组件内容已解锁
+            window.contentUnblocked = true;
+        }, 50);
+        
+        // 加载高优先级资源，但不阻塞渲染
+        setTimeout(() => {
+            this.loadResourcesByPriority('high')
+                .catch(error => console.warn('加载高优先级资源时出错:', error));
+            
+            // 然后加载中优先级资源
+            setTimeout(() => {
+                this.loadResourcesByPriority('medium')
+                    .catch(error => console.warn('加载中优先级资源时出错:', error));
+            }, 1000);
+        }, 300);
+        
+        // 延迟加载低优先级资源
+        setTimeout(() => {
+            this.lazyLoadLowPriorityResources();
+        }, 2000);
+        
+        return true;
+    }
+    
+    /**
+     * 注入关键的内联样式
+     * 确保基本的布局和样式即使在外部资源失败时也能正常显示
+     */
+    injectCriticalInlineStyles() {
+        // 检查是否已经注入了关键样式
+        if (document.getElementById('critical-inline-styles')) {
+            return;
+        }
+        
+        const style = document.createElement('style');
+        style.id = 'critical-inline-styles';
+        style.textContent = `
+            /* 仅保留加载相关的最小样式，移除所有与布局相关的样式 */
+            
+            /* 加载动画 */
+            @keyframes resource-spinner {
+                to {transform: rotate(360deg);}
+            }
+            
+            /* 资源加载器专用样式 - 避免与分页加载样式冲突 */
+            .resource-loading-spinner {
+                width: 50px;
+                height: 50px;
+                border: 3px solid rgba(0,0,0,0.1);
+                border-radius: 50%;
+                border-top-color: #0366d6;
+                animation: resource-spinner 1s ease-in-out infinite;
+                margin: 20px auto;
+            }
+            
+            /* 加载遮罩样式 */
+            .content-loading-mask {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(255,255,255,0.8);
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                z-index: 100;
+                transition: opacity 0.3s ease;
+            }
+            
+            .content-loading-text {
+                margin-top: 16px;
+                font-size: 16px;
+                color: #333;
+                text-align: center; /* 确保文本居中 */
+                width: 100%; /* 占据全宽 */
+            }
+            
+            /* 移除分页加载样式，避免与articleManager.js冲突 */
+            
+            /* 基本的图标回退样式 - 仅在图标资源加载失败时使用 */
+            .fas, .far, .fab, .bi, .material-icons {
+                font-family: sans-serif;
+            }
+            
+            /* 代码块最小回退样式 - 仅在代码高亮资源加载失败时使用 */
+            pre, code {
+                background-color: #f6f8fa;
+                border-radius: 3px;
+                font-family: monospace;
+            }
+        `;
+        
+        document.head.appendChild(style);
+        console.log('✅ 已注入最小必要的关键内联样式');
+    }
+    
+    /**
      * 初始化页面资源加载策略
      * 按照优先级逐步加载资源
      */
@@ -605,33 +935,85 @@ class ResourceLoader {
         console.log('🚀 初始化资源加载策略...');
         this.isInitialized = true;
         
-        // 1. 预加载关键资源（通常是CSS）
-        this.preloadCriticalResources();
+        // 1. 首先优先处理内容渲染，无论资源是否加载完成
+        this.prioritizeContentRendering();
         
-        // 2. 在DOMContentLoaded后加载高优先级资源
+        // 2. 在DOM加载后（但不阻塞内容显示）继续加载资源
         document.addEventListener('DOMContentLoaded', () => {
-            this.loadHighPriorityResources().then(() => {
-                console.log('✅ 高优先级资源加载完成');
-                
-                // 3. 开始加载中等优先级资源
-                this.loadResourcesByPriority('medium').then(() => {
-                    console.log('✅ 中等优先级资源加载完成');
-                });
-                
-                // 4. 安排在空闲时间加载低优先级资源
-                this.lazyLoadLowPriorityResources();
-            });
+            console.log('📃 DOM已加载，继续优化资源加载');
+            
+            // 确保所有关键元素都有资源组标记
+            ensureResourceGroupMarkers();
+            
+            // 检查加载失败的资源
+            setTimeout(() => {
+                this.checkForFailedResources();
+            }, 2000);
         });
         
-        // 5. 监听页面完全加载事件
+        // 3. 监听页面完全加载事件
         window.addEventListener('load', () => {
-            console.log('🏁 页面完全加载，继续加载剩余资源');
+            console.log('🏁 页面完全加载，设置基于可见性的后续资源加载');
             
             // 如果浏览器支持Intersection Observer，为可见性加载做准备
             if ('IntersectionObserver' in window) {
                 this.setupVisibilityBasedLoading();
             }
         });
+    }
+    
+    /**
+     * 检查加载失败的资源
+     * 这是一个额外的安全措施，检查任何可能的资源加载失败
+     */
+    checkForFailedResources() {
+        console.log('🔍 检查资源加载状态...');
+        
+        // 检查样式表
+        const links = document.querySelectorAll('link[rel="stylesheet"]');
+        links.forEach(link => {
+            const href = link.getAttribute('href');
+            if (!href) return;
+            
+            // 检查样式表是否加载成功
+            let loaded = false;
+            try {
+                // 尝试访问样式表规则，如果加载失败会抛出错误
+                Array.from(document.styleSheets).forEach(sheet => {
+                    if (sheet.href === link.href) {
+                        try {
+                            // 尝试读取规则以确认加载成功
+                            const rules = sheet.cssRules;
+                            loaded = true;
+                        } catch (e) {
+                            // 对于跨域样式表，无法读取规则，但这不意味着加载失败
+                            if (e.name === 'SecurityError') {
+                                loaded = true; // 假设跨域样式表已加载
+                            }
+                        }
+                    }
+                });
+            } catch (e) {
+                console.warn(`检查样式表加载状态时出错:`, e);
+            }
+            
+            if (!loaded && !this.failedResources.has(href)) {
+                console.warn(`检测到可能失败的样式表: ${href}`);
+                this.handleResourceError(link, href);
+            }
+        });
+        
+        // 检查脚本
+        const scripts = document.querySelectorAll('script[src]');
+        scripts.forEach(script => {
+            const src = script.getAttribute('src');
+            if (!src) return;
+            
+            // 目前没有可靠的方法检查脚本是否真正加载成功
+            // 我们依赖onerror事件处理失败的脚本
+        });
+        
+        console.log('🔍 资源加载状态检查完成');
     }
     
     /**
@@ -807,6 +1189,15 @@ class ResourceLoader {
                 return;
             }
             
+            // 获取资源优先级
+            let priority = 'medium';
+            if (resource && resource.priority) {
+                priority = resource.priority;
+            }
+            
+            // 设置加载超时
+            this.setResourceTimeout('styles', url, priority);
+            
             const link = document.createElement('link');
             link.rel = 'stylesheet';
             
@@ -820,11 +1211,17 @@ class ResourceLoader {
             link.href = url;
             
             link.onload = () => {
+                // 清除超时处理器
+                this.clearResourceTimeout(url);
+                
                 this.loadedResources.add(url);
                 resolve(link);
             };
             
             link.onerror = (error) => {
+                // 清除超时处理器
+                this.clearResourceTimeout(url);
+                
                 this.handleResourceError(link, url);
                 // 虽然错误处理会尝试回退，但我们仍然完成Promise以避免阻塞
                 resolve();

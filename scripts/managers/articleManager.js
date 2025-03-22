@@ -54,12 +54,24 @@ class ArticleManager {
         this.articles = [];
         this.currentDatabaseId = null;
         this.searchTerm = '';
+        this.currentCategory = 'all';
+        this.isLoading = false;
+        this.currentLoadingId = null;
+        this.abortController = null;
+        this.hasMore = false;
+        this.nextCursor = null;
+        this.isFetchingMore = false;
+        this.fetchDelay = 1000; // 防抖延迟，单位毫秒
+        this.fetchDelayTimer = null;
         
-        // 使用ArticleCache替换原有的缓存逻辑
+        // 初始化缓存管理器
         this.articleCache = new ArticleCache({
             cachePrefix: 'article_cache_',
-            expirationTime: 30 * 60 * 1000 // 30分钟
+            expirationTime: 30 * 60 * 1000 // 30分钟缓存有效期
         });
+        
+        // 清理过期缓存
+        this.articleCache.clearExpiredCache();
         
         // 添加分类名称映射
         this.categoryNameMap = categoryConfig.nameMap || {
@@ -73,8 +85,6 @@ class ArticleManager {
         this.initializeSearch();
         
         // 添加请求控制相关属性
-        this.currentLoadingId = null;
-        this.abortController = null;
         this.loadingStatus = new Map(); // 记录每篇文章的加载状态
     }
 
@@ -247,6 +257,22 @@ class ArticleManager {
             
             console.log(`开始加载文章，数据库ID: ${this.currentDatabaseId}`);
             
+            // 添加超时控制
+            const timeoutId = setTimeout(() => {
+                if (this.abortController) {
+                    console.warn('⚠️ 加载文章列表超时（8秒），尝试从缓存加载');
+                    this.abortController.abort();
+                    // 尝试从缓存获取文章列表
+                    const cachedArticles = this.articleCache.getArticleFromCache('article_list');
+                    if (cachedArticles) {
+                        console.log('✅ 从缓存加载文章列表成功');
+                        this.articles = cachedArticles;
+                        this.filterAndRenderArticles();
+                        return this.articles;
+                    }
+                }
+            }, 8000); // 8秒超时
+            
             // 测试 API 连接
             try {
                 console.log('测试 API 连接...');
@@ -266,10 +292,13 @@ class ArticleManager {
             console.log('正在从 API 获取文章列表...');
             const result = await getArticles(this.currentDatabaseId);
             
+            // 清除超时
+            clearTimeout(timeoutId);
+            
             // 如果请求已取消，不继续处理
             if (signal.aborted) {
                 console.log('文章列表加载已取消');
-                return [];
+                return this.articles || []; // 返回现有文章
             }
             
             // 处理新的响应格式
@@ -286,6 +315,9 @@ class ArticleManager {
             // 使用processArticleListData处理原始数据
             this.articles = processArticleListData(articles);
             
+            // A. 使用ArticleCache缓存文章列表
+            this.articleCache.setArticleCache('article_list', this.articles);
+            
             // 应用搜索过滤
             this.filterAndRenderArticles();
             
@@ -299,20 +331,81 @@ class ArticleManager {
             console.error('Error loading articles:', error);
             
             // 显示错误状态
-            showError(`加载文章列表失败: ${error.message}`);
-            
-            // 尝试显示更加用户友好的错误信息
-            if (error.message.includes('failed with status 500')) {
-                showError('服务器内部错误，请稍后再试或联系管理员');
-            } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
-                showError('网络连接错误，请检查您的网络连接');
+            if (error.name === 'AbortError') {
+                console.log('请求被中止，尝试使用缓存');
+            } else {
+                showError(`加载文章列表失败: ${error.message}`);
+                
+                // 尝试显示更加用户友好的错误信息
+                if (error.message.includes('failed with status 500')) {
+                    showError('服务器内部错误，请稍后再试或联系管理员');
+                } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+                    showError('网络连接错误，请检查您的网络连接');
+                }
             }
             
-            return [];
+            // B. 尝试从缓存获取文章列表
+            const cachedArticles = this.articleCache.getArticleFromCache('article_list');
+            if (cachedArticles) {
+                console.log('✅ 从缓存加载文章列表成功');
+                this.articles = cachedArticles;
+                this.filterAndRenderArticles();
+                return this.articles;
+            }
+            
+            return this.articles || [];
         } finally {
             // 清除 AbortController
             this.abortController = null;
         }
+    }
+
+    // 将文章列表保存到缓存
+    saveArticlesToCache() {
+        if (!this.articles || this.articles.length === 0) return;
+        
+        try {
+            localStorage.setItem('article_list_cache', JSON.stringify({
+                articles: this.articles,
+                timestamp: Date.now()
+            }));
+            console.log('✅ 文章列表已保存到缓存');
+        } catch (e) {
+            console.warn('无法保存文章列表到缓存:', e);
+        }
+    }
+
+    // 从缓存加载文章列表
+    loadArticlesFromCache() {
+        console.log('🔍 尝试从缓存加载文章列表...');
+        
+        try {
+            const cached = localStorage.getItem('article_list_cache');
+            if (cached) {
+                const { articles, timestamp } = JSON.parse(cached);
+                
+                // 检查缓存是否过期（24小时）
+                const now = Date.now();
+                const maxAge = 24 * 60 * 60 * 1000; // 24小时
+                
+                if (now - timestamp < maxAge) {
+                    console.log('✅ 从缓存加载文章列表成功');
+                    this.articles = articles;
+                    
+                    // 应用搜索过滤
+                    this.filterAndRenderArticles();
+                    
+                    return this.articles;
+                } else {
+                    console.log('缓存已过期');
+                }
+            }
+        } catch (e) {
+            console.warn('从缓存加载文章列表失败:', e);
+        }
+        
+        console.log('❌ 未找到有效的文章列表缓存');
+        return this.articles || [];
     }
 
     // 过滤并渲染文章列表
@@ -402,8 +495,21 @@ class ArticleManager {
 
             console.log('🌐 从网络加载文章:', pageId);
             
+            // 设置超时控制
+            const timeoutId = setTimeout(() => {
+                if (this.abortController) {
+                    console.warn('⚠️ 加载文章内容超时（12秒），中断请求');
+                    this.abortController.abort();
+                    showStatus('加载文章超时，请尝试刷新页面', true, 'warning');
+                }
+            }, 12000); // 12秒超时
+            
             // 从API获取文章
             const articleData = await getArticleContent(pageId);
+            
+            // 清除超时
+            clearTimeout(timeoutId);
+            
             console.log('API返回的文章内容:', articleData);
             
             // 检查article结构是否有效

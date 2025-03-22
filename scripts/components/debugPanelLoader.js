@@ -44,8 +44,12 @@ export async function loadDebugPanel(options = {}) {
         const debugSection = doc.querySelector('.debug-section');
         const debugPanel = doc.querySelector('#debug-panel');
         
+        if (!debugSection || !debugPanel) {
+            throw new Error('调试面板HTML结构不完整，无法加载组件');
+        }
+        
         // 获取容器元素
-        const toggleContainer = document.getElementById(containerId);
+        let toggleContainer = document.getElementById(containerId);
         const panelContainer = document.getElementById(panelContainerId);
         
         if (!toggleContainer) {
@@ -68,82 +72,88 @@ export async function loadDebugPanel(options = {}) {
             toggleContainer = newContainer;
         }
         
+        // 将开关部分添加到指定容器
+        if (toggleContainer) {
+            toggleContainer.innerHTML = '';
+            toggleContainer.appendChild(debugSection.cloneNode(true));
+        } else {
+            throw new Error('无法创建或找到调试开关容器');
+        }
+        
+        // 处理面板容器
         if (!panelContainer) {
             console.warn(`调试面板容器 #${panelContainerId} 不存在，将面板直接添加到body`);
             
             // 直接将面板添加到body末尾
-            if (debugPanel) {
-                document.body.appendChild(debugPanel.cloneNode(true));
-            }
+            document.body.appendChild(debugPanel.cloneNode(true));
         } else {
             // 将面板添加到指定容器
-            if (debugPanel) {
-                panelContainer.appendChild(debugPanel.cloneNode(true));
-            }
-        }
-        
-        // 将开关部分添加到指定容器
-        if (debugSection && toggleContainer) {
-            toggleContainer.innerHTML = '';
-            toggleContainer.appendChild(debugSection.cloneNode(true));
+            panelContainer.innerHTML = ''; // 清空现有内容
+            panelContainer.appendChild(debugPanel.cloneNode(true));
         }
         
         console.log('调试面板组件加载完成');
         
-        // 初始化调试面板功能
-        initDebugPanel(databaseId, {
-            onConfigUpdate: callbacks.onConfigUpdate || function(newDbId) {
-                console.log('数据库ID已更新:', newDbId);
-            },
-            onRefresh: callbacks.onRefresh || function() {
-                console.log('刷新请求');
-                location.reload();
-            },
-            showStatus: callbacks.showStatus || function(message, isError) {
-                console.log(isError ? `错误: ${message}` : message);
+        // 确保DOM已经更新
+        setTimeout(() => {
+            try {
+                // 设置正确的快捷键文本
+                const shortcutEl = document.getElementById('debug-shortcut');
+                if (shortcutEl) {
+                    const isMac = navigator.platform.indexOf('Mac') !== -1;
+                    shortcutEl.textContent = isMac ? '⌘+Shift+D' : 'Ctrl+Shift+D';
+                }
                 
-                // 简单的状态显示
-                const statusEl = document.getElementById('status-message');
-                if (statusEl) {
-                    statusEl.textContent = message;
-                    statusEl.style.color = isError ? 'red' : 'green';
-                    statusEl.style.display = 'block';
-                    
-                    // 3秒后隐藏
-                    setTimeout(() => {
-                        statusEl.style.display = 'none';
-                    }, 3000);
-                }
-            },
-            getDatabaseInfo: callbacks.getDatabaseInfo || async function(dbId) {
-                if (window.apiService && typeof window.apiService.getDatabaseInfo === 'function') {
-                    return await window.apiService.getDatabaseInfo(dbId);
-                }
-                return { success: false, error: 'API服务不可用' };
-            },
-            testApiConnection: callbacks.testApiConnection || async function() {
-                if (window.apiService && typeof window.apiService.testConnection === 'function') {
-                    return await window.apiService.testConnection();
-                }
-                return { success: false, error: 'API服务不可用' };
-            },
-            getDatabases: callbacks.getDatabases || async function() {
-                if (window.apiService && typeof window.apiService.getDatabases === 'function') {
-                    return await window.apiService.getDatabases();
-                }
-                return { success: false, error: 'API服务不可用' };
+                // 初始化调试面板功能
+                initDebugPanel(databaseId, {
+                    onConfigUpdate: callbacks.onConfigUpdate || function(newDbId) {
+                        console.log('数据库ID已更新:', newDbId);
+                    },
+                    onRefresh: callbacks.onRefresh || function() {
+                        console.log('刷新请求');
+                        location.reload();
+                    },
+                    showStatus: callbacks.showStatus || function(message, isError) {
+                        console.log(isError ? `错误: ${message}` : message);
+                        
+                        // 简单的状态显示
+                        const statusEl = document.getElementById('status-message');
+                        if (statusEl) {
+                            statusEl.textContent = message;
+                            statusEl.style.color = isError ? 'red' : 'green';
+                            statusEl.style.display = 'block';
+                            
+                            // 3秒后隐藏
+                            setTimeout(() => {
+                                statusEl.style.display = 'none';
+                            }, 3000);
+                        }
+                    },
+                    getDatabaseInfo: callbacks.getDatabaseInfo || async function(dbId) {
+                        if (window.apiService && typeof window.apiService.getDatabaseInfo === 'function') {
+                            return await window.apiService.getDatabaseInfo(dbId);
+                        }
+                        return { success: false, error: 'API服务不可用' };
+                    },
+                    testApiConnection: callbacks.testApiConnection || async function() {
+                        if (window.apiService && typeof window.apiService.testConnection === 'function') {
+                            return await window.apiService.testConnection();
+                        }
+                        return { success: false, error: 'API服务不可用' };
+                    },
+                    getDatabases: callbacks.getDatabases || async function() {
+                        if (window.apiService && typeof window.apiService.getDatabases === 'function') {
+                            return await window.apiService.getDatabases();
+                        }
+                        return { success: false, error: 'API服务不可用' };
+                    }
+                });
+                
+                console.log('调试面板初始化完成');
+            } catch (error) {
+                console.error('初始化调试面板失败:', error);
             }
-        });
-        
-        // 设置正确的快捷键文本
-        const shortcutEl = document.getElementById('debug-shortcut');
-        if (shortcutEl) {
-            const isMac = navigator.platform.indexOf('Mac') !== -1;
-            shortcutEl.textContent = isMac ? '⌘+Shift+D' : 'Ctrl+Shift+D';
-        }
-        
-        console.log('调试面板初始化完成');
-        
+        }, 0);
     } catch (error) {
         console.error('加载调试面板失败:', error);
     }
