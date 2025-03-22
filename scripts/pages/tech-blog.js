@@ -229,13 +229,27 @@ async function initializePage() {
             console.log(`从URL参数加载文章: ${articleIdFromUrl}`);
             await articleManager.showArticle(articleIdFromUrl);
         } else {
-            // 默认显示欢迎页面
+            // 确保文章数据已加载完成后再显示欢迎页面
+            console.log('确保文章数据已加载后显示欢迎页面...');
+            // 如果还没有文章数据，先加载文章
+            if (!articleManager.articles || articleManager.articles.length === 0) {
+                console.log('文章数据尚未加载，先加载文章数据...');
+                await articleManager.loadArticles();
+            }
+            // 显示欢迎页面
             console.log('显示欢迎页面...');
             articleManager.showWelcomePage();
         }
     } catch (error) {
         console.error('页面初始化过程中出错:', error);
-        console.log('显示欢迎页面...');
+        // 即使出错，也尝试加载文章数据再显示欢迎页面
+        if (!articleManager.articles || articleManager.articles.length === 0) {
+            try {
+                await articleManager.loadArticles();
+            } catch (loadError) {
+                console.error('加载文章数据出错:', loadError);
+            }
+        }
         articleManager.showWelcomePage();
     }
 

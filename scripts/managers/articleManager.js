@@ -1050,6 +1050,52 @@ class ArticleManager {
     showWelcomePage() {
         console.log('显示欢迎页面');
         
+        // 确保有文章数据
+        if (!this.articles || this.articles.length === 0) {
+            console.log('欢迎页面需要文章数据，但当前没有数据，尝试加载文章数据...');
+            // 尝试从缓存加载
+            const cachedArticles = this.loadArticlesFromCache();
+            
+            if (cachedArticles && cachedArticles.length > 0) {
+                console.log('从缓存加载到文章数据:', cachedArticles.length);
+                this.articles = cachedArticles;
+            } else {
+                console.log('缓存中没有文章数据，将异步加载文章数据');
+                // 异步加载文章，并在加载完成后显示欢迎页面
+                this.loadArticles().then(() => {
+                    if (this.articles && this.articles.length > 0) {
+                        console.log('文章数据加载完成，重新渲染欢迎页面');
+                        this.renderWelcomePage();
+                    }
+                }).catch(err => {
+                    console.error('加载文章数据失败:', err);
+                });
+                
+                // 显示一个简单的加载中状态，避免空白页面
+                const container = document.getElementById('article-container');
+                if (container) {
+                    container.innerHTML = `
+                        <div class="welcome-page">
+                            <div class="welcome-header">
+                                <h1>温故知新，回望前行</h1>
+                                <p class="welcome-subtitle">这里记录了一些技术学习和思考，欢迎讨论</p>
+                            </div>
+                            <div class="welcome-content">
+                                <p>正在加载文章数据，请稍候...</p>
+                            </div>
+                        </div>
+                    `;
+                }
+                return; // 等待异步加载完成
+            }
+        }
+        
+        // 现在确保有文章数据，渲染欢迎页面
+        this.renderWelcomePage();
+    }
+    
+    // 实际渲染欢迎页面的方法
+    renderWelcomePage() {
         // 使用welcomePageRenderer组件渲染欢迎页面
         renderWelcomePage({
             articles: this.articles,
