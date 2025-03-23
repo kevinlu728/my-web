@@ -550,47 +550,50 @@ class ArticleManager {
         console.log('设置滚动监听以加载更多内容');
         
         // 先移除可能存在的旧监听器
-            if (this.scrollHandler) {
-                window.removeEventListener('scroll', this.scrollHandler);
-                this.scrollHandler = null;
-            }
+        if (this.scrollHandler) {
+            window.removeEventListener('scroll', this.scrollHandler);
+            this.scrollHandler = null;
+        }
 
         // 使用throttle函数创建节流处理函数
         this.scrollHandler = throttle(() => {
-                        if (this.isLoading || !this.hasMore) {
-                            // 减少日志输出，仅在调试模式时输出
-                            if (config.debug) {
-                                console.log('跳过加载：', this.isLoading ? '正在加载中' : '没有更多内容');
-                            }
-                            return;
-                        }
+            if (this.isLoading || !this.hasMore) {
+                // 减少日志输出，仅在调试模式时输出
+                if (config.debug) {
+                    console.log('跳过加载：', this.isLoading ? '正在加载中' : '没有更多内容');
+                }
+                return;
+            }
 
-                        const loadMoreContainer = document.querySelector('.load-more-container');
-                        if (!loadMoreContainer) return;
+            const loadMoreContainer = document.querySelector('.load-more-container');
+            if (!loadMoreContainer) return;
 
             // 检测滚动位置是否接近页面底部
-                        const scrollPosition = window.scrollY + window.innerHeight;
-                        const totalHeight = document.documentElement.scrollHeight;
-                        const scrollPercentage = (scrollPosition / totalHeight) * 100;
-                        const isNearPageBottom = scrollPercentage > 90;
-                        
+            const scrollPosition = window.scrollY + window.innerHeight;
+            const totalHeight = document.documentElement.scrollHeight;
+            const scrollPercentage = (scrollPosition / totalHeight) * 100;
+            
+            // 降低触发门槛，更早地触发加载更多内容
+            const isNearPageBottom = scrollPercentage > 85; // 原来是90，现在降低到85
+            
             // 备用检测：加载容器是否接近视口底部
-                        const containerRect = loadMoreContainer.getBoundingClientRect();
-                        const isNearViewportBottom = containerRect.top <= window.innerHeight + 200;
+            const containerRect = loadMoreContainer.getBoundingClientRect();
+            // 当容器进入视图区域的前300px时就开始准备加载
+            const isNearViewportBottom = containerRect.top <= window.innerHeight + 300; // 原来是200，增加到300
 
-                        // 减少调试日志，仅在调试模式或触发加载时输出
-                        if (isNearPageBottom && config.debug) {
-                            console.log('滚动检测：', {
-                                '滚动百分比': scrollPercentage.toFixed(2) + '%',
-                                '接近页面底部': isNearPageBottom
-                            });
-                        }
+            // 减少调试日志，仅在调试模式或触发加载时输出
+            if (isNearPageBottom && config.debug) {
+                console.log('滚动检测：', {
+                    '滚动百分比': scrollPercentage.toFixed(2) + '%',
+                    '接近页面底部': isNearPageBottom
+                });
+            }
 
-                        // 使用最可靠的条件作为主要触发条件
-                        if (isNearPageBottom || (isNearViewportBottom && containerRect.bottom > 0)) {
+            // 使用较宽松的条件触发加载
+            if (isNearPageBottom || (isNearViewportBottom && containerRect.bottom > 0)) {
                 this.triggerLoadMoreContent(loadMoreContainer, scrollPercentage);
             }
-        }, 500);
+        }, 300); // 减少节流时间，从500ms改为300ms，让响应更快
         
         // 添加滚动监听
         window.addEventListener('scroll', this.scrollHandler);
@@ -604,68 +607,75 @@ class ArticleManager {
             return;
         }
         
-                            console.log('触发加载更多内容 - 滚动位置: ' + scrollPercentage.toFixed(2) + '%');
+        console.log('触发加载更多内容 - 滚动位置: ' + scrollPercentage.toFixed(2) + '%');
         
-        // 添加防抖处理，避免重复触发
+        // 防抖处理，避免重复触发
         if (this.triggerDebounceTimeout) {
             clearTimeout(this.triggerDebounceTimeout);
         }
-                            
-                            // 平滑加载过程：先将加载指示器显示为"准备加载"状态
-                            if (loadMoreContainer) {
-                                // 使用CSS class控制状态，而不是直接修改innerHTML
-                                loadMoreContainer.classList.add('loading-prepare');
-                                
+        
+        // 直接修改加载指示器显示加载中状态
+        if (loadMoreContainer) {
+            // 显示加载中状态
+            loadMoreContainer.innerHTML = '<div class="loading-spinner"></div><div class="loading-text">加载中...</div>';
+            
             // 使用防抖延迟，避免频繁触发
             this.triggerDebounceTimeout = setTimeout(() => {
-                                    // 再次检查状态，避免延迟期间状态改变
-                                    if (!this.isLoading && this.hasMore) {
+                // 再次检查状态，避免延迟期间状态改变
+                if (!this.isLoading && this.hasMore) {
                     console.log('执行加载更多内容操作');
-                                        this.loadMoreContent();
+                    this.loadMoreContent();
                     // 清除触发状态
                     this.triggerDebounceTimeout = null;
                 } else {
-                    // 如果状态变了，移除准备加载状态
-                    loadMoreContainer.classList.remove('loading-prepare');
-                                    }
+                    // 检查是否还有更多内容
+                    if (this.hasMore) {
+                        loadMoreContainer.innerHTML = '<div class="loading-text">下拉加载更多</div>';
+                    } else {
+                        loadMoreContainer.innerHTML = '<div class="no-more">没有更多内容</div>';
+                    }
+                }
             }, 300); // 300毫秒的防抖延迟
-                            }
-                        }
-                    
+        }
+    }
+
     // 添加平滑加载的CSS样式
     addSmoothLoadingStyles() {
-                    if (!document.getElementById('smooth-loader-style')) {
-                        const style = document.createElement('style');
-                        style.id = 'smooth-loader-style';
-                        style.innerHTML = `
-                            .load-more-container {
-                                transition: opacity 0.3s ease;
-                                opacity: 0.6;
-                            }
-                            .load-more-container.loading-prepare {
-                                opacity: 1;
-                            }
-                            .loading-spinner {
-                                transition: transform 0.3s ease;
-                            }
-                            .loading-prepare .loading-spinner {
-                                transform: scale(1.1);
-                            }
-                        `;
-                        document.head.appendChild(style);
-                    }
+        if (!document.getElementById('smooth-loader-style')) {
+            const style = document.createElement('style');
+            style.id = 'smooth-loader-style';
+            style.innerHTML = `
+                .load-more-container {
+                    transition: opacity 0.3s ease;
+                }
+                .loading-spinner {
+                    transition: transform 0.3s ease;
+                }
+                .loading-text {
+                    transition: opacity 0.3s ease;
+                }
+            `;
+            document.head.appendChild(style);
+        }
     }
 
     // 处理加载更多功能的配置
     configureLoadMoreFeature(articleContainer) {
         if (this.hasMore) {
+            // 有更多内容，设置滚动监听和平滑加载样式
             this.setupScrollListener();
             this.addSmoothLoadingStyles();
-                } else {
-                    console.log('没有更多内容，移除加载指示器');
-                    const loadMoreContainer = articleContainer.querySelector('.load-more-container');
-                    if (loadMoreContainer) {
-                        loadMoreContainer.remove();
+            
+            // 确保加载更多容器存在且显示正确文本
+            const loadMoreContainer = articleContainer.querySelector('.load-more-container');
+            if (loadMoreContainer) {
+                loadMoreContainer.innerHTML = '<div class="loading-text">下拉加载更多</div>';
+            }
+        } else {
+            console.log('没有更多内容，更新加载指示器显示');
+            const loadMoreContainer = articleContainer.querySelector('.load-more-container');
+            if (loadMoreContainer) {
+                loadMoreContainer.innerHTML = '<div class="no-more">没有更多内容</div>';
             }
         }
     }
@@ -684,16 +694,20 @@ class ArticleManager {
             this.triggerDebounceTimeout = null;
         }
         
-                // 重置加载状态
-                this.isLoading = false;
+        // 重置加载状态
+        this.isLoading = false;
         
-        // 移除加载指示器的准备状态
+        // 更新加载状态显示，根据是否有更多内容显示不同内容
         const loadMoreContainer = document.querySelector('.load-more-container');
         if (loadMoreContainer) {
-            loadMoreContainer.classList.remove('loading-prepare');
+            if (this.hasMore) {
+                loadMoreContainer.innerHTML = '<div class="loading-text">下拉加载更多</div>';
+            } else {
+                loadMoreContainer.innerHTML = '<div class="no-more">没有更多内容</div>';
+            }
         }
         
-        console.log('已清理加载更多状态');
+        console.log('已清理加载更多状态，hasMore:', this.hasMore);
     }
 
     // 准备加载文章
@@ -927,10 +941,13 @@ class ArticleManager {
                 // 更新加载更多按钮状态
                 updateLoadMoreStatus(false, this.hasMore);
 
-                // 如果没有更多内容，移除滚动监听器
+                // 如果没有更多内容，移除滚动监听器并显示没有更多内容
                 if (!this.hasMore) {
+                    console.log('已加载所有内容，更新状态显示');
+                    // 先更新UI状态以显示"没有更多内容"
+                    updateLoadMoreStatus(false, false);
+                    // 然后清理滚动监听
                     this.clearLoadMoreState();
-                    console.log('已加载所有内容，移除滚动监听');
                 }
 
             } catch (error) {

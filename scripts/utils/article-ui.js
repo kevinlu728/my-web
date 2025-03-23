@@ -145,7 +145,7 @@ export function displayArticleContent(articleData, renderBlocks, containerId = '
         <div class="article-body" data-article-id="${articleData.page?.id || ''}">
             ${contentHtml}
         </div>
-        ${hasMore ? '<div class="load-more-container"><div class="loading-spinner"></div></div>' : ''}
+        ${hasMore ? '<div class="load-more-container"><div class="loading-text">下拉加载更多</div></div>' : ''}
     `;
 
     // 处理文章中的图片和其他内容
@@ -237,7 +237,7 @@ export function updateLoadMoreStatus(isLoading, hasMore, errorMessage = null) {
     } else if (isLoading) {
         loadMoreContainer.innerHTML = '<div class="loading-spinner"></div><div class="loading-text">加载中...</div>';
     } else if (hasMore) {
-        loadMoreContainer.innerHTML = '<div class="loading-spinner"></div>';
+        loadMoreContainer.innerHTML = '<div class="loading-text">下拉加载更多</div>';
     } else {
         loadMoreContainer.innerHTML = '<div class="no-more">没有更多内容</div>';
     }

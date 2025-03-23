@@ -739,6 +739,7 @@
     padding: 20px 0;
     width: 100%;
     margin: 15px auto;
+    text-align: center;
 }
 
 /* 通用加载指示器样式 */
@@ -749,7 +750,7 @@
     border-top: 4px solid #3498db;
     border-radius: 50%;
     animation: article-spin 1s linear infinite;
-    margin: 0 auto;  /* 确保居中 */
+    margin: 0 auto 12px; /* 增加底部间距 */
 }
 
 /* 分页加载动画关键帧 */
@@ -760,11 +761,17 @@
 
 /* 加载文本样式 */
 .loading-text {
-    margin-top: 12px;   /* 与旋转图标保持一定距离 */
     color: #666;
     font-size: 14px;
     text-align: center;
     width: 100%;
+    padding: 8px 0;
+    font-weight: normal;
+}
+
+/* 加载中状态的文本样式 */
+.loading-spinner + .loading-text {
+    opacity: 0.9;
 }
 
 /* 没有更多内容提示样式 */
