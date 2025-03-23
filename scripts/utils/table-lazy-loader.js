@@ -251,8 +251,21 @@ class TableLazyLoader {
                 this.processAPIResponse(tableBlock, data, blockId);
             }
         } catch (error) {
-            // 清理可能存在的超时计时器
-            if (timeoutId) clearTimeout(timeoutId);
+            // 安全地清理超时计时器，确保变量已定义
+            try {
+                if (typeof timeoutId !== 'undefined') {
+                    clearTimeout(timeoutId);
+                }
+            } catch (timerError) {
+                console.warn('清理计时器错误:', timerError);
+            }
+            
+            // 检查是否是中止信号错误，提供更友好的消息
+            if (error.name === 'AbortError') {
+                console.warn('请求被中止 - 可能是超时或页面导航中断');
+                this.handleTableError(tableBlock, blockId, new Error('请求超时或被中断'));
+                return;
+            }
             
             console.error('获取表格数据最终失败:', error.message);
             
