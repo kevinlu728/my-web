@@ -35,39 +35,32 @@
     
     <!-- 加载遮罩样式 - 很小，直接内联不会影响性能 -->
     <style>
-        .content-loading-mask {
+        /* 移除旧的遮罩样式 */
+        
+        /* 占位图加载动画 */
+        .loading-animation {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .loading-animation::after {
+            content: "";
             position: absolute;
             top: 0;
-            left: 0;
-            width: 100%;
+            left: -100%;
+            width: 50%;
             height: 100%;
-            background-color: rgba(255,255,255,0.8);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-            transition: opacity 0.3s ease;
+            background: linear-gradient(90deg, 
+                        rgba(255,255,255,0) 0%, 
+                        rgba(255,255,255,0.3) 50%, 
+                        rgba(255,255,255,0) 100%);
+            animation: loading-shine 1.5s infinite;
         }
         
-        @keyframes spinner {
-            to {transform: rotate(360deg);}
-        }
-        
-        .global-loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 3px solid rgba(0,0,0,0.1);
-            border-radius: 50%;
-            border-top-color: #0366d6;
-            animation: spinner 1s ease-in-out infinite;
-            margin: 20px auto;
-        }
-        
-        .global-loading-text {
-            margin-top: 16px;
-            font-size: 16px;
-            color: #333;
+        @keyframes loading-shine {
+            to {
+                left: 150%;
+            }
         }
     </style>
     
@@ -371,13 +364,10 @@
         </div>
         <div class="right-column">
             <div id="article-container" data-resource-group="core">
-                <div class="content-loading-mask">
-                    <div class="global-loading-spinner"></div>
-                    <div class="global-loading-text">正在加载内容，请稍候...</div>
-                </div>
+                <!-- 移除额外的加载遮罩，仅使用占位图 -->
                 <!-- 初始显示占位图，不再显示简单欢迎语 -->
                 <div class="placeholder-content">
-                    <div class="placeholder-image"></div>
+                    <div class="placeholder-image loading-animation"></div>
                     <div class="placeholder-text">正在准备内容</div>
                     <div class="placeholder-hint">欢迎页面加载中，请稍候片刻...</div>
                 </div>

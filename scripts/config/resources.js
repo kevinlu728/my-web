@@ -67,7 +67,7 @@ export const resources = {
         'bootstrap-icons': {
             type: 'css',
             resourceId: 'bootstrap-icons.css',
-            priority: 'medium',
+            priority: 'high',
             primary: {
                 provider: 'jsdelivr',
                 package: 'bootstrap-icons',
@@ -100,6 +100,17 @@ export const resources = {
                 library: 'font-awesome',
                 version: versions.fontAwesome,
                 path: 'css/all.min.css'
+            },
+            fallbacks: [
+                {
+                    provider: 'local',
+                    library: 'font-awesome',
+                    path: 'all.min.css'
+                }
+            ],
+            attributes: {
+                'data-resource-type': 'font-awesome',
+                'data-local-fallback': '/assets/libs/font-awesome/all.min.css'
             }
         },
         'prism-theme': {
@@ -183,7 +194,7 @@ export const resources = {
         },
         'prism-components': {
             type: 'js',
-            priority: 'low',
+            priority: 'medium',
             components: [
                 { name: 'markup', path: 'components/prism-markup.min.js' },
                 { name: 'css', path: 'components/prism-css.min.js' },
@@ -205,7 +216,7 @@ export const resources = {
                         .replace('{path}', component.path),
                     cdnProviders.local.template
                         .replace('{library}', 'prism')
-                        .replace('{path}', component.name + '.min.js')
+                        .replace('{path}', 'components/' + component.name + '.min.js')
                 ];
             }
         },
@@ -477,8 +488,8 @@ export function getResourceUrl(resourceType, resourceName, preferredProvider = n
 export function getCriticalResources() {
     return [
         // 移除不再是关键资源的项目
-        // getResourceUrl('styles', 'bootstrap-icons'),
-        getResourceUrl('styles', 'katex'),
+        getResourceUrl('styles', 'bootstrap-icons'),
+        // getResourceUrl('styles', 'katex'),
         // getResourceUrl('styles', 'prism-theme')
     ];
 }

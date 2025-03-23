@@ -753,28 +753,28 @@ function handleLoadingMask(action = 'fade') {
         return;
     }
     
-    const mask = container.querySelector('.content-loading-mask');
-    if (!mask) {
-        console.log('加载遮罩不存在或已被移除');
+    const placeholder = container.querySelector('.placeholder-content');
+    if (!placeholder) {
+        console.log('加载占位内容不存在或已被移除');
         return;
     }
     
     if (action === 'fade') {
-        console.log('淡出加载遮罩...');
-        mask.style.transition = 'opacity 0.3s ease';
-        mask.style.opacity = '0';
+        console.log('淡出加载占位内容...');
+        placeholder.style.transition = 'opacity 0.5s ease';
+        placeholder.style.opacity = '0.5'; // 降低不透明度但不完全隐藏
     } else if (action === 'remove') {
-        console.log('彻底移除加载遮罩...');
+        console.log('彻底移除加载占位内容...');
         // 先确保淡出效果完成
-        mask.style.transition = 'opacity 0.3s ease';
-        mask.style.opacity = '0';
+        placeholder.style.transition = 'opacity 0.5s ease';
+        placeholder.style.opacity = '0';
         
         // 延迟移除元素，等待淡出动画完成
         setTimeout(() => {
-            if (mask.parentNode) {
-                mask.parentNode.removeChild(mask);
+            if (placeholder.parentNode) {
+                placeholder.parentNode.removeChild(placeholder);
             }
-        }, 350);
+        }, 550);
     }
 }
 
