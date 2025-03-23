@@ -489,6 +489,9 @@ class ArticleManager {
                     this.nextCursor = null;
                 }
                 
+                // 添加标记，表示这是从缓存加载的数据
+                cachedData._fromCache = true;
+                
                 this.isLoading = false;
                 return cachedData;
             }
@@ -799,6 +802,20 @@ class ArticleManager {
                 // 处理懒加载
                 if (articleBody) {
                     initializeLazyLoading(articleBody);
+                    
+                    // 检查是否从缓存加载
+                    if (articleData._fromCache) {
+                        console.log('从缓存加载的文章，进行优化的渲染检查...');
+                        // 使用较短延迟减少视觉上的延迟感
+                        setTimeout(() => {
+                            const container = document.getElementById('article-container');
+                            if (container) {
+                                // 添加类以触发视觉效果，表明内容在重新加载
+                                container.classList.add('cache-refresh');
+                                setTimeout(() => container.classList.remove('cache-refresh'), 500);
+                            }
+                        }, 100); // 减少延迟时间，降低等待感
+                    }
                 }
                 
                 // 配置加载更多功能

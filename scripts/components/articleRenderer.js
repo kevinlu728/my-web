@@ -622,5 +622,65 @@ export function initializeLazyLoading(container) {
         }
     }
     
+    // 添加强制触发渲染事件
+    // 解决从缓存加载后不显示内容的问题
+    setTimeout(() => {
+        console.log('触发强制渲染检查...');
+        // 强制触发一次重新布局，解决缓存加载不显示内容的问题
+        // 只对容器应用重排而不是整个body，减少闪烁
+        if (container) {
+            container.classList.add('force-reflow');
+            // 读取任意布局属性以强制重新计算布局
+            const forceReflow = container.offsetHeight;
+            container.classList.remove('force-reflow');
+        }
+        
+        // 针对代码块和表格，强制检查是否所有元素都正确渲染
+        forceCheckLazyElements(container);
+    }, 50);  // 短延迟，确保DOM已经初始渲染完成
+    
     console.log('懒加载初始化完成');
+}
+
+// 强制检查懒加载元素是否已渲染
+function forceCheckLazyElements(container) {
+    if (!container) return;
+    
+    // 处理代码块
+    const codeBlocks = container.querySelectorAll('.lazy-block.code-block');
+    if (codeBlocks.length > 0 && window.codeLazyLoader) {
+        console.log(`强制检查 ${codeBlocks.length} 个代码块...`);
+        codeBlocks.forEach((block) => {
+            // 使用更准确的检测条件
+            if (!block.querySelector('pre code') || 
+                block.innerHTML.trim() === '' || 
+                block.textContent.includes('代码加载中') ||
+                block.querySelector('.placeholder-content')) {
+                if (typeof window.codeLazyLoader.loadCode === 'function') {
+                    window.codeLazyLoader.loadCode(block);
+                } else if (typeof codeLazyLoader !== 'undefined' && typeof codeLazyLoader.loadCode === 'function') {
+                    codeLazyLoader.loadCode(block);
+                }
+            }
+        });
+    }
+    
+    // 处理表格
+    const tableBlocks = container.querySelectorAll('.lazy-block.table-block');
+    if (tableBlocks.length > 0) {
+        console.log(`强制检查 ${tableBlocks.length} 个表格...`);
+        tableBlocks.forEach((block) => {
+            // 使用更准确的检测条件
+            if (!block.querySelector('table') || 
+                block.innerHTML.trim() === '' || 
+                block.textContent.includes('表格加载中') ||
+                block.querySelector('.table-loading')) {
+                if (typeof window.tableLazyLoader !== 'undefined' && typeof window.tableLazyLoader.loadTable === 'function') {
+                    window.tableLazyLoader.loadTable(block);
+                } else if (typeof tableLazyLoader !== 'undefined' && typeof tableLazyLoader.loadTable === 'function') {
+                    tableLazyLoader.loadTable(block);
+                }
+            }
+        });
+    }
 } 
