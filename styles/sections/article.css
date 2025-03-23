@@ -1,9 +1,9 @@
 /* 文章内容样式优化 */
 .article-body {
     /* 基础布局 */
-    max-width: 100%; /* 修改为100%，充分利用右栏空间 */
-    margin: 0 auto;
-    padding: 0; /* 移除内边距 */
+    max-width: 88%; /* 修改为88%，适应更宽的右侧目录 */
+    margin: 0 auto 0 0; /* 调整为左对齐 */
+    padding: 0 20px 0 0; /* 增加右侧内边距 */
     
     /* 基础文字样式 */
     font-size: 16px;
@@ -105,7 +105,7 @@
 
 /* 图片样式 */
 .article-body img {
-    max-width: 70%; /* 修改为70%，适应更宽的内容区域 */
+    max-width: 75%; /* 调整为75%，适应更宽的内容区域 */
     height: auto;
     border-radius: 6px;
     margin: 1.5rem auto; /* 居中显示 */
@@ -238,7 +238,19 @@
 }
 
 /* 响应式调整 */
+@media (max-width: 992px) {
+    .article-body {
+        max-width: 78%; /* 在中等屏幕上调整文章宽度，适应更宽的目录 */
+    }
+}
+
 @media (max-width: 768px) {
+    .article-body {
+        max-width: 100%; /* 在小屏幕上使用全宽 */
+        padding: 0; /* 移除内边距 */
+        margin: 0 auto; /* 居中显示 */
+    }
+    
     .article-body img {
         max-width: 80%; /* 在移动设备上稍微放大一点 */
         max-height: 400px; /* 移动设备上限制高度 */
@@ -797,4 +809,301 @@
     color: #888;
     font-size: 14px;
     text-align: center;
+}
+
+/* 目录导航相关样式 */
+.article-toc {
+    position: fixed;
+    /* 使用与页面右侧内容区域相同的顶部边距，移除固定值 */
+    top: var(--right-column-top, 70px);
+    right: 20px;
+    width: 12%; /* 修改为12%，稍宽的侧边栏 */
+    max-width: 240px;
+    min-width: 140px;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 16px;
+    z-index: 100;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    scrollbar-width: thin;
+    /* 设置自定义滚动条样式 */
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+/* 自定义webkit滚动条 */
+.article-toc::-webkit-scrollbar {
+    width: 4px;
+}
+
+.article-toc::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.article-toc::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+/* 目录标题样式 */
+.toc-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eaecef;
+    color: #333;
+    display: flex;
+    align-items: center;
+}
+
+/* 目录中的双箭头图标 */
+.toc-toggle-btn .fa-angle-double-right {
+    font-size: 16px;
+    color: #666;
+}
+
+.toc-toggle-btn:hover .fa-angle-double-right {
+    color: #0891b2;
+}
+
+/* 目录列表样式 */
+.toc-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* 目录项基础样式 */
+.toc-item {
+    margin: 4px 0;
+    line-height: 1.5;
+    position: relative;
+}
+
+/* 不同级别标题的缩进 */
+.toc-level-1 {
+    margin-left: 0;
+}
+
+.toc-level-2 {
+    margin-left: 12px;
+}
+
+.toc-level-3 {
+    margin-left: 24px;
+}
+
+/* 目录链接样式 */
+.toc-item a {
+    display: block;
+    padding: 4px 8px;
+    color: #555;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    border-left: 2px solid transparent;
+}
+
+.toc-item a:hover {
+    background-color: #f5f5f5;
+    color: #0891b2;
+}
+
+/* 当前活动项样式 */
+.toc-item.active a {
+    background-color: #ebf8ff;
+    color: #0891b2;
+    border-left-color: #0891b2;
+    font-weight: 500;
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .article-toc {
+        width: 18%; /* 保持相对比例关系，调整为18% */
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 992px) {
+    .article-toc {
+        width: 22%; /* 保持相对比例关系，调整为22% */
+        font-size: 12px;
+    }
+}
+
+/* 在移动设备上隐藏目录或改变显示方式 */
+@media (max-width: 768px) {
+    .article-toc {
+        position: fixed;
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        max-width: 100%;
+        height: 40vh;
+        z-index: 1000;
+        border-radius: 16px 16px 0 0;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        transform: translateY(100%);
+        transition: transform 0.3s ease;
+    }
+    
+    .article-toc.visible {
+        transform: translateY(0);
+    }
+    
+    /* 移动设备上折叠时的样式 */
+    .article-toc.collapsed {
+        width: 40px;
+        min-width: 40px;
+        height: auto;
+        left: auto;
+        right: 20px;
+        bottom: 70px;
+        border-radius: 8px;
+        transform: translateY(0) !important;
+    }
+    
+    /* 添加一个控制按钮，用于在移动设备上显示/隐藏目录 */
+    .toc-toggle {
+        display: flex;
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 40px;
+        height: 40px;
+        background: #0891b2;
+        color: white;
+        border-radius: 50%;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        z-index: 1001;
+    }
+}
+
+/* 增加目录展开收起按钮样式 */
+.toc-toggle-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 24px;
+    height: 24px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+}
+
+.toc-toggle-btn:hover {
+    color: #0891b2;
+}
+
+/* 汉堡图标样式 - 三条不等长横线 */
+.hamburger-icon {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 20px;
+    height: 15px;
+}
+
+.hamburger-icon span {
+    display: block;
+    height: 2px;
+    background-color: #666;
+    border-radius: 1px;
+    transition: all 0.3s ease;
+    margin-left: auto; /* 使所有线条右对齐 */
+}
+
+/* 三条线不同长度 */
+.hamburger-icon span:nth-child(1) {
+    width: 90%; /* 顶部线条中等长度 */
+}
+
+.hamburger-icon span:nth-child(2) {
+    width: 100%; /* 中间线条最长 */
+}
+
+.hamburger-icon span:nth-child(3) {
+    width: 70%; /* 底部线条最短 */
+}
+
+/* 鼠标悬停效果 */
+.toc-toggle-btn:hover .hamburger-icon span {
+    background-color: #0891b2;
+}
+
+/* 折叠状态的目录样式 */
+.article-toc.collapsed {
+    width: auto;
+    min-width: 40px;
+    max-width: 40px;
+    padding: 16px 8px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.article-toc.collapsed .toc-title {
+    display: none;
+}
+
+.article-toc.collapsed .toc-toggle-btn {
+    position: static;
+    margin: 0 auto;
+}
+
+/* 移动端的折叠状态特殊处理 */
+@media (max-width: 768px) {
+    .article-toc.collapsed {
+        width: auto;
+        min-width: auto;
+        height: auto;
+        left: auto;
+        right: 20px;
+        bottom: 70px;
+        transform: translateY(0);
+        padding: 12px;
+        border-radius: 8px;
+    }
+}
+
+/* 移动端汉堡图标样式 */
+.hamburger-icon.mobile {
+    width: 18px;
+    height: 14px;
+}
+
+.hamburger-icon.mobile span {
+    background-color: white;
+    height: 2px;
+    margin-left: auto; /* 已在父类设置，这里可以省略，但为清晰起见保留 */
+}
+
+/* 三条线不同长度 - 移动端 */
+.hamburger-icon.mobile span:nth-child(1) {
+    width: 70%; /* 顶部线条中等长度 */
+}
+
+.hamburger-icon.mobile span:nth-child(2) {
+    width: 100%; /* 中间线条最长 */
+}
+
+.hamburger-icon.mobile span:nth-child(3) {
+    width: 40%; /* 底部线条最短 */
 } 

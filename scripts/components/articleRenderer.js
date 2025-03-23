@@ -99,7 +99,10 @@ function renderHeading(block, tag) {
         return renderRichText(richText);
     }).join('');
     
-    return `<${tag}>${text || '&nbsp;'}</${tag}>`;
+    // 为标题生成唯一ID，用于目录导航
+    const headingId = `heading-${block.id}`;
+    
+    return `<${tag} id="${headingId}">${text || '&nbsp;'}</${tag}>`;
 }
 
 // 渲染列表项

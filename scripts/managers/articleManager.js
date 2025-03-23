@@ -49,6 +49,9 @@ import { imageLazyLoader } from '../utils/image-lazy-loader.js';
 import { categoryConfig } from '../config/categories.js';
 import config from '../config/config.js';
 
+// 导入目录导航组件
+import tableOfContents from '../components/tableOfContents.js';
+
 class ArticleManager {
     constructor() {
         this.articles = [];
@@ -821,6 +824,17 @@ class ArticleManager {
                 // 配置加载更多功能
                 this.configureLoadMoreFeature(articleContainer);
                 
+                // 当文章加载完成后初始化目录导航
+                if (articleBody) {
+                    // 初始化目录导航
+                    const hasInitialized = tableOfContents.initialize();
+                    
+                    // 如果文章没有目录（标题不足），则销毁之前的目录
+                    if (!hasInitialized) {
+                        tableOfContents.destroy();
+                    }
+                }
+                
                 return true;
             } catch (error) {
                 console.error('渲染文章失败:', error);
@@ -880,6 +894,20 @@ class ArticleManager {
                     this.loadedBlocks = this.loadedBlocks || [];
                     this.loadedBlocks = this.loadedBlocks.concat(data.blocks);
                     
+        // 更新目录导航
+        if (data && data.blocks && data.blocks.length > 0) {
+            // 刷新目录导航（仅当有新标题时才刷新）
+            const headings = data.blocks.filter(block => 
+                block.type === 'heading_1' || 
+                block.type === 'heading_2' || 
+                block.type === 'heading_3'
+            );
+            
+            if (headings.length > 0) {
+                tableOfContents.refresh();
+            }
+        }
+        
         return data.blocks;
     }
 
