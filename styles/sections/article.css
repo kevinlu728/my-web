@@ -811,27 +811,22 @@
     text-align: center;
 }
 
-/* 目录导航相关样式 */
+/* 文章目录导航 */
 .article-toc {
     position: fixed;
-    /* 使用与页面右侧内容区域相同的顶部边距，移除固定值 */
-    top: var(--right-column-top, 70px);
+    top: var(--right-column-top, 80px);
     right: 20px;
-    width: 12%; /* 修改为12%，稍宽的侧边栏 */
-    max-width: 240px;
-    min-width: 140px;
-    max-height: calc(100vh - 40px);
-    overflow-y: auto;
-    background-color: #fff;
+    width: 240px;
+    max-height: calc(100vh - var(--right-column-top, 80px) - 40px); /* 调整为更合理的底部空间 */
+    background-color: var(--toc-background, rgba(255, 255, 255, 0.9));
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    padding: 16px;
-    z-index: 100;
+    overflow-y: auto;
+    z-index: 999;
     transition: all 0.3s ease;
-    font-size: 14px;
-    scrollbar-width: thin;
-    /* 设置自定义滚动条样式 */
-    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+    padding: 15px 15px; /* 调整填充，增加左右填充 */
+    box-sizing: border-box;
+    font-size: 14px; /* 恢复原始字体大小 */
 }
 
 /* 自定义webkit滚动条 */
@@ -858,6 +853,8 @@
     color: #333;
     display: flex;
     align-items: center;
+    justify-content: center; /* 居中标题 */
+    padding: 0 10px; /* 添加左右填充 */
 }
 
 /* 目录中的双箭头图标 */
@@ -871,10 +868,12 @@
 }
 
 /* 目录列表样式 */
-.toc-list {
+.article-toc .toc-list {
     list-style: none;
-    padding: 0;
+    padding: 0 5px 25px 5px; /* 减少底部填充至25px，调整左右边距 */
     margin: 0;
+    overflow-y: auto;
+    max-height: calc(100% - 50px);
 }
 
 /* 目录项基础样式 */
@@ -882,6 +881,7 @@
     margin: 4px 0;
     line-height: 1.5;
     position: relative;
+    font-size: 14px; /* 显式设置字体大小 */
 }
 
 /* 不同级别标题的缩进 */
@@ -909,6 +909,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     border-left: 2px solid transparent;
+    font-size: 14px; /* 确保链接文字大小正确 */
 }
 
 .toc-item a:hover {

@@ -19,7 +19,7 @@
     max-width: 100%; /* 让页面横向撑满 */
     width: 100%;
     margin: 0 auto;
-    padding: 0 20px 20px; /* 减小左右和底部内边距 */
+    padding: 0 20px 40px; /* 增加底部内边距，确保有足够空间 */
     min-height: calc(100vh - 70px); /* 调整最小高度，移除footer后减少的高度更少 */
     position: relative;
     z-index: 1;
@@ -40,7 +40,9 @@
     position: fixed; /* 保持固定定位 */
     top: 70px; /* 与顶部间距保持一致 */
     left: 20px; /* 添加左侧定位 */
-    height: calc(100vh - 90px); /* 设置高度与内容区域一致 */
+    height: auto; /* 让高度自适应内容 */
+    min-height: calc(100vh - 110px); /* 设置最小高度，考虑到顶部和底部空间 */
+    max-height: calc(100vh - 90px); /* 最大高度限制，避免超出视口 */
     overflow-y: auto; /* 如果左侧内容过多允许滚动 */
     overflow-x: hidden;
     width: 250px; /* 初始宽度 */
@@ -50,6 +52,7 @@
     display: flex; /* 添加flex布局 */
     flex-direction: column; /* 垂直排列 */
     transition: width 0.2s ease; /* 添加宽度变化的过渡效果 */
+    padding-bottom: 30px; /* 确保底部有足够的填充空间 */
 }
 
 /* 左侧栏内容容器 */
@@ -78,7 +81,9 @@
     position: fixed; /* 保持固定定位 */
     left: calc(20px + 250px); /* 以左侧内边距+左侧栏宽度计算，确保动态更新 */
     top: 70px; /* 与左侧栏顶部对齐 */
-    height: calc(100vh - 90px); /* 与左侧栏高度一致 */
+    height: auto; /* 自适应高度 */
+    min-height: calc(100vh - 110px); /* 与左侧栏最小高度一致 */
+    max-height: calc(100vh - 90px); /* 与左侧栏最大高度一致 */
     z-index: 10;
     margin: 0;
     padding: 0;
@@ -144,6 +149,8 @@
     flex-direction: column; /* 垂直排列 */
     overflow: visible; /* 允许内容自然溢出 */
     transition: margin-left 0.2s ease; /* 添加边距变化的过渡效果 */
+    min-height: calc(100vh - 110px); /* 与左栏最小高度保持一致 */
+    padding-bottom: 30px; /* 确保底部有足够的填充空间 */
 }
 
 /* 右侧栏文章容器 */
@@ -254,7 +261,7 @@
 /* 响应式布局 - 中等屏幕 */
 @media (max-width: 1200px) {
     .blog-content {
-        padding: 15px 15px 15px; /* 调整内边距，包括顶部 */
+        padding: 15px 15px 35px; /* 调整内边距，增加底部内边距 */
         gap: 0; /* 保持无间距 */
         margin-top: 45px; /* 调整顶部间距 */
         border-top: 1px solid rgba(0, 0, 0, 0.05); /* 保持顶部分隔线 */
@@ -264,54 +271,64 @@
         padding: 20px; /* 减小内边距 */
         width: 220px; /* 稍微减小宽度 */
         top: 65px; /* 与顶部间距保持一致 */
-        height: calc(100vh - 85px); /* 调整高度 */
+        height: auto; /* 自适应高度 */
+        min-height: calc(100vh - 100px); /* 调整最小高度 */
+        max-height: calc(100vh - 85px); /* 调整最大高度 */
+        padding-bottom: 25px; /* 确保底部有足够填充 */
     }
     
     .resize-handle {
         left: 240px; /* 更新拖动手柄位置 */
         top: 65px; /* 与左侧栏顶部对齐 */
-        height: calc(100vh - 85px); /* 与左侧栏高度一致 */
+        height: auto; /* 自适应高度 */
+        min-height: calc(100vh - 100px); /* 与左侧栏最小高度一致 */
+        max-height: calc(100vh - 85px); /* 与左侧栏最大高度一致 */
         width: 3px; /* 保持与非响应式版本相同的宽度 */
     }
     
     .blog-content .right-column {
         padding: 20px 25px; /* 恢复为原始值 */
         margin-left: calc(220px + 3px); /* 更新左边距，使用减小后的拖动手柄宽度 */
+        min-height: calc(100vh - 100px); /* 与左栏最小高度保持一致 */
+        padding-bottom: 25px; /* 确保底部有足够填充 */
     }
 }
 
 /* 响应式布局 - 小屏幕 */
 @media (max-width: 768px) {
     .blog-content {
-        flex-direction: column; /* 小屏幕改为垂直布局 */
-        padding: 12px 10px 10px; /* 调整内边距，包括顶部 */
-        gap: 15px; /* 垂直间距 */
-        margin-top: 40px; /* 调整顶部间距 */
-        border-top: 1px solid rgba(0, 0, 0, 0.05); /* 保持顶部分隔线 */
+        flex-direction: column; /* 垂直排列 */
+        padding: 10px 10px 25px; /* 调整内边距 */
+        gap: 15px; /* 添加垂直间距 */
+        margin-top: 35px; /* 调整顶部间距 */
     }
     
     .blog-content .left-column {
-        position: relative; /* 小屏幕下改回相对定位 */
-        top: 0;
-        left: 0;
-        height: auto; /* 自动高度 */
-        padding: 15px; /* 减小内边距 */
-        width: 100% !important; /* 强制宽度100% */
-        border-radius: 12px; /* 恢复完整圆角 */
+        position: relative;
+        top: auto;
+        left: auto;
+        width: 100%;
+        height: auto;
+        min-height: auto; /* 移动设备上不需要最小高度 */
+        max-height: none; /* 移除最大高度限制 */
+        border-radius: 12px;
+        border: 1px solid rgba(0, 0, 0, 0.05);
         margin-bottom: 15px;
-        min-height: 350px; /* 设置最小高度 */
+        padding: 15px;
+        padding-bottom: 20px; /* 确保底部有填充 */
     }
     
     .blog-content .right-column {
-        padding: 15px 20px; /* 恢复为原始值 */
-        width: 100%; /* 确保宽度100% */
-        margin-left: 0; /* 重置左边距 */
-        border-radius: 12px; /* 恢复完整圆角 */
-        border: 1px solid rgba(0, 0, 0, 0.05); /* 恢复完整边框 */
+        margin-left: 0;
+        border-radius: 12px;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        padding: 15px 20px;
+        min-height: auto; /* 移动设备上不需要最小高度 */
+        padding-bottom: 20px; /* 确保底部有填充 */
     }
     
     .resize-handle {
-        display: none !important; /* 在小屏设备上隐藏调整手柄 */
+        display: none; /* 隐藏拖动手柄 */
     }
 }
 

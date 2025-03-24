@@ -172,6 +172,9 @@ export class TableOfContents {
         // 设置容器样式
         container.classList.add('article-toc');
         
+        // 不再添加额外的样式覆盖，使用CSS文件中的统一样式
+        // 只保留底部显示修复的功能，避免添加可能导致冲突的样式
+        
         // 存储容器引用
         this.tocContainer = container;
     }
@@ -364,6 +367,19 @@ export class TableOfContents {
             
             // 确保滚动目录，使当前项可见
             this.scrollTocToItem(activeItem);
+            
+            // 如果是底部的项目，确保额外滚动一些距离
+            const itemIndex = Array.from(allItems).indexOf(activeItem);
+            if (itemIndex >= allItems.length - 3) { // 如果是最后三个项目之一
+                // 延迟执行一次额外的滚动，确保底部项完全可见
+                setTimeout(() => {
+                    const containerRect = this.tocContainer.getBoundingClientRect();
+                    const itemRect = activeItem.getBoundingClientRect();
+                    if (itemRect.bottom > containerRect.bottom - 40) {
+                        this.tocContainer.scrollTop += 40; // 额外滚动一些距离
+                    }
+                }, 50);
+            }
         }
     }
 
@@ -386,7 +402,8 @@ export class TableOfContents {
         if (isAbove) {
             this.tocContainer.scrollTop += itemRect.top - containerRect.top - 20;
         } else if (isBelow) {
-            this.tocContainer.scrollTop += itemRect.bottom - containerRect.bottom + 20;
+            // 增加额外的偏移量确保底部项完全可见
+            this.tocContainer.scrollTop += itemRect.bottom - containerRect.bottom + 30;
         }
     }
 
@@ -513,17 +530,140 @@ export class TableOfContents {
     }
 
     /**
+     * 更新目录内容而不重建整个目录
+     * 这个方法比refresh()更温和，不会导致目录闪烁或消失
+     * @returns {boolean} 是否成功更新
+     */
+    updateContent() {
+        console.log('开始更新目录内容，保持容器状态...');
+        
+        // 保存当前目录状态
+        const currentState = {
+            isInitialized: this.initialized,
+            isCollapsed: document.querySelector('.article-toc.collapsed') !== null,
+            visibleClass: document.querySelector('.article-toc.visible') !== null,
+            tocContainer: this.tocContainer,
+            scrollTop: this.tocContainer ? this.tocContainer.scrollTop : 0
+        };
+        
+        // 如果没有初始化过，则执行完整初始化
+        if (!this.initialized || !this.tocContainer) {
+            console.log('目录尚未初始化，执行完整初始化');
+            return this.initialize();
+        }
+        
+        // 获取文章内容元素
+        this.articleElement = document.querySelector(this.config.articleSelector);
+        if (!this.articleElement) {
+            console.warn('未找到文章内容元素:', this.config.articleSelector);
+            return false;
+        }
+        
+        // 保存现有目录容器的引用和类名
+        const existingContainer = this.tocContainer;
+        const existingClasses = existingContainer.className;
+        
+        // 提取文章中的标题
+        this.extractHeadings();
+        
+        // 如果没有提取到标题，保持现状
+        if (this.headings.length === 0) {
+            console.warn('文章中未找到标题元素，保持现有目录');
+            return false;
+        }
+        
+        // 保持容器但只更新内部内容
+        const existingToggleBtn = existingContainer.querySelector('.toc-toggle-btn');
+        const existingTocTitle = existingContainer.querySelector('.toc-title');
+        
+        // 清空现有列表但保留容器和标题
+        const existingList = existingContainer.querySelector('.toc-list');
+        if (existingList) {
+            existingList.remove();
+        }
+        
+        // 创建新的目录列表
+        const tocList = document.createElement('ul');
+        tocList.className = 'toc-list';
+        // 不再设置内联样式，依赖CSS文件设置
+        
+        // 遍历所有标题生成目录项
+        this.headings.forEach(heading => {
+            const tocItem = document.createElement('li');
+            tocItem.className = `toc-item toc-level-${heading.level}`;
+            tocItem.setAttribute('data-target', heading.id);
+            
+            const tocLink = document.createElement('a');
+            tocLink.href = `#${heading.id}`;
+            tocLink.textContent = heading.text;
+            
+            tocItem.appendChild(tocLink);
+            tocList.appendChild(tocItem);
+        });
+        
+        // 将新列表添加到容器中
+        existingContainer.appendChild(tocList);
+        
+        // 设置目录项点击事件
+        this.setupTocItemClickEvents();
+        
+        // 确保滚动监听器仍然有效
+        this.setupScrollListener();
+        
+        // 还原折叠状态
+        if (currentState.isCollapsed) {
+            existingContainer.classList.add('collapsed');
+        }
+        
+        // 还原可见状态（针对移动设备）
+        if (currentState.visibleClass) {
+            existingContainer.classList.add('visible');
+        }
+        
+        // 还原滚动位置
+        if (existingContainer && currentState.scrollTop > 0) {
+            existingContainer.scrollTop = currentState.scrollTop;
+            
+            // 保留特殊处理确保底部内容可见的逻辑
+            setTimeout(() => {
+                const lastItem = existingContainer.querySelector('.toc-item:last-child');
+                if (lastItem) {
+                    // 检查最后一项是否完全可见
+                    const containerRect = existingContainer.getBoundingClientRect();
+                    const itemRect = lastItem.getBoundingClientRect();
+                    if (itemRect.bottom > containerRect.bottom && existingContainer.scrollTop < existingContainer.scrollHeight - existingContainer.clientHeight) {
+                        // 如果最后一项不完全可见且还有滚动空间，确保它可见
+                        existingContainer.scrollTop = existingContainer.scrollHeight - existingContainer.clientHeight;
+                    }
+                }
+            }, 100);
+        }
+        
+        console.log('目录内容已更新，保持容器状态');
+        return true;
+    }
+
+    /**
      * 刷新目录
      * 用于文章内容更新后重新生成目录
+     * 注意：此方法会完全销毁并重建目录
      */
     refresh() {
+        // 先尝试使用不销毁容器的更新方法
+        if (this.updateContent()) {
+            return true;
+        }
+        
+        // 如果轻量更新失败，则执行完全刷新
+        console.log('目录轻量更新失败，执行完全刷新');
+        
         // 更新右侧栏顶部位置变量
         this.updateRightColumnTopVariable();
         
         if (this.initialized) {
             this.destroy();
         }
-        this.initialize();
+        return this.initialize();
     }
 
     /**

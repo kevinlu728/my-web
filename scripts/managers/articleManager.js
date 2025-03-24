@@ -465,6 +465,7 @@ class ArticleManager {
         this.isLoading = true;
         this.hasMore = false;
         this.nextCursor = null;
+        this.loadedBlocks = [];
         
         // 创建新的 AbortController
         this.abortController = new AbortController();
@@ -481,9 +482,17 @@ class ArticleManager {
             if (cachedData) {
                 console.log('📦 从缓存加载文章:', pageId);
                 
-                // 保存缓存中的分页状态
-                this.hasMore = cachedData.hasMore;
-                this.nextCursor = cachedData.nextCursor;
+                // 保存缓存中的分页状态，但首先检查缓存数据的有效性
+                if (cachedData.hasMore === true && cachedData.nextCursor) {
+                    this.hasMore = cachedData.hasMore;
+                    this.nextCursor = cachedData.nextCursor;
+                    console.log('从缓存恢复分页状态: hasMore=', this.hasMore, 'nextCursor=', this.nextCursor);
+                } else {
+                    // 如果缓存数据中没有有效的分页信息，强制重置
+                    console.log('缓存中没有有效的分页信息，保持重置状态');
+                    this.hasMore = false;
+                    this.nextCursor = null;
+                }
                 
                 // 如果文章已完全加载，则不需要显示加载更多
                 if (cachedData.isFullyLoaded === true) {
@@ -553,7 +562,13 @@ class ArticleManager {
 
     // 设置文章滚动监听
     setupScrollListener() {
-        console.log('设置滚动监听以加载更多内容');
+        console.log('设置滚动监听以加载更多内容，hasMore=', this.hasMore, 'nextCursor=', this.nextCursor);
+        
+        // 如果没有更多内容或nextCursor无效，直接返回不设置监听
+        if (!this.hasMore || !this.nextCursor) {
+            console.log('没有更多内容或nextCursor无效，跳过设置滚动监听');
+            return;
+        }
         
         // 先移除可能存在的旧监听器
         if (this.scrollHandler) {
@@ -563,10 +578,14 @@ class ArticleManager {
 
         // 使用throttle函数创建节流处理函数
         this.scrollHandler = throttle(() => {
-            if (this.isLoading || !this.hasMore) {
+            // 每次滚动时再次检查状态，确保不发送无效请求
+            if (this.isLoading || !this.hasMore || !this.nextCursor) {
                 // 减少日志输出，仅在调试模式时输出
                 if (config.debug) {
-                    console.log('跳过加载：', this.isLoading ? '正在加载中' : '没有更多内容');
+                    console.log('跳过加载：', 
+                        this.isLoading ? '正在加载中' : 
+                        !this.hasMore ? '没有更多内容' : 
+                        !this.nextCursor ? 'nextCursor无效' : '未知原因');
                 }
                 return;
             }
@@ -608,8 +627,20 @@ class ArticleManager {
 
     // 触发加载更多内容
     triggerLoadMoreContent(loadMoreContainer, scrollPercentage) {
-        // 如果正在加载或没有更多内容，立即返回
-        if (this.isLoading || !this.hasMore) {
+        // 再次检查状态有效性
+        if (this.isLoading || !this.hasMore || !this.nextCursor) {
+            // 如果状态无效，可能是在文章切换过程中仍触发了滚动事件
+            if (!this.hasMore || !this.nextCursor) {
+                // 更新UI显示没有更多内容
+                if (loadMoreContainer) {
+                    loadMoreContainer.innerHTML = '<div class="no-more">没有更多内容</div>';
+                }
+                // 移除滚动监听
+                if (this.scrollHandler) {
+                    window.removeEventListener('scroll', this.scrollHandler);
+                    this.scrollHandler = null;
+                }
+            }
             return;
         }
         
@@ -667,7 +698,12 @@ class ArticleManager {
 
     // 处理加载更多功能的配置
     configureLoadMoreFeature(articleContainer) {
-        if (this.hasMore) {
+        // 添加检查确保我们有有效的nextCursor
+        const hasValidMoreContent = this.hasMore === true && this.nextCursor && typeof this.nextCursor === 'string' && this.nextCursor.trim() !== '';
+        
+        console.log('配置加载更多功能，hasMore=', this.hasMore, 'nextCursor=', this.nextCursor, '有效=', hasValidMoreContent);
+        
+        if (hasValidMoreContent) {
             // 有更多内容，设置滚动监听和平滑加载样式
             this.setupScrollListener();
             this.addSmoothLoadingStyles();
@@ -678,10 +714,20 @@ class ArticleManager {
                 loadMoreContainer.innerHTML = '<div class="loading-text">下拉加载更多</div>';
             }
         } else {
-            console.log('没有更多内容，更新加载指示器显示');
+            // 重置状态
+            this.hasMore = false;
+            this.nextCursor = null;
+            
+            console.log('没有更多内容或nextCursor无效，更新加载指示器显示');
             const loadMoreContainer = articleContainer.querySelector('.load-more-container');
             if (loadMoreContainer) {
                 loadMoreContainer.innerHTML = '<div class="no-more">没有更多内容</div>';
+            }
+            
+            // 确保移除滚动监听器
+            if (this.scrollHandler) {
+                window.removeEventListener('scroll', this.scrollHandler);
+                this.scrollHandler = null;
             }
         }
     }
@@ -764,6 +810,18 @@ class ArticleManager {
                 return false;
             }
             
+            // 强制清除之前的所有状态
+            this.hasMore = false;
+            this.nextCursor = null;
+            this.loadedBlocks = [];
+            this.clearLoadMoreState();
+            
+            // 移除可能的滚动监听器
+            if (this.scrollHandler) {
+                window.removeEventListener('scroll', this.scrollHandler);
+                this.scrollHandler = null;
+            }
+            
             // 准备加载
             if (!this.prepareArticleLoading(pageId)) {
                 return false;
@@ -784,13 +842,24 @@ class ArticleManager {
                 
                 // 设置当前页面ID和分页状态
                 this.currentPageId = pageId;
-                this.hasMore = articleData.hasMore;
-                this.nextCursor = articleData.nextCursor;
+                
+                // 再次验证分页状态
+                if (articleData.hasMore === true && articleData.nextCursor) {
+                    this.hasMore = articleData.hasMore;
+                    this.nextCursor = articleData.nextCursor;
+                } else {
+                    // 如果没有有效的分页信息，强制为false
+                    this.hasMore = false;
+                    this.nextCursor = null;
+                }
+                
                 this.loadedBlocks = articleData.blocks || [];
                 
                 console.log('分页状态:', {
                     hasMore: this.hasMore,
                     nextCursor: this.nextCursor,
+                    nextCursor类型: typeof this.nextCursor,
+                    nextCursor长度: this.nextCursor ? this.nextCursor.length : 0,
                     blocksCount: this.loadedBlocks.length
                 });
                 
@@ -855,32 +924,54 @@ class ArticleManager {
     // 构建加载更多内容的API URL
     buildLoadMoreApiUrl() {
         const apiBaseUrl = config.api?.baseUrl || '/api';
-        const cursorParam = this.nextCursor ? `&cursor=${this.nextCursor}` : '';
-        return `${apiBaseUrl}/content/${this.currentPageId}?type=article&page_size=10${cursorParam}`;
+        
+        // 严格验证nextCursor是否有效
+        if (!this.nextCursor || typeof this.nextCursor !== 'string' || this.nextCursor.trim() === '') {
+            console.warn('构建API URL时nextCursor无效:', this.nextCursor);
+            return null;
+        }
+        
+        // 验证当前文章ID
+        if (!this.currentPageId || typeof this.currentPageId !== 'string' || this.currentPageId.trim() === '') {
+            console.warn('构建API URL时currentPageId无效:', this.currentPageId);
+            return null;
+        }
+        
+        const cursorParam = `&cursor=${encodeURIComponent(this.nextCursor)}`;
+        const url = `${apiBaseUrl}/content/${this.currentPageId}?type=article&page_size=10${cursorParam}`;
+        
+        console.log('构建API URL:', url);
+        return url;
     }
 
     // 获取更多内容的数据
     async fetchMoreContent() {
         const apiUrl = this.buildLoadMoreApiUrl();
-                console.log('加载更多内容 URL:', apiUrl);
-                
-                const response = await fetch(apiUrl);
+        
+        // 检查URL是否有效
+        if (!apiUrl) {
+            throw new Error('无法构建有效的API URL，nextCursor可能无效');
+        }
+        
+        console.log('加载更多内容 URL:', apiUrl);
+        
+        const response = await fetch(apiUrl);
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-                const data = await response.json();
-                console.log('加载更多内容响应:', data);
-                
+        const data = await response.json();
+        console.log('加载更多内容响应:', data);
+        
         return data;
     }
 
     // 处理新加载的内容数据
     processMoreContentData(data) {
-                // 更新分页状态
-                this.hasMore = data.hasMore;
-                this.nextCursor = data.nextCursor;
+        // 更新分页状态
+        this.hasMore = data.hasMore;
+        this.nextCursor = data.nextCursor;
 
         // 如果没有新的内容块，直接返回
         if (!data.blocks || data.blocks.length === 0) {
@@ -888,25 +979,11 @@ class ArticleManager {
             return null;
         }
         
-                    console.log(`加载了 ${data.blocks.length} 个新块`);
-                    
-                    // 添加到已加载的块中
-                    this.loadedBlocks = this.loadedBlocks || [];
-                    this.loadedBlocks = this.loadedBlocks.concat(data.blocks);
-                    
-        // 更新目录导航
-        if (data && data.blocks && data.blocks.length > 0) {
-            // 刷新目录导航（仅当有新标题时才刷新）
-            const headings = data.blocks.filter(block => 
-                block.type === 'heading_1' || 
-                block.type === 'heading_2' || 
-                block.type === 'heading_3'
-            );
-            
-            if (headings.length > 0) {
-                tableOfContents.refresh();
-            }
-        }
+        console.log(`加载了 ${data.blocks.length} 个新块`);
+        
+        // 添加到已加载的块中
+        this.loadedBlocks = this.loadedBlocks || [];
+        this.loadedBlocks = this.loadedBlocks.concat(data.blocks);
         
         return data.blocks;
     }
@@ -920,30 +997,83 @@ class ArticleManager {
         const mergedBlocks = (cachedData.blocks || []).concat(newBlocks);
         
         // 更新缓存
-                    const articleData = {
+        const articleData = {
             page: cachedData.page,
-                        blocks: mergedBlocks,
-                        hasMore: this.hasMore,
-                        nextCursor: this.nextCursor,
-                        isFullyLoaded: !this.hasMore // 如果没有更多内容，标记为完全加载
-                    };
-                    
+            blocks: mergedBlocks,
+            hasMore: this.hasMore,
+            nextCursor: this.nextCursor,
+            isFullyLoaded: !this.hasMore // 如果没有更多内容，标记为完全加载
+        };
+        
         this.articleCache.setArticleCache(this.currentPageId, articleData);
     }
 
     // 渲染新加载的内容
     renderMoreContent(newBlocks) {
         if (!newBlocks || newBlocks.length === 0) return;
-                    
-                    // 渲染新内容
+        
+        // 保存目录元素引用，确保它不会被销毁
+        const tocElement = document.querySelector('.article-toc');
+        const isTocCollapsed = tocElement ? tocElement.classList.contains('collapsed') : false;
+        const isTocVisible = tocElement ? tocElement.classList.contains('visible') : false;
+        
+        console.log('保存目录状态:', {
+            存在: !!tocElement,
+            已折叠: isTocCollapsed,
+            移动设备可见: isTocVisible
+        });
+        
+        // 渲染新内容
         const newContent = renderNotionBlocks(newBlocks);
-                    const articleBody = document.querySelector('.article-body');
-                    if (articleBody) {
-                        articleBody.insertAdjacentHTML('beforeend', newContent);
-                        // 处理新加载内容中的图片和其他懒加载内容
-                        imageLazyLoader.processImages(articleBody);
-                        initializeLazyLoading(articleBody);
+        const articleBody = document.querySelector('.article-body');
+        if (articleBody) {
+            // 添加新内容前保存滚动位置
+            const scrollPos = window.scrollY;
+            
+            // 添加新内容
+            articleBody.insertAdjacentHTML('beforeend', newContent);
+            
+            // 处理新加载内容中的图片和其他懒加载内容
+            imageLazyLoader.processImages(articleBody);
+            initializeLazyLoading(articleBody);
+            
+            // 检查新内容中是否有标题元素
+            const hasNewHeadings = newBlocks.some(block => 
+                block.type === 'heading_1' || 
+                block.type === 'heading_2' || 
+                block.type === 'heading_3'
+            );
+            
+            // 如果有新标题，则需要更新目录
+            if (hasNewHeadings) {
+                console.log('检测到新的标题元素，使用轻量方式更新目录导航');
+                
+                // 使用新的不销毁容器的方法更新目录内容
+                const updateResult = tableOfContents.updateContent();
+                console.log('目录更新结果:', updateResult);
+                
+                // 确保目录状态正确
+                if (tocElement) {
+                    if (isTocCollapsed) {
+                        tocElement.classList.add('collapsed');
+                    } else {
+                        tocElement.classList.remove('collapsed');
                     }
+                    
+                    if (isTocVisible) {
+                        tocElement.classList.add('visible');
+                    } else {
+                        tocElement.classList.remove('visible');
+                    }
+                }
+            }
+            
+            // 防止页面因新内容导致的滚动位置变化
+            window.scrollTo({
+                top: scrollPos,
+                behavior: 'auto'
+            });
+        }
     }
 
     // 加载更多内容
@@ -952,6 +1082,13 @@ class ArticleManager {
             // 如果已经在加载中，则忽略此次请求
             if (this.isLoading) {
                 console.log('已经在加载更多内容，忽略此次请求');
+                return;
+            }
+            
+            // 验证是否应该加载更多
+            if (!this.hasMore || !this.nextCursor) {
+                console.log('没有更多内容或nextCursor无效，跳过加载');
+                updateLoadMoreStatus(false, false);
                 return;
             }
             

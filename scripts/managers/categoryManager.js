@@ -44,11 +44,9 @@ class CategoryManager {
     // 更新分类列表
     updateCategories(articles) {
         if (!articles || articles.length === 0) {
-            console.log('没有文章，不更新分类');
             return;
         }
         
-        console.log(`更新分类列表，共 ${articles.length} 篇文章`);
         this.articles = articles;
         this.categories.clear();
         this.categories.set('all', 0); // 初始化"全部"分类
@@ -73,12 +71,10 @@ class CategoryManager {
                 }
             }
             
-            console.log(`文章 "${article.title || '无标题'}" 的分类: ${category}`);
             this.categories.set(category, (this.categories.get(category) || 0) + 1);
             this.categories.set('all', this.categories.get('all') + 1);
         });
 
-        console.log('分类统计结果:', Object.fromEntries(this.categories));
         this.renderArticleTree();
     }
 
@@ -106,7 +102,6 @@ class CategoryManager {
             // 如果是全部收起状态，则不渲染任何子项
             if (isAllCollapsed) {
                 treeChildren.innerHTML = '';
-                console.log('全部收起状态，不渲染子分类');
                 return;
             }
 
@@ -201,7 +196,6 @@ class CategoryManager {
                     // 如果已经是收起状态，点击则展开
                     if (!rootItem.classList.contains('all-collapsed')) {
                         // 当用户点击"全部文章"，收起整个列表
-                        console.log('收起整个文章列表');
                         
                         // 标记为全部收起状态，移除展开类，确保箭头指向正确
                         rootItem.classList.add('all-collapsed');
@@ -217,7 +211,6 @@ class CategoryManager {
                         }
                     } else {
                         // 当用户从收起状态点击，则展开并显示分类
-                        console.log('展开文章列表，显示所有分类');
                         
                         // 移除全部收起状态，添加展开状态
                         rootItem.classList.remove('all-collapsed');
@@ -268,8 +261,6 @@ class CategoryManager {
             
             return articleCategory === category;
         });
-        
-        console.log(`${category} 分类下的文章:`, filteredArticles.length);
         
         if (filteredArticles.length === 0) {
             articlesContainer.innerHTML = '<li class="no-results">该分类下暂无文章</li>';
@@ -428,7 +419,6 @@ class CategoryManager {
 
     // 选择分类
     selectCategory(category) {
-        console.log(`选择分类: ${category}`);
         if (!category) {
             console.warn('分类名称为空');
             return;
@@ -441,7 +431,6 @@ class CategoryManager {
         if (category !== 'all') {
             const categoryNode = document.querySelector(`#article-tree .category-tree-item[data-category="${category}"]`);
             if (categoryNode && !categoryNode.classList.contains('expanded')) {
-                console.log(`展开分类节点: ${category}`);
                 categoryNode.classList.add('expanded');
                 this.expandedCategories.add(category);
                 
