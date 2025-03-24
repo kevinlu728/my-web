@@ -244,15 +244,29 @@ export class TableOfContents {
             toggleBtn.innerHTML = '<div class="hamburger-icon"><span></span><span></span><span></span></div>';
             toggleBtn.title = '展开目录';
             
-            // 折叠状态下隐藏标题
+            // 折叠状态下隐藏标题和调整容器高度
             const tocTitle = this.tocContainer.querySelector('.toc-title');
             if (tocTitle) {
                 tocTitle.style.display = 'none';
             }
+            
+            // 添加CSS类控制高度和滚动条
+            this.tocContainer.style.overflowY = 'hidden';
+            this.tocContainer.style.overflowX = 'hidden';
+            
+            // 调整按钮位置使其居中
+            toggleBtn.style.position = 'static';
+            toggleBtn.style.margin = '0 auto';
         } else {
             // 展开状态使用 >> 图标
             toggleBtn.innerHTML = '<i class="fas fa-angle-double-right"></i>';
             toggleBtn.title = '折叠目录';
+            
+            // 确保按钮位于右上角
+            toggleBtn.style.position = 'absolute';
+            toggleBtn.style.top = '16px';
+            toggleBtn.style.right = '16px';
+            toggleBtn.style.margin = '0';
         }
         
         // 添加点击事件
@@ -272,6 +286,17 @@ export class TableOfContents {
                 if (tocTitle) {
                     tocTitle.style.display = 'block';
                 }
+                
+                // 恢复滚动
+                this.tocContainer.style.overflowY = 'auto';
+                this.tocContainer.style.height = '';
+                this.tocContainer.style.maxHeight = '';
+                
+                // 重置按钮位置为右上角
+                toggleBtn.style.position = 'absolute';
+                toggleBtn.style.top = '16px';
+                toggleBtn.style.right = '16px';
+                toggleBtn.style.margin = '0';
             } else {
                 // 折叠目录
                 this.tocContainer.classList.add('collapsed');
@@ -284,6 +309,17 @@ export class TableOfContents {
                 if (tocTitle) {
                     tocTitle.style.display = 'none';
                 }
+                
+                // 控制高度和隐藏滚动条
+                this.tocContainer.style.overflowY = 'hidden';
+                this.tocContainer.style.overflowX = 'hidden';
+                
+                // 修复高度
+                this.tocContainer.style.height = 'auto';
+                
+                // 调整按钮位置使其居中
+                toggleBtn.style.position = 'static';
+                toggleBtn.style.margin = '0 auto';
             }
         });
     }

@@ -427,7 +427,7 @@ function initializeResizableLeftColumn() {
                 leftColumn.style.flex = `0 0 ${width}px`;
                 
                 // 同时初始化拖动手柄和右栏的位置
-                const leftPadding = 20; // 左侧内边距
+                const leftPadding = 15; // 左侧内边距
                 const handleWidth = 3; // 拖动手柄宽度（从6px减小到3px）
                 
                 // 初始化拖动手柄位置
@@ -473,7 +473,7 @@ function initializeResizableLeftColumn() {
         leftColumn.style.flex = `0 0 ${defaultWidth}px`;
         
         // 同时更新拖动手柄和右栏的位置
-        const leftPadding = 20; // 左侧内边距
+        const leftPadding = 15; // 左侧内边距
         const handleWidth = 3; // 拖动手柄宽度（从6px减小到3px）
         
         // 更新拖动手柄位置
@@ -545,8 +545,8 @@ function initializeResizableLeftColumn() {
         leftColumn.style.flex = `0 0 ${newWidth}px`;
         
         // 同时更新拖动手柄和右栏的位置
-        const leftPadding = 20; // 左侧内边距
-        const handleWidth = 3; // 拖动手柄宽度（从6px减小到3px）
+        const leftPadding = 15; // 左侧内边距
+        const handleWidth = 3; // 恢复原始拖动手柄宽度
         
         // 更新拖动手柄位置
         if (resizeHandle) {

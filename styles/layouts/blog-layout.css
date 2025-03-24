@@ -19,7 +19,7 @@
     max-width: 100%; /* 让页面横向撑满 */
     width: 100%;
     margin: 0 auto;
-    padding: 0 20px 40px; /* 增加底部内边距，确保有足够空间 */
+    padding: 0 15px 13px; /* 减小左右内边距为15px */
     min-height: calc(100vh - 70px); /* 调整最小高度，移除footer后减少的高度更少 */
     position: relative;
     z-index: 1;
@@ -38,11 +38,9 @@
     border-radius: 12px 0 0 12px; /* 左侧圆角 */
     box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08); /* 更细腻的阴影 */
     position: fixed; /* 保持固定定位 */
-    top: 70px; /* 与顶部间距保持一致 */
-    left: 20px; /* 添加左侧定位 */
-    height: auto; /* 让高度自适应内容 */
-    min-height: calc(100vh - 110px); /* 设置最小高度，考虑到顶部和底部空间 */
-    max-height: calc(100vh - 90px); /* 最大高度限制，避免超出视口 */
+    top: 72px; /* 与顶部间距保持一致 */
+    left: 15px; /* 添加左侧定位 */
+    height: calc(100vh - 85px); /* 设置高度与内容区域一致 */
     overflow-y: auto; /* 如果左侧内容过多允许滚动 */
     overflow-x: hidden;
     width: 250px; /* 初始宽度 */
@@ -52,7 +50,6 @@
     display: flex; /* 添加flex布局 */
     flex-direction: column; /* 垂直排列 */
     transition: width 0.2s ease; /* 添加宽度变化的过渡效果 */
-    padding-bottom: 30px; /* 确保底部有足够的填充空间 */
 }
 
 /* 左侧栏内容容器 */
@@ -75,15 +72,13 @@
 
 /* 仿飞书风格的拖动手柄 */
 .resize-handle {
-    width: 3px; /* 进一步减小宽度，使左右栏之间距离更接近 */
+    width: 3px; /* 恢复原始手柄宽度 */
     cursor: col-resize;
     background-color: rgba(245, 250, 255, 0.1); /* 微弱背景色 */
     position: fixed; /* 保持固定定位 */
-    left: calc(20px + 250px); /* 以左侧内边距+左侧栏宽度计算，确保动态更新 */
-    top: 70px; /* 与左侧栏顶部对齐 */
-    height: auto; /* 自适应高度 */
-    min-height: calc(100vh - 110px); /* 与左侧栏最小高度一致 */
-    max-height: calc(100vh - 90px); /* 与左侧栏最大高度一致 */
+    left: calc(15px + 250px); /* 使用更小的左侧内边距但保持正确位置 */
+    top: 72px; /* 与左侧栏顶部对齐 */
+    height: calc(100vh - 85px); /* 与左侧栏高度一致 */
     z-index: 10;
     margin: 0;
     padding: 0;
@@ -97,7 +92,7 @@
 /* 拖动手柄的分隔线 */
 .separator-line {
     position: absolute;
-    width: 2px; /* 保持线条宽度 */
+    width: 2px; /* 恢复原始分隔线宽度 */
     height: 100%; /* 确保占满全高 */
     background-color: #e8eef5; /* 更淡的灰蓝色 */
     left: 50%;
@@ -110,11 +105,11 @@
 /* 拖动手柄悬停效果 */
 .resize-handle:hover {
     background-color: rgba(207, 232, 252, 0.3); /* 稍增加背景色 */
-    width: 8px; /* 悬停时稍微增加宽度，增强可用性 */
+    width: 8px; /* 恢复原始悬停宽度 */
 }
 
 .resize-handle:hover .separator-line {
-    width: 3px;
+    width: 3px; /* 恢复原始悬停分隔线宽度 */
     background-color: #90b3ff; /* 更淡的蓝色 */
     opacity: 0.8;
 }
@@ -122,11 +117,11 @@
 /* 拖动状态 */
 .resize-handle.active {
     background-color: rgba(207, 232, 252, 0.5); /* 明显的背景色 */
-    width: 8px; /* 拖动时保持增加的宽度 */
+    width: 8px; /* 恢复原始拖动时宽度 */
 }
 
 .resize-handle.active .separator-line {
-    width: 3px;
+    width: 3px; /* 恢复原始拖动时分隔线宽度 */
     background-color: #77a0ff; /* 更淡的活动蓝色 */
     opacity: 1;
     box-shadow: 0 0 4px rgba(119, 160, 255, 0.5); /* 更新阴影颜色 */
@@ -141,7 +136,7 @@
     flex: 1; /* 填充剩余空间 */
     min-width: 0; /* 允许收缩 */
     z-index: 1;
-    margin-left: calc(20px + 250px + 3px); /* 左侧内边距 + 左侧栏宽度 + 减小后的拖动手柄宽度 */
+    margin-left: calc(10px + 250px + 3px); /* 使用更小的左侧内边距但保持拖动手柄宽度 */
     position: relative; /* 保持相对定位 */
     border: 1px solid rgba(0, 0, 0, 0.05); /* 添加细微边框 */
     border-left: none; /* 移除左边框，与拖动手柄衔接 */
@@ -149,8 +144,6 @@
     flex-direction: column; /* 垂直排列 */
     overflow: visible; /* 允许内容自然溢出 */
     transition: margin-left 0.2s ease; /* 添加边距变化的过渡效果 */
-    min-height: calc(100vh - 110px); /* 与左栏最小高度保持一致 */
-    padding-bottom: 30px; /* 确保底部有足够的填充空间 */
 }
 
 /* 右侧栏文章容器 */
@@ -261,7 +254,7 @@
 /* 响应式布局 - 中等屏幕 */
 @media (max-width: 1200px) {
     .blog-content {
-        padding: 15px 15px 35px; /* 调整内边距，增加底部内边距 */
+        padding: 15px 10px 15px; /* 减小左右内边距 */
         gap: 0; /* 保持无间距 */
         margin-top: 45px; /* 调整顶部间距 */
         border-top: 1px solid rgba(0, 0, 0, 0.05); /* 保持顶部分隔线 */
@@ -271,64 +264,54 @@
         padding: 20px; /* 减小内边距 */
         width: 220px; /* 稍微减小宽度 */
         top: 65px; /* 与顶部间距保持一致 */
-        height: auto; /* 自适应高度 */
-        min-height: calc(100vh - 100px); /* 调整最小高度 */
-        max-height: calc(100vh - 85px); /* 调整最大高度 */
-        padding-bottom: 25px; /* 确保底部有足够填充 */
+        height: calc(100vh - 85px); /* 调整高度 */
     }
     
     .resize-handle {
-        left: 240px; /* 更新拖动手柄位置 */
+        left: calc(10px + 220px); /* 更新拖动手柄位置使用更小的左侧内边距 */
         top: 65px; /* 与左侧栏顶部对齐 */
-        height: auto; /* 自适应高度 */
-        min-height: calc(100vh - 100px); /* 与左侧栏最小高度一致 */
-        max-height: calc(100vh - 85px); /* 与左侧栏最大高度一致 */
-        width: 3px; /* 保持与非响应式版本相同的宽度 */
+        height: calc(100vh - 85px); /* 与左侧栏高度一致 */
+        width: 3px; /* 恢复原始宽度 */
     }
     
     .blog-content .right-column {
         padding: 20px 25px; /* 恢复为原始值 */
-        margin-left: calc(220px + 3px); /* 更新左边距，使用减小后的拖动手柄宽度 */
-        min-height: calc(100vh - 100px); /* 与左栏最小高度保持一致 */
-        padding-bottom: 25px; /* 确保底部有足够填充 */
+        margin-left: calc(10px + 220px + 3px); /* 更新左边距，使用更小的内边距但保持拖动手柄宽度 */
     }
 }
 
 /* 响应式布局 - 小屏幕 */
 @media (max-width: 768px) {
     .blog-content {
-        flex-direction: column; /* 垂直排列 */
-        padding: 10px 10px 25px; /* 调整内边距 */
-        gap: 15px; /* 添加垂直间距 */
-        margin-top: 35px; /* 调整顶部间距 */
+        flex-direction: column; /* 小屏幕改为垂直布局 */
+        padding: 12px 10px 10px; /* 调整内边距，包括顶部 */
+        gap: 15px; /* 垂直间距 */
+        margin-top: 40px; /* 调整顶部间距 */
+        border-top: 1px solid rgba(0, 0, 0, 0.05); /* 保持顶部分隔线 */
     }
     
     .blog-content .left-column {
-        position: relative;
-        top: auto;
-        left: auto;
-        width: 100%;
-        height: auto;
-        min-height: auto; /* 移动设备上不需要最小高度 */
-        max-height: none; /* 移除最大高度限制 */
-        border-radius: 12px;
-        border: 1px solid rgba(0, 0, 0, 0.05);
+        position: relative; /* 小屏幕下改回相对定位 */
+        top: 0;
+        left: 0;
+        height: auto; /* 自动高度 */
+        padding: 15px; /* 减小内边距 */
+        width: 100% !important; /* 强制宽度100% */
+        border-radius: 12px; /* 恢复完整圆角 */
         margin-bottom: 15px;
-        padding: 15px;
-        padding-bottom: 20px; /* 确保底部有填充 */
+        min-height: 350px; /* 设置最小高度 */
     }
     
     .blog-content .right-column {
-        margin-left: 0;
-        border-radius: 12px;
-        border: 1px solid rgba(0, 0, 0, 0.05);
-        padding: 15px 20px;
-        min-height: auto; /* 移动设备上不需要最小高度 */
-        padding-bottom: 20px; /* 确保底部有填充 */
+        padding: 15px 20px; /* 恢复为原始值 */
+        width: 100%; /* 确保宽度100% */
+        margin-left: 0; /* 重置左边距 */
+        border-radius: 12px; /* 恢复完整圆角 */
+        border: 1px solid rgba(0, 0, 0, 0.05); /* 恢复完整边框 */
     }
     
     .resize-handle {
-        display: none; /* 隐藏拖动手柄 */
+        display: none !important; /* 在小屏设备上隐藏调整手柄 */
     }
 }
 
