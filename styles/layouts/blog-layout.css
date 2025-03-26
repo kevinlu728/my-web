@@ -501,113 +501,51 @@
     }
 }
 
-/* 文章内容区域的占位样式 */
+/* 添加脉动动画，使占位图图标有呼吸效果 */
+@keyframes pulse {
+    0% {
+        opacity: 0.5;
+        transform: scale(0.98);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 0.5;
+        transform: scale(0.98);
+    }
+}
+
+/* 优化占位图样式 */
 .placeholder-content {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: calc(100vh - 130px); /* 填满整个右栏高度 */
-    width: 100%;
-    background-color: #ffffff; /* 与右栏背景色一致 */
-    border-radius: 0; /* 移除圆角，与右栏一致 */
-    margin: 0; /* 移除外边距 */
+    min-height: 400px;
     padding: 30px;
     text-align: center;
-    border: none; /* 移除虚线边框 */
-    position: absolute; /* 绝对定位 */
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
 }
 
 .placeholder-image {
-    width: 180px;
-    height: 180px;
-    background-color: #f2f5fa; /* 非常浅的灰蓝色背景 */
-    border-radius: 50%;
+    margin-bottom: 20px;
     display: flex;
-    align-items: center;
     justify-content: center;
-    margin-bottom: 25px;
-    position: relative;
-    overflow: visible; /* 允许内容溢出 */
-}
-
-/* 重新设计CSS图标 - 矩形部分 */
-.placeholder-image::before {
-    content: "";
-    position: absolute;
-    width: 100px; /* 增大矩形宽度 */
-    height: 80px; /* 增大矩形高度 */
-    background: #dde4ed; /* 很浅的灰蓝色矩形 */
-    border-radius: 10px;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -40%); /* 居中偏上 */
-}
-
-/* 重新设计CSS图标 - 圆形部分 */
-.placeholder-image::after {
-    content: "";
-    position: absolute;
-    width: 50px; /* 增大圆形尺寸 */
-    height: 50px; /* 增大圆形尺寸 */
+    align-items: center;
+    width: 120px;
+    height: 120px;
     border-radius: 50%;
-    background: #a6b6c7; /* 中等灰蓝色圆形 */
-    top: 20%; /* 将圆形位置往上移 */
-    left: 50%;
-    transform: translateX(-50%); /* 水平居中 */
+    background-color: #f5f7f9;
 }
 
 .placeholder-text {
-    color: #8090a0; /* 调整为更柔和的文本颜色 */
     font-size: 18px;
-    font-weight: 500;
-    line-height: 1.6;
-    margin-top: 10px; /* 增加与图像的间距 */
+    color: #666;
+    margin-bottom: 10px;
 }
 
 .placeholder-hint {
-    color: #a0b0c0; /* 调整为更柔和的文本颜色 */
     font-size: 14px;
-    margin-top: 10px;
-    max-width: 80%;
-}
-
-/* 简化呼吸动画效果，使其更加细微 */
-@keyframes breathing {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.01); }
-    100% { transform: scale(1); }
-}
-
-.placeholder-image {
-    animation: breathing 3s infinite ease-in-out;
-}
-
-/* 响应式布局下的占位图调整 */
-@media (max-width: 768px) {
-    .placeholder-content {
-        min-height: 350px; /* 较小的最小高度 */
-        position: relative; /* 恢复正常文档流 */
-    }
-    
-    .placeholder-image {
-        width: 120px;
-        height: 120px;
-    }
-    
-    .placeholder-image::before {
-        width: 80px;
-        height: 60px;
-    }
-    
-    .placeholder-image::after {
-        width: 40px;
-        height: 40px;
-        top: 25px;
-        left: 45px;
-    }
+    color: #999;
 } 

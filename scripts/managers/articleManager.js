@@ -52,6 +52,8 @@ import config from '../config/config.js';
 // 导入目录导航组件
 import tableOfContents from '../components/tableOfContents.js';
 
+import { getArticlePlaceholder } from '../utils/placeholder-templates.js';
+
 class ArticleManager {
     constructor() {
         this.articles = [];
@@ -89,6 +91,7 @@ class ArticleManager {
         
         // 添加请求控制相关属性
         this.loadingStatus = new Map(); // 记录每篇文章的加载状态
+        this.requestIdentifier = 0; // 添加请求标识符
     }
 
     // 初始化搜索功能
@@ -455,26 +458,29 @@ class ArticleManager {
 
     // 加载和显示文章内容
     async loadAndDisplayArticle(pageId) {
-        // 检查ID有效性
-        if (!pageId || pageId === 'undefined' || pageId === 'null') {
-            console.error('Invalid pageId in loadAndDisplayArticle:', pageId);
-            throw new Error('无效的文章ID');
-        }
-        
-        // 初始化加载状态
-        this.isLoading = true;
-        this.hasMore = false;
-        this.nextCursor = null;
-        this.loadedBlocks = [];
-        
-        // 创建新的 AbortController
-        this.abortController = new AbortController();
-        this.currentLoadingId = pageId;
-        
-        // 打印详细的请求信息
-        console.log(`🔍 文章ID详情 - 长度: ${pageId.length}, 格式: ${pageId.includes('-') ? '含连字符' : '无连字符'}`);
+        const requestId = this.requestIdentifier;
+        console.log('开始加载文章:', pageId, '请求ID:', requestId);
         
         try {
+            // 检查ID有效性
+            if (!pageId || pageId === 'undefined' || pageId === 'null') {
+                console.error('Invalid pageId in loadAndDisplayArticle:', pageId);
+                throw new Error('无效的文章ID');
+            }
+            
+            // 初始化加载状态
+            this.isLoading = true;
+            this.hasMore = false;
+            this.nextCursor = null;
+            this.loadedBlocks = [];
+            
+            // 创建新的 AbortController
+            this.abortController = new AbortController();
+            this.currentLoadingId = pageId;
+            
+            // 打印详细的请求信息
+            console.log(`🔍 文章ID详情 - 长度: ${pageId.length}, 格式: ${pageId.includes('-') ? '含连字符' : '无连字符'}`);
+            
             // 先尝试从缓存获取
             const cachedData = this.articleCache.getArticleFromCache(pageId);
             
@@ -530,6 +536,13 @@ class ArticleManager {
             // 检查article结构是否有效
             if (!articleData || !articleData.blocks) {
                 throw new Error('无效的文章内容');
+            }
+            
+            // ======= 关键修改点 =======
+            // 双重检查：1. 检查当前文章ID是否匹配  2. 检查请求ID是否匹配
+            if (this.currentPageId !== pageId || this.requestIdentifier !== requestId) {
+                console.log('文章已切换或有更新请求，取消加载:', pageId, '请求ID:', requestId);
+                return false;
             }
             
             // 缓存文章内容
@@ -734,66 +747,71 @@ class ArticleManager {
 
     // 清理加载更多状态
     clearLoadMoreState() {
-        // 清除滚动处理器
+        this.hasMore = false;
+        this.nextCursor = null;
+        this.isLoadingMore = false;
+        
+        // 更新加载更多容器的内容，但不移除它
+        const loadMoreContainer = document.querySelector('.load-more-container');
+        if (loadMoreContainer) {
+            loadMoreContainer.innerHTML = '<div class="no-more">没有更多内容</div>';
+        }
+        
+        // 确保移除滚动监听器
         if (this.scrollHandler) {
             window.removeEventListener('scroll', this.scrollHandler);
             this.scrollHandler = null;
         }
         
-        // 清除防抖延迟定时器
-        if (this.triggerDebounceTimeout) {
-            clearTimeout(this.triggerDebounceTimeout);
-            this.triggerDebounceTimeout = null;
-        }
-        
-        // 重置加载状态
-        this.isLoading = false;
-        
-        // 更新加载状态显示，根据是否有更多内容显示不同内容
-        const loadMoreContainer = document.querySelector('.load-more-container');
-        if (loadMoreContainer) {
-            if (this.hasMore) {
-                loadMoreContainer.innerHTML = '<div class="loading-text">下拉加载更多</div>';
-            } else {
-                loadMoreContainer.innerHTML = '<div class="no-more">没有更多内容</div>';
-            }
-        }
-        
-        console.log('已清理加载更多状态，hasMore:', this.hasMore);
+        console.log('已更新加载更多状态：没有更多内容');
     }
 
     // 准备加载文章
     prepareArticleLoading(pageId) {
-        // 防止重复加载同一篇文章
-        if (this.currentLoadingId === pageId && this.isLoading) {
-            console.log(`文章 ${pageId} 正在加载中，忽略重复请求`);
+        console.log('准备加载文章:', pageId);
+        
+        // 增加请求标识符，用于防止内容混合
+        this.requestIdentifier = Date.now();
+        
+        // 获取文章容器
+        const articleContainer = document.getElementById('article-container');
+        if (!articleContainer) {
+            console.error('找不到文章容器');
             return false;
         }
-
-        // 更新树中的选中状态
-        categoryManager.updateActiveState(null, pageId);
-
-        // 如果正在加载其他文章，先取消那个加载
-        if (this.currentLoadingId && this.currentLoadingId !== pageId) {
-            this.cancelCurrentLoading();
-        }
-
-        // 清理之前的加载更多状态
-        this.clearLoadMoreState();
-
-        // 重置滚动位置
-        window.scrollTo({
-            top: 0,
-            behavior: 'instant' 
-        });
-
-        // 记录当前正在加载的文章ID
-        this.currentLoadingId = pageId;
-        this.isLoading = true;
-
-        // 使用showArticleLoadingState显示加载状态
-        showArticleLoadingState();
         
+        // 重置文章容器内容 - 使用导入的占位图模板
+        articleContainer.innerHTML = getArticlePlaceholder();
+        
+        // 重置状态
+        this.isLoading = true;
+        this.isLoadingMore = false;
+        this.hasMore = false;
+        this.nextCursor = null;
+        this.currentPageId = pageId;
+        
+        // 重置右侧滚动容器的位置
+        const rightColumn = document.querySelector('.blog-content .right-column');
+        if (rightColumn) {
+            rightColumn.scrollTop = 0;
+        }
+        
+        // 移除可能的滚动监听器
+        if (this.scrollHandler) {
+            if (this.scrollContainer) {
+                this.scrollContainer.removeEventListener('scroll', this.scrollHandler);
+            } else {
+                window.removeEventListener('scroll', this.scrollHandler);
+            }
+            this.scrollHandler = null;
+        }
+        
+        // 更新URL参数
+        if (window.UrlUtils && window.UrlUtils.updateParam) {
+            window.UrlUtils.updateParam('article', pageId);
+        }
+        
+        console.log('文章加载准备完成');
         return true;
     }
 
@@ -887,6 +905,19 @@ class ArticleManager {
                                 setTimeout(() => container.classList.remove('cache-refresh'), 500);
                             }
                         }, 100); // 减少延迟时间，降低等待感
+                    }
+                    
+                    // 修改这里：确保当没有更多内容时，显示提示
+                    if (!this.hasMore) {
+                        const articleContainer = document.getElementById('article-container');
+                        // 查找或创建加载更多容器
+                        let loadMoreContainer = articleContainer.querySelector('.load-more-container');
+                        if (!loadMoreContainer) {
+                            loadMoreContainer = document.createElement('div');
+                            loadMoreContainer.className = 'load-more-container';
+                            articleBody.appendChild(loadMoreContainer);
+                        }
+                        loadMoreContainer.innerHTML = '<div class="no-more">没有更多内容</div>';
                     }
                 }
                 
@@ -1012,6 +1043,15 @@ class ArticleManager {
     renderMoreContent(newBlocks) {
         if (!newBlocks || newBlocks.length === 0) return;
         
+        // 在渲染前最后一次检查请求标识符
+        const currentArticleBody = document.querySelector(`.article-body[data-article-id="${this.currentPageId}"]`);
+        
+        // 如果找不到当前文章的正文容器，不进行渲染
+        if (!currentArticleBody) {
+            console.log('未找到当前文章容器，取消渲染');
+            return false;
+        }
+        
         // 保存目录元素引用，确保它不会被销毁
         const tocElement = document.querySelector('.article-toc');
         const isTocCollapsed = tocElement ? tocElement.classList.contains('collapsed') : false;
@@ -1078,80 +1118,73 @@ class ArticleManager {
 
     // 加载更多内容
     async loadMoreContent() {
+        // 保存当前请求标识符
+        const requestId = this.requestIdentifier;
+        const currentPageId = this.currentPageId;
+        
+        // 如果正在加载或没有更多内容，则不执行
+        if (this.isLoadingMore || !this.hasMore) {
+            console.log('跳过加载更多: 已在加载中或没有更多内容');
+            return false;
+        }
+        
+        // 添加超时保护，确保状态不会永久卡住
+        const loadMoreTimeout = setTimeout(() => {
+            if (this.isLoadingMore) {
+                console.log('加载更多超时，强制重置状态');
+                this.isLoadingMore = false;
+            }
+        }, 10000); // 10秒超时保护
+        
+        this.isLoadingMore = true;
+        console.log('开始加载更多内容');
+        
         try {
-            // 如果已经在加载中，则忽略此次请求
-            if (this.isLoading) {
-                console.log('已经在加载更多内容，忽略此次请求');
-                return;
+            const moreData = await this.fetchMoreContent();
+            
+            // ======= 关键修改点 =======
+            // 双重检查：确保文章ID和请求ID都匹配
+            if (this.currentPageId !== currentPageId || this.requestIdentifier !== requestId) {
+                console.log('文章已切换或有更新请求，取消加载更多内容');
+                this.isLoadingMore = false;
+                return false;
             }
             
-            // 验证是否应该加载更多
-            if (!this.hasMore || !this.nextCursor) {
-                console.log('没有更多内容或nextCursor无效，跳过加载');
+            if (!moreData || !moreData.blocks) {
+                console.log('没有获取到更多内容或格式错误');
+                this.isLoadingMore = false;
+                return false;
+            }
+            
+            // 处理数据
+            const newBlocks = this.processMoreContentData(moreData);
+            
+            // 更新缓存
+            this.updateArticleCache(newBlocks);
+            
+            // 渲染新内容
+            this.renderMoreContent(newBlocks);
+
+            // 如果没有更多内容，确保显示提示
+            if (!this.hasMore) {
+                console.log('已加载所有内容，更新状态显示');
+                // 先更新UI状态以显示"没有更多内容"
                 updateLoadMoreStatus(false, false);
-                return;
-            }
-            
-            this.isLoading = true;
-            console.log('加载更多内容...');
-
-            // 使用updateLoadMoreStatus更新加载状态
-            updateLoadMoreStatus(true, this.hasMore);
-
-            // 确保有当前页面ID
-            if (!this.currentPageId) {
-                console.error('没有当前页面ID，无法加载更多内容');
-                throw new Error('无法加载更多内容');
+            } else {
+                // 还有更多内容，更新状态
+                updateLoadMoreStatus(false, true);
             }
 
-            console.log('当前页面ID:', this.currentPageId);
-            console.log('下一页游标:', this.nextCursor);
-
-            try {
-                // 获取更多内容
-                const data = await this.fetchMoreContent();
-                
-                // 处理数据
-                const newBlocks = this.processMoreContentData(data);
-                
-                // 更新缓存
-                this.updateArticleCache(newBlocks);
-                
-                // 渲染新内容
-                this.renderMoreContent(newBlocks);
-
-                // 更新加载更多按钮状态
-                updateLoadMoreStatus(false, this.hasMore);
-
-                // 如果没有更多内容，移除滚动监听器并显示没有更多内容
-                if (!this.hasMore) {
-                    console.log('已加载所有内容，更新状态显示');
-                    // 先更新UI状态以显示"没有更多内容"
-                    updateLoadMoreStatus(false, false);
-                    // 然后清理滚动监听
-                    this.clearLoadMoreState();
-                }
-
-            } catch (error) {
-                console.error('加载更多内容请求失败:', error);
-                throw error;
-            }
-
+            // 完成后清除超时
+            clearTimeout(loadMoreTimeout);
+            this.isLoadingMore = false;
+            return true;
         } catch (error) {
             console.error('加载更多内容失败:', error);
-            showStatus('加载更多内容失败: ' + error.message, true);
-            
-            // 显示错误状态
-            updateLoadMoreStatus(false, this.hasMore, error.message);
-        } finally {
-            // 确保状态被正确清理
-            this.isLoading = false;
-            
-            // 移除加载指示器的准备状态
-            const loadMoreContainer = document.querySelector('.load-more-container');
-            if (loadMoreContainer) {
-                loadMoreContainer.classList.remove('loading-prepare');
-            }
+            // 确保在错误情况下也重置状态
+            clearTimeout(loadMoreTimeout);
+            this.isLoadingMore = false;
+            return false;
         }
     }
 
@@ -1309,6 +1342,31 @@ class ArticleManager {
                 colors: categoryConfig.colors
             }
         });
+    }
+
+    // 添加一个新方法，用于强制重置加载状态 - 可在页面中暴露使用
+    resetLoadingState() {
+        console.log('强制重置加载状态');
+        this.isLoading = false;
+        this.isLoadingMore = false;
+        
+        // 移除加载中指示器
+        const loadingIndicator = document.querySelector('.loading-indicator');
+        if (loadingIndicator) {
+            loadingIndicator.remove();
+        }
+        
+        // 如果页面卡在加载中状态，尝试恢复UI
+        const articleContainer = document.getElementById('article-container');
+        const loadingElement = articleContainer?.querySelector('.placeholder-content');
+        if (loadingElement && articleContainer) {
+            // 如果内容区只有加载占位符，显示一个错误提示
+            articleContainer.innerHTML = `
+                <div class="error-message">
+                    <p>加载内容超时，请<a href="javascript:void(0)" onclick="window.articleManager.resetLoadingState()">刷新</a>重试</p>
+                </div>
+            `;
+        }
     }
 }
 

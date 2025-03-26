@@ -145,7 +145,11 @@ export function displayArticleContent(articleData, renderBlocks, containerId = '
         <div class="article-body" data-article-id="${articleData.page?.id || ''}">
             ${contentHtml}
         </div>
-        ${hasMore ? '<div class="load-more-container"><div class="loading-text">下拉加载更多</div></div>' : ''}
+        <div class="load-more-container">
+            ${hasMore ? 
+                '<div class="loading-text">下拉加载更多</div>' : 
+                '<div class="no-more">没有更多内容</div>'}
+        </div>
     `;
 
     // 处理文章中的图片和其他内容
