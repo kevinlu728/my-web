@@ -448,8 +448,8 @@
 }
 
 /* 展开状态下的箭头 - 所有展开的项目箭头向下 */
-.tree-item.expanded > .tree-item-content .tree-toggle i {
-    transform: rotate(90deg); /* 旋转为向下 */
+.tree-item.expanded > .tree-item-content .tree-toggle i:before {
+    content: "\f078"; /* fa-chevron-down 的 Unicode 值 */
 }
 
 /* 全部收起状态下的箭头 - 指向右侧，表示可以再次展开 */

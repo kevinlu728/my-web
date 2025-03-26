@@ -23,7 +23,7 @@
  */
 
 import { categoryConfig } from '../config/categories.js';
-import { UrlUtils } from '../utils/url-utils.js';
+import { articleRouteUtils } from '../utils/article-route-utils.js';
 
 class CategoryManager {
     constructor() {
@@ -87,13 +87,78 @@ class CategoryManager {
         const rootItem = articleTree.querySelector('.root-item');
         if (!rootItem) return;
 
-        // 检查是否是处于全部收起状态
+        // 检查是否是重新渲染
         const isAllCollapsed = rootItem.classList.contains('all-collapsed');
-
-        // 更新根节点信息
-        const rootItemContent = rootItem.querySelector('.item-count');
-        if (rootItemContent) {
-            rootItemContent.textContent = `(${this.categories.get('all') || 0})`;
+        
+        // 选择正确的图标 - 如果不是全部折叠状态，则使用向下图标
+        const chevronClass = isAllCollapsed ? 'fa-chevron-right' : 'fa-chevron-down';
+        
+        // 创建根节点内容
+        rootItem.innerHTML = `
+            <div class="tree-item-content">
+                <span class="tree-toggle"><i class="fas ${chevronClass}"></i></span>
+                <span class="category-icon"><i class="fas fa-folder"></i></span>
+                <span class="item-name">全部文章</span>
+                <span class="item-count">(${this.articles.length})</span>
+            </div>
+            <ul class="tree-children"></ul>
+        `;
+        
+        // 始终为根节点添加点击事件 - 移到这里确保无论如何都会执行
+        const rootContent = rootItem.querySelector('.tree-item-content');
+        if (rootContent) {
+            // 移除现有的事件监听器（如果有）
+            rootContent.replaceWith(rootContent.cloneNode(true));
+            const newRootContent = rootItem.querySelector('.tree-item-content');
+            
+            newRootContent.addEventListener('click', (e) => {
+                e.stopPropagation();
+                
+                // 简化判断条件：只要不处于全部收起状态，点击就收起
+                // 如果已经是收起状态，点击则展开
+                if (!rootItem.classList.contains('all-collapsed')) {
+                    // 当用户点击"全部文章"，收起整个列表
+                    
+                    // 标记为全部收起状态，移除展开类，确保箭头指向正确
+                    rootItem.classList.add('all-collapsed');
+                    rootItem.classList.remove('expanded');
+                    
+                    // 更新图标方向
+                    const toggleIcon = rootItem.querySelector('.tree-toggle i');
+                    if (toggleIcon) {
+                        toggleIcon.classList.remove('fa-chevron-down');
+                        toggleIcon.classList.add('fa-chevron-right');
+                    }
+                    
+                    // 清空已展开分类集合
+                    this.expandedCategories.clear();
+                    
+                    // 清空所有子分类节点
+                    const treeChildren = rootItem.querySelector('.tree-children');
+                    if (treeChildren) {
+                        treeChildren.innerHTML = '';
+                    }
+                } else {
+                    // 当用户从收起状态点击，则展开并显示分类
+                    
+                    // 移除全部收起状态，添加展开状态
+                    rootItem.classList.remove('all-collapsed');
+                    rootItem.classList.add('expanded');
+                    
+                    // 更新图标方向
+                    const toggleIcon = rootItem.querySelector('.tree-toggle i');
+                    if (toggleIcon) {
+                        toggleIcon.classList.remove('fa-chevron-right');
+                        toggleIcon.classList.add('fa-chevron-down');
+                    }
+                    
+                    // 重新渲染分类列表
+                    this.renderArticleTree(true);
+                }
+                
+                // 更新激活状态，高亮"全部文章"
+                this.updateActiveState('all');
+            });
         }
 
         // 清除所有子项
@@ -131,14 +196,16 @@ class CategoryManager {
                 categoryNode.dataset.category = category;
                 
                 // 检查是否应该展开该分类
+                let chevronClass = 'fa-chevron-right';
                 if (this.expandedCategories.has(category)) {
                     categoryNode.classList.add('expanded');
+                    chevronClass = 'fa-chevron-down';
                 }
 
                 // 创建分类内容
                 categoryNode.innerHTML = `
                     <div class="tree-item-content">
-                        <span class="tree-toggle"><i class="fas fa-chevron-right"></i></span>
+                        <span class="tree-toggle"><i class="fas ${chevronClass}"></i></span>
                         <span class="category-icon"><i class="fas fa-tag"></i></span>
                         <span class="item-name">${this.getCategoryDisplayName(category)}</span>
                         <span class="item-count">(${count})</span>
@@ -156,6 +223,18 @@ class CategoryManager {
                     
                     // 切换展开/折叠状态
                     categoryNode.classList.toggle('expanded');
+                    
+                    // 更新图标方向
+                    const toggleIcon = categoryNode.querySelector('.tree-toggle i');
+                    if (toggleIcon) {
+                        if (categoryNode.classList.contains('expanded')) {
+                            toggleIcon.classList.remove('fa-chevron-right');
+                            toggleIcon.classList.add('fa-chevron-down');
+                        } else {
+                            toggleIcon.classList.remove('fa-chevron-down');
+                            toggleIcon.classList.add('fa-chevron-right');
+                        }
+                    }
                     
                     // 记录展开状态
                     if (categoryNode.classList.contains('expanded')) {
@@ -178,52 +257,6 @@ class CategoryManager {
                     this.loadArticlesForCategory(category, categoryNode);
                 }
             });
-        }
-
-        // 只在初始化时（非重新渲染）添加根节点点击事件
-        if (!isRerender) {
-            // 为根节点添加点击事件
-            const rootContent = rootItem.querySelector('.tree-item-content');
-            if (rootContent) {
-                // 移除现有的事件监听器（如果有）
-                rootContent.replaceWith(rootContent.cloneNode(true));
-                const newRootContent = rootItem.querySelector('.tree-item-content');
-                
-                newRootContent.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    
-                    // 简化判断条件：只要不处于全部收起状态，点击就收起
-                    // 如果已经是收起状态，点击则展开
-                    if (!rootItem.classList.contains('all-collapsed')) {
-                        // 当用户点击"全部文章"，收起整个列表
-                        
-                        // 标记为全部收起状态，移除展开类，确保箭头指向正确
-                        rootItem.classList.add('all-collapsed');
-                        rootItem.classList.remove('expanded');
-                        
-                        // 清空已展开分类集合
-                        this.expandedCategories.clear();
-                        
-                        // 清空所有子分类节点
-                        const treeChildren = rootItem.querySelector('.tree-children');
-                        if (treeChildren) {
-                            treeChildren.innerHTML = '';
-                        }
-                    } else {
-                        // 当用户从收起状态点击，则展开并显示分类
-                        
-                        // 移除全部收起状态，添加展开状态
-                        rootItem.classList.remove('all-collapsed');
-                        rootItem.classList.add('expanded');
-                        
-                        // 重新渲染分类列表
-                        this.renderArticleTree(true);
-                    }
-                    
-                    // 更新激活状态，高亮"全部文章"
-                    this.updateActiveState('all');
-                });
-            }
         }
 
         // 默认展开根节点（除非处于全部收起状态）
@@ -321,16 +354,16 @@ class CategoryManager {
                 const rootItem = document.querySelector('#article-tree .root-item');
                 rootItem.classList.add('active');
                 
-                // 从URL中移除分类参数
-                UrlUtils.removeParam('category');
+                // 从URL中移除分类参数 - 使用新的路由工具
+                articleRouteUtils.clearArticleParams();
             } else {
                 // 如果选择了特定分类，确保不处于全部收起状态
                 const rootItem = document.querySelector('#article-tree .root-item');
                 rootItem.classList.remove('all-collapsed');
                 
                 document.querySelector(`#article-tree .category-tree-item[data-category="${category}"]`)?.classList.add('active');
-                // 更新URL分类参数
-                UrlUtils.updateParam('category', category);
+                // 更新URL分类参数 - 使用新的路由工具
+                articleRouteUtils.updateCategoryParam(category);
             }
             
             // 触发分类变更回调

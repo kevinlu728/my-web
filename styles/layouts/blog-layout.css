@@ -372,8 +372,8 @@
     transition: transform 0.2s ease;
 }
 
-.article-tree-container .tree-item.expanded > .tree-item-content .tree-toggle {
-    transform: rotate(90deg);
+.article-tree-container .tree-item.expanded > .tree-item-content .tree-toggle i:before {
+    content: "\f078"; /* fa-chevron-down 的 Unicode 值 */
 }
 
 .article-tree-container .item-name {

@@ -221,3 +221,16 @@ cd my-web
 2. 创建特性分支
 3. 提交改动
 4. 发起 Pull Request
+
+## 最近更新
+
+### 2024-03-26: 文章管理器模块化重构
+
+- 完成了文章管理器的大型模块化重构，将单体的articleManager拆分为多个专业模块:
+  - `articlePaginationManager.js`: 负责文章分页和加载更多功能
+  - `articleCacheManager.js`: 负责文章缓存操作和管理
+  - `articleSearchManager.js`: 负责搜索功能和搜索结果展示
+- 重构提高了代码的可维护性、可测试性和可扩展性
+- 使用回调函数和事件机制优化模块间通信，降低了模块间的耦合度
+
+如需了解更多详细的重构历史，请查看 [scripts/README.md](scripts/README.md#重构历史)
