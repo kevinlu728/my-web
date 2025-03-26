@@ -36,14 +36,15 @@ export function optimizeImageUrl(originalUrl, options = {}) {
         scale: 0.5,         // 默认缩放比例为原图的 50%
         quality: 'auto',    // 自动质量
         format: 'auto',     // 自动格式（WebP/AVIF 等）
-        fetchFormat: 'auto' // 自动选择最佳格式
+        fetchFormat: 'auto', // 自动选择最佳格式
+        skipCloudinary: false // 新增选项，是否跳过Cloudinary处理
     };
 
     // 合并选项
     const settings = { ...defaultOptions, ...options };
     
-    // 检查 URL 是否有效
-    if (!originalUrl || !originalUrl.startsWith('http')) {
+    // 检查URL是否有效或跳过处理
+    if (!originalUrl || !originalUrl.startsWith('http') || settings.skipCloudinary) {
         return originalUrl;
     }
     
