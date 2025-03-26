@@ -95,8 +95,6 @@ class ResourceLoader {
                 this.cdnMappings[script.resourceId] = urls;
             }
         });
-        
-        console.log('✅ 资源映射已从配置初始化，共有', Object.keys(this.cdnMappings).length, '个资源配置');
     }
     
     /**
@@ -111,8 +109,6 @@ class ResourceLoader {
             const localFallback = element.getAttribute('data-local-fallback');
             
             if (resourceType && localFallback) {
-                console.log(`识别到已存在的资源: ${resourceType}, 本地路径: ${localFallback}`);
-                
                 // 更新或添加到映射中
                 if (!this.cdnMappings[resourceType]) {
                     this.cdnMappings[resourceType] = [];
@@ -146,8 +142,6 @@ class ResourceLoader {
                 }
             }
         }, true);
-        
-        console.log('✅ 资源加载错误处理机制已初始化');
     }
     
     /**
@@ -199,14 +193,14 @@ class ResourceLoader {
      * @param {string} fallbackUrl - 回退URL
      */
     applyResourceFallback(element, originalUrl, fallbackUrl) {
-        console.log(`🔄 直接应用回退资源: ${fallbackUrl}`);
+        console.debug(`🔄 直接应用回退资源: ${fallbackUrl}`);
         
         if (element.tagName === 'LINK') {
             // 创建新的link元素并替换失败的元素
             const newLink = document.createElement('link');
             newLink.rel = 'stylesheet';
             newLink.href = fallbackUrl;
-            newLink.onload = () => console.log(`✅ 回退资源加载成功: ${fallbackUrl}`);
+            newLink.onload = () => console.debug(`✅ 回退资源加载成功: ${fallbackUrl}`);
             newLink.onerror = () => {
                 console.error(`❌ 回退资源加载失败: ${fallbackUrl}`);
                 
@@ -228,7 +222,7 @@ class ResourceLoader {
                         if (!priority) {
                             if (resource.includes('katex') || originalUrl.includes('katex') || resource === 'katex.min.css' || originalUrl.endsWith('katex.min.css')) {
                                 priority = 'medium'; // KaTeX是中等优先级
-                                console.log('📌 在applyResourceFallback中检测到KaTeX资源，设置为中等优先级');
+                                console.debug('📌 在applyResourceFallback中检测到KaTeX资源，设置为中等优先级');
                             } else if (resource.includes('bootstrap-icons') || originalUrl.includes('bootstrap-icons')) {
                                 priority = 'high'; // 图标通常是高优先级
                             } else {
@@ -426,41 +420,39 @@ class ResourceLoader {
     }
     
     /**
-     * 注入基本的图标样式
+     * 注入基本图标样式
+     * 当图标CDN加载失败时提供最小的必要图标样式
      */
     injectBasicIconStyles() {
         const style = document.createElement('style');
         style.textContent = `
-            /* 最小Bootstrap图标回退样式 */
-            .bi {
-                display: inline-block;
-                width: 1em;
-                height: 1em;
-                vertical-align: -0.125em;
-            }
-            
-            /* 添加一些关键图标的Unicode回退 */
-            .bi-chevron-right::before { content: "›"; }
-            .bi-chevron-down::before { content: "⌄"; }
-            .bi-search::before { content: "🔍"; }
-            .bi-x::before { content: "×"; }
+            .fas.fa-chevron-right:before { content: "▶"; }
+            .fas.fa-chevron-down:before { content: "▼"; }
+            .fas.fa-search:before { content: "🔍"; }
+            .fas.fa-times:before { content: "✕"; }
+            .fas.fa-sync:before { content: "↻"; }
+            .fas.fa-spinner:before { content: "⟳"; }
+            .spin { animation: spin 2s linear infinite; }
+            @keyframes spin { 100% { transform: rotate(360deg); } }
         `;
         document.head.appendChild(style);
-        console.log('✅ 已注入基本图标回退样式');
+        // 修改为debug级别的日志
+        console.debug('已注入基本图标回退样式');
     }
     
     /**
-     * 注入基本的KaTeX样式
+     * 注入基本KaTeX样式
+     * 当KaTeX CDN加载失败时提供最小的必要数学公式样式
      */
     injectBasicKatexStyles() {
         const style = document.createElement('style');
         style.textContent = `
-            /* 最小KaTeX回退样式 */
-            .katex { font-family: monospace; }
-            .katex-display { margin: 1em 0; text-align: center; }
+            .katex { font-family: KaTeX_Main, 'Times New Roman', serif; }
+            .katex-display { text-align: center; margin: 1em 0; }
         `;
         document.head.appendChild(style);
-        console.log('✅ 已注入基本KaTeX回退样式');
+        // 修改为debug级别的日志
+        console.debug('已注入基本KaTeX回退样式');
     }
     
     /**
@@ -638,15 +630,48 @@ class ResourceLoader {
      * @returns {Promise} 加载完成的Promise
      */
     loadResourceGroup(resourceGroup) {
-        // 检查参数有效性
-        if (!resourceGroup || typeof resourceGroup !== 'string') {
-            console.warn('⚠️ 尝试加载无效的资源组:', resourceGroup);
-            return Promise.resolve();
-        }
-        
-        console.log(`🚀 按需加载资源组: ${resourceGroup}`);
-        
+        // 根据资源组名称加载相应的资源
         switch (resourceGroup) {
+            case 'syntax-highlighting':
+                // 加载语法高亮相关资源
+                this.loadResource('style', 'prism');
+                this.loadResource('script', 'prism');
+                
+                // 加载代码区域行号插件
+                this.loadResource('style', 'prism-line-numbers');
+                this.loadResource('script', 'prism-line-numbers');
+                
+                // 加载代码区域工具栏插件
+                this.loadResource('style', 'prism-toolbar');
+                this.loadResource('script', 'prism-toolbar');
+                
+                // 加载代码复制按钮插件
+                this.loadResource('script', 'prism-copy-to-clipboard');
+                
+                // 在普通日志之前添加防抖
+                const syntaxLoadedIndicator = document.createElement('div');
+                syntaxLoadedIndicator.id = 'syntax-resources-loaded';
+                syntaxLoadedIndicator.style.display = 'none';
+                document.body.appendChild(syntaxLoadedIndicator);
+                
+                // 设置一个延迟，确保资源有时间加载
+                setTimeout(() => {
+                    // 创建资源加载完成事件
+                    const event = new CustomEvent('syntaxResourcesLoaded');
+                    document.dispatchEvent(event);
+                    
+                    // 修改为debug级别的日志
+                    console.debug('代码高亮资源加载完成');
+                    
+                    // 应用代码高亮
+                    if (window.Prism) {
+                        window.Prism.highlightAll();
+                        // 修改为debug级别的日志
+                        console.debug('代码高亮已应用');
+                    }
+                }, 500);
+                break;
+                
             case 'math':
                 // 加载数学公式渲染相关资源
                 return Promise.all([

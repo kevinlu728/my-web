@@ -355,27 +355,30 @@ class ImageLazyLoader {
         const images = container.querySelectorAll('img');
         
         if (!images.length) {
-            console.log('📢 容器中没有找到图片');
+            // 移除非关键日志
+            // console.log('📢 容器中没有找到图片');
             return;
         }
-        console.log(`🎯 找到 ${images.length} 张图片，开始处理懒加载...`);
+        // 简化日志，只保留关键信息
+        console.debug(`处理${images.length}张图片懒加载`);
         
         images.forEach((img, index) => {
             // 获取原始图片URL和尺寸信息
             const originalSrc = img.getAttribute('data-original-src') || img.src;
-            console.log('图片信息:', {
-                src: originalSrc,
-                naturalWidth: img.naturalWidth,
-                naturalHeight: img.naturalHeight,
-                width: img.width,
-                height: img.height,
-                dataWidth: img.getAttribute('data-width'),
-                dataHeight: img.getAttribute('data-height'),
-                dataset: img.dataset
-            });
+            // 删除过于详细的图片信息日志
+            // console.log('图片信息:', {
+            //     src: originalSrc,
+            //     naturalWidth: img.naturalWidth,
+            //     naturalHeight: img.naturalHeight,
+            //     width: img.width,
+            //     height: img.height,
+            //     dataWidth: img.getAttribute('data-width'),
+            //     dataHeight: img.getAttribute('data-height'),
+            //     dataset: img.dataset
+            // });
 
             if (!originalSrc || originalSrc.startsWith('data:image/svg+xml')) {
-                console.log('⚠️ 图片没有有效的源URL');
+                console.warn('⚠️ 图片没有有效的源URL');
                 return;
             }
 
@@ -412,11 +415,12 @@ class ImageLazyLoader {
             // 处理加载完成
             img.addEventListener('load', () => {
                 if (!img.src.startsWith('data:image/svg+xml')) {
-                    console.log('✅ 图片加载完成:', {
-                        src: img.src,
-                        naturalWidth: img.naturalWidth,
-                        naturalHeight: img.naturalHeight
-                    });
+                    // 移除详细的加载完成日志
+                    // console.log('✅ 图片加载完成:', {
+                    //     src: img.src,
+                    //     naturalWidth: img.naturalWidth,
+                    //     naturalHeight: img.naturalHeight
+                    // });
                     
                     if (loader.parentNode === wrapper) {
                         loader.remove();
@@ -440,7 +444,7 @@ class ImageLazyLoader {
                 
                 if (retryCount < maxRetries) {
                     img.dataset.retryCount = (retryCount + 1).toString();
-                    console.log(`⚠️ 图片加载失败，正在进行第 ${retryCount + 1} 次重试:`, originalSrc);
+                    console.warn(`⚠️ 图片加载失败，正在进行第 ${retryCount + 1} 次重试:`, originalSrc);
                     
                     setTimeout(() => {
                         // 清除所有已存在的错误提示
@@ -473,7 +477,8 @@ class ImageLazyLoader {
                 const src = img.getAttribute('data-src');
                 
                 if (src) {
-                    console.log('🔍 图片进入视图范围，开始加载:', src);
+                    // 将普通日志降级为debug级别
+                    console.debug('图片进入视图范围，开始加载:', src);
                     img.src = src;
                     img.removeAttribute('data-src');
                     this.observer.unobserve(img);

@@ -136,11 +136,11 @@ class ArticleManager {
     performSearch() {
         if (!this.articles || this.articles.length === 0) return;
         
-        console.log(`执行搜索，关键词: "${this.searchTerm}"`);
-        
         // 使用searchArticles工具函数搜索匹配的文章
         const searchResults = searchArticles(this.articles, this.searchTerm);
-        console.log(`找到 ${searchResults.length} 篇匹配的文章`);
+        if (searchResults.length === 0) {
+            console.log(`搜索"${this.searchTerm}"没有找到匹配的文章`);
+        }
         
         if (searchResults.length === 0) {
             // 显示无结果提示
@@ -368,50 +368,40 @@ class ArticleManager {
 
     // 将文章列表保存到缓存
     saveArticlesToCache() {
-        if (!this.articles || this.articles.length === 0) return;
-        
         try {
-            localStorage.setItem('article_list_cache', JSON.stringify({
-                articles: this.articles,
-                timestamp: Date.now()
-            }));
-            console.log('✅ 文章列表已保存到缓存');
-        } catch (e) {
-            console.warn('无法保存文章列表到缓存:', e);
+            this.articleCache.setItem('articles', this.articles);
+            this.articleCache.setItem('categories', Array.from(new Set(this.articles.map(a => a.category))));
+            // 日志调整为低级别
+            console.debug('文章列表已保存到缓存');
+        } catch (error) {
+            console.warn('保存文章到缓存时出错:', error);
         }
     }
 
     // 从缓存加载文章列表
     loadArticlesFromCache() {
-        console.log('🔍 尝试从缓存加载文章列表...');
-        
         try {
-            const cached = localStorage.getItem('article_list_cache');
-            if (cached) {
-                const { articles, timestamp } = JSON.parse(cached);
+            const cachedArticles = this.articleCache.getItem('articles');
+            if (cachedArticles && cachedArticles.length > 0) {
+                this.articles = cachedArticles;
+                // 日志调整为低级别
+                console.debug('从缓存加载文章列表成功');
                 
-                // 检查缓存是否过期（24小时）
-                const now = Date.now();
-                const maxAge = 24 * 60 * 60 * 1000; // 24小时
-                
-                if (now - timestamp < maxAge) {
-                    console.log('✅ 从缓存加载文章列表成功');
-                    this.articles = articles;
-                    
-                    // 应用搜索过滤
+                // 如果有文章数据，显示在UI上
+                if (this.articles.length > 0) {
+                    // 同步更新DOM
                     this.filterAndRenderArticles();
-                    
-                    return this.articles;
-                } else {
-                    console.log('缓存已过期');
                 }
+                
+                // 返回成功加载的标志
+                return true;
             }
-        } catch (e) {
-            console.warn('从缓存加载文章列表失败:', e);
+        } catch (error) {
+            console.warn('从缓存加载文章时出错:', error);
         }
         
-        console.log('❌ 未找到有效的文章列表缓存');
-        return this.articles || [];
+        // 如果没有缓存数据或出错，返回失败标志
+        return false;
     }
 
     // 过滤并渲染文章列表
