@@ -786,6 +786,12 @@ class ArticleManager {
             rightColumn.scrollTop = 0;
         }
         
+        // 重置主窗口滚动位置到顶部，解决切换文章时滚动位置保留的问题
+        window.scrollTo({
+            top: 0,
+            behavior: 'auto'
+        });
+        
         // 移除可能的滚动监听器
         if (this.scrollHandler) {
             if (this.scrollContainer) {
