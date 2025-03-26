@@ -816,7 +816,7 @@
 .article-toc {
     position: fixed;
     top: var(--right-column-top, 80px);
-    right: 10px; /* 增加右侧边距，确保不会超出页面背景区域 */
+    right: 15px; /* 增加右侧边距，确保不会超出页面背景区域 */
     width: 240px; /* 恢复原始宽度 */
     max-height: calc(100vh - var(--right-column-top, 80px) - 20px);
     background-color: var(--toc-background, rgba(255, 255, 255, 0.98));
