@@ -103,8 +103,8 @@ class ArticleCacheManager {
         if (!articles || articles.length === 0) return;
         
         try {
-            this.articleCache.setItem('articles', articles);
-            this.articleCache.setItem('categories', Array.from(new Set(articles.map(a => a.category))));
+            this.articleCache.setArticleCache('articles', articles);
+            this.articleCache.setArticleCache('categories', Array.from(new Set(articles.map(a => a.category))));
             console.debug('文章列表已保存到缓存');
         } catch (error) {
             console.warn('保存文章列表到缓存失败:', error);
@@ -117,7 +117,7 @@ class ArticleCacheManager {
      */
     loadArticlesFromCache() {
         try {
-            const cachedArticles = this.articleCache.getItem('articles');
+            const cachedArticles = this.articleCache.getArticleFromCache('articles');
             if (cachedArticles && cachedArticles.length > 0) {
                 console.debug('从缓存加载文章列表成功');
                 return cachedArticles;
@@ -148,7 +148,7 @@ class ArticleCacheManager {
         if (!pageId) return;
         
         try {
-            this.articleCache.removeItem(`article_${pageId}`);
+            this.articleCache.removeArticleCache(pageId);
             console.debug('已清除文章缓存:', pageId);
         } catch (error) {
             console.warn('清除文章缓存失败:', error);

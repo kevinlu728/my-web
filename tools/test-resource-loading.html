@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CDN映射模块测试</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-section {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        h2 {
+            margin-top: 0;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        button {
+            background: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .resource-item {
+            border-left: 3px solid #4CAF50;
+            padding-left: 10px;
+            margin: 10px 0;
+        }
+        .success {
+            color: #4CAF50;
+        }
+        .error {
+            color: #f44336;
+        }
+        #results {
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 5px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CDN映射模块测试</h1>
+        
+        <div class="test-section">
+            <h2>基本URL构建测试</h2>
+            <button id="test-url-building">测试URL构建</button>
+            <div id="url-results"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>资源加载测试</h2>
+            <button id="test-resource-loading">测试资源加载</button>
+            <div id="load-results"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>失败回退测试</h2>
+            <button id="test-fallback">测试加载失败回退</button>
+            <div id="fallback-results"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>组件资源测试</h2>
+            <button id="test-components">测试组件资源</button>
+            <div id="component-results"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>控制台日志</h2>
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { CdnMapper } from './scripts/utils/cdn-mapper.js';
+        import resourceConfig from './scripts/config/resources.js';
+        import { resourceLoader } from './scripts/utils/resource-loader.js';
+        
+        // 拦截控制台输出
+        const originalConsole = {
+            log: console.log,
+            warn: console.warn,
+            error: console.error,
+            debug: console.debug
+        };
+        
+        const resultsDiv = document.getElementById('results');
+        
+        ['log', 'warn', 'error', 'debug'].forEach(method => {
+            console[method] = (...args) => {
+                originalConsole[method](...args);
+                const message = args.map(arg => {
+                    if (typeof arg === 'object') {
+                        return JSON.stringify(arg, null, 2);
+                    }
+                    return arg;
+                }).join(' ');
+                
+                const div = document.createElement('div');
+                div.classList.add(method);
+                div.textContent = `[${method.toUpperCase()}] ${message}`;
+                resultsDiv.appendChild(div);
+                resultsDiv.scrollTop = resultsDiv.scrollHeight;
+            };
+        });
+        
+        // 初始化CDN映射器实例
+        const cdnMapper = new CdnMapper(resourceConfig);
+        
+        // 测试URL构建
+        document.getElementById('test-url-building').addEventListener('click', () => {
+            const urlResults = document.getElementById('url-results');
+            urlResults.innerHTML = '';
+            
+            console.log('开始URL构建测试');
+            
+            const testConfigs = [
+                {
+                    name: 'jsDelivr',
+                    config: {
+                        provider: 'jsdelivr',
+                        package: 'bootstrap',
+                        version: '5.3.0',
+                        path: 'dist/css/bootstrap.min.css'
+                    }
+                },
+                {
+                    name: 'CDNJS',
+                    config: {
+                        provider: 'cdnjs',
+                        library: 'bootstrap',
+                        version: '5.3.0',
+                        path: 'css/bootstrap.min.css'
+                    }
+                },
+                {
+                    name: 'UNPKG',
+                    config: {
+                        provider: 'unpkg',
+                        package: 'bootstrap',
+                        version: '5.3.0',
+                        path: 'dist/css/bootstrap.min.css'
+                    }
+                },
+                {
+                    name: '本地',
+                    config: {
+                        provider: 'local',
+                        library: 'bootstrap',
+                        path: 'css/bootstrap.min.css'
+                    }
+                }
+            ];
+            
+            testConfigs.forEach(test => {
+                const url = cdnMapper.buildUrlFromProvider(test.config);
+                console.log(`${test.name} URL: ${url}`);
+                
+                const div = document.createElement('div');
+                div.classList.add('resource-item');
+                div.innerHTML = `<strong>${test.name}:</strong> ${url}`;
+                urlResults.appendChild(div);
+            });
+            
+            console.log('URL构建测试完成');
+        });
+        
+        // 测试资源加载
+        document.getElementById('test-resource-loading').addEventListener('click', async () => {
+            const loadResults = document.getElementById('load-results');
+            loadResults.innerHTML = '';
+            
+            console.log('开始资源加载测试');
+            
+            const resourceTypes = ['bootstrap-icons', 'katex', 'prism-theme'];
+            
+            for (const resourceType of resourceTypes) {
+                try {
+                    console.log(`尝试加载资源: ${resourceType}`);
+                    await resourceLoader.loadResource('styles', resourceType);
+                    
+                    const div = document.createElement('div');
+                    div.classList.add('resource-item', 'success');
+                    div.textContent = `✅ 成功加载: ${resourceType}`;
+                    loadResults.appendChild(div);
+                    
+                    console.log(`✅ 成功加载资源: ${resourceType}`);
+                } catch (error) {
+                    const div = document.createElement('div');
+                    div.classList.add('resource-item', 'error');
+                    div.textContent = `❌ 加载失败: ${resourceType} - ${error.message}`;
+                    loadResults.appendChild(div);
+                    
+                    console.error(`❌ 加载资源失败: ${resourceType}`, error);
+                }
+            }
+            
+            console.log('资源加载测试完成');
+        });
+        
+        // 测试失败回退
+        document.getElementById('test-fallback').addEventListener('click', () => {
+            const fallbackResults = document.getElementById('fallback-results');
+            fallbackResults.innerHTML = '';
+            
+            console.log('开始失败回退测试');
+            
+            // 添加一个测试资源映射
+            const testResourceType = 'test-fallback-resource';
+            const primaryUrl = 'https://invalid-cdn.example.com/non-existent.css';
+            const fallbackUrl = 'styles/fallback.css'; // 使用本地回退样式
+            
+            cdnMapper.addOrUpdateMapping(testResourceType, fallbackUrl, primaryUrl);
+            
+            // 创建一个link元素，模拟加载失败
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = primaryUrl;
+            link.setAttribute('data-resource-type', testResourceType);
+            link.setAttribute('data-local-fallback', fallbackUrl);
+            
+            // 添加到页面
+            document.head.appendChild(link);
+            
+            // 手动触发错误处理
+            setTimeout(() => {
+                resourceLoader.handleResourceError(link, primaryUrl);
+                
+                // 获取下一个回退URL
+                const nextUrl = cdnMapper.getNextFallbackUrl(testResourceType, primaryUrl);
+                
+                const div = document.createElement('div');
+                div.classList.add('resource-item');
+                div.innerHTML = `
+                    <div>原始URL: ${primaryUrl}</div>
+                    <div>回退URL: ${nextUrl || '无可用回退'}</div>
+                    <div>状态: ${nextUrl ? '✅ 回退成功' : '❌ 回退失败'}</div>
+                `;
+                fallbackResults.appendChild(div);
+                
+                console.log('失败回退测试完成');
+            }, 1000);
+        });
+        
+        // 测试组件资源
+        document.getElementById('test-components').addEventListener('click', async () => {
+            const componentResults = document.getElementById('component-results');
+            componentResults.innerHTML = '';
+            
+            console.log('开始组件资源测试');
+            
+            // 测试Prism组件
+            try {
+                console.log('尝试加载Prism组件');
+                await resourceLoader.loadResource('scripts', 'prism-components');
+                
+                const div = document.createElement('div');
+                div.classList.add('resource-item', 'success');
+                div.textContent = '✅ 成功加载Prism组件';
+                componentResults.appendChild(div);
+                
+                console.log('✅ 成功加载Prism组件');
+                
+                // 尝试显示加载的组件数量
+                if (window.Prism && window.Prism.languages) {
+                    const languages = Object.keys(window.Prism.languages).filter(lang => 
+                        typeof window.Prism.languages[lang] === 'object'
+                    );
+                    
+                    const langDiv = document.createElement('div');
+                    langDiv.classList.add('resource-item');
+                    langDiv.innerHTML = `<strong>已加载语言:</strong> ${languages.join(', ')}`;
+                    componentResults.appendChild(langDiv);
+                    
+                    console.log(`已加载 ${languages.length} 种语言支持`);
+                }
+            } catch (error) {
+                const div = document.createElement('div');
+                div.classList.add('resource-item', 'error');
+                div.textContent = `❌ 加载Prism组件失败: ${error.message}`;
+                componentResults.appendChild(div);
+                
+                console.error('❌ 加载Prism组件失败', error);
+            }
+            
+            console.log('组件资源测试完成');
+        });
+    </script>
+</body>
+</html> 

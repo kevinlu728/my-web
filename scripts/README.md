@@ -28,6 +28,8 @@ scripts/
 │   ├── code-lazy-loader.js  # 代码块懒加载
 │   ├── article-utils.js   # 文章相关工具函数
 │   ├── article-cache.js   # 文章缓存工具
+│   ├── cdn-mapper.js      # CDN映射模块
+│   ├── resource-loader.js # 资源加载器
 │   ├── url-utils.js       # URL参数处理工具
 │   └── ...
 ├── config/                # 配置脚本
@@ -68,7 +70,68 @@ scripts/
 - **utils/code-lazy-loader.js**: 代码块懒加载实现，提高页面性能
 - **utils/article-utils.js**: 文章相关工具函数集合
 - **utils/article-cache.js**: 文章缓存管理工具
+- **utils/cdn-mapper.js**: CDN资源URL映射与管理
+- **utils/resource-loader.js**: 处理资源加载、错误处理和回退机制
 - **utils/url-utils.js**: URL参数处理工具函数
+
+#### CDN映射模块 (cdn-mapper.js)
+
+CDN映射模块提供了一个专门的类 `CdnMapper`，用于处理资源URL的生成和管理。这个模块从资源加载逻辑中分离出来，负责处理CDN资源URL的映射、构建和回退处理。
+
+**主要功能**:
+- **CDN映射管理**：将资源配置转换为实际可访问的URL
+- **多CDN提供商支持**：支持jsDelivr、CDNJS、UNPKG和本地资源等多种提供商
+- **资源回退机制**：当首选CDN失败时自动尝试备用CDN
+- **组件资源处理**：支持复杂的组件资源集合（如Prism语法高亮组件）
+
+**核心API**:
+- `constructor(resourceConfig)`: 使用资源配置初始化CDN映射器
+- `initializeCdnMappings()`: 从资源配置构建初始CDN映射
+- `buildUrlsFromConfig(resource)`: 从资源配置构建URL列表
+- `buildUrlFromProvider(config)`: 根据提供商配置构建URL
+- `addOrUpdateMapping(resourceType, localFallback, currentUrl)`: 添加或更新CDN映射
+- `scanExistingResources()`: 扫描页面上已存在的资源，提取它们的类型和本地回退路径
+- `getResourceUrls(resourceType)`: 获取资源的所有URL
+- `getNextFallbackUrl(resourceType, failedUrl)`: 获取资源的下一个回退URL
+- `buildComponentUrls(component, getUrlsFunc)`: 构建组件资源的URL列表
+
+**使用示例**:
+```javascript
+// 导入资源配置和CDN映射器
+import resourceConfig from '../config/resources.js';
+import { CdnMapper } from './cdn-mapper.js';
+
+// 创建CDN映射器实例
+const cdnMapper = new CdnMapper(resourceConfig);
+
+// 扫描页面上已存在的资源
+cdnMapper.scanExistingResources();
+
+// 根据提供商配置构建URL
+const jsDelivrConfig = {
+    provider: 'jsdelivr',
+    package: 'bootstrap',
+    version: '5.3.0',
+    path: 'dist/css/bootstrap.min.css'
+};
+const url = cdnMapper.buildUrlFromProvider(jsDelivrConfig);
+```
+
+**维护与扩展**:
+- 添加新的CDN提供商：在`buildUrlFromProvider`方法中添加新的条件分支
+- 支持新的资源类型：扩展`buildUrlsFromConfig`方法
+- 改进回退策略：修改`getNextFallbackUrl`方法
+
+#### 资源加载器模块 (resource-loader.js)
+
+通过与`CdnMapper`类的集成，资源加载器模块专注于资源的加载、错误处理和超时管理，而将CDN映射逻辑委托给CDN映射器。这种分离使得每个模块更加专注、更易于测试和维护。
+
+资源加载器负责处理：
+- 资源优先级管理与加载顺序
+- 资源加载失败的错误处理与回退
+- 本地资源存在性检查与标记
+- 非关键资源的静默处理
+- 组件资源的递归加载
 
 ## 代码组织原则
 
@@ -105,6 +168,9 @@ scripts/
 - 更新了 `articleRenderer.js` 中的 `renderBlock` 函数，直接生成表格占位符HTML
 - 修改了 `articleManager.js` 中的懒加载初始化逻辑，适配新的表格处理方式
 - 优化了代码块和表格的加载性能
+
+### 2024-04-14
+- **分离CDN映射逻辑**：将资源加载器中的CDN映射逻辑分离到独立的`cdn-mapper.js`模块中，提高了代码模块化，降低了`resource-loader.js`的复杂度。该重构使CDN资源URL的管理和构建更加集中和高效，为未来扩展CDN提供商支持提供了便利。
 
 ## 未来重构计划
 

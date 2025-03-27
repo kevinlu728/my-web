@@ -14,119 +14,36 @@
 
 // 导入集中式资源配置
 import resourceConfig from '../config/resources.js';
+import { CdnMapper } from './cdn-mapper.js';
 
 class ResourceLoader {
     constructor() {
         this.loadedResources = new Set();
         this.failedResources = new Set();
         this.resourceConfig = resourceConfig;
-        this.cdnMappings = {};
-        this.isInitialized = false;
         this.timeoutHandlers = new Map(); // 存储超时处理器
         this.resourceTimeouts = {
-            critical: 3000,   // 关键资源等待3秒
-            high: 5000,       // 高优先级资源等待5秒
-            medium: 8000,     // 中等优先级资源等待8秒
-            low: 15000        // 低优先级资源等待15秒
+            critical: 5000,   // 关键资源等待5秒
+            high: 8000,       // 高优先级资源等待8秒
+            medium: 12000,    // 中等优先级资源等待12秒
+            low: 20000        // 低优先级资源等待20秒
         };
         
-        // 从资源配置中初始化CDN映射
-        this.initializeCdnMappings();
+        // 创建CDN映射器实例
+        this.cdnMapper = new CdnMapper(resourceConfig);
+        
+        // 配置项：是否启用KaTeX本地资源（根据您的情况，我们设置为false）
+        this.katexLocalResourceConfirmed = false;
+        
+        // 初始化不存在资源列表
+        this.nonExistentResources = new Set();
+        if (!this.katexLocalResourceConfirmed) {
+            this.nonExistentResources.add('/assets/libs/katex/');
+        }
         
         // 初始化
         this.initializeErrorHandling();
-        this.scanExistingResources();
-    }
-    
-    /**
-     * 从资源配置初始化CDN映射
-     */
-    initializeCdnMappings() {
-        // 处理样式资源
-        Object.keys(this.resourceConfig.resources.styles).forEach(styleName => {
-            const style = this.resourceConfig.resources.styles[styleName];
-            if (style.resourceId) {
-                const urls = [style.primary, ...(style.fallbacks || [])].map(config => {
-                    if (config.provider === 'jsdelivr') {
-                        return this.resourceConfig.cdnProviders.jsdelivr.npmTemplate
-                            .replace('{package}', config.package)
-                            .replace('{version}', config.version)
-                            .replace('{path}', config.path);
-                    } else if (config.provider === 'cdnjs') {
-                        return this.resourceConfig.cdnProviders.cdnjs.template
-                            .replace('{library}', config.library)
-                            .replace('{version}', config.version)
-                            .replace('{path}', config.path);
-                    } else if (config.provider === 'local') {
-                        return this.resourceConfig.cdnProviders.local.template
-                            .replace('{library}', config.library)
-                            .replace('{path}', config.path);
-                    }
-                    return '';
-                }).filter(url => url);
-                
-                this.cdnMappings[style.resourceId] = urls;
-            }
-        });
-        
-        // 处理脚本资源
-        Object.keys(this.resourceConfig.resources.scripts).forEach(scriptName => {
-            const script = this.resourceConfig.resources.scripts[scriptName];
-            if (script.resourceId) {
-                const urls = [script.primary, ...(script.fallbacks || [])].map(config => {
-                    if (config.provider === 'jsdelivr') {
-                        return this.resourceConfig.cdnProviders.jsdelivr.npmTemplate
-                            .replace('{package}', config.package)
-                            .replace('{version}', config.version)
-                            .replace('{path}', config.path);
-                    } else if (config.provider === 'cdnjs') {
-                        return this.resourceConfig.cdnProviders.cdnjs.template
-                            .replace('{library}', config.library)
-                            .replace('{version}', config.version)
-                            .replace('{path}', config.path);
-                    } else if (config.provider === 'local') {
-                        return this.resourceConfig.cdnProviders.local.template
-                            .replace('{library}', config.library)
-                            .replace('{path}', config.path);
-                    }
-                    return '';
-                }).filter(url => url);
-                
-                this.cdnMappings[script.resourceId] = urls;
-            }
-        });
-    }
-    
-    /**
-     * 扫描页面中已存在的资源，提取它们的类型和本地回退路径
-     */
-    scanExistingResources() {
-        // 寻找带有data-resource-type属性的资源
-        const resourceElements = document.querySelectorAll('[data-resource-type]');
-        
-        resourceElements.forEach(element => {
-            const resourceType = element.getAttribute('data-resource-type');
-            const localFallback = element.getAttribute('data-local-fallback');
-            
-            if (resourceType && localFallback) {
-                // 更新或添加到映射中
-                if (!this.cdnMappings[resourceType]) {
-                    this.cdnMappings[resourceType] = [];
-                }
-                
-                // 确保本地回退路径是最后一个选项
-                const currentUrl = element.href || element.src;
-                if (currentUrl) {
-                    if (!this.cdnMappings[resourceType].includes(currentUrl)) {
-                        this.cdnMappings[resourceType].unshift(currentUrl);
-                    }
-                }
-                
-                if (!this.cdnMappings[resourceType].includes(localFallback)) {
-                    this.cdnMappings[resourceType].push(localFallback);
-                }
-            }
-        });
+        this.cdnMapper.scanExistingResources();
     }
     
     /**
@@ -171,6 +88,26 @@ class ResourceLoader {
         const resourceType = element.getAttribute('data-resource-type');
         const localFallback = element.getAttribute('data-local-fallback');
         
+        // 获取资源优先级
+        let priority = this.getResourcePriorityByUrl(url, resourceType);
+        
+        // 检查本地回退资源是否存在（针对KaTeX等非关键资源）
+        if (localFallback && 
+            (url.includes('katex') || resourceType?.includes('katex')) && 
+            priority !== 'critical' && 
+            priority !== 'high') {
+            
+            // 检查本地资源是否存在
+            const localResourceExists = this.checkLocalResourceExists(localFallback);
+            
+            if (!localResourceExists) {
+                console.debug(`ℹ️ 非关键资源 ${url} 加载失败，本地回退资源不存在，跳过回退`);
+                // 处理资源加载失败，但不尝试加载本地资源
+                this.handleCriticalResourceFailure(this.getResourceBaseName(url), priority);
+                return;
+            }
+        }
+        
         // 对于CSS资源，尝试回退
         if (element.tagName === 'LINK' && element.rel === 'stylesheet') {
             // 如果元素有本地回退路径，优先使用它
@@ -187,12 +124,93 @@ class ResourceLoader {
     }
     
     /**
+     * 检查本地资源是否存在
+     * @param {string} localPath - 本地资源路径
+     * @returns {boolean} 资源是否存在
+     */
+    checkLocalResourceExists(localPath) {
+        // 此方法在浏览器环境中不能直接检查文件是否存在
+        // 我们可以通过一些启发式方法来判断
+        
+        // 检查常见的不存在路径模式
+        if (localPath.includes('/katex/') && !this.katexLocalResourceConfirmed) {
+            // 如果是katex路径且没有确认过本地存在，假设不存在
+            return false;
+        }
+        
+        // 对于已知的本地资源路径，可以维护一个列表
+        const knownLocalResources = [
+            'styles/fallback.css', 
+            // 其他已知存在的本地资源...
+        ];
+        
+        return knownLocalResources.some(path => localPath.endsWith(path));
+    }
+    
+    /**
+     * 根据URL或资源类型获取资源优先级
+     * @param {string} url - 资源URL
+     * @param {string} resourceType - 资源类型
+     * @returns {string} 资源优先级 ('critical', 'high', 'medium', 'low')
+     */
+    getResourcePriorityByUrl(url, resourceType) {
+        // 尝试从资源配置中获取优先级
+        let priority = null;
+        
+        try {
+            if (resourceType) {
+                // 尝试从样式资源中查找优先级
+                if (this.resourceConfig.resources && this.resourceConfig.resources.styles) {
+                    Object.entries(this.resourceConfig.resources.styles).forEach(([name, res]) => {
+                        if (res.resourceId === resourceType || name === resourceType) {
+                            priority = res.priority;
+                        }
+                    });
+                }
+                
+                // 尝试从脚本资源中查找优先级
+                if (!priority && this.resourceConfig.resources && this.resourceConfig.resources.scripts) {
+                    Object.entries(this.resourceConfig.resources.scripts).forEach(([name, res]) => {
+                        if (res.resourceId === resourceType || name === resourceType) {
+                            priority = res.priority;
+                        }
+                    });
+                }
+            }
+            
+            // 如果通过resourceType未找到，则通过URL进行启发式判断
+            if (!priority) {
+                if (url.includes('bootstrap') || url.includes('fontawesome') || resourceType?.includes('bootstrap') || resourceType?.includes('fontawesome')) {
+                    priority = 'high'; // Bootstrap和FontAwesome通常是高优先级
+                } else if (url.includes('katex') || url.includes('math') || resourceType?.includes('katex')) {
+                    priority = 'medium'; // KaTeX是中等优先级
+                    console.debug('📌 检测到KaTeX资源，设置为中等优先级');
+                } else {
+                    priority = 'low'; // 默认为低优先级
+                }
+            }
+        } catch (e) {
+            console.warn('获取资源优先级时出错', e);
+            priority = 'medium'; // 出错时默认为中等优先级
+        }
+        
+        return priority;
+    }
+    
+    /**
      * 直接应用指定的资源回退
      * @param {HTMLElement} element - DOM元素
      * @param {string} originalUrl - 原始URL
      * @param {string} fallbackUrl - 回退URL
+     * @returns {boolean} 是否成功应用回退
      */
     applyResourceFallback(element, originalUrl, fallbackUrl) {
+        // 先检查是否为已知不存在的资源路径
+        if (this.isNonExistentResource(fallbackUrl)) {
+            console.debug(`🔍 跳过不存在的本地回退资源: ${fallbackUrl}`);
+            return false;
+        }
+        
         console.debug(`🔄 直接应用回退资源: ${fallbackUrl}`);
         
         if (element.tagName === 'LINK') {
@@ -204,206 +222,224 @@ class ResourceLoader {
             newLink.onerror = () => {
                 console.error(`❌ 回退资源加载失败: ${fallbackUrl}`);
                 
-                // 尝试从资源配置中获取优先级
-                let priority = null;
-                try {
-                    const resource = element.getAttribute('data-resource-type');
-                    if (resource) {
-                        // 尝试从样式资源中查找优先级
-                        if (this.resourceConfig.resources && this.resourceConfig.resources.styles) {
-                            Object.entries(this.resourceConfig.resources.styles).forEach(([name, res]) => {
-                                if (res.resourceId === resource || name === resource) {
-                                    priority = res.priority;
-                                }
-                            });
-                        }
-                        
-                        // 没有找到优先级，设置合理的默认值
-                        if (!priority) {
-                            if (resource.includes('katex') || originalUrl.includes('katex') || resource === 'katex.min.css' || originalUrl.endsWith('katex.min.css')) {
-                                priority = 'medium'; // KaTeX是中等优先级
-                                console.debug('📌 在applyResourceFallback中检测到KaTeX资源，设置为中等优先级');
-                            } else if (resource.includes('bootstrap-icons') || originalUrl.includes('bootstrap-icons')) {
-                                priority = 'high'; // 图标通常是高优先级
-                            } else {
-                                priority = 'medium'; // 默认为中等优先级
-                            }
-                        }
-                    }
-                } catch(e) {
-                    console.warn('获取资源优先级时出错', e);
-                    priority = 'medium'; // 出错时默认为中等优先级
+                // 如果是katex相关资源而且回退失败，标记为不存在
+                if (fallbackUrl.includes('/katex/')) {
+                    this.markResourceAsNonExistent(fallbackUrl);
                 }
+                
+                // 尝试从资源配置中获取优先级
+                let priority = this.getResourcePriorityByUrl(originalUrl, element.getAttribute('data-resource-type'));
+                
+                // 处理回退资源失败
+                this.handleCriticalResourceFailure(this.getResourceBaseName(originalUrl), priority);
+            };
+            
+            // 复制原始元素的属性
+            Array.from(element.attributes).forEach(attr => {
+                if (attr.name !== 'href') {
+                    newLink.setAttribute(attr.name, attr.value);
+                }
+            });
+            
+            // 替换元素
+            element.parentNode.replaceChild(newLink, element);
+            this.loadedResources.add(fallbackUrl);
+            
+            return true;
+        } else if (element.tagName === 'SCRIPT') {
+            // 处理JavaScript资源的回退
+            const newScript = document.createElement('script');
+            newScript.src = fallbackUrl;
+            newScript.async = element.async;
+            newScript.defer = element.defer;
+            newScript.onload = () => console.debug(`✅ 回退脚本加载成功: ${fallbackUrl}`);
+            newScript.onerror = () => {
+                console.error(`❌ 回退脚本加载失败: ${fallbackUrl}`);
+                
+                // 如果是katex相关资源而且回退失败，标记为不存在
+                if (fallbackUrl.includes('/katex/')) {
+                    this.markResourceAsNonExistent(fallbackUrl);
+                }
+                
+                // 获取资源优先级
+                let priority = this.getResourcePriorityByUrl(originalUrl, element.getAttribute('data-resource-type'));
                 
                 this.handleCriticalResourceFailure(this.getResourceBaseName(originalUrl), priority);
             };
             
-            // 替换原元素
-            if (element.parentNode) {
-                element.parentNode.replaceChild(newLink, element);
-            } else {
-                document.head.appendChild(newLink);
-            }
-        } else if (element.tagName === 'SCRIPT') {
-            // 创建新的script元素并替换失败的元素
-            const newScript = document.createElement('script');
-            if (element.type) newScript.type = element.type;
-            if (element.async) newScript.async = element.async;
-            if (element.defer) newScript.defer = element.defer;
+            // 复制原始元素的属性
+            Array.from(element.attributes).forEach(attr => {
+                if (attr.name !== 'src') {
+                    newScript.setAttribute(attr.name, attr.value);
+                }
+            });
             
-            newScript.src = fallbackUrl;
-            newScript.onload = () => console.log(`✅ 回退脚本加载成功: ${fallbackUrl}`);
-            newScript.onerror = () => console.error(`❌ 回退脚本加载失败: ${fallbackUrl}`);
+            // 替换元素
+            element.parentNode.replaceChild(newScript, element);
+            this.loadedResources.add(fallbackUrl);
             
-            // 替换原元素
-            if (element.parentNode) {
-                element.parentNode.replaceChild(newScript, element);
-            } else {
-                document.head.appendChild(newScript);
-            }
+            return true;
         }
+        
+        return false;
     }
     
     /**
-     * 尝试为CSS使用回退CDN
-     * @param {HTMLLinkElement} linkElement - 链接元素
+     * 检查资源是否为已知不存在的资源
+     * @param {string} resourcePath - 资源路径
+     * @returns {boolean} 是否为已知不存在的资源
+     */
+    isNonExistentResource(resourcePath) {
+        // 如果没有初始化不存在资源列表，则初始化
+        if (!this.nonExistentResources) {
+            this.nonExistentResources = new Set();
+            
+            // 添加一些已知不存在的路径模式
+            if (!this.katexLocalResourceConfirmed) {
+                this.nonExistentResources.add('/assets/libs/katex/');
+            }
+        }
+        
+        // 检查完整路径
+        if (this.nonExistentResources.has(resourcePath)) {
+            return true;
+        }
+        
+        // 检查路径前缀
+        for (const prefix of this.nonExistentResources) {
+            if (resourcePath.startsWith(prefix)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * 标记资源为不存在
+     * @param {string} resourcePath - 资源路径
+     */
+    markResourceAsNonExistent(resourcePath) {
+        if (!this.nonExistentResources) {
+            this.nonExistentResources = new Set();
+        }
+        
+        // 从路径中提取目录部分
+        const parts = resourcePath.split('/');
+        parts.pop(); // 移除文件名
+        const directory = parts.join('/') + '/';
+        
+        // 添加到不存在资源集合
+        this.nonExistentResources.add(directory);
+        console.debug(`🔍 已标记目录为不存在资源: ${directory}`);
+    }
+    
+    /**
+     * 尝试为CSS资源使用回退
+     * @param {HTMLElement} linkElement - Link元素
      * @param {string} originalUrl - 原始URL
      */
     tryFallbackCss(linkElement, originalUrl) {
-        // 从URL获取资源基本名称
-        const resourceName = this.getResourceBaseName(originalUrl);
-        
-        // 获取资源优先级
-        let priority = null;
         try {
-            // 尝试从资源配置中获取优先级
-            if (this.resourceConfig.resources && this.resourceConfig.resources.styles) {
-                const styleResource = Object.values(this.resourceConfig.resources.styles).find(r => 
-                    r.resourceId === resourceName || resourceName.endsWith(r.resourceId || ''));
-                
-                if (styleResource) {
-                    priority = styleResource.priority;
-                }
-            }
-        } catch (e) {
-            console.warn('获取资源优先级时出错', e);
-        }
-        
-        // 确保KaTeX资源始终设置为medium优先级
-        if (resourceName.includes('katex') || resourceName === 'katex.min.css') {
-            priority = 'medium';
-        }
-        
-        // 如果有匹配的回退资源
-        if (this.cdnMappings[resourceName]) {
-            const fallbacks = this.cdnMappings[resourceName];
-            // 找到当前URL在回退列表中的索引
-            const currentIndex = fallbacks.findIndex(url => originalUrl.includes(url));
+            const resourceName = this.getResourceBaseName(originalUrl);
             
-            // 如果有下一个回退选项
-            if (currentIndex < fallbacks.length - 1) {
-                const nextFallback = fallbacks[currentIndex + 1];
-                console.log(`🔄 尝试使用回退资源: ${nextFallback}`);
-                
-                // 创建新的link元素并替换失败的元素
-                const newLink = document.createElement('link');
-                newLink.rel = 'stylesheet';
-                newLink.href = nextFallback;
-                newLink.onload = () => console.log(`✅ 回退资源加载成功: ${nextFallback}`);
-                newLink.onerror = () => {
-                    console.warn(`❌ 所有回退选项均已尝试: ${resourceName}`);
-                    this.handleCriticalResourceFailure(resourceName, priority);
-                };
-                
-                // 替换原元素
-                if (linkElement.parentNode) {
-                    linkElement.parentNode.replaceChild(newLink, linkElement);
-                } else {
-                    document.head.appendChild(newLink);
-                }
-            } else {
-                console.warn(`❌ 所有回退选项均已尝试: ${resourceName}`);
+            // 获取资源优先级
+            const resourceType = linkElement.getAttribute('data-resource-type');
+            const priority = this.getResourcePriorityByUrl(originalUrl, resourceType);
+            
+            // 对于非关键的KaTeX资源，可以直接跳过回退处理
+            if ((originalUrl.includes('katex') || (resourceType && resourceType.includes('katex'))) && 
+                priority !== 'critical' && 
+                priority !== 'high' && 
+                !this.katexLocalResourceConfirmed) {
+                console.debug(`ℹ️ 跳过非关键KaTeX资源的回退: ${resourceName}`);
                 this.handleCriticalResourceFailure(resourceName, priority);
+                return;
             }
-        } else {
-            console.warn(`❓ 未找到资源的回退选项: ${resourceName}`);
-            // 即使没有找到回退选项，也应该使用优先级调用失败处理
+            
+            // 查找该资源的CDN映射
+            if (!resourceType) {
+                console.warn(`⚠️ 无法获取资源类型: ${originalUrl}`);
+                return;
+            }
+            
+            // 获取下一个回退URL
+            const nextFallbackUrl = this.cdnMapper.getNextFallbackUrl(resourceType, originalUrl);
+            if (nextFallbackUrl) {
+                // 检查是否为已知不存在的资源
+                if (this.isNonExistentResource(nextFallbackUrl)) {
+                    console.debug(`🔍 跳过不存在的回退资源: ${nextFallbackUrl}`);
+                    this.handleCriticalResourceFailure(resourceName, priority);
+                    return;
+                }
+                
+                console.log(`🔄 尝试使用CDN回退: ${nextFallbackUrl}`);
+                this.applyResourceFallback(linkElement, originalUrl, nextFallbackUrl);
+                return;
+            }
+            
+            // 处理回退资源失败
             this.handleCriticalResourceFailure(resourceName, priority);
+        } catch (error) {
+            console.error('CSS回退处理出错:', error);
         }
     }
     
     /**
-     * 从URL获取资源基本名称
+     * 从URL中提取资源基本名称
      * @param {string} url - 资源URL
      * @returns {string} 资源基本名称
      */
     getResourceBaseName(url) {
-        // 特殊处理KaTeX资源
-        if (url.includes('katex') || url.endsWith('katex.min.css')) {
-            // 确保返回的是一致的资源名
-            return 'katex.min.css';
-        }
+        if (!url || typeof url !== 'string') return '';
         
-        // 尝试匹配已知的资源名称
-        for (const key in this.cdnMappings) {
-            if (this.cdnMappings[key].some(mappingUrl => url.includes(mappingUrl) || url.endsWith(key))) {
-                return key;
-            }
+        try {
+            // 尝试提取文件名
+            const urlObj = new URL(url);
+            const pathParts = urlObj.pathname.split('/');
+            const fileName = pathParts[pathParts.length - 1];
+            
+            return fileName || urlObj.pathname;
+        } catch (e) {
+            // 如果URL解析失败，尝试简单的路径分割
+            const parts = url.split('/');
+            return parts[parts.length - 1] || url;
         }
-        
-        // 如果没有匹配，尝试提取文件名
-        const urlParts = url.split('/');
-        const fileName = urlParts[urlParts.length - 1].split('?')[0]; // 移除查询参数
-        return fileName;
     }
     
     /**
      * 处理关键资源加载失败
      * @param {string} resourceName - 资源名称
      * @param {string} priority - 资源优先级，默认为null（自动检测）
+     * @param {boolean} silent - 是否静默处理（不显示错误消息）
      */
-    handleCriticalResourceFailure(resourceName, priority = null) {
-        // 对于常见的基础资源，如果所有回退都失败，尝试内联最小样式
-        if (resourceName === 'bootstrap-icons.css') {
-            this.injectBasicIconStyles();
-        } else if (resourceName === 'katex.min.css') {
-            this.injectBasicKatexStyles();
-        }
-        
+    handleCriticalResourceFailure(resourceName, priority = null, silent = false) {
         // 检测资源的实际优先级
         let actualPriority = priority;
         if (!actualPriority) {
-            try {
-                // 如果没有传入优先级，尝试从资源配置中获取
-                if (this.resourceConfig.resources) {
-                    // 检查styles和scripts配置
-                    const configs = [
-                        ...(this.resourceConfig.resources.styles ? Object.values(this.resourceConfig.resources.styles) : []),
-                        ...(this.resourceConfig.resources.scripts ? Object.values(this.resourceConfig.resources.scripts) : [])
-                    ];
-                    
-                    // 找到匹配的资源配置
-                    const matchedResource = configs.find(r => 
-                        (r.resourceId === resourceName) || 
-                        resourceName.endsWith(r.resourceId || '') ||
-                        (r.primary && resourceName.includes(r.primary.path))
-                    );
-                    
-                    if (matchedResource) {
-                        actualPriority = matchedResource.priority || 'medium';
-                    } else if (resourceName.includes('bootstrap') || resourceName.includes('fontawesome')) {
-                        actualPriority = 'high'; // Bootstrap和FontAwesome是高优先级
-                    } else if (resourceName.includes('katex') || resourceName === 'katex.min.css') {
-                        actualPriority = 'medium'; // KaTeX是中等优先级
-                        console.log('📌 检测到KaTeX资源，设置为中等优先级');
-                    } else {
-                        actualPriority = 'low'; // 其他未知资源设为低优先级
-                    }
-                }
-            } catch (e) {
-                console.warn('获取资源优先级时出错', e);
-                actualPriority = 'medium'; // 出错时默认为中等优先级
+            actualPriority = this.getResourcePriorityByUrl(resourceName, resourceName);
+        }
+        
+        // 对于已知本地不存在的KaTeX资源，设置为静默处理
+        if (resourceName.includes('katex') && !this.katexLocalResourceConfirmed) {
+            silent = true;
+        }
+        
+        // 对于常见的基础资源，如果所有回退都失败，使用统一的回退样式文件
+        if (!silent) {
+            if (resourceName === 'bootstrap-icons.css' || resourceName.includes('fontawesome')) {
+                this.injectBasicIconStyles();
+            } else if (resourceName === 'katex.min.css' || resourceName.includes('katex')) {
+                this.injectBasicKatexStyles();
             }
+        }
+        
+        // 静默模式下不显示消息
+        if (silent) {
+            if (actualPriority === 'critical' || actualPriority === 'high') {
+                console.debug(`ℹ️ 静默处理 ${actualPriority} 优先级资源: ${resourceName}`);
+            }
+            return;
         }
         
         // 根据实际优先级选择适当的消息级别
@@ -413,9 +449,9 @@ class ResourceLoader {
         } else if (actualPriority === 'high') {
             console.warn(`⚠️ 高优先级资源加载失败: ${resourceName}`);
         } else if (actualPriority === 'medium') {
-            console.info(`ℹ️ 中优先级资源加载失败: ${resourceName}`);
+            console.debug(`ℹ️ 中优先级资源加载失败: ${resourceName}`);
         } else {
-            console.info(`ℹ️ 低优先级资源加载失败: ${resourceName}`);
+            console.debug(`ℹ️ 低优先级资源加载失败: ${resourceName}`);
         }
     }
     
@@ -424,20 +460,23 @@ class ResourceLoader {
      * 当图标CDN加载失败时提供最小的必要图标样式
      */
     injectBasicIconStyles() {
-        const style = document.createElement('style');
-        style.textContent = `
-            .fas.fa-chevron-right:before { content: "▶"; }
-            .fas.fa-chevron-down:before { content: "▼"; }
-            .fas.fa-search:before { content: "🔍"; }
-            .fas.fa-times:before { content: "✕"; }
-            .fas.fa-sync:before { content: "↻"; }
-            .fas.fa-spinner:before { content: "⟳"; }
-            .spin { animation: spin 2s linear infinite; }
-            @keyframes spin { 100% { transform: rotate(360deg); } }
-        `;
-        document.head.appendChild(style);
-        // 修改为debug级别的日志
-        console.debug('已注入基本图标回退样式');
+        // 检查是否已经注入了图标样式
+        if (document.getElementById('basic-icon-styles')) {
+            return;
+        }
+        
+        // 始终从外部文件加载基本图标样式，无论Font Awesome是否加载成功
+        const link = document.createElement('link');
+        link.id = 'basic-icon-styles';
+        link.rel = 'stylesheet';
+        link.href = 'styles/fallback.css';
+        
+        // 添加自定义属性，标记为本地回退
+        link.setAttribute('data-resource-type', 'icon-fallback');
+        link.setAttribute('data-is-fallback', 'true');
+        
+        document.head.appendChild(link);
+        console.debug('已加载基本图标回退样式');
     }
     
     /**
@@ -445,14 +484,43 @@ class ResourceLoader {
      * 当KaTeX CDN加载失败时提供最小的必要数学公式样式
      */
     injectBasicKatexStyles() {
-        const style = document.createElement('style');
-        style.textContent = `
-            .katex { font-family: KaTeX_Main, 'Times New Roman', serif; }
-            .katex-display { text-align: center; margin: 1em 0; }
-        `;
-        document.head.appendChild(style);
-        // 修改为debug级别的日志
-        console.debug('已注入基本KaTeX回退样式');
+        // 检查是否已经注入了KaTeX样式
+        if (document.getElementById('basic-katex-styles')) {
+            return;
+        }
+        
+        // 确保已经加载了图标样式文件（它们在同一个文件中）
+        if (!document.getElementById('basic-icon-styles')) {
+            this.injectBasicIconStyles();
+            // 由于我们已经加载了包含所有回退样式的文件，可以直接返回
+            return;
+        }
+        
+        console.debug('已加载基本KaTeX回退样式');
+    }
+    
+    /**
+     * 注入关键的内联样式
+     * 确保基本的布局和样式即使在外部资源失败时也能正常显示
+     */
+    injectCriticalInlineStyles() {
+        // 检查是否已经注入了关键样式
+        if (document.getElementById('critical-inline-styles')) {
+            return;
+        }
+        
+        // 确保已经加载了包含所有回退样式的文件
+        if (!document.getElementById('basic-icon-styles')) {
+            this.injectBasicIconStyles();
+            // 设置ID以标记为已完成
+            const marker = document.createElement('meta');
+            marker.id = 'critical-inline-styles';
+            document.head.appendChild(marker);
+            // 由于我们已经加载了包含所有回退样式的文件，可以直接返回
+            return;
+        }
+        
+        console.debug('✅ 已加载最小必要的关键内联样式');
     }
     
     /**
@@ -460,7 +528,7 @@ class ResourceLoader {
      */
     preloadCriticalResources() {
         const criticalResources = this.getCriticalResources();
-        console.log(`🚀 开始预加载 ${criticalResources.length} 个关键资源...`);
+        console.debug(`🚀 开始预加载 ${criticalResources.length} 个关键资源...`);
         
         criticalResources.forEach(resource => {
             if (!resource) return;
@@ -486,7 +554,7 @@ class ResourceLoader {
             document.head.appendChild(link);
             
             this.loadedResources.add(url);
-            console.log(`🔍 预加载关键资源: ${url}`);
+            console.debug(`🔍 预加载关键资源: ${url}`);
         });
     }
     
@@ -527,7 +595,7 @@ class ResourceLoader {
      */
     loadHighPriorityResources() {
         const highPriorityResources = this.resourceConfig.getHighPriorityResources();
-        console.log(`🚀 开始加载 ${highPriorityResources.length} 个高优先级资源...`);
+        console.debug(`🚀 开始加载 ${highPriorityResources.length} 个高优先级资源...`);
         
         // 使用Promise.all并行加载所有高优先级资源
         return Promise.all(
@@ -560,7 +628,7 @@ class ResourceLoader {
      */
     loadResourcesByPriority(priority) {
         const resources = this.getResourcesByPriority(priority);
-        console.log(`🚀 开始加载 ${resources.length} 个${priority}优先级资源...`);
+        console.debug(`🚀 开始加载 ${resources.length} 个${priority}优先级资源...`);
         
         return Promise.all(
             resources.map(item => {
@@ -630,8 +698,18 @@ class ResourceLoader {
      * @returns {Promise} 加载完成的Promise
      */
     loadResourceGroup(resourceGroup) {
-        // 根据资源组名称加载相应的资源
+        console.debug(`📦 加载资源组: ${resourceGroup}`);
+        
         switch (resourceGroup) {
+            case 'core':
+                // 加载核心资源，一般包括字体图标等
+                return Promise.all([
+                    this.loadResource('styles', 'bootstrap-icons'),
+                    // 注释掉Font Awesome加载，改为直接加载fallback.css
+                    // this.loadResource('styles', 'font-awesome')
+                    this.injectBasicIconStyles() // 直接使用回退样式
+                ]);
+                
             case 'syntax-highlighting':
                 // 加载语法高亮相关资源
                 this.loadResource('style', 'prism');
@@ -660,13 +738,11 @@ class ResourceLoader {
                     const event = new CustomEvent('syntaxResourcesLoaded');
                     document.dispatchEvent(event);
                     
-                    // 修改为debug级别的日志
                     console.debug('代码高亮资源加载完成');
                     
                     // 应用代码高亮
                     if (window.Prism) {
                         window.Prism.highlightAll();
-                        // 修改为debug级别的日志
                         console.debug('代码高亮已应用');
                     }
                 }, 500);
@@ -706,7 +782,7 @@ class ResourceLoader {
                     this.loadResource('scripts', 'prism-components'),
                     this.loadResource('styles', 'prism-theme')
                 ]).then(() => {
-                    console.log('✅ 代码高亮资源加载完成');
+                    console.debug('代码高亮资源加载完成');
                     
                     // 如果页面中有Prism，触发代码高亮刷新
                     if (window.Prism && typeof window.Prism.highlightAll === 'function') {
@@ -714,20 +790,13 @@ class ResourceLoader {
                         setTimeout(() => {
                             try {
                                 window.Prism.highlightAll();
-                                console.log('✅ 代码高亮已应用');
+                                console.debug('代码高亮已应用');
                             } catch (e) {
                                 console.warn('❌ 应用代码高亮失败:', e);
                             }
                         }, 100);
                     }
                 });
-                
-            case 'core':
-                // 加载核心资源，一般包括字体图标等
-                return Promise.all([
-                    this.loadResource('styles', 'bootstrap-icons'),
-                    this.loadResource('styles', 'font-awesome')
-                ]);
                 
             default:
                 console.warn(`⚠️ 未知的资源组: "${resourceGroup}"`);
@@ -809,7 +878,7 @@ class ResourceLoader {
      * 这个方法确保即使外部资源加载失败，页面内容也能显示
      */
     loadNonBlockingCoreContent() {
-        console.log('🚀 初始化非阻塞核心内容加载...');
+        console.debug('🚀 初始化非阻塞核心内容加载...');
         
         // 立即解除内容加载阻塞，不等待任何资源
         // 这确保内容渲染和资源加载完全并行
@@ -819,7 +888,7 @@ class ResourceLoader {
             window.contentUnblocked = true;
         }, 100);
         
-        // 为关键样式注入内联替代，确保基本样式立即可用
+        // 先加载关键的回退样式，确保基本样式立即可用
         this.injectCriticalInlineStyles();
         
         // 处理关键资源预加载，但设置短超时
@@ -887,7 +956,7 @@ class ResourceLoader {
         // 添加自定义事件通知页面内容可以显示了
         document.dispatchEvent(new CustomEvent('content-unblocked'));
         
-        console.log('🎉 内容加载阻塞已解除，页面内容可以显示');
+        console.debug('🎉 内容加载阻塞已解除，页面内容可以显示');
     }
     
     /**
@@ -938,7 +1007,7 @@ class ResourceLoader {
             // 样式已加载，现在应用它
             link.media = 'all';
             this.loadedResources.add(url);
-            console.log(`✅ 非阻塞加载CSS完成: ${url}`);
+            console.debug(`✅ 非阻塞加载CSS完成: ${url}`);
         };
         
         link.onerror = () => {
@@ -959,9 +1028,9 @@ class ResourceLoader {
      * 这个方法确保基本样式尽快加载，而页面内容不被阻塞
      */
     prioritizeContentRendering() {
-        console.log('🚀 优先处理内容渲染...');
+        console.debug('🚀 优先处理内容渲染...');
         
-        // 为关键样式注入内联替代，确保基本样式立即可用
+        // 加载关键的回退样式
         this.injectCriticalInlineStyles();
         
         // 立即解除内容阻塞
@@ -992,90 +1061,16 @@ class ResourceLoader {
     }
     
     /**
-     * 注入关键的内联样式
-     * 确保基本的布局和样式即使在外部资源失败时也能正常显示
-     */
-    injectCriticalInlineStyles() {
-        // 检查是否已经注入了关键样式
-        if (document.getElementById('critical-inline-styles')) {
-            return;
-        }
-        
-        const style = document.createElement('style');
-        style.id = 'critical-inline-styles';
-        style.textContent = `
-            /* 仅保留加载相关的最小样式，移除所有与布局相关的样式 */
-            
-            /* 加载动画 */
-            @keyframes resource-spinner {
-                to {transform: rotate(360deg);}
-            }
-            
-            /* 资源加载器专用样式 - 避免与分页加载样式冲突 */
-            .resource-loading-spinner {
-                width: 50px;
-                height: 50px;
-                border: 3px solid rgba(0,0,0,0.1);
-                border-radius: 50%;
-                border-top-color: #0366d6;
-                animation: resource-spinner 1s ease-in-out infinite;
-                margin: 20px auto;
-            }
-            
-            /* 加载遮罩样式 */
-            .content-loading-mask {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background-color: rgba(255,255,255,0.8);
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                z-index: 100;
-                transition: opacity 0.3s ease;
-            }
-            
-            .content-loading-text {
-                margin-top: 16px;
-                font-size: 16px;
-                color: #333;
-                text-align: center; /* 确保文本居中 */
-                width: 100%; /* 占据全宽 */
-            }
-            
-            /* 移除分页加载样式，避免与articleManager.js冲突 */
-            
-            /* 基本的图标回退样式 - 仅在图标资源加载失败时使用 */
-            .fas, .far, .fab, .bi, .material-icons {
-                font-family: sans-serif;
-            }
-            
-            /* 代码块最小回退样式 - 仅在代码高亮资源加载失败时使用 */
-            pre, code {
-                background-color: #f6f8fa;
-                border-radius: 3px;
-                font-family: monospace;
-            }
-        `;
-        
-        document.head.appendChild(style);
-        console.log('✅ 已注入最小必要的关键内联样式');
-    }
-    
-    /**
      * 初始化页面资源加载策略
      * 按照优先级逐步加载资源
      */
     initResourceLoadingStrategy() {
         if (this.isInitialized) {
-            console.log('🔍 资源加载策略已初始化，跳过');
+            console.debug('🔍 资源加载策略已初始化，跳过');
             return;
         }
         
-        console.log('🚀 初始化资源加载策略...');
+        console.debug('🚀 初始化资源加载策略...');
         this.isInitialized = true;
         
         // 1. 首先优先处理内容渲染，无论资源是否加载完成
@@ -1083,7 +1078,7 @@ class ResourceLoader {
         
         // 2. 在DOM加载后（但不阻塞内容显示）继续加载资源
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('📃 DOM已加载，继续优化资源加载');
+            console.debug('📃 DOM已加载，继续优化资源加载');
             
             // 确保所有关键元素都有资源组标记
             this.ensureResourceGroupMarkers();
@@ -1096,7 +1091,7 @@ class ResourceLoader {
         
         // 3. 监听页面完全加载事件
         window.addEventListener('load', () => {
-            console.log('🏁 页面完全加载，设置基于可见性的后续资源加载');
+            console.debug('🏁 页面完全加载，设置基于可见性的后续资源加载');
             
             // 如果浏览器支持Intersection Observer，为可见性加载做准备
             if ('IntersectionObserver' in window) {
@@ -1110,7 +1105,7 @@ class ResourceLoader {
      * 这样可以根据可见性按需加载资源
      */
     ensureResourceGroupMarkers() {
-        console.log('🔍 确保页面元素有正确的资源组标记...');
+        console.debug('🔍 确保页面元素有正确的资源组标记...');
         
         // 确保this上下文可用
         const self = this;
@@ -1120,7 +1115,7 @@ class ResourceLoader {
             const parent = el.closest('pre') || el;
             if (!parent.hasAttribute('data-resource-group')) {
                 parent.setAttribute('data-resource-group', 'code');
-                console.log('📌 为代码块添加资源组标记: code');
+                console.debug('📌 为代码块添加资源组标记: code');
             }
         });
         
@@ -1128,7 +1123,7 @@ class ResourceLoader {
         document.querySelectorAll('.math, .formula, .katex').forEach(el => {
             if (!el.hasAttribute('data-resource-group')) {
                 el.setAttribute('data-resource-group', 'math');
-                console.log('📌 为数学公式添加资源组标记: math');
+                console.debug('📌 为数学公式添加资源组标记: math');
             }
         });
         
@@ -1136,7 +1131,7 @@ class ResourceLoader {
         document.querySelectorAll('.chart, .chart-container').forEach(el => {
             if (!el.hasAttribute('data-resource-group')) {
                 el.setAttribute('data-resource-group', 'chart');
-                console.log('📌 为图表添加资源组标记: chart');
+                console.debug('📌 为图表添加资源组标记: chart');
             }
         });
         
@@ -1144,7 +1139,7 @@ class ResourceLoader {
         document.querySelectorAll('.mermaid').forEach(el => {
             if (!el.hasAttribute('data-resource-group')) {
                 el.setAttribute('data-resource-group', 'diagram');
-                console.log('📌 为流程图添加资源组标记: diagram');
+                console.debug('📌 为流程图添加资源组标记: diagram');
             }
         });
         
@@ -1152,24 +1147,24 @@ class ResourceLoader {
         document.querySelectorAll('.tag-cloud').forEach(el => {
             if (!el.hasAttribute('data-resource-group')) {
                 el.setAttribute('data-resource-group', 'tagcloud');
-                console.log('📌 为标签云添加资源组标记: tagcloud');
+                console.debug('📌 为标签云添加资源组标记: tagcloud');
             }
         });
         
         // 确保body具有动画资源组标记
         if (!document.body.hasAttribute('data-resource-group')) {
             document.body.setAttribute('data-resource-group', 'animation');
-            console.log('📌 为body添加资源组标记: animation');
+            console.debug('📌 为body添加资源组标记: animation');
         }
         
         // 为文章容器添加核心资源组标记
         const articleContainer = document.getElementById('article-container');
         if (articleContainer && !articleContainer.hasAttribute('data-resource-group')) {
             articleContainer.setAttribute('data-resource-group', 'core');
-            console.log('📌 为文章容器添加资源组标记: core');
+            console.debug('📌 为文章容器添加资源组标记: core');
         }
         
-        console.log('✅ 资源组标记完成');
+        console.debug('✅ 资源组标记完成');
     }
     
     /**
@@ -1193,7 +1188,7 @@ class ResourceLoader {
                     const resourceGroup = element.dataset.resourceGroup;
                     
                     if (resourceGroup && typeof resourceGroup === 'string') {
-                        console.log(`📍 元素可见，加载资源组: ${resourceGroup}`);
+                        console.debug(`📍 元素可见，加载资源组: ${resourceGroup}`);
                         self.loadResourceGroup(resourceGroup);
                         observer.unobserve(element); // 加载一次后不再观察
                     }
@@ -1209,7 +1204,7 @@ class ResourceLoader {
         document.querySelectorAll('[data-resource-group]').forEach(element => {
             if (element && element.dataset && element.dataset.resourceGroup) {
                 observer.observe(element);
-                console.log(`👁️ 监视元素加载资源组: ${element.dataset.resourceGroup}`);
+                console.debug(`👁️ 监视元素加载资源组: ${element.dataset.resourceGroup}`);
             }
         });
     }
@@ -1219,7 +1214,7 @@ class ResourceLoader {
      * 这是一个额外的安全措施，检查任何可能的资源加载失败
      */
     checkForFailedResources() {
-        console.log('🔍 检查资源加载状态...');
+        console.debug('🔍 检查资源加载状态...');
         
         // 确保this上下文可用
         const self = this;
@@ -1268,7 +1263,7 @@ class ResourceLoader {
             // 我们依赖onerror事件处理失败的脚本
         });
         
-        console.log('🔍 资源加载状态检查完成');
+        console.debug('🔍 资源加载状态检查完成');
     }
     
     /**
@@ -1301,30 +1296,111 @@ class ResourceLoader {
             return Promise.resolve(); // 返回已解决的Promise，避免中断链
         }
         
-        // 检查资源是否已经加载
-        if (this.loadedResources.has(resource.primary)) {
-            console.log(`🔍 资源已加载: ${resource.primary}`);
-            return Promise.resolve(); // 返回已解决的Promise，避免重复加载
+        // 处理特殊情况：resource.components数组和getUrls方法（例如prism-components）
+        if (resource.components && typeof resource.getUrls === 'function') {
+            console.debug(`📦 加载组件集合: ${resourceName} (${resource.components.length}个组件)`);
+            
+            // 为每个组件创建加载Promise
+            const componentPromises = resource.components.map(component => {
+                // 使用CdnMapper构建组件URL
+                const urls = this.cdnMapper.buildComponentUrls(component, resource.getUrls);
+                if (!urls || urls.length === 0) {
+                    console.warn(`⚠️ 组件 ${component.name} 没有可用的URL`);
+                    return Promise.resolve();
+                }
+                
+                // 尝试加载第一个URL，如果失败则降级到后续URL
+                return this.loadComponentWithFallback(urls, resource.type, component.name);
+            });
+            
+            // 等待所有组件加载完成
+            return Promise.all(componentPromises);
         }
         
-        // 检查资源是否已经失败
-        if (this.failedResources.has(resource.primary)) {
-            console.warn(`⚠️ 资源加载失败: ${resource.primary}`);
-            return Promise.resolve(); // 返回已解决的Promise，避免重复加载
-        }
-        
-        // 根据资源类型确定加载方法
+        // 处理resource.primary是字符串的情况
         if (typeof resource.primary === 'string') {
+            // 检查资源是否已经加载
+            if (this.loadedResources.has(resource.primary)) {
+                console.debug(`🔍 资源已加载: ${resource.primary}`);
+                return Promise.resolve();
+            }
+            
+            // 检查资源是否已经失败
+            if (this.failedResources.has(resource.primary)) {
+                console.warn(`⚠️ 资源加载失败: ${resource.primary}`);
+                return Promise.resolve();
+            }
+            
             if (resource.primary.endsWith('.css')) {
                 return this.loadCss(resource.primary, resource);
             } else if (resource.primary.endsWith('.js')) {
                 return this.loadScript(resource.primary, resource);
             }
-        } else {
-            console.warn('⚠️ 无效的资源 primary URL:', resource);
+        }
+        // 处理resource.primary是对象的情况
+        else if (typeof resource.primary === 'object' && resource.primary) {
+            // 使用CdnMapper构建URL
+            const url = this.cdnMapper.buildUrlFromProvider(resource.primary);
+            
+            if (url) {
+                // 检查资源是否已经加载
+                if (this.loadedResources.has(url)) {
+                    console.debug(`🔍 资源已加载: ${url}`);
+                    return Promise.resolve();
+                }
+                
+                // 检查资源是否已经失败
+                if (this.failedResources.has(url)) {
+                    console.warn(`⚠️ 资源加载失败: ${url}`);
+                    return Promise.resolve();
+                }
+                
+                if (resource.type === 'css' || url.endsWith('.css')) {
+                    return this.loadCss(url, resource);
+                } else if (resource.type === 'js' || url.endsWith('.js')) {
+                    return this.loadScript(url, resource);
+                }
+            }
         }
         
+        console.warn('⚠️ 无效的资源 primary URL:', resource);
         return Promise.resolve(); // 返回已解决的Promise，避免中断链
+    }
+    
+    /**
+     * 加载组件资源，并在失败时尝试回退URL
+     * @param {Array<string>} urls - URL列表，按优先级排序
+     * @param {string} type - 资源类型 ('css' 或 'js')
+     * @param {string} componentName - 组件名称(用于日志)
+     * @returns {Promise} 加载完成的Promise
+     */
+    loadComponentWithFallback(urls, type, componentName) {
+        if (!urls || urls.length === 0) {
+            return Promise.resolve();
+        }
+        
+        // 使用第一个URL
+        const url = urls[0];
+        
+        // 如果已经加载过这个URL，直接返回
+        if (this.loadedResources.has(url)) {
+            return Promise.resolve();
+        }
+        
+        // 根据类型选择加载方法
+        const loadPromise = type === 'css' ? 
+            this.loadCss(url, { priority: 'medium' }) : 
+            this.loadScript(url, { priority: 'medium' });
+        
+        // 如果当前URL加载失败，尝试下一个URL
+        return loadPromise.catch(() => {
+            console.debug(`⚠️ 组件 ${componentName} 加载失败，尝试下一个URL`);
+            if (urls.length > 1) {
+                // 递归尝试剩余的URL
+                return this.loadComponentWithFallback(urls.slice(1), type, componentName);
+            }
+            return Promise.resolve(); // 所有URL都失败，但不阻断流程
+        });
     }
     
     /**
@@ -1373,7 +1449,7 @@ class ResourceLoader {
                 this.clearResourceTimeout(url);
                 
                 this.loadedResources.add(url);
-                console.log(`✅ CSS加载完成: ${url}`);
+                console.debug(`✅ CSS加载完成: ${url}`);
                 resolve();
             };
             
@@ -1449,7 +1525,7 @@ class ResourceLoader {
                 this.clearResourceTimeout(url);
                 
                 this.loadedResources.add(url);
-                console.log(`✅ JavaScript加载完成: ${url}`);
+                console.debug(`✅ JavaScript加载完成: ${url}`);
                 resolve();
             };
             
@@ -1468,6 +1544,32 @@ class ResourceLoader {
             // 添加到文档
             document.head.appendChild(script);
         });
+    }
+
+    loadResourceGroups(resourceGroups) {
+        console.debug(`🧩 开始加载资源组: ${resourceGroups.join(', ')}`);
+        
+        // 递归加载资源组
+        const loadNext = (index) => {
+            // 如果所有资源组都已加载，返回
+            if (index >= resourceGroups.length) {
+                return Promise.resolve();
+            }
+            
+            // 获取当前资源组
+            const group = resourceGroups[index];
+            
+            // 加载资源组，完成后递归加载下一个
+            return this.loadResourceGroup(group)
+                .then(() => loadNext(index + 1))
+                .catch(error => {
+                    console.error(`❌ 加载资源组 "${group}" 时出错:`, error);
+                    return loadNext(index + 1); // 继续加载下一个，不中断整个过程
+                });
+        };
+        
+        // 开始加载第一个资源组
+        return loadNext(0);
     }
 }
 

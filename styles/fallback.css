@@ -1,0 +1,78 @@
+/**
+ * @file fallback.css
+ * @description 回退样式定义，用于资源加载失败时提供基本样式支持
+ * @author 陆凯
+ * @version 1.0.0
+ * @created 2024-04-01
+ */
+
+/* ===== 基本图标回退样式 ===== */
+/* 用于图标资源加载失败时提供的基本图标样式 */
+.fas.fa-chevron-right:before { content: "▶" !important; }
+.fas.fa-chevron-down:before { content: "▼" !important; }
+.fas.fa-search:before { content: "🔍" !important; }
+.fas.fa-times:before { content: "✕" !important; }
+.fas.fa-sync:before { content: "↻" !important; }
+.fas.fa-spinner:before { content: "⟳" !important; }
+.spin { animation: spin 2s linear infinite; }
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+/* ===== 基本KaTeX回退样式 ===== */
+/* 用于KaTeX资源加载失败时提供的基本数学公式样式 */
+.katex { font-family: KaTeX_Main, 'Times New Roman', serif; }
+.katex-display { text-align: center; margin: 1em 0; }
+
+/* ===== 关键内联样式 ===== */
+/* 仅保留加载相关的最小样式 */
+
+/* 加载动画 */
+@keyframes resource-spinner {
+    to {transform: rotate(360deg);}
+}
+
+/* 资源加载器专用样式 - 避免与分页加载样式冲突 */
+.resource-loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 3px solid rgba(0,0,0,0.1);
+    border-radius: 50%;
+    border-top-color: #0366d6;
+    animation: resource-spinner 1s ease-in-out infinite;
+    margin: 20px auto;
+}
+
+/* 加载遮罩样式 */
+.content-loading-mask {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255,255,255,0.8);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    transition: opacity 0.3s ease;
+}
+
+.content-loading-text {
+    margin-top: 16px;
+    font-size: 16px;
+    color: #333;
+    text-align: center; /* 确保文本居中 */
+    width: 100%; /* 占据全宽 */
+}
+
+/* 基本的图标回退样式 - 仅在图标资源加载失败时使用 */
+.fas, .far, .fab, .bi, .material-icons {
+    font-family: sans-serif;
+}
+
+/* 代码块最小回退样式 - 仅在代码高亮资源加载失败时使用 */
+pre, code {
+    background-color: #f6f8fa;
+    border-radius: 3px;
+    font-family: monospace;
+} 

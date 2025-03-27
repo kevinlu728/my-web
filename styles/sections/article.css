@@ -447,9 +447,18 @@
     opacity: 0.7;
 }
 
+/* 强制使用Unicode三角形图标覆盖FontAwesome图标 */
+.tree-toggle i.fa-chevron-right:before {
+    content: "▶" !important; 
+}
+
+.tree-toggle i.fa-chevron-down:before {
+    content: "▼" !important;
+}
+
 /* 展开状态下的箭头 - 所有展开的项目箭头向下 */
 .tree-item.expanded > .tree-item-content .tree-toggle i:before {
-    content: "\f078"; /* fa-chevron-down 的 Unicode 值 */
+    content: "▼" !important; /* 覆盖fa-chevron-down，使用Unicode三角形 */
 }
 
 /* 全部收起状态下的箭头 - 指向右侧，表示可以再次展开 */
