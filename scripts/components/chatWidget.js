@@ -20,6 +20,8 @@
  * 通过initChatWidget函数暴露功能，可被主入口文件调用。
  */
 
+import logger from '../utils/logger.js';
+
 export function initChatWidget() {
     // 尝试通过ID选择器获取元素，如果失败则尝试类选择器
     const chatWidget = document.getElementById('chat-widget') || document.querySelector('.chat-widget');
@@ -34,8 +36,8 @@ export function initChatWidget() {
     const chatHeader = document.querySelector('.chat-header');
 
     if (!chatWidget || !chatToggle || !minimizeBtn || !chatCloseBtn || !chatContainer) {
-        console.warn('聊天组件初始化失败：找不到必要的DOM元素');
-        console.log('缺失元素：', {
+        logger.warn('聊天组件初始化失败：找不到必要的DOM元素');
+        logger.info('缺失元素：', {
             chatWidget: !!chatWidget,
             chatToggle: !!chatToggle,
             chatContainer: !!chatContainer,
@@ -45,7 +47,7 @@ export function initChatWidget() {
         return;
     }
 
-    console.log('聊天组件初始化成功');
+    logger.info('聊天组件初始化成功');
 
     // 清空聊天记录，确保没有重复消息
     chatMessages.innerHTML = '';
@@ -55,7 +57,7 @@ export function initChatWidget() {
     
     // 打开/关闭聊天窗口
     chatToggle.addEventListener('click', () => {
-        console.log('聊天图标被点击');
+        logger.info('聊天图标被点击');
         chatContainer.style.display = 'flex';  // 改为flex布局
         chatToggle.style.display = 'none';
 
@@ -79,14 +81,14 @@ export function initChatWidget() {
 
     // 最小化聊天窗口
     minimizeBtn.addEventListener('click', () => {
-        console.log('最小化按钮被点击');
+        logger.info('最小化按钮被点击');
         chatContainer.style.display = 'none';
         chatToggle.style.display = 'block';
     });
 
     // 关闭聊天窗口
     chatCloseBtn.addEventListener('click', () => {
-        console.log('关闭按钮被点击');
+        logger.info('关闭按钮被点击');
         chatWidget.style.display = 'none';
     });
 
@@ -114,7 +116,7 @@ export function initChatWidget() {
             document.addEventListener('mousemove', onResize);
             document.addEventListener('mouseup', stopResize);
             
-            console.log('开始调整聊天窗口大小');
+            logger.info('开始调整聊天窗口大小');
         });
 
         // 调整大小过程
@@ -146,7 +148,7 @@ export function initChatWidget() {
             document.removeEventListener('mousemove', onResize);
             document.removeEventListener('mouseup', stopResize);
             
-            console.log('完成聊天窗口大小调整');
+            logger.info('完成聊天窗口大小调整');
         }
     }
 
@@ -175,7 +177,7 @@ export function initChatWidget() {
             document.addEventListener('mousemove', onDrag);
             document.addEventListener('mouseup', stopDrag);
             
-            console.log('开始拖动聊天窗口');
+            logger.info('开始拖动聊天窗口');
         });
 
         // 拖动过程
@@ -206,7 +208,7 @@ export function initChatWidget() {
             document.removeEventListener('mousemove', onDrag);
             document.removeEventListener('mouseup', stopDrag);
             
-            console.log('完成聊天窗口拖动');
+            logger.info('完成聊天窗口拖动');
         }
     }
 
@@ -311,7 +313,7 @@ export function initChatWidget() {
         try {
             localStorage.setItem('chatWidgetState', JSON.stringify(state));
         } catch (e) {
-            console.warn('无法保存聊天窗口状态:', e);
+            logger.warn('无法保存聊天窗口状态:', e);
         }
     }
 
@@ -335,7 +337,7 @@ export function initChatWidget() {
                 }
             }
         } catch (e) {
-            console.warn('无法恢复聊天窗口状态:', e);
+            logger.warn('无法恢复聊天窗口状态:', e);
         }
     }
     

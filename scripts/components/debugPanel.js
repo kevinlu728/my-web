@@ -19,6 +19,8 @@
  * 可通过键盘快捷键切换面板显示状态。
  */
 
+import logger from '../utils/logger.js';
+
 // 资源加载状态跟踪对象
 const resourceStatus = {
     resources: {},
@@ -122,15 +124,15 @@ const resourceStatus = {
                 };
                 
                 script.onerror = function() {
-                    console.warn(`加载脚本失败: ${src}`);
+                    logger.warn(`加载脚本失败: ${src}`);
                     
                     if (backupSrc) {
-                        console.log(`尝试备用源: ${backupSrc}`);
+                        logger.info(`尝试备用源: ${backupSrc}`);
                         this.src = backupSrc;
                         
                         // 备用源也可能失败
                         this.onerror = function() {
-                            console.error(`备用源也加载失败: ${backupSrc}`);
+                            logger.error(`备用源也加载失败: ${backupSrc}`);
                             resourceStatus.updateResource(resourceId, 'error');
                             reject(new Error(`Failed to load script from main and backup sources: ${src}, ${backupSrc}`));
                         };
@@ -157,7 +159,7 @@ export function initDebugPanel(currentDatabaseId, {
 }) {
     // 防止重复初始化
     if (window._debugPanelInitialized) {
-        console.log('调试面板已初始化，跳过重复初始化');
+        logger.info('调试面板已初始化，跳过重复初始化');
         return;
     }
     
@@ -211,7 +213,7 @@ export function initDebugPanel(currentDatabaseId, {
     if (databaseIdInput) {
         databaseIdInput.value = currentDatabaseId;
     } else {
-        console.warn('数据库ID输入框元素不存在，无法设置初始值');
+        logger.warn('数据库ID输入框元素不存在，无法设置初始值');
     }
     
     // 显示面板状态
@@ -262,7 +264,7 @@ export function initDebugPanel(currentDatabaseId, {
                 return;
             }
             
-            console.log('更新数据库ID:', newDatabaseId);
+            logger.info('更新数据库ID:', newDatabaseId);
             onConfigUpdate(newDatabaseId);
             showStatus('配置已更新', false);
             
@@ -272,7 +274,7 @@ export function initDebugPanel(currentDatabaseId, {
             }, 1000);
         });
     } else {
-        console.warn('更新配置按钮不存在，无法绑定事件');
+        logger.warn('更新配置按钮不存在，无法绑定事件');
     }
     
     // 添加查看集成指南按钮事件
@@ -321,7 +323,7 @@ export function initDebugPanel(currentDatabaseId, {
             }
         });
     } else {
-        console.warn('集成指南按钮不存在，无法绑定事件');
+        logger.warn('集成指南按钮不存在，无法绑定事件');
     }
     
     // 添加刷新按钮事件
@@ -332,7 +334,7 @@ export function initDebugPanel(currentDatabaseId, {
             if (this.disabled) return;
             this.disabled = true;
             
-            console.log('刷新数据请求');
+            logger.info('刷新数据请求');
             onRefresh();
             
             // 1秒后恢复按钮
@@ -341,7 +343,7 @@ export function initDebugPanel(currentDatabaseId, {
             }, 1000);
         });
     } else {
-        console.warn('刷新按钮不存在，无法绑定事件');
+        logger.warn('刷新按钮不存在，无法绑定事件');
     }
     
     // 添加调试按钮事件
@@ -363,12 +365,12 @@ export function initDebugPanel(currentDatabaseId, {
                 }
                 
                 showStatus('正在获取数据库信息...', false);
-                console.log('获取数据库信息:', databaseId);
+                logger.info('获取数据库信息:', databaseId);
                 
                 const result = await getDatabaseInfo(databaseId);
                 
                 if (result.success) {
-                    console.log('数据库信息:', result);
+                    logger.info('数据库信息:', result);
                     
                     // 格式化并显示数据库信息
                     const title = result.data.title || '未命名数据库';
@@ -377,11 +379,11 @@ export function initDebugPanel(currentDatabaseId, {
                     showStatus(`数据库: ${title}\n包含属性: ${properties}`, false);
                 } else {
                     showStatus(`获取失败: ${result.error || '未知错误'}`, true);
-                    console.error('获取数据库信息失败:', result.error);
+                    logger.error('获取数据库信息失败:', result.error);
                 }
             } catch (error) {
                 showStatus(`获取失败: ${error.message || '未知错误'}`, true);
-                console.error('获取数据库信息错误:', error);
+                logger.error('获取数据库信息错误:', error);
             } finally {
                 // 1秒后恢复按钮
                 setTimeout(() => {
@@ -390,7 +392,7 @@ export function initDebugPanel(currentDatabaseId, {
             }
         });
     } else {
-        console.warn('调试按钮不存在，无法绑定事件');
+        logger.warn('调试按钮不存在，无法绑定事件');
     }
     
     // 添加测试API按钮事件
@@ -403,13 +405,13 @@ export function initDebugPanel(currentDatabaseId, {
             
             try {
                 showStatus('正在测试API连接...', false);
-                console.log('测试API连接');
+                logger.info('测试API连接');
                 
                 const result = await testApiConnection();
                 
                 if (result.success) {
                     showStatus(`API连接成功!\n实现类型: ${result.implementation || '标准'}`, false);
-                    console.log('API连接成功:', result);
+                    logger.info('API连接成功:', result);
                     
                     // 更新环境信息
                     updateEnvironmentInfo({
@@ -418,11 +420,11 @@ export function initDebugPanel(currentDatabaseId, {
                     });
                 } else {
                     showStatus(`API连接失败: ${result.error || '未知错误'}`, true);
-                    console.error('API连接测试失败:', result.error);
+                    logger.error('API连接测试失败:', result.error);
                 }
             } catch (error) {
                 showStatus(`API连接错误: ${error.message || '未知错误'}`, true);
-                console.error('API连接测试错误:', error);
+                logger.error('API连接测试错误:', error);
             } finally {
                 // 1秒后恢复按钮
                 setTimeout(() => {
@@ -431,7 +433,7 @@ export function initDebugPanel(currentDatabaseId, {
             }
         });
     } else {
-        console.warn('测试API按钮不存在，无法绑定事件');
+        logger.warn('测试API按钮不存在，无法绑定事件');
     }
     
     // 添加获取所有数据库按钮事件
@@ -444,13 +446,13 @@ export function initDebugPanel(currentDatabaseId, {
             
             try {
                 showStatus('正在获取所有数据库...', false);
-                console.log('获取所有数据库');
+                logger.info('获取所有数据库');
                 
                 const result = await getDatabases();
                 
                 if (result.success) {
                     const dbCount = result.results ? result.results.length : 0;
-                    console.log(`找到 ${dbCount} 个数据库:`, result.results);
+                    logger.info(`找到 ${dbCount} 个数据库:`, result.results);
                     
                     if (dbCount > 0) {
                         // 格式化并显示可用数据库
@@ -525,11 +527,11 @@ export function initDebugPanel(currentDatabaseId, {
                     }
                 } else {
                     showStatus(`获取失败: ${result.error || '未知错误'}`, true);
-                    console.error('获取数据库列表失败:', result.error);
+                    logger.error('获取数据库列表失败:', result.error);
                 }
             } catch (error) {
                 showStatus(`获取失败: ${error.message || '未知错误'}`, true);
-                console.error('获取数据库列表错误:', error);
+                logger.error('获取数据库列表错误:', error);
             } finally {
                 // 1秒后恢复按钮
                 setTimeout(() => {
@@ -538,7 +540,7 @@ export function initDebugPanel(currentDatabaseId, {
             }
         });
     } else {
-        console.warn('列出数据库按钮不存在，无法绑定事件');
+        logger.warn('列出数据库按钮不存在，无法绑定事件');
     }
     
     // 如果window.apiService存在，添加API选择功能
@@ -570,7 +572,7 @@ export function initDebugPanel(currentDatabaseId, {
                 try {
                     showStatus('正在自动选择最佳API实现...');
                     const result = await window.apiService.autoSelectBestApi();
-                    console.log('API自动选择结果:', result);
+                    logger.info('API自动选择结果:', result);
                     
                     if (result.success) {
                         showStatus(`已选择 ${result.selectedImplementation} API实现`);
@@ -585,7 +587,7 @@ export function initDebugPanel(currentDatabaseId, {
                         alert('无法连接到任何API实现。\n\n请检查网络连接和API配置。');
                     }
                 } catch (error) {
-                    console.error('API自动选择失败:', error);
+                    logger.error('API自动选择失败:', error);
                     showStatus(`API自动选择失败: ${error.message}`, true);
                     alert(`API自动选择失败: ${error.message}`);
                 } finally {
@@ -601,7 +603,7 @@ export function initDebugPanel(currentDatabaseId, {
     // 初始化资源加载状态跟踪
     resourceStatus.init();
     
-    console.log('调试面板初始化完成');
+    logger.info('调试面板初始化完成');
 }
 
 // 初始化环境信息区域
@@ -611,7 +613,7 @@ function initEnvironmentInfo() {
     const apiImplEl = document.getElementById('api-impl');
     
     if (!apiVersionEl && !envModeEl && !apiImplEl) {
-        console.warn('未找到环境信息显示元素，无法初始化环境信息区域');
+        logger.warn('未找到环境信息显示元素，无法初始化环境信息区域');
         return;
     }
     
@@ -686,7 +688,7 @@ function updateEnvironmentInfo(data = {}) {
     
     // 如果没有找到环境信息元素，记录警告并退出
     if (!apiVersionEl && !envModeEl && !apiImplEl) {
-        console.warn('未找到环境信息显示元素，无法更新环境信息');
+        logger.warn('未找到环境信息显示元素，无法更新环境信息');
         return;
     }
     
@@ -711,7 +713,7 @@ async function updateEnvironmentInfoFromAPI() {
         
         // 检查是否有apiService可用
         if (!window.apiService || typeof window.apiService.testConnection !== 'function') {
-            console.warn('API服务不可用，无法更新环境信息');
+            logger.warn('API服务不可用，无法更新环境信息');
             return;
         }
         
@@ -726,12 +728,12 @@ async function updateEnvironmentInfoFromAPI() {
                 apiImpl: result.implementation || result.apiImpl
             });
             
-            console.log('环境信息更新成功:', result);
+            logger.info('环境信息更新成功:', result);
         } else {
-            console.warn('无法从API获取环境信息:', result.error);
+            logger.warn('无法从API获取环境信息:', result.error);
         }
     } catch (error) {
-        console.error('更新环境信息时出错:', error);
+        logger.error('更新环境信息时出错:', error);
     }
 }
 
@@ -811,6 +813,6 @@ function initDraggablePanel(panel) {
             panel.style.right = 'auto';
         }
     } catch (error) {
-        console.warn('恢复调试面板位置失败:', error);
+        logger.warn('恢复调试面板位置失败:', error);
     }
 } 

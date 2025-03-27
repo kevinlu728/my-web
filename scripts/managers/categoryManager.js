@@ -24,6 +24,7 @@
 
 import { categoryConfig } from '../config/categories.js';
 import { articleRouteUtils } from '../utils/article-route-utils.js';
+import logger from '../utils/logger.js';
 
 class CategoryManager {
     constructor() {
@@ -453,7 +454,7 @@ class CategoryManager {
     // 选择分类
     selectCategory(category) {
         if (!category) {
-            console.warn('分类名称为空');
+            logger.warn('分类名称为空');
             return;
         }
         

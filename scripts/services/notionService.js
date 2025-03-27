@@ -19,16 +19,17 @@
  */
 
 import config from '../config/config.js';
+import logger from '../utils/logger.js';
 
 // 获取文章列表
 export async function getArticles(databaseId) {
   try {
-    console.log(`Fetching articles from Notion API for database: ${databaseId}`);
-    console.log(`API Base URL: ${config.api?.baseUrl || '/api'}`);
+    logger.info(`Fetching articles from Notion API for database: ${databaseId}`);
+    logger.info(`API Base URL: ${config.api?.baseUrl || '/api'}`);
     
     // 发送请求到服务器端 API
     const apiUrl = `${config.api?.baseUrl || '/api'}/articles`;
-    console.log(`Full API URL: ${apiUrl}`);
+    logger.info(`Full API URL: ${apiUrl}`);
     
     // 修改: 同时提供 database_id 和 databaseId 参数以兼容两种格式
     const response = await fetch(apiUrl, {
@@ -44,7 +45,7 @@ export async function getArticles(databaseId) {
     });
     
     // 记录请求信息
-    console.log('Request params:', { 
+    logger.info('Request params:', { 
       database_id: databaseId, 
       databaseId: databaseId, 
       limit: 100 
@@ -52,9 +53,9 @@ export async function getArticles(databaseId) {
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`API request failed: ${response.status} ${response.statusText}`, errorText);
+      logger.error(`API request failed: ${response.status} ${response.statusText}`, errorText);
       // 新增: 详细记录错误信息
-      console.error('详细错误信息:', {
+      logger.error('详细错误信息:', {
         method: 'POST',
         url: apiUrl,
         params: { database_id: databaseId, databaseId: databaseId, limit: 100 },
@@ -67,7 +68,7 @@ export async function getArticles(databaseId) {
     }
     
     const data = await response.json();
-    console.log('API Response: ', data);
+    logger.debug('API Response: ', data);
     
     // 新增: 检查响应结构并记录
     const responseStructure = {
@@ -78,11 +79,11 @@ export async function getArticles(databaseId) {
       hasMore: !!data.hasMore || !!data.has_more,
       nextCursor: data.nextCursor || data.next_cursor
     };
-    console.log('Response structure check:', responseStructure);
+    logger.info('Response structure check:', responseStructure);
     
     // 检查数据结构
     if (!data.results && !data.articles) {
-      console.error('Invalid API response format - missing results:', data);
+      logger.error('Invalid API response format - missing results:', data);
       throw new Error('Invalid API response format - missing article data');
     }
     
@@ -90,7 +91,7 @@ export async function getArticles(databaseId) {
     const articles = data.articles || data.results;
     
     if (!Array.isArray(articles)) {
-      console.error('Invalid article data - not an array:', articles);
+      logger.error('Invalid article data - not an array:', articles);
       throw new Error('Invalid API response format - articles is not an array');
     }
     
@@ -102,10 +103,10 @@ export async function getArticles(databaseId) {
       raw: data
     };
   } catch (error) {
-    console.error('Error fetching articles:', error);
+    logger.error('Error fetching articles:', error);
     // 新增: 详细记录异常堆栈
-    console.error('Error stack:', error.stack);
-    console.error('Error occurred at:', new Date().toISOString());
+    logger.error('Error stack:', error.stack);
+    logger.error('Error occurred at:', new Date().toISOString());
     throw error;
   }
 }
@@ -113,32 +114,32 @@ export async function getArticles(databaseId) {
 // 获取文章内容
 export async function getArticleContent(pageId) {
   try {
-    console.log(`Fetching article content for page: ${pageId}`);
+    logger.info(`Fetching article content for page: ${pageId}`);
     
     // 重要：检查pageId是否有效，无效时不请求API
     if (!pageId || pageId === 'undefined' || pageId === 'null') {
-      console.error('Invalid pageId:', pageId);
+      logger.error('Invalid pageId:', pageId);
       throw new Error('Invalid page ID provided');
     }
     
     // 使用新的统一内容API端点
     const apiUrl = `${config.api?.baseUrl || '/api'}/article-content/${pageId}`;
-    console.log(`Content API URL: ${apiUrl}`);
+    logger.info(`Content API URL: ${apiUrl}`);
     
     const response = await fetch(apiUrl);
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Failed to fetch article content: ${response.status}`, errorText);
+      logger.error(`Failed to fetch article content: ${response.status}`, errorText);
       throw new Error(`Failed to fetch article content: ${response.status}`);
     }
     
     const data = await response.json();
-    console.log('Article content received:', data);
+    logger.debug('Article content received:', data);
     
     // 确保返回的数据结构符合预期
     if (!data.page || !data.blocks) {
-      console.error('Invalid article content format:', data);
+      logger.error('Invalid article content format:', data);
       throw new Error('Invalid article content format');
     }
     
@@ -149,7 +150,7 @@ export async function getArticleContent(pageId) {
       nextCursor: data.nextCursor || null
     };
   } catch (error) {
-    console.error('Error fetching article content:', error);
+    logger.error('Error fetching article content:', error);
     throw error;
   }
 }
@@ -157,9 +158,9 @@ export async function getArticleContent(pageId) {
 // 获取数据库信息
 export async function getDatabaseInfo(databaseId) {
   try {
-    console.log(`Fetching database info for: ${databaseId}`);
+    logger.info(`Fetching database info for: ${databaseId}`);
     const apiUrl = `${config.api?.baseUrl || '/api'}/database-info`;
-    console.log(`Database info API URL: ${apiUrl}`);
+    logger.info(`Database info API URL: ${apiUrl}`);
     
     const response = await fetch(apiUrl, {
       method: 'POST',
@@ -171,15 +172,15 @@ export async function getDatabaseInfo(databaseId) {
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Failed to fetch database info: ${response.status}`, errorText);
+      logger.error(`Failed to fetch database info: ${response.status}`, errorText);
       throw new Error(`Failed to fetch database info: ${response.status}`);
     }
     
     const data = await response.json();
-    console.log('Database info received:', data);
+    logger.info('Database info received:', data);
     return data;
   } catch (error) {
-    console.error('Error fetching database info:', error);
+    logger.error('Error fetching database info:', error);
     throw error;
   }
 }
@@ -187,24 +188,24 @@ export async function getDatabaseInfo(databaseId) {
 // 测试 API 连接
 export async function testApiConnection() {
   try {
-    console.log('Testing API connection...');
+    logger.info('Testing API connection...');
     const apiUrl = `${config.api?.baseUrl || '/api'}/hello`;
-    console.log(`Test API URL: ${apiUrl}`);
+    logger.info(`Test API URL: ${apiUrl}`);
     
     const response = await fetch(apiUrl);
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`API connection test failed: ${response.status}`, errorText);
+      logger.error(`API connection test failed: ${response.status}`, errorText);
       throw new Error(`API connection test failed: ${response.status}`);
     }
     
     const data = await response.json();
-    console.log('API connection test successful:', data);
+    logger.info('API connection test successful:', data);
     
     return data;
   } catch (error) {
-    console.error('Error testing API connection:', error);
+    logger.error('Error testing API connection:', error);
     throw error;
   }
 }
@@ -212,23 +213,23 @@ export async function testApiConnection() {
 // 获取数据库列表
 export async function getDatabases() {
   try {
-    console.log('Fetching databases list...');
+    logger.info('Fetching databases list...');
     const apiUrl = `${config.api?.baseUrl || '/api'}/databases`;
-    console.log(`Databases list API URL: ${apiUrl}`);
+    logger.info(`Databases list API URL: ${apiUrl}`);
     
     const response = await fetch(apiUrl);
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Failed to fetch databases: ${response.status}`, errorText);
+      logger.error(`Failed to fetch databases: ${response.status}`, errorText);
       throw new Error(`Failed to fetch databases: ${response.status}`);
     }
     
     const data = await response.json();
-    console.log(`Databases list received, found ${data.results?.length || 0} databases`);
+    logger.info(`Databases list received, found ${data.results?.length || 0} databases`);
     return data;
   } catch (error) {
-    console.error('Error fetching databases:', error);
+    logger.error('Error fetching databases:', error);
     throw error;
   }
 } 

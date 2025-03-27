@@ -6,6 +6,8 @@
  * @created 2024-05-12
  */
 
+import logger from '../utils/logger.js';
+
 /**
  * 文章目录导航类
  * 功能：
@@ -56,12 +58,12 @@ export class TableOfContents {
      * 初始化目录功能
      */
     initialize() {
-        console.log('初始化文章目录导航...');
+        logger.info('初始化文章目录导航...');
         
         // 获取文章内容元素
         this.articleElement = document.querySelector(this.config.articleSelector);
         if (!this.articleElement) {
-            console.warn('未找到文章内容元素:', this.config.articleSelector);
+            logger.warn('未找到文章内容元素:', this.config.articleSelector);
             return false;
         }
         
@@ -73,7 +75,7 @@ export class TableOfContents {
         
         // 如果没有提取到标题，则不显示目录
         if (this.headings.length === 0) {
-            console.warn('文章中未找到标题元素');
+            logger.warn('文章中未找到标题元素');
             return false;
         }
         
@@ -97,7 +99,7 @@ export class TableOfContents {
         
         // 标记为已初始化
         this.initialized = true;
-        console.log('目录导航初始化完成，共解析', this.headings.length, '个标题');
+        logger.info('目录导航初始化完成，共解析', this.headings.length, '个标题');
         
         return true;
     }
@@ -113,7 +115,7 @@ export class TableOfContents {
             const rect = rightColumn.getBoundingClientRect();
             // 设置CSS变量，用于目录导航的位置定位
             document.documentElement.style.setProperty('--right-column-top', `${rect.top}px`);
-            console.log('已设置目录顶部位置变量:', `${rect.top}px`);
+            logger.info('已设置目录顶部位置变量:', `${rect.top}px`);
         }
     }
 
@@ -571,7 +573,7 @@ export class TableOfContents {
      * @returns {boolean} 是否成功更新
      */
     updateContent() {
-        console.log('开始更新目录内容，保持容器状态...');
+        logger.info('开始更新目录内容，保持容器状态...');
         
         // 保存当前目录状态
         const currentState = {
@@ -584,14 +586,14 @@ export class TableOfContents {
         
         // 如果没有初始化过，则执行完整初始化
         if (!this.initialized || !this.tocContainer) {
-            console.log('目录尚未初始化，执行完整初始化');
+            logger.info('目录尚未初始化，执行完整初始化');
             return this.initialize();
         }
         
         // 获取文章内容元素
         this.articleElement = document.querySelector(this.config.articleSelector);
         if (!this.articleElement) {
-            console.warn('未找到文章内容元素:', this.config.articleSelector);
+            logger.warn('未找到文章内容元素:', this.config.articleSelector);
             return false;
         }
         
@@ -604,7 +606,7 @@ export class TableOfContents {
         
         // 如果没有提取到标题，保持现状
         if (this.headings.length === 0) {
-            console.warn('文章中未找到标题元素，保持现有目录');
+            logger.warn('文章中未找到标题元素，保持现有目录');
             return false;
         }
         
@@ -675,7 +677,7 @@ export class TableOfContents {
             }, 100);
         }
         
-        console.log('目录内容已更新，保持容器状态');
+        logger.info('目录内容已更新，保持容器状态');
         return true;
     }
 
@@ -691,7 +693,7 @@ export class TableOfContents {
         }
         
         // 如果轻量更新失败，则执行完全刷新
-        console.log('目录轻量更新失败，执行完全刷新');
+        logger.info('目录轻量更新失败，执行完全刷新');
         
         // 更新右侧栏顶部位置变量
         this.updateRightColumnTopVariable();

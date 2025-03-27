@@ -17,6 +17,8 @@
  * 函数采用模块化导出，可以按需引入。
  */
 
+import logger from './logger.js';
+
 // 防抖函数
 export function debounce(func, wait = 300) {
     let timeout;
@@ -30,7 +32,7 @@ export function debounce(func, wait = 300) {
 export function showStatus(message, isError = false, type = 'info') {
     const statusEl = document.getElementById('status-message');
     if (!statusEl) {
-        console.warn('Status element not found');
+        logger.warn('Status element not found');
         return;
     }
     
@@ -59,7 +61,7 @@ export function showStatus(message, isError = false, type = 'info') {
 export function showLoading(message = '加载中...') {
     const treeChildren = document.querySelector('#article-tree .root-item > .tree-children');
     if (!treeChildren) {
-        console.warn('文章列表元素未找到');
+        logger.warn('文章列表元素未找到');
         return;
     }
     
@@ -83,5 +85,5 @@ export function showError(message) {
         treeChildren.innerHTML = `<li class="error">${message}</li>`;
     }
     
-    console.error(message);
+    logger.error(message);
 } 

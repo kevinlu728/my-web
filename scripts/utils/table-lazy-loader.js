@@ -22,6 +22,7 @@
  */
 
 import { tableStyles, addTableStylesToDocument } from '../styles/table-styles.js';
+import logger from './logger.js';
 
 class TableLazyLoader {
     constructor() {
@@ -54,44 +55,44 @@ class TableLazyLoader {
     // 加载表格
     loadTable(tableBlock) {
         try {
-            console.log('开始加载表格:', tableBlock);
+            logger.info('开始加载表格:', tableBlock);
             
             // 获取表格数据
             const tableDataStr = tableBlock.dataset.tableData || '{}';
             const blockId = tableBlock.dataset.blockId;
-            console.log('表格数据字符串:', tableDataStr);
-            console.log('表格块ID:', blockId);
+            logger.info('表格数据字符串:', tableDataStr);
+            logger.info('表格块ID:', blockId);
             
             const tableData = JSON.parse(tableDataStr);
-            console.log('解析后的表格数据:', tableData);
+            logger.info('解析后的表格数据:', tableData);
             
             if (!tableData) {
-                console.error('无效的表格数据: 数据为空');
+                logger.error('无效的表格数据: 数据为空');
                 tableBlock.innerHTML = '<div class="table-error">无效的表格数据</div>';
                 return;
             }
             
             if (!tableData.rows) {
-                console.error('无效的表格数据: 缺少rows属性');
+                logger.error('无效的表格数据: 缺少rows属性');
                 tableBlock.innerHTML = '<div class="table-error">无效的表格数据 (缺少rows)</div>';
                 return;
             }
             
             if (!Array.isArray(tableData.rows)) {
-                console.error('无效的表格数据: rows不是数组');
+                logger.error('无效的表格数据: rows不是数组');
                 tableBlock.innerHTML = '<div class="table-error">无效的表格数据 (rows不是数组)</div>';
                 return;
             }
             
             if (tableData.rows.length === 0 && blockId) {
                 // 如果表格数据为空但有blockId，尝试从API获取数据
-                console.log('表格数据为空，尝试从API获取数据');
+                logger.info('表格数据为空，尝试从API获取数据');
                 this.fetchTableData(tableBlock, blockId);
                 return;
             }
             
             if (tableData.rows.length === 0) {
-                console.warn('表格数据为空: rows数组为空');
+                logger.warn('表格数据为空: rows数组为空');
                 tableBlock.innerHTML = '<div class="table-empty">空表格</div>';
                 return;
             }
@@ -103,9 +104,9 @@ class TableLazyLoader {
             // 添加表格排序功能
             this.addTableSorting(tableBlock.querySelector('table'));
             
-            console.log('表格加载完成');
+            logger.info('表格加载完成');
         } catch (error) {
-            console.error('加载表格失败:', error);
+            logger.error('加载表格失败:', error);
             tableBlock.innerHTML = `<div class="table-error">加载表格失败: ${error.message}</div>`;
         }
     }
@@ -113,7 +114,7 @@ class TableLazyLoader {
     // 从API获取表格数据
     async fetchTableData(tableBlock, blockId) {
         try {
-            console.log(`从API获取表格数据: ${blockId}`);
+            logger.info(`从API获取表格数据: ${blockId}`);
             
             // 显示加载状态
             tableBlock.innerHTML = `
@@ -136,7 +137,7 @@ class TableLazyLoader {
             const fullUrlWithParams = `${directApiUrl}?_=${timestamp}&v=${version}&retry=true`;
             
             // 简化日志输出，仅保留关键信息
-            console.log('API请求URL:', apiUrl);
+            logger.info('API请求URL:', apiUrl);
             
             // 添加请求头
             const headers = {
@@ -152,7 +153,7 @@ class TableLazyLoader {
             
             // 首先尝试相对URL
             try {
-                console.log('开始请求表格数据...');
+                logger.info('开始请求表格数据...');
                 
                 // 发起请求并记录时间
                 const startTime = Date.now();
@@ -166,7 +167,7 @@ class TableLazyLoader {
                 });
                 const endTime = Date.now();
                 
-                console.log(`API响应状态: ${response.status} ${response.statusText}，耗时: ${endTime - startTime}ms`);
+                logger.info(`API响应状态: ${response.status} ${response.statusText}，耗时: ${endTime - startTime}ms`);
                 
                 // 减少响应头的详细记录
                 // 只在非成功响应时记录响应头，有助于调试
@@ -178,7 +179,7 @@ class TableLazyLoader {
                             responseHeaders[key] = value;
                         }
                     });
-                    console.log('关键响应头:', responseHeaders);
+                    logger.info('关键响应头:', responseHeaders);
                     throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
                 }
                 
@@ -190,7 +191,7 @@ class TableLazyLoader {
                 
                 // 读取响应内容为文本
                 const text = await response.text();
-                console.log(`API响应长度: ${text.length}字节`);
+                logger.info(`API响应长度: ${text.length}字节`);
                 
                 if (!text || text.trim().length === 0) {
                     throw new Error('空响应');
@@ -212,19 +213,19 @@ class TableLazyLoader {
                     this.processAPIResponse(tableBlock, data, blockId);
                     return; // 成功处理，返回
                 } catch (jsonError) {
-                    console.error('JSON解析失败:', jsonError.message);
+                    logger.error('JSON解析失败:', jsonError.message);
                     // 只在开发环境下记录响应文本片段
                     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                        console.error('响应文本片段:', text.substring(0, 200));
+                        logger.error('响应文本片段:', text.substring(0, 200));
                     }
                     throw new Error(`JSON解析失败: ${jsonError.message}`);
                 }
             } catch (firstAttemptError) {
                 // 第一次尝试失败，记录错误并尝试使用完整URL
-                console.error('第一次API请求失败:', firstAttemptError.message);
+                logger.error('第一次API请求失败:', firstAttemptError.message);
                 
                 // 尝试使用完整URL调用API
-                console.log('尝试使用完整URL重试...');
+                logger.info('尝试使用完整URL重试...');
                 
                 const response = await fetch(fullUrlWithParams, {
                     method: 'GET',
@@ -235,7 +236,7 @@ class TableLazyLoader {
                     mode: 'cors' 
                 });
                 
-                console.log(`第二次尝试状态: ${response.status} ${response.statusText}`);
+                logger.info(`第二次尝试状态: ${response.status} ${response.statusText}`);
                 
                 if (!response.ok) {
                     throw new Error(`两次API请求均失败: ${response.status} ${response.statusText}`);
@@ -257,17 +258,17 @@ class TableLazyLoader {
                     clearTimeout(timeoutId);
                 }
             } catch (timerError) {
-                console.warn('清理计时器错误:', timerError);
+                logger.warn('清理计时器错误:', timerError);
             }
             
             // 检查是否是中止信号错误，提供更友好的消息
             if (error.name === 'AbortError') {
-                console.warn('请求被中止 - 可能是超时或页面导航中断');
+                logger.warn('请求被中止 - 可能是超时或页面导航中断');
                 this.handleTableError(tableBlock, blockId, new Error('请求超时或被中断'));
                 return;
             }
             
-            console.error('获取表格数据最终失败:', error.message);
+            logger.error('获取表格数据最终失败:', error.message);
             
             // 处理错误显示
             this.handleTableError(tableBlock, blockId, error);
@@ -277,16 +278,16 @@ class TableLazyLoader {
     // 处理API响应并渲染表格
     processAPIResponse(tableBlock, data, blockId) {
         try {
-            console.log('处理API响应数据...');
+            logger.info('处理API响应数据...');
             
             // 检查results字段
             if (!data.results) {
-                console.warn('响应数据缺少results字段');
+                logger.warn('响应数据缺少results字段');
                 tableBlock.innerHTML = '<div class="table-error">无效的表格数据: 缺少results字段</div>';
                 return;
             }
             
-            console.log(`获取到${data.results.length}行表格数据`);
+            logger.info(`获取到${data.results.length}行表格数据`);
             
             // 如果没有数据，显示空表格消息
             if (data.results.length === 0) {
@@ -314,9 +315,9 @@ class TableLazyLoader {
             // 添加表格排序功能
             this.addTableSorting(tableBlock.querySelector('table'));
             
-            console.log('表格加载完成');
+            logger.info('表格加载完成');
         } catch (error) {
-            console.error('处理API响应时出错:', error.message);
+            logger.error('处理API响应时出错:', error.message);
             tableBlock.innerHTML = `<div class="table-error">处理表格数据失败: ${error.message}</div>`;
         }
     }
@@ -347,7 +348,7 @@ class TableLazyLoader {
             }
         }
         
-        console.log('最终错误信息:', errorMessage);
+        logger.info('最终错误信息:', errorMessage);
         
         // 创建错误显示元素
         const errorContainer = document.createElement('div');
@@ -378,7 +379,7 @@ class TableLazyLoader {
         refreshButton.className = 'table-refresh-button';
         refreshButton.textContent = '刷新表格';
         refreshButton.onclick = () => {
-            console.log('手动刷新表格');
+            logger.info('手动刷新表格');
             this.fetchTableData(tableBlock, blockId);
         };
         errorContainer.appendChild(refreshButton);
@@ -394,16 +395,16 @@ class TableLazyLoader {
         
         // 处理空数据情况
         if (!rows || rows.length === 0) {
-            console.warn('表格数据为空');
+            logger.warn('表格数据为空');
             return '<div class="table-empty">空表格</div>';
         }
         
         // 分析表格结构
-        console.log('表格数据行数:', rows.length);
+        logger.info('表格数据行数:', rows.length);
         
         // 检查每行的列数
         const columnCounts = rows.map(row => row.length);
-        console.log('每行的列数:', columnCounts);
+        logger.info('每行的列数:', columnCounts);
         
         // 确定实际列数 - 使用最大列数确保所有数据都能显示
         const maxColumnCount = Math.max(...columnCounts);
@@ -411,7 +412,7 @@ class TableLazyLoader {
         const isConsistentColumns = new Set(columnCounts).size === 1;
         const columnCount = isConsistentColumns ? columnCounts[0] : maxColumnCount;
         
-        console.log('实际列数:', columnCount);
+        logger.info('实际列数:', columnCount);
         
         // 构建表格HTML
         let html = '<div class="table-container">';
@@ -649,11 +650,11 @@ class TableLazyLoader {
         const tableBlocks = container.querySelectorAll('.lazy-block.table-block');
         
         if (tableBlocks.length === 0) {
-            console.log('没有找到表格块');
+            logger.info('没有找到表格块');
             return;
         }
         
-        console.log(`找到 ${tableBlocks.length} 个表格块`);
+        logger.info(`找到 ${tableBlocks.length} 个表格块`);
         
         // 如果之前已存在观察器，先断开与所有元素的连接
         if (this.observer) {
@@ -664,16 +665,16 @@ class TableLazyLoader {
             // 检查表格是否已经加载
             const isLoaded = tableBlock.querySelector('table') !== null;
             if (isLoaded) {
-                console.log('表格已加载，跳过');
+                logger.info('表格已加载，跳过');
                 return;
             }
             
             if (this.observer) {
-                console.log('使用IntersectionObserver观察表格块');
+                logger.info('使用IntersectionObserver观察表格块');
                 this.observer.observe(tableBlock);
             } else {
                 // 如果不支持 IntersectionObserver，直接加载
-                console.log('不支持IntersectionObserver，直接加载表格');
+                logger.info('不支持IntersectionObserver，直接加载表格');
                 this.loadTable(tableBlock);
             }
         });
@@ -686,5 +687,5 @@ export const tableLazyLoader = new TableLazyLoader();
 // 将实例添加到全局对象，确保可以在全局范围内访问
 if (typeof window !== 'undefined') {
     window.tableLazyLoader = tableLazyLoader;
-    console.log('表格懒加载器已注册为全局对象');
+    logger.info('表格懒加载器已注册为全局对象');
 }

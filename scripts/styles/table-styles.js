@@ -18,6 +18,9 @@
  * 被table-lazy-loader.js模块使用，确保懒加载的表格具有正确的样式。
  */
 
+// 引入日志工具
+import logger from '../utils/logger.js';
+
 // CSS文件路径
 const CSS_FILE_PATH = '/styles/components/table-block.css';
 
@@ -40,7 +43,7 @@ export function addTableStylesToDocument() {
     
     // 添加加载错误处理
     linkElement.onerror = () => {
-        console.warn('无法加载表格样式文件，使用内联样式作为备份');
+        logger.warn('无法加载表格样式文件，使用内联样式作为备份');
         addInlineStyles();
     };
     

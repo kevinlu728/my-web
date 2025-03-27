@@ -30,6 +30,7 @@ scripts/
 │   ├── article-cache.js   # 文章缓存工具
 │   ├── cdn-mapper.js      # CDN映射模块
 │   ├── resource-loader.js # 资源加载器
+│   ├── logger.js          # 统一日志管理工具
 │   ├── url-utils.js       # URL参数处理工具
 │   └── ...
 ├── config/                # 配置脚本
@@ -72,7 +73,87 @@ scripts/
 - **utils/article-cache.js**: 文章缓存管理工具
 - **utils/cdn-mapper.js**: CDN资源URL映射与管理
 - **utils/resource-loader.js**: 处理资源加载、错误处理和回退机制
+- **utils/logger.js**: 统一日志管理工具，提供不同级别的日志输出和格式化功能
 - **utils/url-utils.js**: URL参数处理工具函数
+
+#### 日志工具模块 (logger.js)
+
+日志工具提供了统一的日志管理功能，可以在整个项目中使用相同的日志格式和风格。
+
+**主要特点**:
+- **多级别日志**: 支持`DEBUG`、`INFO`、`WARN`、`ERROR`四个日志级别
+- **丰富的上下文信息**: 自动记录时间戳和调用位置
+- **彩色输出**: 使用彩色控制台输出，便于区分不同级别的日志
+- **环境感知**: 支持通过配置系统根据环境（开发/生产）自动设置日志级别
+- **对象序列化**: 自动将对象序列化为JSON字符串
+
+**导入方式**:
+```javascript
+// ES模块导入
+import logger from './utils/logger.js';
+
+// CommonJS导入
+const logger = require('./utils/logger');
+```
+
+**基本用法**:
+```javascript
+// 输出不同级别的日志
+logger.debug('这是一条调试信息');
+logger.info('这是一条普通信息');
+logger.warn('这是一条警告信息');
+logger.error('这是一条错误信息');
+
+// 记录对象
+const user = { id: 1, name: '张三' };
+logger.info('用户信息:', user);
+
+// 记录多个参数
+logger.info('操作结果:', '成功', { code: 200, data: [...] });
+```
+
+**配置日志级别**:
+```javascript
+// 通过代码设置
+logger.setLevel('DEBUG');  // 显示所有日志
+logger.setLevel('ERROR');  // 只显示错误日志
+
+// 获取当前日志级别
+const currentLevel = logger.getLevel();
+console.log(`当前日志级别: ${currentLevel}`);
+```
+
+**日志级别说明**:
+1. `DEBUG`: 调试信息，用于开发调试
+2. `INFO`: 普通信息，记录程序正常运行状态
+3. `WARN`: 警告信息，可能的问题但不影响程序运行
+4. `ERROR`: 错误信息，程序运行出现错误
+5. `NONE`: 不输出任何日志
+
+**日志格式**:
+```
+[时间戳] [日志级别] [调用位置] 日志内容
+```
+
+例如:
+```
+[2023-07-01T12:34:56.789Z] [INFO] [app.js:getUsers:45] 获取用户列表成功，共 10 条记录
+```
+
+**最佳实践**:
+1. 在开发环境中使用`DEBUG`级别，方便调试
+2. 在测试环境中使用`INFO`级别，记录关键流程
+3. 在生产环境中使用`WARN`或`ERROR`级别，减少日志量
+4. 使用适当的日志级别：
+   - `debug`: 用于开发调试，详细记录程序执行流程
+   - `info`: 记录正常的业务流程和状态变化
+   - `warn`: 记录可能的问题或异常情况
+   - `error`: 记录错误和异常，需要关注和处理
+
+**注意事项**:
+1. 避免在循环中过度使用日志，特别是`debug`级别的日志
+2. 敏感信息（如密码、令牌）不应直接记录到日志中
+3. 在生产环境中，建议使用配置系统设置合适的日志级别
 
 #### CDN映射模块 (cdn-mapper.js)
 
@@ -237,6 +318,9 @@ const localResourceExists = resourceChecker.checkLocalResourceExists(localFallba
 ### 2024-05-01
 - **分离资源检查逻辑**：创建了`resource-checker.js`模块，专门负责检查本地资源是否存在并维护不存在资源的记录。这一重构使得资源检查逻辑更加集中和可维护。
 - **分离资源超时管理**：创建了`resource-timeout.js`模块，专门处理资源加载超时逻辑。该模块支持根据资源优先级设置不同的超时时间，使用事件通知系统资源超时，并提供回调机制执行自定义逻辑。通过依赖注入模式与`ResourceLoader`集成，有效降低了`resource-loader.js`的复杂度，提高了代码的模块化和可测试性。
+
+### 2024-05-15
+- **日志系统环境感知优化**：增强了`logger.js`模块，使其能够根据配置文件自动调整日志级别。添加了与`config.js`的集成，在开发环境中使用详细日志，在生产环境中自动降低日志级别，提高性能和安全性。
 
 ## 未来重构计划
 

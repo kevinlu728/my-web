@@ -18,6 +18,8 @@
  * 被code-lazy-loader.js模块使用，确保懒加载的代码块具有正确的样式和高亮。
  */
 
+import logger from '../utils/logger.js';
+
 // CSS文件路径
 const CSS_FILE_PATH = '/styles/components/code-block.css';
 
@@ -40,7 +42,7 @@ export function addCodeStylesToDocument() {
     
     // 添加加载错误处理
     linkElement.onerror = () => {
-        console.warn('无法加载代码块样式文件，使用内联样式作为备份');
+        logger.warn('无法加载代码块样式文件，使用内联样式作为备份');
         addInlineStyles();
     };
     

@@ -12,6 +12,8 @@
  * - 处理不同类型的资源URL构建（CSS、JS等）
  */
 
+import logger from './logger.js';
+
 /**
  * CDN映射器类
  */
@@ -33,7 +35,7 @@ export class CdnMapper {
      */
     initializeCdnMappings() {
         if (!this.resourceConfig || !this.resourceConfig.resources) {
-            console.warn('⚠️ 资源配置无效，无法初始化CDN映射');
+            logger.warn('⚠️ 资源配置无效，无法初始化CDN映射');
             return;
         }
         
@@ -198,7 +200,7 @@ export class CdnMapper {
         try {
             return getUrlsFunc(component) || [];
         } catch (error) {
-            console.error(`构建组件URL时出错: ${error.message}`);
+            logger.error(`构建组件URL时出错: ${error.message}`);
             return [];
         }
     }

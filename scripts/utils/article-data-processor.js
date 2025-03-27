@@ -7,6 +7,8 @@
  */
 
 import { extractTitleFromProperties, extractCategoryFromProperties } from './article-utils.js';
+// 引入日志工具
+import logger from './logger.js';
 
 /**
  * 处理文章列表数据，转换为应用需要的格式
@@ -15,18 +17,18 @@ import { extractTitleFromProperties, extractCategoryFromProperties } from './art
  */
 export function processArticleListData(articles) {
     if (!articles || !Array.isArray(articles)) {
-        console.error('无效的文章数据:', articles);
+        logger.error('无效的文章数据:', articles);
         return [];
     }
     
-    console.log('处理文章数据...');
+    logger.info('处理文章数据...');
     const processedArticles = [];
     
     for (const page of articles) {
         try {
             // 确保页面有 ID
             if (!page.id) {
-                console.error('文章缺少ID:', page);
+                logger.error('文章缺少ID:', page);
                 continue;
             }
             
@@ -68,7 +70,7 @@ export function processArticleListData(articles) {
             
             processedArticles.push(article);
         } catch (error) {
-            console.error('处理文章数据时出错:', error, page);
+            logger.error('处理文章数据时出错:', error, page);
         }
     }
     
@@ -86,7 +88,7 @@ export function processArticleListData(articles) {
         return new Date(b.created_time) - new Date(a.created_time);
     });
     
-    console.log(`处理完成，共 ${processedArticles.length} 篇文章`);
+    logger.info(`处理完成，共 ${processedArticles.length} 篇文章`);
     return processedArticles;
 }
 
@@ -125,7 +127,7 @@ export function searchArticles(articles, searchTerm) {
     if (!searchTerm || !articles || articles.length === 0) return articles;
 
     const term = searchTerm.toLowerCase();
-    console.log(`搜索文章，关键词: "${term}"`);
+    logger.info(`搜索文章，关键词: "${term}"`);
 
     return articles.filter(article => {
         // 搜索标题匹配

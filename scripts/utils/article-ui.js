@@ -8,6 +8,7 @@
 
 import { formatDate, highlightSearchTerm } from './article-utils.js';
 import { imageLazyLoader } from './image-lazy-loader.js';
+import logger from './logger.js';
 
 /**
  * 渲染文章列表项
@@ -58,14 +59,14 @@ export function renderArticleList(articles, searchTerm = '', currentArticleId = 
     // 修改为使用article-tree中的子元素
     const articleTree = document.getElementById(containerId);
     if (!articleTree) {
-        console.warn('文章树元素不存在');
+        logger.warn('文章树元素不存在');
         return;
     }
     
     // 获取根节点的子元素容器
     const articleList = articleTree.querySelector('.root-item > .tree-children');
     if (!articleList) {
-        console.warn('文章列表子元素不存在');
+        logger.warn('文章列表子元素不存在');
         return;
     }
 
@@ -90,7 +91,7 @@ export function renderArticleList(articles, searchTerm = '', currentArticleId = 
 export function filterArticleListByCategory(category) {
     // 该函数已废弃，不做任何操作
     // 分类过滤完全由categoryManager处理
-    console.log(`filterArticleListByCategory已废弃，分类 "${category}" 由categoryManager处理`);
+    logger.info(`filterArticleListByCategory已废弃，分类 "${category}" 由categoryManager处理`);
     return -1;
 }
 

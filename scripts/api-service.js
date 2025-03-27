@@ -8,6 +8,16 @@
  * @updated 2024-06-28
  */
 
+// 传统方式获取 logger，确保在HTML中先加载了logger.js
+const logger = window.loggerModule || console;
+
+// 调试信息：验证logger对象
+if (logger === console) {
+  console.warn('⚠️ ApiService: 未找到logger模块，使用console作为回退');
+} else {
+  logger.info('✅ ApiService: 成功获取logger模块');
+}
+
 /**
  * 创建API服务实例
  * 该服务是前端与后端API之间的桥梁，提供统一的接口访问方式
@@ -38,7 +48,7 @@ class ApiService {
       this.baseUrl = '/api';
       this.directApiBaseUrl = '/api';
     }
-    console.log('API基础URL:', this.baseUrl);
+    logger.info('API基础URL:', this.baseUrl);
   }
 
   /**
@@ -46,7 +56,7 @@ class ApiService {
    */
   enableDirectApi() {
     this.useDirectApi = true;
-    console.log('已启用直接API实现');
+    logger.info('已启用直接API实现');
     return this;
   }
 
@@ -55,7 +65,7 @@ class ApiService {
    */
   enableStandardApi() {
     this.useDirectApi = false;
-    console.log('已启用标准API实现');
+    logger.info('已启用标准API实现');
     return this;
   }
 
@@ -75,7 +85,7 @@ class ApiService {
   async testConnection() {
     try {
       const endpoint = this.useDirectApi ? `${this.directApiBaseUrl}/status` : `${this.baseUrl}/status`;
-      console.log(`测试API连接: ${endpoint}`);
+      logger.info(`测试API连接: ${endpoint}`);
       
       const response = await fetch(endpoint);
       if (!response.ok) {
@@ -83,7 +93,7 @@ class ApiService {
       }
       
       const data = await response.json();
-      console.log('API连接测试结果:', data);
+      logger.info('API连接测试结果:', data);
       
       this.connectionStatus = 'online';
       return {
@@ -92,7 +102,7 @@ class ApiService {
         implementation: this.useDirectApi ? 'direct' : 'standard'
       };
     } catch (error) {
-      console.error('API连接测试失败:', error);
+      logger.error('API连接测试失败:', error);
       this.connectionStatus = 'offline';
       this.lastError = error;
       
@@ -113,7 +123,7 @@ class ApiService {
     const standardTest = await this.testConnection();
     
     if (standardTest.success) {
-      console.log('标准API测试成功，将使用标准API');
+      logger.info('标准API测试成功，将使用标准API');
       return {
         success: true,
         selectedImplementation: 'standard',
@@ -122,12 +132,12 @@ class ApiService {
     }
     
     // 如果标准API失败，尝试直接API
-    console.log('标准API测试失败，尝试使用直接API');
+    logger.info('标准API测试失败，尝试使用直接API');
     this.enableDirectApi();
     const directTest = await this.testConnection();
     
     if (directTest.success) {
-      console.log('直接API测试成功，将使用直接API');
+      logger.info('直接API测试成功，将使用直接API');
       return {
         success: true,
         selectedImplementation: 'direct',
@@ -136,7 +146,7 @@ class ApiService {
     }
     
     // 如果两种实现都失败
-    console.error('所有API实现都无法连接');
+    logger.error('所有API实现都无法连接');
     // 默认回到标准API
     this.enableStandardApi();
     return {
@@ -152,7 +162,7 @@ class ApiService {
    */
   async executeRequest(url, options = {}, allowFallback = true) {
     const fullUrl = `${this.getActiveBaseUrl()}${url}`;
-    console.log(`执行API请求: ${options.method || 'GET'} ${fullUrl}`);
+    logger.info(`执行API请求: ${options.method || 'GET'} ${fullUrl}`);
     
     try {
       const response = await fetch(fullUrl, options);
@@ -166,17 +176,17 @@ class ApiService {
       this.connectionStatus = 'online';
       return await response.json();
     } catch (error) {
-      console.error(`API请求失败: ${fullUrl}`, error);
+      logger.error(`API请求失败: ${fullUrl}`, error);
       this.lastError = error;
       
       // 如果允许回退且还有重试次数
       if (allowFallback && this.retryCount < this.maxRetries) {
         this.retryCount++;
-        console.log(`尝试切换API实现并重试 (${this.retryCount}/${this.maxRetries})`);
+        logger.info(`尝试切换API实现并重试 (${this.retryCount}/${this.maxRetries})`);
         
         // 切换API实现
         this.useDirectApi = !this.useDirectApi;
-        console.log(`已切换到${this.useDirectApi ? '直接' : '标准'}API实现`);
+        logger.info(`已切换到${this.useDirectApi ? '直接' : '标准'}API实现`);
         
         // 递归调用，但不增加重试计数
         return await this.executeRequest(url, options, true);
@@ -214,7 +224,7 @@ class ApiService {
       const endpoint = this.useDirectApi ? '/articles' : '/articles';
       return await this.executeRequest(endpoint, options);
     } catch (error) {
-      console.error('获取文章列表失败:', error);
+      logger.error('获取文章列表失败:', error);
       throw error;
     }
   }
@@ -234,7 +244,7 @@ class ApiService {
       
       return await this.executeRequest(endpoint);
     } catch (error) {
-      console.error('获取文章内容失败:', error);
+      logger.error('获取文章内容失败:', error);
       throw error;
     }
   }
@@ -254,7 +264,7 @@ class ApiService {
       
       return await this.executeRequest(endpoint);
     } catch (error) {
-      console.error('获取块内容失败:', error);
+      logger.error('获取块内容失败:', error);
       throw error;
     }
   }
@@ -270,7 +280,7 @@ class ApiService {
     }
     
     try {
-      console.log(`获取数据库信息: ${databaseId}`);
+      logger.info(`获取数据库信息: ${databaseId}`);
       const endpoint = `/database-info`;
       
       const options = {
@@ -283,7 +293,7 @@ class ApiService {
       
       return await this.executeRequest(endpoint, options);
     } catch (error) {
-      console.error('获取数据库信息失败:', error);
+      logger.error('获取数据库信息失败:', error);
       return { 
         success: false, 
         error: `获取数据库信息失败: ${error.message}` 
@@ -297,12 +307,12 @@ class ApiService {
    */
   async getDatabases() {
     try {
-      console.log('获取所有数据库列表');
+      logger.info('获取所有数据库列表');
       const endpoint = `/databases`;
       
       return await this.executeRequest(endpoint);
     } catch (error) {
-      console.error('获取数据库列表失败:', error);
+      logger.error('获取数据库列表失败:', error);
       return { 
         success: false, 
         error: `获取数据库列表失败: ${error.message}` 
@@ -318,9 +328,9 @@ const apiService = new ApiService();
 (async function initApiService() {
   try {
     const result = await apiService.autoSelectBestApi();
-    console.log('API服务初始化完成，使用', result.selectedImplementation, '实现');
+    logger.info('API服务初始化完成，使用', result.selectedImplementation, '实现');
   } catch (error) {
-    console.error('API服务初始化失败:', error);
+    logger.error('API服务初始化失败:', error);
   }
 })();
 

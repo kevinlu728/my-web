@@ -18,6 +18,7 @@ import { initNavigation } from '../components/navigation.js';
 import { initParticleBackground } from '../components/particleBackground.js';
 import { initContactModals } from '../components/contactModals.js';
 import { initChatWidget } from '../components/chatWidget.js';
+import logger from '../utils/logger.js';
 
 /**
  * 组件管理器类
@@ -29,42 +30,42 @@ class ComponentManager {
      * 这些组件提供网站的交互功能
      */
     static initJsComponents() {
-        console.debug('初始化JavaScript功能组件...');
+        logger.debug('初始化JavaScript功能组件...');
         
         try {
             // 初始化导航菜单
             initNavigation();
-            // console.log('✅ 导航菜单已初始化');
+            // logger.info('✅ 导航菜单已初始化');
         } catch (error) {
-            console.error('❌ 导航菜单初始化失败:', error);
+            logger.error('❌ 导航菜单初始化失败:', error);
         }
         
         try {
             // 初始化粒子背景
             initParticleBackground();
             // 删除重复日志，已在组件内部输出
-            // console.log('✅ 粒子背景已初始化');
+            // logger.info('✅ 粒子背景已初始化');
         } catch (error) {
-            console.error('❌ 粒子背景初始化失败:', error);
+            logger.error('❌ 粒子背景初始化失败:', error);
         }
         
         try {
             // 初始化联系方式弹窗
             initContactModals();
-            // console.log('✅ 联系方式弹窗已初始化');
+            // logger.info('✅ 联系方式弹窗已初始化');
         } catch (error) {
-            console.error('❌ 联系方式弹窗初始化失败:', error);
+            logger.error('❌ 联系方式弹窗初始化失败:', error);
         }
         
         try {
             // 初始化聊天组件
             initChatWidget();
-            // console.log('✅ 聊天组件已初始化');
+            // logger.info('✅ 聊天组件已初始化');
         } catch (error) {
-            console.error('❌ 聊天组件初始化失败:', error);
+            logger.error('❌ 聊天组件初始化失败:', error);
         }
         
-        console.debug('所有JavaScript功能组件初始化已完成');
+        logger.debug('所有JavaScript功能组件初始化已完成');
     }
     
     /**
@@ -77,20 +78,20 @@ class ComponentManager {
         try {
             const container = document.getElementById(containerId);
             if (!container) {
-                console.warn(`⚠️ 容器 ${containerId} 不存在，跳过加载组件 ${componentPath}`);
+                logger.warn(`⚠️ 容器 ${containerId} 不存在，跳过加载组件 ${componentPath}`);
                 return;
             }
             
-            console.debug(`加载HTML组件: ${componentPath} 到 ${containerId}`);
+            logger.debug(`加载HTML组件: ${componentPath} 到 ${containerId}`);
             const response = await fetch(componentPath);
             if (!response.ok) {
                 throw new Error(`加载失败: ${response.status} ${response.statusText}`);
             }
             const html = await response.text();
             container.innerHTML = html;
-            // console.log(`✅ 成功加载HTML组件: ${componentPath}`);
+            // logger.info(`✅ 成功加载HTML组件: ${componentPath}`);
         } catch (error) {
-            console.error(`❌ 加载组件失败 ${componentPath}:`, error);
+            logger.error(`❌ 加载组件失败 ${componentPath}:`, error);
         }
     }
     
@@ -100,7 +101,7 @@ class ComponentManager {
      * @returns {Promise<void>}
      */
     static async loadHtmlComponents() {
-        console.debug('加载HTML UI组件...');
+        logger.debug('加载HTML UI组件...');
         
         // 加载所有组件
         const results = await Promise.allSettled([
@@ -112,43 +113,43 @@ class ComponentManager {
         // 检查结果
         const failed = results.filter(r => r.status === 'rejected').length;
         if (failed > 0) {
-            console.warn(`⚠️ ${failed}个HTML组件加载失败`);
+            logger.warn(`⚠️ ${failed}个HTML组件加载失败`);
         }
         
-        console.debug(`HTML UI组件加载完成 (成功: ${results.length - failed}, 失败: ${failed})`);
+        logger.debug(`HTML UI组件加载完成 (成功: ${results.length - failed}, 失败: ${failed})`);
     }
     
     /**
      * 为加载的HTML组件初始化事件监听器
      */
     static initializeHtmlComponentEvents() {
-        console.debug('初始化HTML组件事件监听器...');
+        logger.debug('初始化HTML组件事件监听器...');
         
         try {
             // 初始化社交链接组件事件
             this.initSocialLinksEvents();
-            // console.log('✅ 社交链接组件事件已初始化');
+            // logger.info('✅ 社交链接组件事件已初始化');
         } catch (error) {
-            console.error('❌ 社交链接组件事件初始化失败:', error);
+            logger.error('❌ 社交链接组件事件初始化失败:', error);
         }
         
         try {
             // 初始化联系模态框组件事件
             this.initContactModalEvents();
-            // console.log('✅ 联系模态框组件事件已初始化');
+            // logger.info('✅ 联系模态框组件事件已初始化');
         } catch (error) {
-            console.error('❌ 联系模态框组件事件初始化失败:', error);
+            logger.error('❌ 联系模态框组件事件初始化失败:', error);
         }
         
         try {
             // 初始化聊天窗口组件事件
             this.initChatWidgetEvents();
-            // console.log('✅ 聊天窗口组件事件已初始化');
+            // logger.info('✅ 聊天窗口组件事件已初始化');
         } catch (error) {
-            console.error('❌ 聊天窗口组件事件初始化失败:', error);
+            logger.error('❌ 聊天窗口组件事件初始化失败:', error);
         }
         
-        // console.log('✅ 所有HTML组件事件监听器初始化已完成（可能有部分失败）');
+        // logger.info('✅ 所有HTML组件事件监听器初始化已完成（可能有部分失败）');
     }
     
     /**
@@ -157,19 +158,19 @@ class ComponentManager {
     static initSocialLinksEvents() {
         const socialLinks = document.querySelectorAll('.social-link');
         if (socialLinks.length === 0) {
-            console.warn('⚠️ 未找到社交链接元素，无法绑定事件');
+            logger.warn('⚠️ 未找到社交链接元素，无法绑定事件');
             return;
         }
         
         socialLinks.forEach(link => {
             link.addEventListener('click', (e) => {
                 const platform = link.getAttribute('data-platform');
-                console.debug(`点击了社交链接: ${platform}`);
+                logger.debug(`点击了社交链接: ${platform}`);
                 // 可以添加分析跟踪或其他功能
             });
         });
         
-        // console.log(`✅ 已为${socialLinks.length}个社交链接绑定事件`);
+        // logger.info(`✅ 已为${socialLinks.length}个社交链接绑定事件`);
     }
     
     /**
@@ -181,32 +182,32 @@ class ComponentManager {
         const contactCloseBtn = document.querySelector('.contact-modal .close-btn');
         
         if (!wechatLink) {
-            console.warn('⚠️ 未找到微信链接元素 (#wechat-link)');
+            logger.warn('⚠️ 未找到微信链接元素 (#wechat-link)');
         }
         
         if (!wechatModal) {
-            console.warn('⚠️ 未找到微信模态框元素 (#wechat-modal)');
+            logger.warn('⚠️ 未找到微信模态框元素 (#wechat-modal)');
         }
         
         if (wechatLink && wechatModal) {
             wechatLink.addEventListener('click', () => {
                 wechatModal.style.display = 'flex';
-                console.debug('打开微信二维码模态框');
+                logger.debug('打开微信二维码模态框');
             });
             
             if (contactCloseBtn) {
                 contactCloseBtn.addEventListener('click', () => {
                     wechatModal.style.display = 'none';
-                    console.debug('关闭微信二维码模态框');
+                    logger.debug('关闭微信二维码模态框');
                 });
             } else {
-                console.warn('⚠️ 未找到模态框关闭按钮');
+                logger.warn('⚠️ 未找到模态框关闭按钮');
             }
             
             wechatModal.addEventListener('click', (e) => {
                 if (e.target === wechatModal) {
                     wechatModal.style.display = 'none';
-                    console.debug('点击外部区域关闭微信二维码模态框');
+                    logger.debug('点击外部区域关闭微信二维码模态框');
                 }
             });
         }
@@ -222,45 +223,45 @@ class ComponentManager {
         const closeBtn = document.getElementById('close-btn') || document.querySelector('.chat-close-btn');
         
         if (!chatToggle) {
-            console.warn('⚠️ 未找到聊天切换按钮元素');
+            logger.warn('⚠️ 未找到聊天切换按钮元素');
         }
         
         if (!chatContainer) {
-            console.warn('⚠️ 未找到聊天容器元素');
+            logger.warn('⚠️ 未找到聊天容器元素');
         }
         
         if (!minimizeBtn) {
-            console.warn('⚠️ 未找到最小化按钮元素');
+            logger.warn('⚠️ 未找到最小化按钮元素');
         }
         
         if (!closeBtn) {
-            console.warn('⚠️ 未找到关闭按钮元素');
+            logger.warn('⚠️ 未找到关闭按钮元素');
         }
         
         if (chatToggle && chatContainer && minimizeBtn && closeBtn) {
-            console.debug('✅ 聊天组件事件初始化成功');
+            logger.debug('✅ 聊天组件事件初始化成功');
             
             chatToggle.addEventListener('click', () => {
-                console.debug('👆 聊天图标被点击');
+                logger.debug('👆 聊天图标被点击');
                 chatContainer.style.display = 'flex';
                 chatToggle.style.display = 'none';
             });
             
             minimizeBtn.addEventListener('click', () => {
-                console.debug('👆 最小化按钮被点击');
+                logger.debug('👆 最小化按钮被点击');
                 chatContainer.style.display = 'none';
                 chatToggle.style.display = 'block';
             });
             
             closeBtn.addEventListener('click', () => {
-                console.debug('👆 关闭按钮被点击');
+                logger.debug('👆 关闭按钮被点击');
                 const chatWidget = document.getElementById('chat-widget') || document.querySelector('.chat-widget');
                 if (chatWidget) {
                     chatWidget.style.display = 'none';
                 }
             });
         } else {
-            console.warn('⚠️ 聊天组件事件初始化失败，找不到必要的DOM元素');
+            logger.warn('⚠️ 聊天组件事件初始化失败，找不到必要的DOM元素');
         }
     }
     
@@ -270,7 +271,7 @@ class ComponentManager {
      * @returns {Promise<void>}
      */
     static async initialize() {
-        console.debug('🚀 开始初始化所有组件...');
+        logger.debug('🚀 开始初始化所有组件...');
         
         // 第一步：加载HTML UI组件
         await this.loadHtmlComponents();
@@ -281,16 +282,15 @@ class ComponentManager {
         // 第三步：为HTML组件初始化事件监听器
         this.initializeHtmlComponentEvents();
         
-        console.debug('🎉 所有组件初始化完成！');
+        logger.debug('🎉 所有组件初始化完成！');
     }
 }
 
 // 当DOM加载完成后初始化所有组件
 document.addEventListener('DOMContentLoaded', () => {
     ComponentManager.initialize().catch(error => {
-        console.error('❌ 组件初始化失败:', error);
+        logger.error('❌ 组件初始化失败:', error);
     });
 });
 
-// 导出组件管理器，以便其他模块可以使用
 export default ComponentManager; 

@@ -7,6 +7,7 @@
  */
 
 import { initDebugPanel } from './debugPanel.js';
+import logger from '../utils/logger.js';
 
 /**
  * 加载调试面板组件
@@ -26,7 +27,7 @@ export async function loadDebugPanel(options = {}) {
     } = options;
     
     try {
-        console.log('正在加载调试面板组件...');
+        logger.info('正在加载调试面板组件...');
         
         // 获取组件HTML
         const response = await fetch('./components/debug-panel.html');
@@ -53,7 +54,7 @@ export async function loadDebugPanel(options = {}) {
         const panelContainer = document.getElementById(panelContainerId);
         
         if (!toggleContainer) {
-            console.warn(`调试开关容器 #${containerId} 不存在，将创建一个新的`);
+            logger.warn(`调试开关容器 #${containerId} 不存在，将创建一个新的`);
             
             // 创建一个新的容器
             const newContainer = document.createElement('div');
@@ -82,7 +83,7 @@ export async function loadDebugPanel(options = {}) {
         
         // 处理面板容器
         if (!panelContainer) {
-            console.warn(`调试面板容器 #${panelContainerId} 不存在，将面板直接添加到body`);
+            logger.warn(`调试面板容器 #${panelContainerId} 不存在，将面板直接添加到body`);
             
             // 直接将面板添加到body末尾
             document.body.appendChild(debugPanel.cloneNode(true));
@@ -92,7 +93,7 @@ export async function loadDebugPanel(options = {}) {
             panelContainer.appendChild(debugPanel.cloneNode(true));
         }
         
-        console.log('调试面板组件加载完成');
+        logger.info('调试面板组件加载完成');
         
         // 确保DOM已经更新
         setTimeout(() => {
@@ -107,14 +108,14 @@ export async function loadDebugPanel(options = {}) {
                 // 初始化调试面板功能
                 initDebugPanel(databaseId, {
                     onConfigUpdate: callbacks.onConfigUpdate || function(newDbId) {
-                        console.log('数据库ID已更新:', newDbId);
+                        logger.info('数据库ID已更新:', newDbId);
                     },
                     onRefresh: callbacks.onRefresh || function() {
-                        console.log('刷新请求');
+                        logger.info('刷新请求');
                         location.reload();
                     },
                     showStatus: callbacks.showStatus || function(message, isError) {
-                        console.log(isError ? `错误: ${message}` : message);
+                        logger.info(isError ? `错误: ${message}` : message);
                         
                         // 简单的状态显示
                         const statusEl = document.getElementById('status-message');
@@ -149,12 +150,12 @@ export async function loadDebugPanel(options = {}) {
                     }
                 });
                 
-                console.log('调试面板初始化完成');
+                logger.info('调试面板初始化完成');
             } catch (error) {
-                console.error('初始化调试面板失败:', error);
+                logger.error('初始化调试面板失败:', error);
             }
         }, 0);
     } catch (error) {
-        console.error('加载调试面板失败:', error);
+        logger.error('加载调试面板失败:', error);
     }
 } 

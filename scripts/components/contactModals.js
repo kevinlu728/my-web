@@ -17,6 +17,8 @@
  * 通过initContactModals函数暴露功能，可被主入口文件调用。
  */
 
+import logger from '../utils/logger.js';
+
 export function initContactModals() {
     // 初始化微信二维码弹窗
     initWechatModal();
@@ -38,13 +40,13 @@ function bindContactButtons() {
         if (contactBtns.length > 0 && contactModal) {
             contactBtns.forEach(btn => {
                 btn.addEventListener('click', () => {
-                    console.log('联系按钮被点击');
+                    logger.info('联系按钮被点击');
                     contactModal.style.display = 'flex';
                 });
             });
-            console.log(`已成功绑定 ${contactBtns.length} 个联系按钮`);
+            logger.info(`已成功绑定 ${contactBtns.length} 个联系按钮`);
         } else {
-            console.warn('未找到联系按钮或联系模态框，请检查HTML结构');
+            logger.warn('未找到联系按钮或联系模态框，请检查HTML结构');
         }
     }, 500);
 }
@@ -59,14 +61,14 @@ function initWechatModal() {
         const closeBtn = wechatModal.querySelector('.close-btn');
         
         wechatLink.addEventListener('click', () => {
-            console.log('微信链接被点击');
+            logger.info('微信链接被点击');
             wechatModal.style.display = 'flex';
         });
 
         // 点击关闭按钮关闭弹窗
         if (closeBtn) {
             closeBtn.addEventListener('click', () => {
-                console.log('微信弹窗关闭按钮被点击');
+                logger.info('微信弹窗关闭按钮被点击');
                 wechatModal.style.display = 'none';
             });
         }

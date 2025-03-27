@@ -6,6 +6,12 @@
  * @created 2024-03-25
  */
 
+// 使用ES模块方式导入logger
+import logger from '../utils/logger.js';
+
+// 备用导入方式（如果ES模块导入失败）
+// const logger = window.loggerModule || console;
+
 /**
  * 资源版本配置
  * 所有外部库的版本都在这里统一管理
@@ -385,13 +391,14 @@ export const resources = {
  * @returns {object} 资源URL对象，包含主URL和备用URL
  */
 export function getResourceUrl(resourceType, resourceName, preferredProvider = null) {
-    // 检查资源是否存在
-    if (!resources[resourceType] || !resources[resourceType][resourceName]) {
-        console.error(`资源未找到: ${resourceType}.${resourceName}`);
+    // 获取资源配置
+    const resourcesOfType = resources[resourceType];
+    if (!resourcesOfType || !resourcesOfType[resourceName]) {
+        logger.error(`资源未找到: ${resourceType}.${resourceName}`);
         return null;
     }
     
-    const resource = resources[resourceType][resourceName];
+    const resource = resourcesOfType[resourceName];
     const result = {
         primary: '',
         fallbacks: [],

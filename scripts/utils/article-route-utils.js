@@ -11,6 +11,7 @@
  */
 
 import { UrlUtils } from './url-utils.js';
+import logger from './logger.js';
 
 /**
  * 文章路由工具类
@@ -61,7 +62,7 @@ class ArticleRouteUtils {
       
       // 如果URL中有文章ID，则加载该文章
       if (articleId) {
-        console.log('从URL加载文章:', articleId);
+        logger.info('从URL加载文章:', articleId);
         
         if (typeof showArticleCallback === 'function') {
           await showArticleCallback(articleId);
@@ -72,7 +73,7 @@ class ArticleRouteUtils {
       // 获取类别参数
       const category = UrlUtils.getParam('category');
       if (category) {
-        console.log('从URL选择类别:', category);
+        logger.info('从URL选择类别:', category);
         
         if (typeof selectCategoryCallback === 'function') {
           selectCategoryCallback(category);
@@ -82,7 +83,7 @@ class ArticleRouteUtils {
       
       return false;
     } catch (error) {
-      console.error('从URL初始化失败:', error);
+      logger.error('从URL初始化失败:', error);
       return false;
     }
   }

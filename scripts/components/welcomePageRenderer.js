@@ -7,6 +7,7 @@
  */
 
 import { formatDate } from '../utils/article-utils.js';
+import logger from '../utils/logger.js';
 
 /**
  * 渲染欢迎页面
@@ -28,12 +29,12 @@ export function renderWelcomePage(options) {
     
     const articleContainer = document.getElementById(containerId);
     if (!articleContainer) {
-        console.warn('文章容器不存在，无法显示欢迎页面');
+        logger.warn('文章容器不存在，无法显示欢迎页面');
         return;
     }
     
     if (!articles || articles.length === 0) {
-        console.warn('没有文章数据，显示简单欢迎页面');
+        logger.warn('没有文章数据，显示简单欢迎页面');
         articleContainer.innerHTML = `
             <div class="welcome-page">
                 <div class="welcome-header">

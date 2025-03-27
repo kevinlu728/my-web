@@ -48,6 +48,7 @@ import { articleSearchManager } from './articleSearchManager.js';
 import { imageLazyLoader } from '../utils/image-lazy-loader.js';
 import { categoryConfig } from '../config/categories.js';
 import config from '../config/config.js';
+import logger from '../utils/logger.js';
 
 // 导入目录导航组件
 import tableOfContents from '../components/tableOfContents.js';
@@ -92,17 +93,17 @@ class ArticleManager {
             // 显示加载状态
             showLoading('正在加载文章列表...');
             
-            console.log(`开始加载文章，数据库ID: ${this.currentDatabaseId}`);
+            logger.info(`开始加载文章，数据库ID: ${this.currentDatabaseId}`);
             
             // 添加超时控制
             const timeoutId = setTimeout(() => {
                 if (this.abortController) {
-                    console.warn('⚠️ 加载文章列表超时（8秒），尝试从缓存加载');
+                    logger.warn('⚠️ 加载文章列表超时（8秒），尝试从缓存加载');
                     this.abortController.abort();
                     // 尝试从缓存获取文章列表
                     const cachedArticles = articleCacheManager.loadArticlesFromCache();
                     if (cachedArticles) {
-                        console.log('📦 从缓存加载文章列表成功');
+                        logger.info('📦 从缓存加载文章列表成功');
                         this.articles = cachedArticles;
                         this.filterAndRenderArticles();
                         return this.articles;
@@ -112,20 +113,20 @@ class ArticleManager {
             
             // 测试 API 连接
             try {
-                console.log('测试 API 连接...');
+                logger.info('测试 API 连接...');
                 const testResponse = await fetch('/api/hello');
                 if (testResponse.ok) {
-                    console.log('API 测试成功');
+                    logger.info('API 测试成功');
                 } else {
-                    console.error('API 测试失败:', testResponse.status, testResponse.statusText);
+                    logger.error('API 测试失败:', testResponse.status, testResponse.statusText);
                     showError(`API连接测试失败: ${testResponse.status} ${testResponse.statusText}`);
                 }
             } catch (testError) {
-                console.error('API 测试异常:', testError);
+                logger.error('API 测试异常:', testError);
             }
             
             // 获取文章列表
-            console.log('正在从 API 获取文章列表...');
+            logger.info('正在从 API 获取文章列表...');
             const result = await getArticles(this.currentDatabaseId);
             
             // 清除超时
@@ -133,7 +134,7 @@ class ArticleManager {
             
             // 如果请求已取消，不继续处理
             if (signal.aborted) {
-                console.log('文章列表加载已取消');
+                logger.info('文章列表加载已取消');
                 return this.articles || []; // 返回现有文章
             }
             
@@ -142,7 +143,7 @@ class ArticleManager {
             const hasMore = result.hasMore;
             const nextCursor = result.nextCursor;
             
-            console.log(`成功获取 ${articles.length} 篇文章`);
+            logger.info(`成功获取 ${articles.length} 篇文章`);
             
             // 保存文章列表和分页信息
             this.hasMore = hasMore;
@@ -164,11 +165,11 @@ class ArticleManager {
             
             return this.articles;
         } catch (error) {
-            console.error('加载文章列表失败:', error);
+            logger.error('加载文章列表失败:', error);
             
             // 显示错误状态
             if (error.name === 'AbortError') {
-                console.log('请求被中止，尝试使用缓存');
+                logger.info('请求被中止，尝试使用缓存');
             } else {
                 showError(`加载文章列表失败: ${error.message}`);
                 
@@ -183,7 +184,7 @@ class ArticleManager {
             // 使用缓存管理器尝试从缓存获取文章列表
             const cachedArticles = articleCacheManager.loadArticlesFromCache();
             if (cachedArticles) {
-                console.log('📦 从缓存加载文章列表成功');
+                logger.info('📦 从缓存加载文章列表成功');
                 this.articles = cachedArticles;
                 this.filterAndRenderArticles();
                 return this.articles;
@@ -203,13 +204,13 @@ class ArticleManager {
         
         // 检查是否处于搜索模式
         if (articleSearchManager.isInSearchMode()) {
-            console.log('使用搜索管理器处理...');
+            logger.info('使用搜索管理器处理...');
             articleSearchManager.performSearch(this.articles);
             return;  // 搜索模式下不进行其他处理
         }
         
         // 如果没有搜索词，则完全交由categoryManager处理类别显示
-        console.log(`处理分类: "${currentCategory}"`);
+        logger.info(`处理分类: "${currentCategory}"`);
         
         // 如果当前是查看全部文章
         if (currentCategory === 'all') {
@@ -230,7 +231,7 @@ class ArticleManager {
     // 取消当前加载
     cancelCurrentLoading() {
         if (this.abortController) {
-            console.log('取消当前加载请求');
+            logger.info('取消当前加载请求');
             this.abortController.abort();
             this.abortController = null;
         }
@@ -240,12 +241,12 @@ class ArticleManager {
     // 加载和显示文章内容
     async loadAndDisplayArticle(pageId) {
         const requestId = this.requestIdentifier;
-        console.log('开始加载文章:', pageId);
+        logger.info('开始加载文章:', pageId);
         
         try {
             // 检查ID有效性
             if (!pageId || pageId === 'undefined' || pageId === 'null') {
-                console.error('无效的文章ID:', pageId);
+                logger.error('无效的文章ID:', pageId);
                 throw new Error('无效的文章ID');
             }
             
@@ -264,7 +265,7 @@ class ArticleManager {
             
             // 使用缓存数据或从API获取
             if (cachedData) {
-                console.log('📦 从缓存加载文章:', pageId);
+                logger.info('📦 从缓存加载文章:', pageId);
                 
                 // 保存缓存中的分页状态
                 if (cachedData.hasMore === true && cachedData.nextCursor) {
@@ -272,10 +273,10 @@ class ArticleManager {
                         hasMore: cachedData.hasMore,
                         nextCursor: cachedData.nextCursor
                     });
-                    console.log('从缓存恢复分页状态');
+                    logger.info('从缓存恢复分页状态');
                 } else {
                     // 如果缓存数据中没有有效的分页信息，强制重置
-                    console.log('缓存中没有有效的分页信息，保持重置状态');
+                    logger.info('缓存中没有有效的分页信息，保持重置状态');
                     articlePaginationManager.updateState({
                         hasMore: false,
                         nextCursor: null
@@ -284,7 +285,7 @@ class ArticleManager {
                 
                 // 如果文章已完全加载，则不需要显示加载更多
                 if (cachedData.isFullyLoaded === true) {
-                    console.log('文章已完全加载，无需分页请求');
+                    logger.info('文章已完全加载，无需分页请求');
                     articlePaginationManager.updateState({
                         hasMore: false,
                         nextCursor: null
@@ -295,12 +296,12 @@ class ArticleManager {
                 return cachedData;
             }
 
-            console.log('🌐 从网络加载文章:', pageId);
+            logger.info('🌐 从网络加载文章:', pageId);
             
             // 设置超时控制
             const timeoutId = setTimeout(() => {
                 if (this.abortController) {
-                    console.warn('⚠️ 加载文章内容超时（12秒），中断请求');
+                    logger.warn('⚠️ 加载文章内容超时（12秒），中断请求');
                     this.abortController.abort();
                     showStatus('加载文章超时，请尝试刷新页面', true, 'warning');
                 }
@@ -319,7 +320,7 @@ class ArticleManager {
             
             // 双重检查：1. 检查当前文章ID是否匹配  2. 检查请求ID是否匹配
             if (this.currentPageId !== pageId || this.requestIdentifier !== requestId) {
-                console.log('文章已切换或有更新请求，取消加载');
+                logger.info('文章已切换或有更新请求，取消加载');
                 return false;
             }
             
@@ -332,7 +333,7 @@ class ArticleManager {
             this.isLoading = false;
             return articleData;
         } catch (error) {
-            console.error('加载文章失败:', error);
+            logger.error('加载文章失败:', error);
             this.isLoading = false;
             throw error;
         } finally {
@@ -345,7 +346,7 @@ class ArticleManager {
     // 验证文章ID
     validateArticleId(pageId) {
             if (!pageId || pageId === 'undefined' || pageId === 'null') {
-            console.error('无效的文章ID:', pageId);
+            logger.error('无效的文章ID:', pageId);
                 return false;
             }
         return true;
@@ -353,7 +354,7 @@ class ArticleManager {
 
     // 准备加载文章
     prepareArticleLoading(pageId) {
-        console.log('准备加载文章:', pageId);
+        logger.info('准备加载文章:', pageId);
         
         // 增加请求标识符，用于防止内容混合
         this.requestIdentifier = Date.now();
@@ -361,7 +362,7 @@ class ArticleManager {
         // 获取文章容器
         const articleContainer = document.getElementById('article-container');
         if (!articleContainer) {
-            console.error('找不到文章容器');
+            logger.error('找不到文章容器');
             return false;
         }
         
@@ -394,14 +395,14 @@ class ArticleManager {
         // 更新URL参数 - 使用路由工具
         articleRouteUtils.updateArticleParam(pageId);
         
-        console.log('文章加载准备完成');
+        logger.info('文章加载准备完成');
         return true;
     }
 
     // 显示文章内容
     async showArticle(pageId) {
         try {
-            console.log('开始加载文章:', pageId);
+            logger.info('开始加载文章:', pageId);
             const articleContainer = document.getElementById('article-container');
             if (!articleContainer) return false;
 
@@ -426,7 +427,7 @@ class ArticleManager {
                 // 加载文章数据
                 const articleData = await this.loadAndDisplayArticle(pageId);
                 if (!articleData) {
-                    console.log('文章加载已取消');
+                    logger.info('文章加载已取消');
                     return false;
                 }
                 
@@ -454,7 +455,7 @@ class ArticleManager {
                     
                     // 检查是否从缓存加载
                     if (articleData._fromCache) {
-                        console.log('从缓存加载的文章，进行优化的渲染检查...');
+                        logger.info('从缓存加载的文章，进行优化的渲染检查...');
                         // 使用较短延迟减少视觉上的延迟感
                         setTimeout(() => {
                             const container = document.getElementById('article-container');
@@ -496,7 +497,7 @@ class ArticleManager {
                 
                 return true;
             } catch (error) {
-                console.error('渲染文章失败:', error);
+                logger.error('渲染文章失败:', error);
                 
                 // 使用showArticleError显示错误信息
                 showArticleError(error.message, 'article-container', pageId);
@@ -506,7 +507,7 @@ class ArticleManager {
                 this.isLoading = false;
             }
         } catch (error) {
-            console.error('显示文章失败:', error);
+            logger.error('显示文章失败:', error);
             return false;
         }
     }
@@ -530,7 +531,7 @@ class ArticleManager {
 
     // 初始化
     async initialize(databaseId) {
-        console.log('初始化文章管理器，数据库ID:', databaseId);
+        logger.info('初始化文章管理器，数据库ID:', databaseId);
         this.currentDatabaseId = databaseId;
         
         try {
@@ -540,10 +541,10 @@ class ArticleManager {
             // 初始化搜索管理器
             articleSearchManager.initialize({
                 onSearchResults: (searchResults, searchTerm) => {
-                    console.log(`搜索结果: ${searchResults.length} 个匹配项`);
+                    logger.info(`搜索结果: ${searchResults.length} 个匹配项`);
                 },
                 onResetSearch: () => {
-                    console.log('重置搜索状态');
+                    logger.info('重置搜索状态');
                     this.filterAndRenderArticles();
                 },
                 // 添加获取文章数据的回调函数
@@ -555,19 +556,19 @@ class ArticleManager {
             // 监听文章选择事件
             document.addEventListener('articleSelected', (e) => {
                 if (e.detail && e.detail.articleId) {
-                    console.log('从搜索结果中选择文章');
+                    logger.info('从搜索结果中选择文章');
                     this.showArticle(e.detail.articleId);
                 }
             });
             
             // 更新分类列表
             if (articles && articles.length > 0) {
-                console.log('更新分类列表...');
+                logger.info('更新分类列表...');
                 categoryManager.updateCategories(articles);
                 
                 // 设置分类变更和文章选择回调
                 categoryManager.setOnCategoryChange((category) => {
-                    console.log('分类变更:', category);
+                    logger.info('分类变更:', category);
                     
                     // 如果在搜索状态，清除搜索
                     if (articleSearchManager.isInSearchMode()) {
@@ -578,7 +579,7 @@ class ArticleManager {
                 });
                 
                 categoryManager.setOnArticleSelect((articleId) => {
-                    console.log('文章选择');
+                    logger.info('文章选择');
                     this.showArticle(articleId);
                 });
                 
@@ -587,16 +588,16 @@ class ArticleManager {
                 
                 // 如果URL中没有指定文章，则显示欢迎页面
                 if (!this.currentPageId) {
-                    console.log('显示欢迎页面...');
+                    logger.info('显示欢迎页面...');
                     this.showWelcomePage();
                 }
             } else {
-                console.log('没有文章，不更新分类');
+                logger.info('没有文章，不更新分类');
             }
             
             return articles;
         } catch (error) {
-            console.error('初始化失败:', error);
+            logger.error('初始化失败:', error);
             showError('初始化失败: ' + error.message);
             throw error;
         }
@@ -618,7 +619,7 @@ class ArticleManager {
                 }
             );
         } catch (error) {
-            console.error('从URL初始化失败:', error);
+            logger.error('从URL初始化失败:', error);
             return false;
         }
     }
@@ -630,27 +631,27 @@ class ArticleManager {
 
     // 显示欢迎页面
     showWelcomePage() {
-        console.log('显示欢迎页面');
+        logger.info('显示欢迎页面');
         
         // 确保有文章数据
         if (!this.articles || this.articles.length === 0) {
-            console.log('欢迎页面需要文章数据，但当前没有数据，尝试加载文章数据...');
+            logger.info('欢迎页面需要文章数据，但当前没有数据，尝试加载文章数据...');
             // 尝试从缓存加载
             const cachedArticles = articleCacheManager.loadArticlesFromCache();
             
             if (cachedArticles && cachedArticles.length > 0) {
-                console.log('从缓存加载到文章数据:', cachedArticles.length);
+                logger.info('从缓存加载到文章数据:', cachedArticles.length);
                 this.articles = cachedArticles;
             } else {
-                console.log('缓存中没有文章数据，将异步加载文章数据');
+                logger.info('缓存中没有文章数据，将异步加载文章数据');
                 // 异步加载文章，并在加载完成后显示欢迎页面
                 this.loadArticles().then(() => {
                     if (this.articles && this.articles.length > 0) {
-                        console.log('文章数据加载完成，重新渲染欢迎页面');
+                        logger.info('文章数据加载完成，重新渲染欢迎页面');
                         this.renderWelcomePage();
                     }
                 }).catch(err => {
-                    console.error('加载文章数据失败:', err);
+                    logger.error('加载文章数据失败:', err);
                 });
                 
                 // 显示一个简单的加载中状态，避免空白页面
@@ -696,7 +697,7 @@ class ArticleManager {
 
     // 添加一个新方法，用于强制重置加载状态 - 可在页面中暴露使用
     resetLoadingState() {
-        console.log('强制重置加载状态');
+        logger.info('强制重置加载状态');
         this.isLoading = false;
         this.isLoadingMore = false;
         

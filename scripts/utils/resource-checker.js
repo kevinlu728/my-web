@@ -4,6 +4,8 @@
  * @created 2024-05-01
  */
 
+import logger from './logger.js';
+
 /**
  * 资源检查器类
  * 负责检查资源是否存在以及维护不存在资源的记录
@@ -84,7 +86,7 @@ class ResourceChecker {
         
         // 添加到不存在资源集合
         this.nonExistentResources.add(directory);
-        console.debug(`🔍 已标记目录为不存在资源: ${directory}`);
+        logger.debug(`🔍 已标记目录为不存在资源: ${directory}`);
     }
     
     /**

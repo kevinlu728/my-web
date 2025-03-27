@@ -24,6 +24,7 @@ import { CdnMapper } from './cdn-mapper.js';
 import { resourceStyles } from './resource-styles.js';
 import { resourceChecker } from './resource-checker.js';
 import { resourceTimeout } from './resource-timeout.js';
+import logger from './logger.js';
 
 class ResourceLoader {
     constructor() {
@@ -82,12 +83,12 @@ class ResourceLoader {
     handleResourceError(element, url) {
         // 检查URL和元素的有效性
         if (!element) {
-            console.warn('⚠️ 无法处理资源错误：DOM元素为空');
+            logger.warn('⚠️ 无法处理资源错误：DOM元素为空');
             return;
         }
         
         if (!url || typeof url !== 'string') {
-            console.warn('⚠️ 无法处理资源错误：无效的URL', url);
+            logger.warn('⚠️ 无法处理资源错误：无效的URL', url);
             return;
         }
     
@@ -95,7 +96,7 @@ class ResourceLoader {
         if (this.failedResources.has(url)) return;
         this.failedResources.add(url);
         
-        console.warn(`⚠️ 资源加载失败: ${url}`);
+        logger.warn(`⚠️ 资源加载失败: ${url}`);
         
         // 检查元素是否有自定义的资源类型
         const resourceType = element.getAttribute('data-resource-type');
@@ -114,7 +115,7 @@ class ResourceLoader {
             const localResourceExists = resourceChecker.checkLocalResourceExists(localFallback);
             
             if (!localResourceExists) {
-                console.debug(`ℹ️ 非关键资源 ${url} 加载失败，本地回退资源不存在，跳过回退`);
+                logger.debug(`ℹ️ 非关键资源 ${url} 加载失败，本地回退资源不存在，跳过回退`);
                 // 处理资源加载失败，但不尝试加载本地资源
                 this.handleCriticalResourceFailure(this.getResourceBaseName(url), priority);
                 return;
@@ -125,7 +126,7 @@ class ResourceLoader {
         if (element.tagName === 'LINK' && element.rel === 'stylesheet') {
             // 如果元素有本地回退路径，优先使用它
             if (resourceType && localFallback) {
-                console.log(`🔍 使用指定的本地回退: ${localFallback}`);
+                logger.info(`🔄 使用指定的本地回退: ${localFallback}`);
                 this.applyResourceFallback(element, url, localFallback);
             } else {
                 // 否则使用通用回退机制
@@ -173,13 +174,13 @@ class ResourceLoader {
                     priority = 'high'; // Bootstrap和FontAwesome通常是高优先级
                 } else if (url.includes('katex') || url.includes('math') || resourceType?.includes('katex')) {
                     priority = 'medium'; // KaTeX是中等优先级
-                    console.debug('📌 检测到KaTeX资源，设置为中等优先级');
+                    logger.debug('📌 检测到KaTeX资源，设置为中等优先级');
                 } else {
                     priority = 'low'; // 默认为低优先级
                 }
             }
         } catch (e) {
-            console.warn('获取资源优先级时出错', e);
+            logger.warn('获取资源优先级时出错', e);
             priority = 'medium'; // 出错时默认为中等优先级
         }
         
@@ -196,20 +197,20 @@ class ResourceLoader {
     applyResourceFallback(element, originalUrl, fallbackUrl) {
         // 先检查是否为已知不存在的资源路径
         if (resourceChecker.isNonExistentResource(fallbackUrl)) {
-            console.debug(`🔍 跳过不存在的本地回退资源: ${fallbackUrl}`);
+            logger.debug(`🔍 跳过不存在的本地回退资源: ${fallbackUrl}`);
             return false;
         }
         
-        console.debug(`🔄 直接应用回退资源: ${fallbackUrl}`);
+        logger.info(`🔄 直接应用回退资源: ${fallbackUrl}`);
         
         if (element.tagName === 'LINK') {
             // 创建新的link元素并替换失败的元素
             const newLink = document.createElement('link');
             newLink.rel = 'stylesheet';
             newLink.href = fallbackUrl;
-            newLink.onload = () => console.debug(`✅ 回退资源加载成功: ${fallbackUrl}`);
+            newLink.onload = () => logger.info(`✅ 回退资源加载成功: ${fallbackUrl}`);
             newLink.onerror = () => {
-                console.error(`❌ 回退资源加载失败: ${fallbackUrl}`);
+                logger.error(`❌ 回退资源加载失败: ${fallbackUrl}`);
                 
                 // 如果是katex相关资源而且回退失败，标记为不存在
                 if (fallbackUrl.includes('/katex/')) {
@@ -241,9 +242,9 @@ class ResourceLoader {
             newScript.src = fallbackUrl;
             newScript.async = element.async;
             newScript.defer = element.defer;
-            newScript.onload = () => console.debug(`✅ 回退脚本加载成功: ${fallbackUrl}`);
+            newScript.onload = () => logger.info(`✅ 回退脚本加载成功: ${fallbackUrl}`);
             newScript.onerror = () => {
-                console.error(`❌ 回退脚本加载失败: ${fallbackUrl}`);
+                logger.error(`❌ 回退脚本加载失败: ${fallbackUrl}`);
                 
                 // 如果是katex相关资源而且回退失败，标记为不存在
                 if (fallbackUrl.includes('/katex/')) {
@@ -291,14 +292,14 @@ class ResourceLoader {
                 priority !== 'critical' && 
                 priority !== 'high' && 
                 !this.katexLocalResourceConfirmed) {
-                console.debug(`ℹ️ 跳过非关键KaTeX资源的回退: ${resourceName}`);
+                logger.debug(`ℹ️ 跳过非关键KaTeX资源的回退: ${resourceName}`);
                 this.handleCriticalResourceFailure(resourceName, priority);
                 return;
             }
             
             // 查找该资源的CDN映射
             if (!resourceType) {
-                console.warn(`⚠️ 无法获取资源类型: ${originalUrl}`);
+                logger.warn(`⚠️ 无法获取资源类型: ${originalUrl}`);
                 return;
             }
             
@@ -307,12 +308,12 @@ class ResourceLoader {
             if (nextFallbackUrl) {
                 // 检查是否为已知不存在的资源
                 if (resourceChecker.isNonExistentResource(nextFallbackUrl)) {
-                    console.debug(`🔍 跳过不存在的回退资源: ${nextFallbackUrl}`);
+                    logger.debug(`🔍 跳过不存在的回退资源: ${nextFallbackUrl}`);
                     this.handleCriticalResourceFailure(resourceName, priority);
                     return;
                 }
                 
-                console.log(`🔄 尝试使用CDN回退: ${nextFallbackUrl}`);
+                logger.info(`🔄 尝试使用CDN回退: ${nextFallbackUrl}`);
                 this.applyResourceFallback(linkElement, originalUrl, nextFallbackUrl);
                 return;
             }
@@ -320,7 +321,7 @@ class ResourceLoader {
             // 处理回退资源失败
             this.handleCriticalResourceFailure(resourceName, priority);
         } catch (error) {
-            console.error('CSS回退处理出错:', error);
+            logger.error('CSS回退处理出错:', error);
         }
     }
     
@@ -376,7 +377,7 @@ class ResourceLoader {
         // 静默模式下不显示消息
         if (silent) {
             if (actualPriority === 'critical' || actualPriority === 'high') {
-                console.debug(`ℹ️ 静默处理 ${actualPriority} 优先级资源: ${resourceName}`);
+                logger.debug(`ℹ️ 静默处理 ${actualPriority} 优先级资源: ${resourceName}`);
             }
             return;
         }
@@ -384,13 +385,13 @@ class ResourceLoader {
         // 根据实际优先级选择适当的消息级别
         if (actualPriority === 'critical') {
             // 只有真正的关键资源才显示错误
-            console.error(`❌ 关键资源加载失败: ${resourceName}`);
+            logger.error(`❌ 关键资源加载失败: ${resourceName}`);
         } else if (actualPriority === 'high') {
-            console.warn(`⚠️ 高优先级资源加载失败: ${resourceName}`);
+            logger.warn(`⚠️ 高优先级资源加载失败: ${resourceName}`);
         } else if (actualPriority === 'medium') {
-            console.debug(`ℹ️ 中优先级资源加载失败: ${resourceName}`);
+            logger.debug(`ℹ️ 中优先级资源加载失败: ${resourceName}`);
         } else {
-            console.debug(`ℹ️ 低优先级资源加载失败: ${resourceName}`);
+            logger.debug(`ℹ️ 低优先级资源加载失败: ${resourceName}`);
         }
     }
     
@@ -399,7 +400,7 @@ class ResourceLoader {
      */
     preloadCriticalResources() {
         const criticalResources = this.getCriticalResources();
-        console.debug(`🚀 开始预加载 ${criticalResources.length} 个关键资源...`);
+        logger.debug(`🚀 开始预加载 ${criticalResources.length} 个关键资源...`);
         
         criticalResources.forEach(resource => {
             if (!resource) return;
@@ -425,7 +426,7 @@ class ResourceLoader {
             document.head.appendChild(link);
             
             this.loadedResources.add(url);
-            console.debug(`🔍 预加载关键资源: ${url}`);
+            logger.debug(`🔍 预加载关键资源: ${url}`);
         });
     }
     
@@ -466,7 +467,7 @@ class ResourceLoader {
      */
     loadHighPriorityResources() {
         const highPriorityResources = this.resourceConfig.getHighPriorityResources();
-        console.debug(`🚀 开始加载 ${highPriorityResources.length} 个高优先级资源...`);
+        logger.debug(`🚀 开始加载 ${highPriorityResources.length} 个高优先级资源...`);
         
         // 使用Promise.all并行加载所有高优先级资源
         return Promise.all(
@@ -484,7 +485,7 @@ class ResourceLoader {
                         return this.loadScript(resource.primary, resource);
                     }
                 } else {
-                    console.warn('⚠️ 无效的资源 primary URL:', resource);
+                    logger.warn('⚠️ 无效的资源 primary URL:', resource);
                 }
                 
                 return Promise.resolve();
@@ -499,7 +500,7 @@ class ResourceLoader {
      */
     loadResourcesByPriority(priority) {
         const resources = this.getResourcesByPriority(priority);
-        console.debug(`🚀 开始加载 ${resources.length} 个${priority}优先级资源...`);
+        logger.debug(`🚀 开始加载 ${resources.length} 个${priority}优先级资源...`);
         
         return Promise.all(
             resources.map(item => {
@@ -569,7 +570,7 @@ class ResourceLoader {
      * @returns {Promise} 加载完成的Promise
      */
     loadResourceGroup(resourceGroup) {
-        console.debug(`📦 加载资源组: ${resourceGroup}`);
+        logger.debug(`📦 加载资源组: ${resourceGroup}`);
         
         switch (resourceGroup) {
             case 'core':
@@ -609,12 +610,12 @@ class ResourceLoader {
                     const event = new CustomEvent('syntaxResourcesLoaded');
                     document.dispatchEvent(event);
                     
-                    console.debug('代码高亮资源加载完成');
+                    logger.debug('代码高亮资源加载完成');
                     
                     // 应用代码高亮
                     if (window.Prism) {
                         window.Prism.highlightAll();
-                        console.debug('代码高亮已应用');
+                        logger.debug('代码高亮已应用');
                     }
                 }, 500);
                 break;
@@ -653,7 +654,7 @@ class ResourceLoader {
                     this.loadResource('scripts', 'prism-components'),
                     this.loadResource('styles', 'prism-theme')
                 ]).then(() => {
-                    console.debug('代码高亮资源加载完成');
+                    logger.debug('代码高亮资源加载完成');
                     
                     // 如果页面中有Prism，触发代码高亮刷新
                     if (window.Prism && typeof window.Prism.highlightAll === 'function') {
@@ -661,16 +662,16 @@ class ResourceLoader {
                         setTimeout(() => {
                             try {
                                 window.Prism.highlightAll();
-                                console.debug('代码高亮已应用');
+                                logger.debug('代码高亮已应用');
                             } catch (e) {
-                                console.warn('❌ 应用代码高亮失败:', e);
+                                logger.warn('❌ 应用代码高亮失败:', e);
                             }
                         }, 100);
                     }
                 });
                 
             default:
-                console.warn(`⚠️ 未知的资源组: "${resourceGroup}"`);
+                logger.warn(`⚠️ 未知的资源组: "${resourceGroup}"`);
                 return Promise.resolve();
         }
     }
@@ -724,7 +725,7 @@ class ResourceLoader {
      * 这个方法确保即使外部资源加载失败，页面内容也能显示
      */
     loadNonBlockingCoreContent() {
-        console.debug('🚀 初始化非阻塞核心内容加载...');
+        logger.debug('🚀 初始化非阻塞核心内容加载...');
         
         // 立即解除内容加载阻塞，不等待任何资源
         // 这确保内容渲染和资源加载完全并行
@@ -763,7 +764,7 @@ class ResourceLoader {
         // 处理任何关键资源的超时
         document.addEventListener('resource-timeout', event => {
             const { url, resourceType, priority } = event.detail;
-            console.warn(`⚠️ 资源 ${url} (${priority}) 加载超时`);
+            logger.warn(`⚠️ 资源 ${url} (${priority}) 加载超时`);
             
             // 对于CSS，为缺失的样式注入最小替代
             if (resourceType === 'styles') {
@@ -775,7 +776,7 @@ class ResourceLoader {
         // 然后加载其他高优先级资源，但是在后台进行，不阻塞内容显示
         setTimeout(() => {
             this.loadHighPriorityResources()
-                .catch(error => console.warn('加载高优先级资源时出错:', error));
+                .catch(error => logger.warn('加载高优先级资源时出错:', error));
         }, 300);
         
         return Promise.resolve(true); // 立即返回，不阻塞内容加载
@@ -802,7 +803,7 @@ class ResourceLoader {
         // 添加自定义事件通知页面内容可以显示了
         document.dispatchEvent(new CustomEvent('content-unblocked'));
         
-        console.debug('🎉 内容加载阻塞已解除，页面内容可以显示');
+        logger.debug('🎉 内容加载阻塞已解除，页面内容可以显示');
     }
     
     /**
@@ -810,7 +811,7 @@ class ResourceLoader {
      * 这个方法确保基本样式尽快加载，而页面内容不被阻塞
      */
     prioritizeContentRendering() {
-        console.debug('🚀 优先处理内容渲染...');
+        logger.debug('🚀 优先处理内容渲染...');
         
         // 加载关键的回退样式
         resourceStyles.injectCriticalInlineStyles();
@@ -825,12 +826,12 @@ class ResourceLoader {
         // 加载高优先级资源，但不阻塞渲染
         setTimeout(() => {
             this.loadResourcesByPriority('high')
-                .catch(error => console.warn('加载高优先级资源时出错:', error));
+                .catch(error => logger.warn('加载高优先级资源时出错:', error));
             
             // 然后加载中优先级资源
             setTimeout(() => {
                 this.loadResourcesByPriority('medium')
-                    .catch(error => console.warn('加载中优先级资源时出错:', error));
+                    .catch(error => logger.warn('加载中优先级资源时出错:', error));
             }, 1000);
         }, 300);
         
@@ -848,11 +849,11 @@ class ResourceLoader {
      */
     initResourceLoadingStrategy() {
         if (this.isInitialized) {
-            console.debug('🔍 资源加载策略已初始化，跳过');
+            logger.debug('🔍 资源加载策略已初始化，跳过');
             return;
         }
         
-        console.debug('🚀 初始化资源加载策略...');
+        logger.debug('🚀 初始化资源加载策略...');
         this.isInitialized = true;
         
         // 1. 首先优先处理内容渲染，无论资源是否加载完成
@@ -860,7 +861,7 @@ class ResourceLoader {
         
         // 2. 在DOM加载后（但不阻塞内容显示）继续加载资源
         document.addEventListener('DOMContentLoaded', () => {
-            console.debug('📃 DOM已加载，继续优化资源加载');
+            logger.debug('📃 DOM已加载，继续优化资源加载');
             
             // 确保所有关键元素都有资源组标记
             this.ensureResourceGroupMarkers();
@@ -873,7 +874,7 @@ class ResourceLoader {
         
         // 3. 监听页面完全加载事件
         window.addEventListener('load', () => {
-            console.debug('🏁 页面完全加载，设置基于可见性的后续资源加载');
+            logger.debug('🏁 页面完全加载，设置基于可见性的后续资源加载');
             
             // 如果浏览器支持Intersection Observer，为可见性加载做准备
             if ('IntersectionObserver' in window) {
@@ -887,7 +888,7 @@ class ResourceLoader {
      * 这样可以根据可见性按需加载资源
      */
     ensureResourceGroupMarkers() {
-        console.debug('🔍 确保页面元素有正确的资源组标记...');
+        logger.debug('🔍 确保页面元素有正确的资源组标记...');
         
         // 确保this上下文可用
         const self = this;
@@ -897,7 +898,7 @@ class ResourceLoader {
             const parent = el.closest('pre') || el;
             if (!parent.hasAttribute('data-resource-group')) {
                 parent.setAttribute('data-resource-group', 'code');
-                console.debug('📌 为代码块添加资源组标记: code');
+                logger.debug('📌 为代码块添加资源组标记: code');
             }
         });
         
@@ -905,7 +906,7 @@ class ResourceLoader {
         document.querySelectorAll('.math, .formula, .katex').forEach(el => {
             if (!el.hasAttribute('data-resource-group')) {
                 el.setAttribute('data-resource-group', 'math');
-                console.debug('📌 为数学公式添加资源组标记: math');
+                logger.debug('📌 为数学公式添加资源组标记: math');
             }
         });
         
@@ -913,7 +914,7 @@ class ResourceLoader {
         document.querySelectorAll('.chart, .chart-container').forEach(el => {
             if (!el.hasAttribute('data-resource-group')) {
                 el.setAttribute('data-resource-group', 'chart');
-                console.debug('📌 为图表添加资源组标记: chart');
+                logger.debug('📌 为图表添加资源组标记: chart');
             }
         });
         
@@ -921,7 +922,7 @@ class ResourceLoader {
         document.querySelectorAll('.mermaid').forEach(el => {
             if (!el.hasAttribute('data-resource-group')) {
                 el.setAttribute('data-resource-group', 'diagram');
-                console.debug('📌 为流程图添加资源组标记: diagram');
+                logger.debug('📌 为流程图添加资源组标记: diagram');
             }
         });
         
@@ -929,24 +930,24 @@ class ResourceLoader {
         document.querySelectorAll('.tag-cloud').forEach(el => {
             if (!el.hasAttribute('data-resource-group')) {
                 el.setAttribute('data-resource-group', 'tagcloud');
-                console.debug('📌 为标签云添加资源组标记: tagcloud');
+                logger.debug('📌 为标签云添加资源组标记: tagcloud');
             }
         });
         
         // 确保body具有动画资源组标记
         if (!document.body.hasAttribute('data-resource-group')) {
             document.body.setAttribute('data-resource-group', 'animation');
-            console.debug('📌 为body添加资源组标记: animation');
+            logger.debug('📌 为body添加资源组标记: animation');
         }
         
         // 为文章容器添加核心资源组标记
         const articleContainer = document.getElementById('article-container');
         if (articleContainer && !articleContainer.hasAttribute('data-resource-group')) {
             articleContainer.setAttribute('data-resource-group', 'core');
-            console.debug('📌 为文章容器添加资源组标记: core');
+            logger.debug('📌 为文章容器添加资源组标记: core');
         }
         
-        console.debug('✅ 资源组标记完成');
+        logger.debug('✅ 资源组标记完成');
     }
     
     /**
@@ -970,7 +971,7 @@ class ResourceLoader {
                     const resourceGroup = element.dataset.resourceGroup;
                     
                     if (resourceGroup && typeof resourceGroup === 'string') {
-                        console.debug(`📍 元素可见，加载资源组: ${resourceGroup}`);
+                        logger.debug(`📍 元素可见，加载资源组: ${resourceGroup}`);
                         self.loadResourceGroup(resourceGroup);
                         observer.unobserve(element); // 加载一次后不再观察
                     }
@@ -986,7 +987,7 @@ class ResourceLoader {
         document.querySelectorAll('[data-resource-group]').forEach(element => {
             if (element && element.dataset && element.dataset.resourceGroup) {
                 observer.observe(element);
-                console.debug(`👁️ 监视元素加载资源组: ${element.dataset.resourceGroup}`);
+                logger.debug(`👁️ 监视元素加载资源组: ${element.dataset.resourceGroup}`);
             }
         });
     }
@@ -996,7 +997,7 @@ class ResourceLoader {
      * 这是一个额外的安全措施，检查任何可能的资源加载失败
      */
     checkForFailedResources() {
-        console.debug('🔍 检查资源加载状态...');
+        logger.debug('🔍 检查资源加载状态...');
         
         // 确保this上下文可用
         const self = this;
@@ -1026,11 +1027,11 @@ class ResourceLoader {
                     }
                 });
             } catch (e) {
-                console.warn(`检查样式表加载状态时出错:`, e);
+                logger.warn(`检查样式表加载状态时出错:`, e);
             }
             
             if (!loaded && !self.failedResources.has(href)) {
-                console.warn(`检测到可能失败的样式表: ${href}`);
+                logger.warn(`检测到可能失败的样式表: ${href}`);
                 self.handleResourceError(link, href);
             }
         });
@@ -1045,7 +1046,7 @@ class ResourceLoader {
             // 我们依赖onerror事件处理失败的脚本
         });
         
-        console.debug('🔍 资源加载状态检查完成');
+        logger.debug('🔍 资源加载状态检查完成');
     }
     
     /**
@@ -1068,26 +1069,26 @@ class ResourceLoader {
     loadResource(resourceType, resourceName, options = {}) {
         // 检查参数有效性
         if (!resourceType || !resourceName) {
-            console.warn(`⚠️ 无效的资源请求: 类型=${resourceType}, 名称=${resourceName}`);
+            logger.warn(`⚠️ 无效的资源请求: 类型=${resourceType}, 名称=${resourceName}`);
             return Promise.resolve(); // 返回已解决的Promise，避免中断链
         }
         
         const resource = this.getResourceUrls(resourceType, resourceName);
         if (!resource) {
-            console.warn(`⚠️ 无效的资源请求: 类型=${resourceType}, 名称=${resourceName}`);
+            logger.warn(`⚠️ 无效的资源请求: 类型=${resourceType}, 名称=${resourceName}`);
             return Promise.resolve(); // 返回已解决的Promise，避免中断链
         }
         
         // 处理特殊情况：resource.components数组和getUrls方法（例如prism-components）
         if (resource.components && typeof resource.getUrls === 'function') {
-            console.debug(`📦 加载组件集合: ${resourceName} (${resource.components.length}个组件)`);
+            logger.debug(`📦 加载组件集合: ${resourceName} (${resource.components.length}个组件)`);
             
             // 为每个组件创建加载Promise
             const componentPromises = resource.components.map(component => {
                 // 使用CdnMapper构建组件URL
                 const urls = this.cdnMapper.buildComponentUrls(component, resource.getUrls);
                 if (!urls || urls.length === 0) {
-                    console.warn(`⚠️ 组件 ${component.name} 没有可用的URL`);
+                    logger.warn(`⚠️ 组件 ${component.name} 没有可用的URL`);
                     return Promise.resolve();
                 }
                 
@@ -1103,13 +1104,13 @@ class ResourceLoader {
         if (typeof resource.primary === 'string') {
             // 检查资源是否已经加载
             if (this.loadedResources.has(resource.primary)) {
-                console.debug(`🔍 资源已加载: ${resource.primary}`);
+                logger.debug(`🔍 资源已加载: ${resource.primary}`);
                 return Promise.resolve();
             }
             
             // 检查资源是否已经失败
             if (this.failedResources.has(resource.primary)) {
-                console.warn(`⚠️ 资源加载失败: ${resource.primary}`);
+                logger.warn(`⚠️ 资源加载失败: ${resource.primary}`);
                 return Promise.resolve();
             }
             
@@ -1127,13 +1128,13 @@ class ResourceLoader {
             if (url) {
                 // 检查资源是否已经加载
                 if (this.loadedResources.has(url)) {
-                    console.debug(`🔍 资源已加载: ${url}`);
+                    logger.debug(`🔍 资源已加载: ${url}`);
                     return Promise.resolve();
                 }
                 
                 // 检查资源是否已经失败
                 if (this.failedResources.has(url)) {
-                    console.warn(`⚠️ 资源加载失败: ${url}`);
+                    logger.warn(`⚠️ 资源加载失败: ${url}`);
                     return Promise.resolve();
                 }
                 
@@ -1145,7 +1146,7 @@ class ResourceLoader {
             }
         }
         
-        console.warn('⚠️ 无效的资源 primary URL:', resource);
+        logger.warn('⚠️ 无效的资源 primary URL:', resource);
         return Promise.resolve(); // 返回已解决的Promise，避免中断链
     }
     
@@ -1176,7 +1177,7 @@ class ResourceLoader {
         
         // 如果当前URL加载失败，尝试下一个URL
         return loadPromise.catch(() => {
-            console.debug(`⚠️ 组件 ${componentName} 加载失败，尝试下一个URL`);
+            logger.debug(`⚠️ 组件 ${componentName} 加载失败，尝试下一个URL`);
             if (urls.length > 1) {
                 // 递归尝试剩余的URL
                 return this.loadComponentWithFallback(urls.slice(1), type, componentName);
@@ -1195,7 +1196,7 @@ class ResourceLoader {
         return new Promise((resolve, reject) => {
             // 检查URL是否有效
             if (!url || typeof url !== 'string') {
-                console.warn('⚠️ 尝试加载无效的JavaScript URL:', url);
+                logger.warn('⚠️ 尝试加载无效的JavaScript URL:', url);
                 return reject(new Error('无效的JavaScript URL'));
             }
             
@@ -1240,7 +1241,7 @@ class ResourceLoader {
                 this.clearResourceTimeout(url);
                 
                 this.loadedResources.add(url);
-                console.debug(`✅ JavaScript加载完成: ${url}`);
+                logger.debug(`✅ JavaScript加载完成: ${url}`);
                 resolve();
             };
             
@@ -1250,7 +1251,7 @@ class ResourceLoader {
                 
                 // 记录错误但不阻塞
                 this.handleResourceError(script, url);
-                console.warn(`❌ JavaScript加载失败: ${url}`);
+                logger.warn(`❌ JavaScript加载失败: ${url}`);
                 
                 // 虽然加载失败，但仍然解析Promise，以免影响整体流程
                 resolve();
@@ -1262,7 +1263,7 @@ class ResourceLoader {
     }
 
     loadResourceGroups(resourceGroups) {
-        console.debug(`🧩 开始加载资源组: ${resourceGroups.join(', ')}`);
+        logger.debug(`🧩 开始加载资源组: ${resourceGroups.join(', ')}`);
         
         // 递归加载资源组
         const loadNext = (index) => {
@@ -1278,7 +1279,7 @@ class ResourceLoader {
             return this.loadResourceGroup(group)
                 .then(() => loadNext(index + 1))
                 .catch(error => {
-                    console.error(`❌ 加载资源组 "${group}" 时出错:`, error);
+                    logger.error(`❌ 加载资源组 "${group}" 时出错:`, error);
                     return loadNext(index + 1); // 继续加载下一个，不中断整个过程
                 });
         };

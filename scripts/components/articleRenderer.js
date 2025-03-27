@@ -22,13 +22,14 @@
 
 import { tableLazyLoader } from '../utils/table-lazy-loader.js';
 import { codeLazyLoader } from '../utils/code-lazy-loader.js';
+import logger from '../utils/logger.js';
 
 // 主渲染函数
 export function renderNotionBlocks(blocks) {
-    console.log('开始渲染块:', blocks); // 添加日志
+    logger.debug('开始渲染块:', blocks); // 添加日志
 
     if (!blocks || !Array.isArray(blocks) || blocks.length === 0) {
-        console.warn('没有块数据可渲染');
+        logger.warn('没有块数据可渲染');
         return '<p>没有内容</p>';
     }
     
@@ -240,7 +241,7 @@ function renderEquation(block) {
             `;
         }
     } catch (error) {
-        console.error('公式渲染错误:', error);
+        logger.error('公式渲染错误:', error);
         return `<div class="equation-error">公式渲染错误: ${formula}</div>`;
     }
 }
@@ -260,7 +261,7 @@ function processInlineEquations(text) {
                 return `<span class="katex-inline" data-formula="${escapeAttribute(formula)}">${formula}</span>`;
             }
         } catch (error) {
-            console.error('行内公式渲染错误:', error);
+            logger.error('行内公式渲染错误:', error);
             return match;
         }
     });
@@ -320,10 +321,10 @@ function renderRichText(richText) {
  * @returns {string} - 渲染后的 HTML
  */
 function renderTableBlock(block) {
-    console.log('渲染表格数据:', block); // 添加日志
+    logger.info('渲染表格数据:', block); // 添加日志
 
     if (!block.table) {
-        console.warn('表格数据不存在');
+        logger.warn('表格数据不存在');
         return '';
     }
     
@@ -332,10 +333,10 @@ function renderTableBlock(block) {
     
     // 获取子块（表格行）
     const rows = block.children || [];
-    console.log('表格行数据:', rows); // 添加日志
+    logger.info('表格行数据:', rows); // 添加日志
     
     if (rows.length === 0) {
-        console.warn('表格没有行数据');
+        logger.warn('表格没有行数据');
         return '';
     }
 
@@ -343,7 +344,7 @@ function renderTableBlock(block) {
     
     rows.forEach((row, rowIndex) => {
         if (!row.table_row || !row.table_row.cells) {
-            console.warn(`第 ${rowIndex + 1} 行数据格式不正确:`, row);
+            logger.warn(`第 ${rowIndex + 1} 行数据格式不正确:`, row);
             return;
         }
         
@@ -390,10 +391,10 @@ function renderTableBlock(block) {
 
 // 渲染单个块
 function renderBlock(block) {
-    // console.log('渲染块:', block.type, block.id);  先注释掉，否则日志太多
+    // logger.info('渲染块:', block.type, block.id);  先注释掉，否则日志太多
     
     if (!block || !block.type) {
-        console.warn('无效的块:', block);
+        logger.warn('无效的块:', block);
         return '';
     }
     
@@ -422,7 +423,7 @@ function renderBlock(block) {
             case 'equation':
                 return renderEquation(block);
             case 'table':
-                console.log('发现表格块，使用懒加载:', block.id);
+                logger.info('发现表格块，使用懒加载:', block.id);
                 
                 // 创建表格数据对象
                 const tableData = {
@@ -434,10 +435,10 @@ function renderBlock(block) {
                 
                 // 如果有表格行数据，则添加到rows中
                 if (block.table && block.table.rows) {
-                    console.log('表格行数据来自block.table.rows');
+                    logger.info('表格行数据来自block.table.rows');
                     tableData.rows = block.table.rows;
                 } else if (block.children && block.children.length > 0) {
-                    console.log('表格行数据来自block.children');
+                    logger.info('表格行数据来自block.children');
                     
                     // 首先分析表格结构，找出有效的行和列
                     const validRows = [];
@@ -528,7 +529,7 @@ function renderBlock(block) {
                     tableData.rows = validRows;
                 } else {
                     // 表格数据为空，显示一个加载中的状态
-                    console.log('没有找到表格行数据，显示加载状态');
+                    logger.info('没有找到表格行数据，显示加载状态');
                 }
                 
                 // 确保每行的列数一致
@@ -548,7 +549,7 @@ function renderBlock(block) {
                 }
                 
                 // 输出处理后的表格数据，帮助调试
-                console.log('处理后的表格数据结构:', {
+                logger.info('处理后的表格数据结构:', {
                     rowCount: tableData.rows.length,
                     hasColumnHeader: tableData.hasColumnHeader,
                     hasRowHeader: tableData.hasRowHeader,
@@ -572,11 +573,11 @@ function renderBlock(block) {
                 const icon = block.callout.icon?.emoji ? `<span class="callout-icon">${block.callout.icon.emoji}</span>` : '';
                 return `<div class="notion-callout">${icon}<div class="callout-content">${renderRichText(block.callout.rich_text)}</div></div>`;
             default:
-                console.warn('未支持的块类型:', block.type);
+                logger.warn('未支持的块类型:', block.type);
                 return `<div class="unsupported-block">不支持的内容类型: ${block.type}</div>`;
         }
     } catch (error) {
-        console.error(`渲染 ${block.type} 块时出错:`, error);
+        logger.error(`渲染 ${block.type} 块时出错:`, error);
         return `<div class="error-block">渲染 ${block.type} 内容时出错: ${error.message}</div>`;
     }
 }
@@ -584,51 +585,51 @@ function renderBlock(block) {
 // 初始化懒加载功能
 export function initializeLazyLoading(container) {
     if (!container) {
-        console.warn('无法初始化懒加载：容器不存在');
+        logger.warn('无法初始化懒加载：容器不存在');
         return;
     }
     
-    console.log('初始化懒加载功能...');
+    logger.info('初始化懒加载功能...');
     
     // 标记容器已初始化
     container.dataset.lazyInitialized = 'true';
     
     // 初始化代码块懒加载
     const codeBlocks = container.querySelectorAll('.lazy-block.code-block');
-    console.log(`找到 ${codeBlocks.length} 个代码块待懒加载`);
+    logger.info(`找到 ${codeBlocks.length} 个代码块待懒加载`);
     
     if (codeBlocks.length > 0 && window.codeLazyLoader) {
-        console.log('处理代码块...');
+        logger.info('处理代码块...');
         // 确保codeLazyLoader可用
         if (typeof window.codeLazyLoader.processAllCodeBlocks === 'function') {
             window.codeLazyLoader.processAllCodeBlocks(container);
         } else if (typeof codeLazyLoader !== 'undefined' && typeof codeLazyLoader.processAllCodeBlocks === 'function') {
             codeLazyLoader.processAllCodeBlocks(container);
         } else {
-            console.error('codeLazyLoader不可用或processAllCodeBlocks方法不存在');
+            logger.error('codeLazyLoader不可用或processAllCodeBlocks方法不存在');
         }
     }
     
     // 初始化表格懒加载
     const tableBlocks = container.querySelectorAll('.lazy-block.table-block');
-    console.log(`找到 ${tableBlocks.length} 个表格待懒加载`);
+    logger.info(`找到 ${tableBlocks.length} 个表格待懒加载`);
     
     if (tableBlocks.length > 0) {
-        console.log('处理表格...');
+        logger.info('处理表格...');
         // 确保tableLazyLoader可用
         if (typeof window.tableLazyLoader !== 'undefined' && typeof window.tableLazyLoader.processAllTables === 'function') {
             window.tableLazyLoader.processAllTables(container);
         } else if (typeof tableLazyLoader !== 'undefined' && typeof tableLazyLoader.processAllTables === 'function') {
             tableLazyLoader.processAllTables(container);
         } else {
-            console.error('tableLazyLoader不可用或processAllTables方法不存在');
+            logger.error('tableLazyLoader不可用或processAllTables方法不存在');
         }
     }
     
     // 添加强制触发渲染事件
     // 解决从缓存加载后不显示内容的问题
     setTimeout(() => {
-        console.log('触发强制渲染检查...');
+        logger.info('触发强制渲染检查...');
         // 强制触发一次重新布局，解决缓存加载不显示内容的问题
         // 只对容器应用重排而不是整个body，减少闪烁
         if (container) {
@@ -642,7 +643,7 @@ export function initializeLazyLoading(container) {
         forceCheckLazyElements(container);
     }, 50);  // 短延迟，确保DOM已经初始渲染完成
     
-    console.log('懒加载初始化完成');
+    logger.info('懒加载初始化完成');
 }
 
 // 强制检查懒加载元素是否已渲染
@@ -652,7 +653,7 @@ function forceCheckLazyElements(container) {
     // 处理代码块
     const codeBlocks = container.querySelectorAll('.lazy-block.code-block');
     if (codeBlocks.length > 0 && window.codeLazyLoader) {
-        console.log(`强制检查 ${codeBlocks.length} 个代码块...`);
+        logger.info(`强制检查 ${codeBlocks.length} 个代码块...`);
         codeBlocks.forEach((block) => {
             // 使用更准确的检测条件
             if (!block.querySelector('pre code') || 
@@ -671,7 +672,7 @@ function forceCheckLazyElements(container) {
     // 处理表格
     const tableBlocks = container.querySelectorAll('.lazy-block.table-block');
     if (tableBlocks.length > 0) {
-        console.log(`强制检查 ${tableBlocks.length} 个表格...`);
+        logger.info(`强制检查 ${tableBlocks.length} 个表格...`);
         tableBlocks.forEach((block) => {
             // 使用更准确的检测条件
             if (!block.querySelector('table') || 

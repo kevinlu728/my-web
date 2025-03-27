@@ -64,6 +64,16 @@
         }
     </style>
     
+    <!-- 先加载logger.js -->
+    <script type="module">
+        // 导入logger, 确保它最先加载
+        import logger from './scripts/utils/logger.js';
+        console.log('✅ Logger模块已预加载');
+    </script>
+    
+    <!-- 再加载API服务 -->
+    <script src="./scripts/api-service.js"></script>
+    
     <!-- 资源加载器初始化 -->
     <script type="module">
         // 导入资源加载器
@@ -143,9 +153,6 @@
         window.resourceLoader = resourceLoader;
         console.log('✅ 资源加载器已预加载');
     </script>
-    
-    <!-- 先加载API服务 -->
-    <script src="./scripts/api-service.js"></script>
     
     <!-- 字体图标 - 使用集中资源管理加载 -->
     <script type="module">

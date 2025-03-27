@@ -7,6 +7,7 @@
  */
 
 import { isCacheExpired } from './article-utils.js';
+import logger from './logger.js';
 
 /**
  * 文章缓存管理类
@@ -51,7 +52,7 @@ export class ArticleCache {
             }
 
             // 增加调试日志，查看缓存内容
-            console.log('缓存数据概览:', {
+            logger.debug('缓存数据概览:', {
                 有页面信息: !!data.page,
                 块数量: data.blocks?.length || 0,
                 有更多: data.hasMore,
@@ -60,7 +61,7 @@ export class ArticleCache {
 
             return data;
         } catch (error) {
-            console.warn('读取缓存失败:', error);
+            logger.warn('读取缓存失败:', error);
             return null;
         }
     }
@@ -79,7 +80,7 @@ export class ArticleCache {
             };
             
             // 添加调试日志
-            console.log('写入缓存:', {
+            logger.debug('写入缓存:', {
                 页面ID: pageId,
                 块数量: data.blocks?.length || 0,
                 是否有更多: data.hasMore,
@@ -88,7 +89,7 @@ export class ArticleCache {
             
             localStorage.setItem(cacheKey, JSON.stringify(cacheData));
         } catch (error) {
-            console.warn('写入缓存失败:', error);
+            logger.warn('写入缓存失败:', error);
         }
     }
 
@@ -106,13 +107,13 @@ export class ArticleCache {
                         }
                     } catch (e) {
                         // 如果项目解析失败，删除它
-                        console.warn(`删除损坏的缓存项: ${key}`);
+                        logger.warn(`删除损坏的缓存项: ${key}`);
                         localStorage.removeItem(key);
                     }
                 }
             });
         } catch (error) {
-            console.warn('清理缓存失败:', error);
+            logger.warn('清理缓存失败:', error);
         }
     }
 
@@ -136,7 +137,7 @@ export class ArticleCache {
                 }
             });
         } catch (error) {
-            console.warn('清除所有缓存失败:', error);
+            logger.warn('清除所有缓存失败:', error);
         }
     }
 
@@ -159,7 +160,7 @@ export class ArticleCache {
             this.setArticleCache(pageId, updatedData);
             return true;
         } catch (error) {
-            console.warn('更新缓存失败:', error);
+            logger.warn('更新缓存失败:', error);
             return false;
         }
     }

@@ -29,5 +29,11 @@ export default {
     debug: {
         enabled: false,
         defaultDatabaseId: '1a932af826e680df8bf7f320b51930b9'
+    },
+    logging: {
+        level: 'INFO',  // 生产环境使用INFO级别
+        useColors: false,
+        showTimestamp: true,
+        showCaller: false
     }
 }; 

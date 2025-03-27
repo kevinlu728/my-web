@@ -5,6 +5,8 @@
  * @created 2024-03-20
  */
 
+import logger from './logger.js';
+
 /**
  * URL参数工具类，提供URL参数的操作方法
  */
@@ -34,7 +36,7 @@ export class UrlUtils {
             window.history.pushState({}, '', newUrl);
         }
         
-        console.log(`URL参数已更新: ${key}=${value}`);
+        logger.info(`URL参数已更新: ${key}=${value}`);
     }
     
     /**
@@ -72,7 +74,7 @@ export class UrlUtils {
             window.history.pushState({}, '', newUrl);
         }
         
-        console.log(`URL参数已删除: ${key}`);
+        logger.info(`URL参数已删除: ${key}`);
     }
     
     /**
@@ -105,7 +107,7 @@ export class UrlUtils {
             window.history.pushState({}, '', newUrl);
         }
         
-        console.log(`多个URL参数已更新`);
+        logger.info(`多个URL参数已更新`);
     }
     
     /**
@@ -140,7 +142,7 @@ export class UrlUtils {
             window.history.pushState({}, '', newUrl);
         }
         
-        console.log('所有URL参数已清除');
+        logger.info('所有URL参数已清除');
     }
     
     /**

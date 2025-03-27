@@ -4,6 +4,8 @@
  * @created 2024-05-01
  */
 
+import logger from './logger.js';
+
 /**
  * 资源超时管理器类
  * 负责管理资源加载超时逻辑
@@ -52,7 +54,7 @@ class ResourceTimeout {
         
         // 设置超时处理
         const handler = setTimeout(() => {
-            console.warn(`⏱️ 资源加载超时 (${timeout}ms): ${url}`);
+            logger.warn(`⏱️ 资源加载超时 (${timeout}ms): ${url}`);
             
             // 移除超时处理器
             this.timeoutHandlers.delete(url);

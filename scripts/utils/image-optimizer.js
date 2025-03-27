@@ -21,6 +21,8 @@
  * 该模块与image-lazy-loader.js配合使用，提供完整的图片优化解决方案。
  */
 
+import logger from './logger.js';
+
 // Cloudinary 配置
 const CLOUDINARY_CLOUD_NAME = 'demo'; // 使用 Cloudinary 的演示账号，实际使用时应替换为自己的账号
 
@@ -61,7 +63,7 @@ export function optimizeImageUrl(originalUrl, options = {}) {
         
         return `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/fetch/${transformations}/${encodedUrl}`;
     } catch (error) {
-        console.error('图片 URL 优化失败:', error);
+        logger.error('图片 URL 优化失败:', error);
         return originalUrl;
     }
 }

@@ -3,6 +3,8 @@
  * 从ResourceLoader中提取的样式相关功能
  */
 
+import logger from './logger.js';
+
 class ResourceStyles {
     /**
      * 初始化资源样式处理器
@@ -34,7 +36,7 @@ class ResourceStyles {
         link.setAttribute('data-is-fallback', 'true');
         
         document.head.appendChild(link);
-        console.debug('已加载基本图标回退样式');
+        logger.debug('已加载基本图标回退样式');
     }
     
     /**
@@ -54,7 +56,7 @@ class ResourceStyles {
             return;
         }
         
-        console.debug('已加载基本KaTeX回退样式');
+        logger.debug('已加载基本KaTeX回退样式');
     }
     
     /**
@@ -78,7 +80,7 @@ class ResourceStyles {
             return;
         }
         
-        console.debug('✅ 已加载最小必要的关键内联样式');
+        logger.debug('✅ 已加载最小必要的关键内联样式');
     }
 
     /**
@@ -89,7 +91,7 @@ class ResourceStyles {
     loadCssNonBlocking(url, resource) {
         // 检查URL是否有效
         if (!url || typeof url !== 'string') {
-            console.warn('⚠️ 尝试加载无效的CSS URL:', url);
+            logger.warn('⚠️ 尝试加载无效的CSS URL:', url);
             return;
         }
         
@@ -133,7 +135,7 @@ class ResourceStyles {
             // 样式已加载，现在应用它
             link.media = 'all';
             this.loadedResources.add(url);
-            console.debug(`✅ 非阻塞加载CSS完成: ${url}`);
+            logger.debug(`✅ 非阻塞加载CSS完成: ${url}`);
         };
         
         link.onerror = () => {
@@ -146,7 +148,7 @@ class ResourceStyles {
             if (typeof this.handleResourceError === 'function') {
                 this.handleResourceError(link, url);
             } else {
-                console.warn(`❌ 非阻塞CSS加载失败: ${url}`);
+                logger.warn(`❌ 非阻塞CSS加载失败: ${url}`);
             }
         };
         
@@ -164,7 +166,7 @@ class ResourceStyles {
         return new Promise((resolve, reject) => {
             // 检查URL是否有效
             if (!url || typeof url !== 'string') {
-                console.warn('⚠️ 尝试加载无效的CSS URL:', url);
+                logger.warn('⚠️ 尝试加载无效的CSS URL:', url);
                 return reject(new Error('无效的CSS URL'));
             }
             
@@ -204,7 +206,7 @@ class ResourceStyles {
                 }
                 
                 this.loadedResources.add(url);
-                console.debug(`✅ CSS加载完成: ${url}`);
+                logger.debug(`✅ CSS加载完成: ${url}`);
                 resolve();
             };
             
@@ -218,7 +220,7 @@ class ResourceStyles {
                 if (typeof this.handleResourceError === 'function') {
                     this.handleResourceError(link, url);
                 }
-                console.warn(`❌ CSS加载失败: ${url}`);
+                logger.warn(`❌ CSS加载失败: ${url}`);
                 
                 // 虽然加载失败，但仍然解析Promise，以免影响整体流程
                 resolve();

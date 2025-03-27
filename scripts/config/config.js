@@ -23,6 +23,8 @@
 // 导入环境配置
 import devConfig from './config.development.js';
 import prodConfig from './config.production.js';
+// 导入logger模块
+import logger from '../utils/logger.js';
 
 // 判断当前环境
 const isDevelopment = window.location.hostname === 'localhost' || 
@@ -47,5 +49,8 @@ const configManager = {
         return this.notion;
     }
 };
+
+// 更新logger配置
+logger.updateConfig(configManager);
 
 export default configManager; 

@@ -22,6 +22,7 @@
  */
 
 import { codeStyles, addCodeStylesToDocument } from '../styles/code-styles.js';
+import logger from './logger.js';
 
 class CodeLazyLoader {
     constructor() {
@@ -138,14 +139,14 @@ class CodeLazyLoader {
         
         // 标记为正在加载中
         window.prismLoading = true;
-        console.log('预加载Prism库...');
+        logger.info('预加载Prism库...');
         
         try {
             // 加载外部Prism库而不是内置版本
             const prismScript = document.createElement('script');
             prismScript.src = 'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js';
             prismScript.onload = () => {
-                console.log('Prism核心库加载完成');
+                logger.info('Prism核心库加载完成');
                 
                 // 加载额外的语言组件
                 this.loadPrismComponents(['java', 'javascript', 'cpp', 'python', 'bash']);
@@ -154,7 +155,7 @@ class CodeLazyLoader {
                 window.prismLoading = false;
             };
             prismScript.onerror = () => {
-                console.error('Prism核心库加载失败，尝试备用源');
+                logger.error('Prism核心库加载失败，尝试备用源');
                 // 尝试备用源
                 prismScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js';
                 // 备用源也失败的处理在onload里已经包含
@@ -162,7 +163,7 @@ class CodeLazyLoader {
             
             document.head.appendChild(prismScript);
         } catch (error) {
-            console.error('加载Prism库失败:', error);
+            logger.error('加载Prism库失败:', error);
             window.prismLoaded = false;
             window.prismLoading = false;
         }
@@ -174,7 +175,7 @@ class CodeLazyLoader {
             const script = document.createElement('script');
             script.src = `https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-${lang}.min.js`;
             script.onerror = () => {
-                console.warn(`${lang}语言组件加载失败，尝试备用源`);
+                logger.warn(`${lang}语言组件加载失败，尝试备用源`);
                 script.src = `https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-${lang}.min.js`;
             };
             document.head.appendChild(script);
@@ -193,14 +194,14 @@ class CodeLazyLoader {
                         // 使用浏览器的Prism库高亮
                         window.Prism.highlightElement(codeElement);
                     } catch (e) {
-                        console.warn('高亮处理失败', e);
+                        logger.warn('高亮处理失败', e);
                     }
                     block.classList.remove('waiting-for-highlight');
                     codeElement.classList.remove('no-highlight');
                 }
             });
         } catch (e) {
-            console.warn('处理等待块失败', e);
+            logger.warn('处理等待块失败', e);
         }
     }
 
@@ -232,7 +233,7 @@ class CodeLazyLoader {
             const codeData = JSON.parse(codeBlock.dataset.codeData || '{}');
             
             if (!codeData || !codeData.code) {
-                console.error('无效的代码数据:', codeData);
+                logger.error('无效的代码数据:', codeData);
                 codeBlock.innerHTML = '<div class="code-error">无效的代码数据</div>';
                 return;
             }
@@ -270,7 +271,7 @@ class CodeLazyLoader {
                 }
             }
         } catch (error) {
-            console.error('加载代码失败:', error);
+            logger.error('加载代码失败:', error);
             codeBlock.innerHTML = '<div class="code-error">加载代码失败</div>';
         }
     }
@@ -304,7 +305,7 @@ class CodeLazyLoader {
             
             return html;
         } catch (error) {
-            console.error('渲染代码块失败:', error);
+            logger.error('渲染代码块失败:', error);
             return `<div class="code-error">渲染代码块失败: ${error.message}</div>`;
         }
     }
@@ -343,7 +344,7 @@ class CodeLazyLoader {
                 codeBlock.classList.add('waiting-for-highlight');
             }
         } catch (error) {
-            console.warn('高亮代码失败:', error);
+            logger.warn('高亮代码失败:', error);
         }
     }
 
@@ -361,7 +362,7 @@ class CodeLazyLoader {
                 if (navigator.clipboard) {
                     navigator.clipboard.writeText(code)
                         .then(() => this.showCopySuccess(successElement))
-                        .catch(err => console.error('复制失败:', err));
+                        .catch(err => logger.error('复制失败:', err));
                 } else {
                     // 回退方法
                     const textarea = document.createElement('textarea');
@@ -375,7 +376,7 @@ class CodeLazyLoader {
                         document.execCommand('copy');
                         this.showCopySuccess(successElement);
                     } catch (err) {
-                        console.error('复制失败:', err);
+                        logger.error('复制失败:', err);
                     }
                     
                     document.body.removeChild(textarea);
@@ -400,7 +401,7 @@ class CodeLazyLoader {
         const codeBlocks = container.querySelectorAll('.lazy-block.code-block');
         if (codeBlocks.length === 0) return;
         
-        console.log(`找到 ${codeBlocks.length} 个代码块，准备懒加载...`);
+        logger.info(`找到 ${codeBlocks.length} 个代码块，准备懒加载...`);
         
         // 如果有代码块，确保Prism库已加载
         if (codeBlocks.length > 0 && this.shouldLoadPrism) {

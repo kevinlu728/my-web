@@ -13,6 +13,7 @@
 
 import { highlightSearchTerm } from '../utils/article-utils.js';
 import { searchArticles } from '../utils/article-data-processor.js';
+import logger from '../utils/logger.js';
 
 class ArticleSearchManager {
     constructor() {
@@ -58,7 +59,7 @@ class ArticleSearchManager {
         
         this.setupEventListeners();
         
-        console.debug('文章搜索管理器已初始化');
+        logger.debug('文章搜索管理器已初始化');
     }
 
     /**
@@ -125,19 +126,19 @@ class ArticleSearchManager {
      */
     performSearch(articles) {
         if (!articles || articles.length === 0) {
-            console.log('没有文章数据可搜索');
+            logger.info('没有文章数据可搜索');
             this.displayNoResults();
             return;
         }
         
         this.isSearching = true;
-        console.log(`使用搜索词过滤: "${this.searchTerm}"`);
+        logger.info(`使用搜索词过滤: "${this.searchTerm}"`);
         
         // 使用searchArticles工具函数搜索匹配的文章
         this.searchResults = searchArticles(articles, this.searchTerm);
         
         if (this.searchResults.length === 0) {
-            console.log(`搜索"${this.searchTerm}"没有找到匹配的文章`);
+            logger.info(`搜索"${this.searchTerm}"没有找到匹配的文章`);
             this.displayNoResults();
         } else {
             this.displaySearchResults();
@@ -259,14 +260,15 @@ class ArticleSearchManager {
     }
 
     /**
-     * 重置搜索状态
+     * 重置搜索状态并恢复原始文章树
      */
     resetSearch() {
-        console.log('重置搜索...');
+        logger.info('重置搜索...');
+        
         this.isSearching = false;
         this.searchResults = [];
         
-        // 如果有回调函数，调用它
+        // 调用重置搜索的回调函数
         if (this.onResetSearchCallback) {
             this.onResetSearchCallback();
         }

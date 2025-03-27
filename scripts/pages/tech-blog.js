@@ -30,63 +30,64 @@ import { imageLazyLoader } from '../utils/image-lazy-loader.js';
 import { initializeLazyLoading } from '../components/articleRenderer.js';
 // 导入资源加载器
 import { resourceLoader } from '../utils/resource-loader.js';
+import logger from '../utils/logger.js';
 
-console.log('🚀 tech-blog.js 开始加载...');
+logger.info('🚀 tech-blog.js 开始加载...');
 
 /**
  * 初始化页面
  */
 async function initializePage() {
-    console.log('开始初始化页面...');
+    logger.info('开始初始化页面...');
     
     // 检查依赖项
-    console.log('检查依赖项：');
-    console.log('- imageLazyLoader:', !!imageLazyLoader);
-    console.log('- articleManager:', !!articleManager);
-    console.log('- categoryManager:', !!categoryManager);
-    console.log('- apiService:', !!window.apiService);
+    logger.info('检查依赖项：');
+    logger.info('- imageLazyLoader:', !!imageLazyLoader);
+    logger.info('- articleManager:', !!articleManager);
+    logger.info('- categoryManager:', !!categoryManager);
+    logger.info('- apiService:', !!window.apiService);
 
     const currentDatabaseId = config.notion.databaseId || config.debug.defaultDatabaseId;
-    console.log('当前数据库ID:', currentDatabaseId);
+    logger.info('当前数据库ID:', currentDatabaseId);
 
     // 直接处理加载遮罩
     handleLoadingMask('fade');
     
     // 检查API服务可用性
     if (window.apiService) {
-        console.log('✅ 检测到apiService，将使用API服务自动选择功能');
+        logger.info('✅ 检测到apiService，将使用API服务自动选择功能');
         try {
             const apiStatus = await window.apiService.testConnection();
             if (apiStatus.success) {
-                console.log('✅ API服务连接成功，使用实现:', apiStatus.implementation);
+                logger.info('✅ API服务连接成功，使用实现:', apiStatus.implementation);
             } else {
-                console.warn('⚠️ API服务连接测试失败，将回退到直接服务调用');
+                logger.warn('⚠️ API服务连接测试失败，将回退到直接服务调用');
             }
         } catch (error) {
-            console.error('❌ API服务测试出错:', error);
+            logger.error('❌ API服务测试出错:', error);
         }
     } else {
-        console.log('⚠️ 未检测到apiService，将使用直接服务调用');
+        logger.info('⚠️ 未检测到apiService，将使用直接服务调用');
     }
 
     // 扩展 articleManager 的显示文章方法
     if (articleManager && articleManager.showArticle) {
         const originalShowArticle = articleManager.showArticle;
         articleManager.showArticle = async function(pageId) {
-            console.log('📄 准备加载文章:', pageId);
+            logger.info('📄 准备加载文章:', pageId);
             
             // 检查是否已经加载了相同的文章
             const container = document.getElementById('article-container');
             const articleBody = container.querySelector('.article-body');
             
             if (articleBody && articleBody.getAttribute('data-article-id') === pageId) {
-                console.log('文章已加载，跳过重复加载:', pageId);
+                logger.info('文章已加载，跳过重复加载:', pageId);
                 return; // 如果已经加载了相同的文章，跳过
             }
             
             // 移除占位内容
             if (container && container.querySelector('.placeholder-content')) {
-                console.log('移除占位内容...');
+                logger.info('移除占位内容...');
                 // 添加淡出效果
                 const placeholder = container.querySelector('.placeholder-content');
                 placeholder.style.transition = 'opacity 0.3s ease';
@@ -103,16 +104,16 @@ async function initializePage() {
             // 调用原始方法加载文章
             return originalShowArticle.call(this, pageId);
         };
-        console.log('✅ articleManager.showArticle 方法扩展完成');
+        logger.info('✅ articleManager.showArticle 方法扩展完成');
     } else {
-        console.error('❌ articleManager 或 showArticle 方法未找到');
+        logger.error('❌ articleManager 或 showArticle 方法未找到');
     }
 
     // 重写 showWelcomePage 方法，使用新的占位图样式
     if (articleManager && articleManager.showWelcomePage) {
         const originalShowWelcomePage = articleManager.showWelcomePage;
         articleManager.showWelcomePage = function() {
-            console.log('显示欢迎页...');
+            logger.info('显示欢迎页...');
             
             const container = document.getElementById('article-container');
             if (container) {
@@ -120,7 +121,7 @@ async function initializePage() {
                 if (container.querySelector('.welcome-page') || 
                     container.querySelector('.article-body')) {
                     // 如果已经有欢迎页或文章内容，直接返回，避免重复渲染
-                    console.log('已有页面内容，跳过欢迎页重新渲染');
+                    logger.info('已有页面内容，跳过欢迎页重新渲染');
                     return;
                 }
                 
@@ -145,16 +146,16 @@ async function initializePage() {
                 }, 100);
             }
         };
-        console.log('✅ articleManager.showWelcomePage 方法扩展完成');
+        logger.info('✅ articleManager.showWelcomePage 方法扩展完成');
     }
 
     // 初始化文章管理器
-    console.log('初始化文章管理器...');
+    logger.info('初始化文章管理器...');
     await articleManager.initialize(currentDatabaseId);
 
     // 设置分类变更回调
     categoryManager.setOnCategoryChange((category) => {
-        console.log('分类变更为:', category);
+        logger.info('分类变更为:', category);
         articleManager.filterAndRenderArticles();
     });
 
@@ -163,14 +164,14 @@ async function initializePage() {
         try {
             // 如果apiService可用且提供了getDatabaseInfo方法
             if (window.apiService && typeof window.apiService.getDatabaseInfo === 'function') {
-                console.log('通过apiService获取数据库信息');
+                logger.info('通过apiService获取数据库信息');
                 return await window.apiService.getDatabaseInfo(databaseId);
             }
             // 回退到原始实现
-            console.log('通过原始服务获取数据库信息');
+            logger.info('通过原始服务获取数据库信息');
             return await getDatabaseInfo(databaseId);
         } catch (error) {
-            console.error('获取数据库信息失败:', error);
+            logger.error('获取数据库信息失败:', error);
             // 确保返回一个合理的结果
             return { success: false, error: error.message };
         }
@@ -180,14 +181,14 @@ async function initializePage() {
         try {
             // 如果apiService可用
             if (window.apiService) {
-                console.log('通过apiService测试API连接');
+                logger.info('通过apiService测试API连接');
                 return await window.apiService.testConnection();
             }
             // 回退到原始实现
-            console.log('通过原始服务测试API连接');
+            logger.info('通过原始服务测试API连接');
             return await testApiConnection();
         } catch (error) {
-            console.error('API连接测试失败:', error);
+            logger.error('API连接测试失败:', error);
             return { success: false, error: error.message };
         }
     };
@@ -196,14 +197,14 @@ async function initializePage() {
         try {
             // 如果apiService可用且提供了getDatabases方法
             if (window.apiService && typeof window.apiService.getDatabases === 'function') {
-                console.log('通过apiService获取数据库列表');
+                logger.info('通过apiService获取数据库列表');
                 return await window.apiService.getDatabases();
             }
             // 回退到原始实现
-            console.log('通过原始服务获取数据库列表');
+            logger.info('通过原始服务获取数据库列表');
             return await getDatabases();
         } catch (error) {
-            console.error('获取数据库列表失败:', error);
+            logger.error('获取数据库列表失败:', error);
             return { success: false, error: error.message, results: [] };
         }
     };
@@ -226,34 +227,34 @@ async function initializePage() {
         
         if (articleIdFromUrl) {
             // 仅当URL中指定了文章ID时才加载文章
-            console.log(`从URL参数加载文章: ${articleIdFromUrl}`);
+            logger.info(`从URL参数加载文章: ${articleIdFromUrl}`);
             await articleManager.showArticle(articleIdFromUrl);
         } else {
             // 确保文章数据已加载完成后再显示欢迎页面
-            console.log('确保文章数据已加载后显示欢迎页面...');
+            logger.info('确保文章数据已加载后显示欢迎页面...');
             // 如果还没有文章数据，先加载文章
             if (!articleManager.articles || articleManager.articles.length === 0) {
-                console.log('文章数据尚未加载，先加载文章数据...');
+                logger.info('文章数据尚未加载，先加载文章数据...');
                 await articleManager.loadArticles();
             }
             // 显示欢迎页面
-            console.log('显示欢迎页面...');
+            logger.info('显示欢迎页面...');
             articleManager.showWelcomePage();
         }
     } catch (error) {
-        console.error('页面初始化过程中出错:', error);
+        logger.error('页面初始化过程中出错:', error);
         // 即使出错，也尝试加载文章数据再显示欢迎页面
         if (!articleManager.articles || articleManager.articles.length === 0) {
             try {
                 await articleManager.loadArticles();
             } catch (loadError) {
-                console.error('加载文章数据出错:', loadError);
+                logger.error('加载文章数据出错:', loadError);
             }
         }
         articleManager.showWelcomePage();
     }
 
-    console.log('✅ 页面初始化完成！');
+    logger.info('✅ 页面初始化完成！');
     
     // 初始化辅助功能
     setupDebugShortcut();
@@ -276,7 +277,7 @@ async function initializePage() {
 
 // 导出显示文章的全局函数
 window.showArticle = async (pageId) => {
-    console.log('🔄 调用全局 showArticle 函数:', pageId);
+    logger.info('🔄 调用全局 showArticle 函数:', pageId);
     return articleManager.showArticle(pageId);
 };
 
@@ -285,11 +286,11 @@ let pageInitialized = false;
 
 // 页面加载完成后初始化
 window.addEventListener('load', () => {
-    console.log('📃 页面加载完成，开始初始化...');
+    logger.info('📃 页面加载完成，开始初始化...');
     
     // 避免重复初始化
     if (pageInitialized) {
-        console.log('页面已经初始化，跳过重复初始化');
+        logger.info('页面已经初始化，跳过重复初始化');
         return;
     }
     
@@ -298,10 +299,10 @@ window.addEventListener('load', () => {
     
     // 监听资源加载器的内容解锁事件
     document.addEventListener('content-unblocked', () => {
-        console.log('🎉 内容已解锁，开始初始化页面');
+        logger.info('🎉 内容已解锁，开始初始化页面');
         // 初始化页面
         initializePage().catch(error => {
-            console.error('❌ 初始化失败:', error);
+            logger.error('❌ 初始化失败:', error);
             showStatus('页面初始化失败，请刷新重试', true, 'error');
         }).finally(() => {
             // 初始化完成，设置标志
@@ -314,15 +315,15 @@ window.addEventListener('load', () => {
     
     // 检查是否使用资源加载器解锁了内容
     if (window.contentUnblocked) {
-        console.log('内容已经被解锁，立即初始化页面');
+        logger.info('内容已经被解锁，立即初始化页面');
         // 触发内容解锁事件
         document.dispatchEvent(new Event('content-unblocked'));
     } else {
-        console.log('等待内容解锁事件...');
+        logger.info('等待内容解锁事件...');
         // 增加超时保护，防止事件未触发
         setTimeout(() => {
             if (!pageInitialized) {
-                console.warn('⚠️ 内容解锁事件在10秒内未触发，强制初始化页面');
+                logger.warn('⚠️ 内容解锁事件在10秒内未触发，强制初始化页面');
                 document.dispatchEvent(new Event('content-unblocked'));
             }
         }, 10000);
@@ -338,7 +339,7 @@ if (typeof articleManager.displayArticleContent === 'function') {
     const originalDisplayContent = articleManager.displayArticleContent;
     articleManager.displayArticleContent = function(article) {
         if (article && article.content) {
-            console.log('🔄 准备处理文章内容中的图片...');
+            logger.info('🔄 准备处理文章内容中的图片...');
             // 处理 HTML 内容中的图片
             article.content = imageLazyLoader.processHTMLContent(article.content);
         }
@@ -350,10 +351,10 @@ if (typeof articleManager.displayArticleContent === 'function') {
         setTimeout(() => {
             const articleBody = document.querySelector('.article-body');
             if (articleBody) {
-                console.log('🖼️ 开始处理新加载的文章图片...');
+                logger.info('🖼️ 开始处理新加载的文章图片...');
                 imageLazyLoader.processImages(articleBody);
                 
-                console.log('🔄 初始化代码块和表格懒加载...');
+                logger.info('🔄 初始化代码块和表格懒加载...');
                 initializeLazyLoading(articleBody);
             }
         }, 100);
@@ -367,9 +368,9 @@ if (typeof articleManager.displayArticleContent === 'function') {
  * 确保文章中的图片样式正确
  */
 function applyImageStyles() {
-    console.log('正在应用文章图片样式...');
+    logger.info('正在应用文章图片样式...');
     const images = document.querySelectorAll('.article-body img');
-    console.log(`找到 ${images.length} 张文章图片`);
+    logger.info(`找到 ${images.length} 张文章图片`);
     
     images.forEach(img => {
         img.style.maxWidth = '50%';
@@ -384,12 +385,12 @@ function applyImageStyles() {
         
         // 添加点击放大功能
         img.onclick = function() {
-            console.log('图片被点击');
+            logger.info('图片被点击');
             // 这里可以添加点击放大功能
         };
     });
     
-    console.log('图片样式已应用');
+    logger.info('图片样式已应用');
 }
 
 // 扩展文章管理器，在显示文章后应用图片样式
@@ -413,7 +414,7 @@ function initializeResizableLeftColumn() {
     const separatorLine = document.querySelector('.separator-line');
     
     if (!leftColumn || !resizeHandle) {
-        console.warn('初始化拖动功能失败: 未找到必要的DOM元素');
+        logger.warn('初始化拖动功能失败: 未找到必要的DOM元素');
         return;
     }
     
@@ -442,7 +443,7 @@ function initializeResizableLeftColumn() {
                 }
             }
         } catch (e) {
-            console.error('解析保存的宽度值时出错:', e);
+            logger.error('解析保存的宽度值时出错:', e);
         }
     }
     
@@ -642,7 +643,7 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 function setupDebugShortcut() {
     // 这个函数在实际代码中应该会被实现
-    console.log('setupDebugShortcut: 未实现的函数');
+    logger.info('setupDebugShortcut: 未实现的函数');
 }
 
 /**
@@ -650,7 +651,7 @@ function setupDebugShortcut() {
  */
 function initializeHelpPopup() {
     // 这个函数在实际代码中应该会被实现
-    console.log('initializeHelpPopup: 未实现的函数');
+    logger.info('initializeHelpPopup: 未实现的函数');
 }
 
 /**
@@ -658,7 +659,7 @@ function initializeHelpPopup() {
  */
 function initializeArticleSearch() {
     // 这个函数在实际代码中应该会被实现
-    console.log('initializeArticleSearch: 未实现的函数');
+    logger.info('initializeArticleSearch: 未实现的函数');
 }
 
 /**
@@ -666,7 +667,7 @@ function initializeArticleSearch() {
  */
 function initializeArticleList() {
     // 这个函数在实际代码中应该会被实现
-    console.log('initializeArticleList: 未实现的函数');
+    logger.info('initializeArticleList: 未实现的函数');
 }
 
 /**
@@ -674,7 +675,7 @@ function initializeArticleList() {
  * 当页面滚动超过一定距离时显示按钮，点击按钮可平滑回到顶部
  */
 function initializeBackToTop() {
-    console.log('初始化返回顶部按钮...');
+    logger.info('初始化返回顶部按钮...');
     
     // 创建按钮元素
     const backToTopBtn = document.createElement('div');
@@ -688,11 +689,11 @@ function initializeBackToTop() {
     
     // 检查按钮是否添加成功
     if (!document.querySelector('.back-to-top')) {
-        console.error('返回顶部按钮创建失败');
+        logger.error('返回顶部按钮创建失败');
         return;
     }
     
-    console.log('✅ 返回顶部按钮创建成功');
+    logger.info('✅ 返回顶部按钮创建成功');
     
     // 监听滚动事件，控制按钮显示隐藏
     let scrollThreshold = 300; // 滚动超过300px显示按钮
@@ -716,7 +717,7 @@ function initializeBackToTop() {
     
     // 点击按钮回到顶部
     backToTopBtn.addEventListener('click', () => {
-        console.log('点击返回顶部');
+        logger.info('点击返回顶部');
         
         // 平滑滚动回顶部
         window.scrollTo({
@@ -739,7 +740,7 @@ function initializeBackToTop() {
         }
     });
     
-    console.log('✅ 返回顶部按钮初始化完成');
+    logger.info('✅ 返回顶部按钮初始化完成');
 }
 
 /**
@@ -749,22 +750,22 @@ function initializeBackToTop() {
 function handleLoadingMask(action = 'fade') {
     const container = document.getElementById('article-container');
     if (!container) {
-        console.warn('未找到文章容器，无法处理加载遮罩');
+        logger.warn('未找到文章容器，无法处理加载遮罩');
         return;
     }
     
     const placeholder = container.querySelector('.placeholder-content');
     if (!placeholder) {
-        console.log('加载占位内容不存在或已被移除');
+        logger.info('加载占位内容不存在或已被移除');
         return;
     }
     
     if (action === 'fade') {
-        console.log('淡出加载占位内容...');
+        logger.info('淡出加载占位内容...');
         placeholder.style.transition = 'opacity 0.5s ease';
         placeholder.style.opacity = '0.5'; // 降低不透明度但不完全隐藏
     } else if (action === 'remove') {
-        console.log('彻底移除加载占位内容...');
+        logger.info('彻底移除加载占位内容...');
         // 先确保淡出效果完成
         placeholder.style.transition = 'opacity 0.5s ease';
         placeholder.style.opacity = '0';
@@ -782,18 +783,18 @@ function handleLoadingMask(action = 'fade') {
 function preloadCriticalResources() {
     // 检查资源加载器是否可用
     if (!resourceLoader) {
-        console.warn('⚠️ 资源加载器不可用，跳过预加载');
+        logger.warn('⚠️ 资源加载器不可用，跳过预加载');
         return;
     }
 
-    console.log('🔍 使用非阻塞方式加载关键资源...');
+    logger.info('🔍 使用非阻塞方式加载关键资源...');
     
     try {
         // 调用资源加载器的非阻塞核心内容加载
         resourceLoader.loadNonBlockingCoreContent();
-        console.log('✅ 非阻塞核心内容加载已启动');
+        logger.info('✅ 非阻塞核心内容加载已启动');
     } catch (error) {
-        console.error('❌ 非阻塞资源加载失败:', error);
+        logger.error('❌ 非阻塞资源加载失败:', error);
         // 设置全局标志，指示内容已解锁，以便初始化可以继续
         window.contentUnblocked = true;
     }
@@ -801,7 +802,7 @@ function preloadCriticalResources() {
 
 // 在页面DOM加载完成后预加载关键资源
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM内容已加载，准备预加载关键资源');
+    logger.info('DOM内容已加载，准备预加载关键资源');
     preloadCriticalResources();
 });
 

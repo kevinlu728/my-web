@@ -7,6 +7,7 @@
  */
 
 import { UrlUtils } from './url-utils.js';
+import logger from './logger.js';
 
 /**
  * 节流函数 - 限制函数在特定时间内只能执行一次
@@ -51,7 +52,7 @@ export function getFormattedPageId(pageId) {
     
     // 如果ID是纯数字字符串，这可能是错误的ID
     if (/^\d+$/.test(pageId)) {
-        console.warn(`发现纯数字ID: ${pageId}，这可能不是有效的Notion页面ID`);
+        logger.warn(`发现纯数字ID: ${pageId}，这可能不是有效的Notion页面ID`);
         return pageId;
     }
     

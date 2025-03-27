@@ -21,6 +21,8 @@
  * 导出单例imageLazyLoader供其他模块使用。
  */
 
+import logger from './logger.js';
+
 class ImageLazyLoader {
     constructor() {
         // 检查浏览器是否支持 IntersectionObserver
@@ -360,7 +362,7 @@ class ImageLazyLoader {
             return;
         }
         // 简化日志，只保留关键信息
-        console.debug(`处理${images.length}张图片懒加载`);
+        logger.debug(`处理${images.length}张图片懒加载`);
         
         images.forEach((img, index) => {
             // 获取原始图片URL和尺寸信息
@@ -378,7 +380,7 @@ class ImageLazyLoader {
             // });
 
             if (!originalSrc || originalSrc.startsWith('data:image/svg+xml')) {
-                console.warn('⚠️ 图片没有有效的源URL');
+                logger.warn('⚠️ 图片没有有效的源URL');
                 return;
             }
 
@@ -444,7 +446,7 @@ class ImageLazyLoader {
                 
                 if (retryCount < maxRetries) {
                     img.dataset.retryCount = (retryCount + 1).toString();
-                    console.warn(`⚠️ 图片加载失败，正在进行第 ${retryCount + 1} 次重试:`, originalSrc);
+                    logger.warn(`⚠️ 图片加载失败，正在进行第 ${retryCount + 1} 次重试:`, originalSrc);
                     
                     setTimeout(() => {
                         // 清除所有已存在的错误提示
@@ -455,7 +457,7 @@ class ImageLazyLoader {
                     }, 1000 * Math.pow(2, retryCount));
                     
                 } else {
-                    console.error('❌ 图片加载失败（已达到最大重试次数）:', originalSrc);
+                    logger.error('❌ 图片加载失败（已达到最大重试次数）:', originalSrc);
                     if (loader.parentNode === wrapper) {
                         loader.remove();
                     }
@@ -478,7 +480,7 @@ class ImageLazyLoader {
                 
                 if (src) {
                     // 将普通日志降级为debug级别
-                    console.debug('图片进入视图范围，开始加载:', src);
+                    logger.debug('图片进入视图范围，开始加载:', src);
                     img.src = src;
                     img.removeAttribute('data-src');
                     this.observer.unobserve(img);
@@ -543,12 +545,12 @@ class ImageLazyLoader {
         
         // 处理所有图片
         const images = tempDiv.querySelectorAll('img');
-        console.log('找到图片数量:', images.length);
+        logger.info('找到图片数量:', images.length);
         
         images.forEach((img, index) => {
             const originalSrc = img.src;
             if (originalSrc) {
-                console.log(`图片 ${index + 1} URL:`, originalSrc);
+                logger.info(`图片 ${index + 1} URL:`, originalSrc);
                 img.setAttribute('data-src', originalSrc);
                 img.src = this.placeholderImage;
                 img.classList.add('lazy-image');

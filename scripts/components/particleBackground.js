@@ -15,16 +15,18 @@
  * 依赖于外部库particles.js。
  */
 
+import logger from '../utils/logger.js';
+
 export function initParticleBackground() {
     const particlesContainer = document.getElementById('particles-js');
     if (!particlesContainer) {
-        console.warn('粒子背景容器不存在，跳过初始化');
+        logger.warn('粒子背景容器不存在，跳过初始化');
         return;
     }
     
     // 检查粒子库是否已加载
     if (typeof particlesJS === 'undefined') {
-        console.error('particles.js 库未加载，无法初始化粒子背景');
+        logger.error('particles.js 库未加载，无法初始化粒子背景');
         return;
     }
     
@@ -88,9 +90,9 @@ export function initParticleBackground() {
             },
             retina_detect: true
         });
-        console.log('✅ 粒子背景初始化成功');
+        logger.info('✅ 粒子背景初始化成功');
     } catch (error) {
-        console.error('粒子背景初始化失败:', error);
+        logger.error('粒子背景初始化失败:', error);
     }
 }
 
