@@ -122,9 +122,9 @@
     </div>
 
     <script type="module">
-        import { resourceLoader } from './scripts/utils/resource-loader.js';
-        import { CdnMapper } from './scripts/utils/cdn-mapper.js';
-        import resourceConfig from './scripts/config/resources.js';
+        import { resourceLoader } from '../scripts/utils/resource-loader.js';
+        import { CdnMapper } from '../scripts/utils/cdn-mapper.js';
+        import resourceConfig from '../scripts/config/resources.js';
         
         // 初始化日志系统
         const logsDiv = document.getElementById('logs');
@@ -272,22 +272,22 @@ const url = cdnMapper.buildUrlFromProvider({
             console.log('开始错误回退集成测试');
             
             try {
-                // 创建一个测试资源
-                const testResourceId = 'test-integration-resource';
+                // 添加一个测试资源映射
+                const testResourceType = 'test-integration-resource';
                 const primaryUrl = 'https://invalid-cdn.example.com/non-existent.css';
-                const fallbackUrl = 'styles/fallback.css'; // 使用本地回退样式
+                const fallbackUrl = '../styles/fallback.css'; // 使用本地回退样式
                 
                 // 向ResourceLoader的cdnMapper实例添加测试资源映射
-                resourceLoader.cdnMapper.addOrUpdateMapping(testResourceId, fallbackUrl, primaryUrl);
+                resourceLoader.cdnMapper.addOrUpdateMapping(testResourceType, fallbackUrl, primaryUrl);
                 
                 // 验证映射添加成功
-                const urls = resourceLoader.cdnMapper.getResourceUrls(testResourceId);
+                const urls = resourceLoader.cdnMapper.getResourceUrls(testResourceType);
                 
                 const mappingResult = document.createElement('div');
                 mappingResult.className = 'result-item';
                 mappingResult.innerHTML = `
                     <h4>测试资源映射</h4>
-                    <div>资源ID: ${testResourceId}</div>
+                    <div>资源ID: ${testResourceType}</div>
                     <div>映射的URL数量: ${urls.length}</div>
                     <div>URL列表: ${urls.join(' → ')}</div>
                 `;
@@ -299,7 +299,7 @@ const url = cdnMapper.buildUrlFromProvider({
                 const link = document.createElement('link');
                 link.rel = 'stylesheet';
                 link.href = primaryUrl;
-                link.setAttribute('data-resource-type', testResourceId);
+                link.setAttribute('data-resource-type', testResourceType);
                 link.setAttribute('data-local-fallback', fallbackUrl);
                 
                 document.head.appendChild(link);
@@ -320,7 +320,7 @@ const url = cdnMapper.buildUrlFromProvider({
                         fallbackTestResult.innerHTML = `
                             <h4>回退处理结果</h4>
                             <div>${hasFallbackStyle ? '✅ 成功应用回退样式' : '❌ 未应用回退样式'}</div>
-                            <div>获取回退URL: ${resourceLoader.cdnMapper.getNextFallbackUrl(testResourceId, primaryUrl)}</div>
+                            <div>获取回退URL: ${resourceLoader.cdnMapper.getNextFallbackUrl(testResourceType, primaryUrl)}</div>
                         `;
                         resultsDiv.appendChild(fallbackTestResult);
                         

@@ -133,6 +133,68 @@ const url = cdnMapper.buildUrlFromProvider(jsDelivrConfig);
 - 非关键资源的静默处理
 - 组件资源的递归加载
 
+#### 资源超时管理模块 (resource-timeout.js)
+
+`ResourceTimeout` 类负责管理资源加载超时逻辑，确保资源加载不会无限期挂起，并在超时时执行适当的回退操作。
+
+**核心功能**:
+- **超时处理**：为资源加载设置超时，防止资源加载过程无限阻塞页面渲染
+- **优先级支持**：根据资源优先级（关键、高、中、低）设置不同的超时时间
+- **事件通知**：在资源超时时触发自定义事件通知系统
+- **回调机制**：支持超时回调函数，以便在资源超时时执行自定义逻辑
+
+**主要API**:
+- `setResourceTimeout(resourceType, url, priority, callback)`: 设置资源加载超时处理
+- `clearResourceTimeout(url)`: 取消资源的超时处理
+- `getTimeoutDuration(priority)`: 获取指定优先级的超时时长
+- `updateConfig(config)`: 更新超时配置
+- `clearAllTimeouts()`: 清除所有超时处理器
+- `hasActiveTimeout(url)`: 检查URL是否有活跃的超时处理器
+- `getActiveTimeoutsCount()`: 获取当前活跃的超时处理器数量
+
+**与ResourceLoader集成**:
+
+`ResourceTimeout` 模块通过依赖注入模式与 `ResourceLoader` 集成，避免循环依赖。在 `ResourceLoader` 中：
+
+```javascript
+// 配置资源超时管理器
+resourceTimeout.updateConfig({
+    timeoutCallback: this.handleResourceTimeout.bind(this)
+});
+
+// ResourceLoader提供setResourceTimeout方法委托给resourceTimeout
+setResourceTimeout(resourceType, url, priority = 'medium') {
+    return resourceTimeout.setResourceTimeout(resourceType, url, priority);
+}
+```
+
+#### 资源检查器模块 (resource-checker.js)
+
+`ResourceChecker` 类负责检查本地资源是否存在并维护不存在资源的记录，避免反复尝试加载已知不存在的资源。
+
+**核心功能**:
+- **本地资源检查**：检查本地资源是否存在，避免加载不存在的资源
+- **资源缓存**：维护不存在资源的记录，避免重复检查
+- **KaTeX资源管理**：特殊处理KaTeX等可选资源，提高加载效率
+
+**主要API**:
+- `checkLocalResourceExists(localPath)`: 检查本地资源是否存在
+- `isNonExistentResource(resourcePath)`: 检查资源是否为已知不存在的资源
+- `markResourceAsNonExistent(resourcePath)`: 标记资源为不存在
+- `updateConfig(config)`: 更新配置，如KaTeX本地资源是否确认存在
+
+**与ResourceLoader集成**:
+
+```javascript
+// 更新resourceChecker的配置
+resourceChecker.updateConfig({
+    katexLocalResourceConfirmed: this.katexLocalResourceConfirmed
+});
+
+// 检查本地资源是否存在
+const localResourceExists = resourceChecker.checkLocalResourceExists(localFallback);
+```
+
 ## 代码组织原则
 
 1. **模块化**: 每个文件应该有明确的单一职责
@@ -171,6 +233,10 @@ const url = cdnMapper.buildUrlFromProvider(jsDelivrConfig);
 
 ### 2024-04-14
 - **分离CDN映射逻辑**：将资源加载器中的CDN映射逻辑分离到独立的`cdn-mapper.js`模块中，提高了代码模块化，降低了`resource-loader.js`的复杂度。该重构使CDN资源URL的管理和构建更加集中和高效，为未来扩展CDN提供商支持提供了便利。
+
+### 2024-05-01
+- **分离资源检查逻辑**：创建了`resource-checker.js`模块，专门负责检查本地资源是否存在并维护不存在资源的记录。这一重构使得资源检查逻辑更加集中和可维护。
+- **分离资源超时管理**：创建了`resource-timeout.js`模块，专门处理资源加载超时逻辑。该模块支持根据资源优先级设置不同的超时时间，使用事件通知系统资源超时，并提供回调机制执行自定义逻辑。通过依赖注入模式与`ResourceLoader`集成，有效降低了`resource-loader.js`的复杂度，提高了代码的模块化和可测试性。
 
 ## 未来重构计划
 

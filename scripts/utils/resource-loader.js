@@ -2,32 +2,34 @@
  * @file resource-loader.js
  * @description 资源加载器，提供资源加载错误处理和回退机制
  * @author 陆凯
- * @version 1.1.0
+ * @version 1.2.0
  * @created 2024-03-22
+ * @modified 2024-05-01
  * 
  * 该模块负责优化资源加载:
  * - 提供CSS和JS资源加载的回退机制
  * - 处理CDN资源加载失败的情况
  * - 可选择性地预加载关键资源
  * - 监控资源加载性能
+ * 
+ * 重构历史:
+ * - 2024-04-14: 将CDN映射逻辑分离到cdn-mapper.js
+ * - 2024-05-01: 将资源检查逻辑分离到resource-checker.js
+ * - 2024-05-01: 将超时管理逻辑分离到resource-timeout.js
  */
 
 // 导入集中式资源配置
 import resourceConfig from '../config/resources.js';
 import { CdnMapper } from './cdn-mapper.js';
+import { resourceStyles } from './resource-styles.js';
+import { resourceChecker } from './resource-checker.js';
+import { resourceTimeout } from './resource-timeout.js';
 
 class ResourceLoader {
     constructor() {
         this.loadedResources = new Set();
         this.failedResources = new Set();
         this.resourceConfig = resourceConfig;
-        this.timeoutHandlers = new Map(); // 存储超时处理器
-        this.resourceTimeouts = {
-            critical: 5000,   // 关键资源等待5秒
-            high: 8000,       // 高优先级资源等待8秒
-            medium: 12000,    // 中等优先级资源等待12秒
-            low: 20000        // 低优先级资源等待20秒
-        };
         
         // 创建CDN映射器实例
         this.cdnMapper = new CdnMapper(resourceConfig);
@@ -35,11 +37,22 @@ class ResourceLoader {
         // 配置项：是否启用KaTeX本地资源（根据您的情况，我们设置为false）
         this.katexLocalResourceConfirmed = false;
         
-        // 初始化不存在资源列表
-        this.nonExistentResources = new Set();
-        if (!this.katexLocalResourceConfirmed) {
-            this.nonExistentResources.add('/assets/libs/katex/');
-        }
+        // 更新resourceChecker的配置
+        resourceChecker.updateConfig({
+            katexLocalResourceConfirmed: this.katexLocalResourceConfirmed
+        });
+        
+        // 配置资源超时管理器
+        resourceTimeout.updateConfig({
+            timeoutCallback: this.handleResourceTimeout.bind(this)
+        });
+        
+        // 设置resourceStyles的依赖
+        resourceStyles.setDependencies({
+            handleResourceError: this.handleResourceError.bind(this),
+            setResourceTimeout: this.setResourceTimeout.bind(this),
+            clearResourceTimeout: this.clearResourceTimeout.bind(this)
+        });
         
         // 初始化
         this.initializeErrorHandling();
@@ -98,7 +111,7 @@ class ResourceLoader {
             priority !== 'high') {
             
             // 检查本地资源是否存在
-            const localResourceExists = this.checkLocalResourceExists(localFallback);
+            const localResourceExists = resourceChecker.checkLocalResourceExists(localFallback);
             
             if (!localResourceExists) {
                 console.debug(`ℹ️ 非关键资源 ${url} 加载失败，本地回退资源不存在，跳过回退`);
@@ -121,30 +134,6 @@ class ResourceLoader {
         }
         
         // 对于其他资源，可以添加特定处理
-    }
-    
-    /**
-     * 检查本地资源是否存在
-     * @param {string} localPath - 本地资源路径
-     * @returns {boolean} 资源是否存在
-     */
-    checkLocalResourceExists(localPath) {
-        // 此方法在浏览器环境中不能直接检查文件是否存在
-        // 我们可以通过一些启发式方法来判断
-        
-        // 检查常见的不存在路径模式
-        if (localPath.includes('/katex/') && !this.katexLocalResourceConfirmed) {
-            // 如果是katex路径且没有确认过本地存在，假设不存在
-            return false;
-        }
-        
-        // 对于已知的本地资源路径，可以维护一个列表
-        const knownLocalResources = [
-            'styles/fallback.css', 
-            // 其他已知存在的本地资源...
-        ];
-        
-        return knownLocalResources.some(path => localPath.endsWith(path));
     }
     
     /**
@@ -206,7 +195,7 @@ class ResourceLoader {
      */
     applyResourceFallback(element, originalUrl, fallbackUrl) {
         // 先检查是否为已知不存在的资源路径
-        if (this.isNonExistentResource(fallbackUrl)) {
+        if (resourceChecker.isNonExistentResource(fallbackUrl)) {
             console.debug(`🔍 跳过不存在的本地回退资源: ${fallbackUrl}`);
             return false;
         }
@@ -224,7 +213,7 @@ class ResourceLoader {
                 
                 // 如果是katex相关资源而且回退失败，标记为不存在
                 if (fallbackUrl.includes('/katex/')) {
-                    this.markResourceAsNonExistent(fallbackUrl);
+                    resourceChecker.markResourceAsNonExistent(fallbackUrl);
                 }
                 
                 // 尝试从资源配置中获取优先级
@@ -258,7 +247,7 @@ class ResourceLoader {
                 
                 // 如果是katex相关资源而且回退失败，标记为不存在
                 if (fallbackUrl.includes('/katex/')) {
-                    this.markResourceAsNonExistent(fallbackUrl);
+                    resourceChecker.markResourceAsNonExistent(fallbackUrl);
                 }
                 
                 // 获取资源优先级
@@ -282,56 +271,6 @@ class ResourceLoader {
         }
         
         return false;
-    }
-    
-    /**
-     * 检查资源是否为已知不存在的资源
-     * @param {string} resourcePath - 资源路径
-     * @returns {boolean} 是否为已知不存在的资源
-     */
-    isNonExistentResource(resourcePath) {
-        // 如果没有初始化不存在资源列表，则初始化
-        if (!this.nonExistentResources) {
-            this.nonExistentResources = new Set();
-            
-            // 添加一些已知不存在的路径模式
-            if (!this.katexLocalResourceConfirmed) {
-                this.nonExistentResources.add('/assets/libs/katex/');
-            }
-        }
-        
-        // 检查完整路径
-        if (this.nonExistentResources.has(resourcePath)) {
-            return true;
-        }
-        
-        // 检查路径前缀
-        for (const prefix of this.nonExistentResources) {
-            if (resourcePath.startsWith(prefix)) {
-                return true;
-            }
-        }
-        
-        return false;
-    }
-    
-    /**
-     * 标记资源为不存在
-     * @param {string} resourcePath - 资源路径
-     */
-    markResourceAsNonExistent(resourcePath) {
-        if (!this.nonExistentResources) {
-            this.nonExistentResources = new Set();
-        }
-        
-        // 从路径中提取目录部分
-        const parts = resourcePath.split('/');
-        parts.pop(); // 移除文件名
-        const directory = parts.join('/') + '/';
-        
-        // 添加到不存在资源集合
-        this.nonExistentResources.add(directory);
-        console.debug(`🔍 已标记目录为不存在资源: ${directory}`);
     }
     
     /**
@@ -367,7 +306,7 @@ class ResourceLoader {
             const nextFallbackUrl = this.cdnMapper.getNextFallbackUrl(resourceType, originalUrl);
             if (nextFallbackUrl) {
                 // 检查是否为已知不存在的资源
-                if (this.isNonExistentResource(nextFallbackUrl)) {
+                if (resourceChecker.isNonExistentResource(nextFallbackUrl)) {
                     console.debug(`🔍 跳过不存在的回退资源: ${nextFallbackUrl}`);
                     this.handleCriticalResourceFailure(resourceName, priority);
                     return;
@@ -428,9 +367,9 @@ class ResourceLoader {
         // 对于常见的基础资源，如果所有回退都失败，使用统一的回退样式文件
         if (!silent) {
             if (resourceName === 'bootstrap-icons.css' || resourceName.includes('fontawesome')) {
-                this.injectBasicIconStyles();
+                resourceStyles.injectBasicIconStyles();
             } else if (resourceName === 'katex.min.css' || resourceName.includes('katex')) {
-                this.injectBasicKatexStyles();
+                resourceStyles.injectBasicKatexStyles();
             }
         }
         
@@ -453,74 +392,6 @@ class ResourceLoader {
         } else {
             console.debug(`ℹ️ 低优先级资源加载失败: ${resourceName}`);
         }
-    }
-    
-    /**
-     * 注入基本图标样式
-     * 当图标CDN加载失败时提供最小的必要图标样式
-     */
-    injectBasicIconStyles() {
-        // 检查是否已经注入了图标样式
-        if (document.getElementById('basic-icon-styles')) {
-            return;
-        }
-        
-        // 始终从外部文件加载基本图标样式，无论Font Awesome是否加载成功
-        const link = document.createElement('link');
-        link.id = 'basic-icon-styles';
-        link.rel = 'stylesheet';
-        link.href = 'styles/fallback.css';
-        
-        // 添加自定义属性，标记为本地回退
-        link.setAttribute('data-resource-type', 'icon-fallback');
-        link.setAttribute('data-is-fallback', 'true');
-        
-        document.head.appendChild(link);
-        console.debug('已加载基本图标回退样式');
-    }
-    
-    /**
-     * 注入基本KaTeX样式
-     * 当KaTeX CDN加载失败时提供最小的必要数学公式样式
-     */
-    injectBasicKatexStyles() {
-        // 检查是否已经注入了KaTeX样式
-        if (document.getElementById('basic-katex-styles')) {
-            return;
-        }
-        
-        // 确保已经加载了图标样式文件（它们在同一个文件中）
-        if (!document.getElementById('basic-icon-styles')) {
-            this.injectBasicIconStyles();
-            // 由于我们已经加载了包含所有回退样式的文件，可以直接返回
-            return;
-        }
-        
-        console.debug('已加载基本KaTeX回退样式');
-    }
-    
-    /**
-     * 注入关键的内联样式
-     * 确保基本的布局和样式即使在外部资源失败时也能正常显示
-     */
-    injectCriticalInlineStyles() {
-        // 检查是否已经注入了关键样式
-        if (document.getElementById('critical-inline-styles')) {
-            return;
-        }
-        
-        // 确保已经加载了包含所有回退样式的文件
-        if (!document.getElementById('basic-icon-styles')) {
-            this.injectBasicIconStyles();
-            // 设置ID以标记为已完成
-            const marker = document.createElement('meta');
-            marker.id = 'critical-inline-styles';
-            document.head.appendChild(marker);
-            // 由于我们已经加载了包含所有回退样式的文件，可以直接返回
-            return;
-        }
-        
-        console.debug('✅ 已加载最小必要的关键内联样式');
     }
     
     /**
@@ -608,7 +479,7 @@ class ResourceLoader {
                 // 根据资源类型确定加载方法
                 if (typeof resource.primary === 'string') {
                     if (resource.primary.endsWith('.css')) {
-                        return this.loadCss(resource.primary, resource);
+                        return resourceStyles.loadCss(resource.primary, resource);
                     } else if (resource.primary.endsWith('.js')) {
                         return this.loadScript(resource.primary, resource);
                     }
@@ -707,7 +578,7 @@ class ResourceLoader {
                     this.loadResource('styles', 'bootstrap-icons'),
                     // 注释掉Font Awesome加载，改为直接加载fallback.css
                     // this.loadResource('styles', 'font-awesome')
-                    this.injectBasicIconStyles() // 直接使用回退样式
+                    resourceStyles.injectBasicIconStyles() // 直接使用回退样式
                 ]);
                 
             case 'syntax-highlighting':
@@ -805,72 +676,47 @@ class ResourceLoader {
     }
     
     /**
-     * 启用资源加载的超时处理
-     * 对于阻塞页面加载的资源，设置超时自动继续
+     * 处理资源超时的回调函数
+     * @param {string} url - 资源URL
+     * @param {string} resourceType - 资源类型
+     * @param {string} priority - 资源优先级
+     */
+    handleResourceTimeout(url, resourceType, priority) {
+        // 把资源标记为已加载，即使实际上可能失败了
+        // 这样可以防止无限等待，让页面渲染继续
+        this.loadedResources.add(url);
+        
+        // 处理资源超时，传递优先级确保正确标记资源类型
+        const resourceName = this.getResourceBaseName(url);
+        
+        // 确保KaTeX资源始终使用medium优先级
+        let finalPriority = priority;
+        if (resourceName.includes('katex') || resourceName === 'katex.min.css' || url.includes('katex')) {
+            finalPriority = 'medium';
+        }
+        
+        this.handleCriticalResourceFailure(resourceName, finalPriority);
+    }
+    
+    /**
+     * 设置资源超时处理
+     * 委托给resourceTimeout模块
      * @param {string} resourceType - 资源类型
      * @param {string} url - 资源URL
      * @param {string} priority - 资源优先级
+     * @returns {number} 超时处理器ID
      */
     setResourceTimeout(resourceType, url, priority = 'medium') {
-        // 如果已经有超时处理器，则先清除
-        if (this.timeoutHandlers.has(url)) {
-            clearTimeout(this.timeoutHandlers.get(url));
-            this.timeoutHandlers.delete(url);
-        }
-        
-        // 根据优先级获取超时时间
-        let timeout = this.resourceTimeouts[priority] || 8000; // 默认8秒
-        
-        // 设置超时处理
-        const handler = setTimeout(() => {
-            console.warn(`⏱️ 资源加载超时 (${timeout}ms): ${url}`);
-            
-            // 移除超时处理器
-            this.timeoutHandlers.delete(url);
-            
-            // 把资源标记为已加载，即使实际上可能失败了
-            // 这样可以防止无限等待，让页面渲染继续
-            this.loadedResources.add(url);
-            
-            // 发送自定义事件通知资源超时
-            const event = new CustomEvent('resource-timeout', {
-                detail: { 
-                    url, 
-                    resourceType,
-                    priority,
-                    timeoutMs: timeout
-                }
-            });
-            document.dispatchEvent(event);
-            
-            // 处理资源超时，传递优先级确保正确标记资源类型
-            const resourceName = this.getResourceBaseName(url);
-            
-            // 确保KaTeX资源始终使用medium优先级
-            let finalPriority = priority;
-            if (resourceName.includes('katex') || resourceName === 'katex.min.css' || url.includes('katex')) {
-                finalPriority = 'medium';
-            }
-            
-            this.handleCriticalResourceFailure(resourceName, finalPriority);
-            
-        }, timeout);
-        
-        // 保存超时处理器
-        this.timeoutHandlers.set(url, handler);
-        
-        return handler;
+        return resourceTimeout.setResourceTimeout(resourceType, url, priority);
     }
     
     /**
      * 取消资源的超时处理
+     * 委托给resourceTimeout模块
      * @param {string} url - 资源URL
      */
     clearResourceTimeout(url) {
-        if (this.timeoutHandlers.has(url)) {
-            clearTimeout(this.timeoutHandlers.get(url));
-            this.timeoutHandlers.delete(url);
-        }
+        resourceTimeout.clearResourceTimeout(url);
     }
 
     /**
@@ -889,7 +735,7 @@ class ResourceLoader {
         }, 100);
         
         // 先加载关键的回退样式，确保基本样式立即可用
-        this.injectCriticalInlineStyles();
+        resourceStyles.injectCriticalInlineStyles();
         
         // 处理关键资源预加载，但设置短超时
         const criticalResources = this.getCriticalResources();
@@ -903,7 +749,7 @@ class ResourceLoader {
             if (typeof url === 'string') {
                 if (url.endsWith('.css')) {
                     // 使用非阻塞方式加载CSS
-                    this.loadCssNonBlocking(url, resource);
+                    resourceStyles.loadCssNonBlocking(url, resource);
                 } else if (url.endsWith('.js')) {
                     // 对于核心脚本，使用async加载
                     const script = document.createElement('script');
@@ -960,70 +806,6 @@ class ResourceLoader {
     }
     
     /**
-     * 非阻塞方式加载CSS
-     * @param {string} url - CSS文件URL
-     * @param {object} resource - 资源对象
-     */
-    loadCssNonBlocking(url, resource) {
-        // 检查URL是否有效
-        if (!url || typeof url !== 'string') {
-            console.warn('⚠️ 尝试加载无效的CSS URL:', url);
-            return;
-        }
-        
-        // 跳过已加载的资源
-        if (this.loadedResources.has(url)) {
-            return;
-        }
-        
-        // 获取资源优先级
-        let priority = 'medium';
-        if (resource && resource.priority) {
-            priority = resource.priority;
-        }
-        
-        // 设置加载超时
-        this.setResourceTimeout('styles', url, priority);
-        
-        // 创建<link>元素但使用media="print"和onload切换技术
-        // 这样CSS不会阻塞渲染
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = url;
-        link.media = 'print'; // 初始不应用，不阻塞
-        
-        // 添加自定义属性
-        if (resource && resource.attributes) {
-            Object.entries(resource.attributes).forEach(([key, value]) => {
-                link.setAttribute(key, value);
-            });
-        }
-        
-        // 设置onload事件，当CSS加载完成时应用样式
-        link.onload = () => {
-            // 清除超时处理器
-            this.clearResourceTimeout(url);
-            
-            // 样式已加载，现在应用它
-            link.media = 'all';
-            this.loadedResources.add(url);
-            console.debug(`✅ 非阻塞加载CSS完成: ${url}`);
-        };
-        
-        link.onerror = () => {
-            // 清除超时处理器
-            this.clearResourceTimeout(url);
-            
-            // 记录错误但不阻塞
-            this.handleResourceError(link, url);
-            console.warn(`❌ 非阻塞CSS加载失败: ${url}`);
-        };
-        
-        // 添加到文档
-        document.head.appendChild(link);
-    }
-    
-    /**
      * 优先加载基本样式并解除内容阻塞
      * 这个方法确保基本样式尽快加载，而页面内容不被阻塞
      */
@@ -1031,7 +813,7 @@ class ResourceLoader {
         console.debug('🚀 优先处理内容渲染...');
         
         // 加载关键的回退样式
-        this.injectCriticalInlineStyles();
+        resourceStyles.injectCriticalInlineStyles();
         
         // 立即解除内容阻塞
         setTimeout(() => {
@@ -1332,7 +1114,7 @@ class ResourceLoader {
             }
             
             if (resource.primary.endsWith('.css')) {
-                return this.loadCss(resource.primary, resource);
+                return resourceStyles.loadCss(resource.primary, resource);
             } else if (resource.primary.endsWith('.js')) {
                 return this.loadScript(resource.primary, resource);
             }
@@ -1356,7 +1138,7 @@ class ResourceLoader {
                 }
                 
                 if (resource.type === 'css' || url.endsWith('.css')) {
-                    return this.loadCss(url, resource);
+                    return resourceStyles.loadCss(url, resource);
                 } else if (resource.type === 'js' || url.endsWith('.js')) {
                     return this.loadScript(url, resource);
                 }
@@ -1368,8 +1150,8 @@ class ResourceLoader {
     }
     
     /**
-     * 加载组件资源，并在失败时尝试回退URL
-     * @param {Array<string>} urls - URL列表，按优先级排序
+     * 递归加载组件及其回退资源
+     * @param {Array} urls - 要尝试加载的URL列表
      * @param {string} type - 资源类型 ('css' 或 'js')
      * @param {string} componentName - 组件名称(用于日志)
      * @returns {Promise} 加载完成的Promise
@@ -1389,7 +1171,7 @@ class ResourceLoader {
         
         // 根据类型选择加载方法
         const loadPromise = type === 'css' ? 
-            this.loadCss(url, { priority: 'medium' }) : 
+            resourceStyles.loadCss(url, { priority: 'medium' }) : 
             this.loadScript(url, { priority: 'medium' });
         
         // 如果当前URL加载失败，尝试下一个URL
@@ -1400,73 +1182,6 @@ class ResourceLoader {
                 return this.loadComponentWithFallback(urls.slice(1), type, componentName);
             }
             return Promise.resolve(); // 所有URL都失败，但不阻断流程
-        });
-    }
-    
-    /**
-     * 加载CSS资源
-     * @param {string} url - CSS文件URL
-     * @param {object} resource - 资源对象
-     * @returns {Promise} 加载完成的Promise
-     */
-    loadCss(url, resource) {
-        return new Promise((resolve, reject) => {
-            // 检查URL是否有效
-            if (!url || typeof url !== 'string') {
-                console.warn('⚠️ 尝试加载无效的CSS URL:', url);
-                return reject(new Error('无效的CSS URL'));
-            }
-            
-            // 跳过已加载的资源
-            if (this.loadedResources.has(url)) {
-                return resolve();
-            }
-            
-            // 获取资源优先级
-            let priority = 'medium';
-            if (resource && resource.priority) {
-                priority = resource.priority;
-            }
-            
-            // 设置加载超时
-            this.setResourceTimeout('styles', url, priority);
-            
-            // 创建<link>元素
-            const link = document.createElement('link');
-            link.rel = 'stylesheet';
-            link.href = url;
-            
-            // 添加自定义属性
-            if (resource && resource.attributes) {
-                Object.entries(resource.attributes).forEach(([key, value]) => {
-                    link.setAttribute(key, value);
-                });
-            }
-            
-            // 设置onload事件
-            link.onload = () => {
-                // 清除超时处理器
-                this.clearResourceTimeout(url);
-                
-                this.loadedResources.add(url);
-                console.debug(`✅ CSS加载完成: ${url}`);
-                resolve();
-            };
-            
-            link.onerror = (err) => {
-                // 清除超时处理器
-                this.clearResourceTimeout(url);
-                
-                // 记录错误但不阻塞
-                this.handleResourceError(link, url);
-                console.warn(`❌ CSS加载失败: ${url}`);
-                
-                // 虽然加载失败，但仍然解析Promise，以免影响整体流程
-                resolve();
-            };
-            
-            // 添加到文档
-            document.head.appendChild(link);
         });
     }
     

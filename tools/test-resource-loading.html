@@ -95,9 +95,9 @@
     </div>
 
     <script type="module">
-        import { CdnMapper } from './scripts/utils/cdn-mapper.js';
-        import resourceConfig from './scripts/config/resources.js';
-        import { resourceLoader } from './scripts/utils/resource-loader.js';
+        import { CdnMapper } from '../scripts/utils/cdn-mapper.js';
+        import resourceConfig from '../scripts/config/resources.js';
+        import { resourceLoader } from '../scripts/utils/resource-loader.js';
         
         // 拦截控制台输出
         const originalConsole = {
@@ -231,7 +231,7 @@
             // 添加一个测试资源映射
             const testResourceType = 'test-fallback-resource';
             const primaryUrl = 'https://invalid-cdn.example.com/non-existent.css';
-            const fallbackUrl = 'styles/fallback.css'; // 使用本地回退样式
+            const fallbackUrl = '../styles/fallback.css'; // 使用本地回退样式
             
             cdnMapper.addOrUpdateMapping(testResourceType, fallbackUrl, primaryUrl);
             

@@ -103,8 +103,8 @@
     </div>
 
     <script type="module">
-        import { CdnMapper } from './scripts/utils/cdn-mapper.js';
-        import resourceConfig from './scripts/config/resources.js';
+        import { CdnMapper } from '../scripts/utils/cdn-mapper.js';
+        import resourceConfig from '../scripts/config/resources.js';
         
         // 拦截控制台输出
         const originalConsole = {
@@ -267,7 +267,7 @@
                     testConfigs.push({
                         provider,
                         library,
-                        path: 'js/main.min.js'
+                        path: '../js/main.min.js'
                     });
                 }
             }
@@ -455,7 +455,7 @@
                         {
                             provider: 'local',
                             library: `library-${i}`,
-                            path: `js/main-${i}.min.js`
+                            path: `../js/main-${i}.min.js`
                         }
                     ]
                 });

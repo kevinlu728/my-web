@@ -79,11 +79,12 @@
     
     <!-- FontAwesome - 使用集中资源管理加载 -->
     <script type="module">
-        // 导入资源加载器
+        // 导入资源加载器和样式加载器
         import { resourceLoader } from './scripts/utils/resource-loader.js';
+        import { resourceStyles } from './scripts/utils/resource-styles.js';
         
         // 加载FontAwesome CSS，但不阻塞内容
-        resourceLoader.loadCssNonBlocking('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css', {
+        resourceStyles.loadCssNonBlocking('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css', {
             priority: 'medium'
         });
     </script>
