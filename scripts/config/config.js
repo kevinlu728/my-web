@@ -20,8 +20,7 @@
  * 该模块导出单个配置对象，可被其他模块导入使用。
  */
 
-// 导入环境配置
-import devConfig from './config.development.js';
+// 导入生产环境配置 - 只静态导入生产环境配置
 import prodConfig from './config.production.js';
 // 导入logger模块
 import logger from '../utils/logger.js';
@@ -30,27 +29,62 @@ import logger from '../utils/logger.js';
 const isDevelopment = window.location.hostname === 'localhost' || 
                      window.location.hostname === '127.0.0.1';
 
-// 根据环境选择配置
-const config = isDevelopment ? devConfig : prodConfig;
+// 根据环境动态选择配置
+let config;
+
+// 这里使用异步初始化配置的函数
+async function initConfig() {
+    try {
+        if (isDevelopment) {
+            // 开发环境：尝试动态导入开发配置
+            try {
+                const devConfigModule = await import('./config.development.js');
+                config = devConfigModule.default;
+                console.log('已加载开发环境配置');
+            } catch (err) {
+                console.warn('无法加载开发环境配置，使用生产环境配置:', err.message);
+                config = prodConfig;
+            }
+        } else {
+            // 生产环境：直接使用生产配置
+            config = prodConfig;
+            console.log('已加载生产环境配置');
+        }
+        
+        // 更新logger配置
+        logger.updateConfig(configManager);
+    } catch (err) {
+        console.error('配置初始化失败:', err);
+        // 出错时使用生产配置作为后备
+        config = prodConfig;
+    }
+}
 
 // 添加一些通用的配置方法
 const configManager = {
-    ...config,
+    // 使用代理获取最新配置
+    get notion() { return config?.notion || prodConfig.notion; },
+    get api() { return config?.api || prodConfig.api; }, 
+    get debug() { return config?.debug || prodConfig.debug; },
+    get logging() { return config?.logging || prodConfig.logging; },
+    
     // 获取当前环境
     getEnvironment() {
         return isDevelopment ? 'development' : 'production';
     },
+    
     // 判断是否为开发环境
     isDevelopment() {
         return isDevelopment;
     },
+    
     // 获取API配置
     getNotionConfig() {
         return this.notion;
     }
 };
 
-// 更新logger配置
-logger.updateConfig(configManager);
+// 立即初始化配置
+initConfig();
 
 export default configManager; 
