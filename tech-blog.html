@@ -26,9 +26,11 @@
     <link rel="stylesheet" href="./styles/main.css">
     <link rel="stylesheet" href="./styles/components/header.css">
     <link rel="stylesheet" href="./styles/components/footer.css">
+    <link rel="stylesheet" href="./styles/components/scrollbar.css">
     <link rel="stylesheet" href="./styles/layouts/blog-layout.css">
     <link rel="stylesheet" href="./styles/components/debug-panel.css">
-    <link rel="stylesheet" href="./styles/layouts/left-column-layout.css">
+    <link rel="stylesheet" href="./styles/layouts/blog-left-column.css">
+    <link rel="stylesheet" href="./styles/layouts/blog-right-column.css">
     <link rel="stylesheet" href="./styles/components/code-block.css">
     <link rel="stylesheet" href="./styles/components/table-block.css">
     <link rel="stylesheet" href="./styles/sections/article.css">
@@ -347,10 +349,10 @@
             <!-- 文章树形列表 -->
             <div class="article-tree-container">
                 <ul id="article-tree">
-                    <li class="tree-item root-item active" data-category="all">
+                    <li class="tree-item root-item active expanded" data-category="all">
                         <div class="tree-item-content">
-                            <span class="tree-toggle"><i class="fas fa-chevron-right"></i></span>
-                            <span class="root-icon"><i class="fas fa-folder"></i></span>
+                            <span class="tree-toggle"><i class="fas fa-chevron-down"></i></span>
+                            <span class="root-icon"><i class="fas fa-folder-open"></i></span>
                             <span class="item-name">全部文章</span>
                             <span class="item-count">(0)</span>
                         </div>

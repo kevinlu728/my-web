@@ -1,0 +1,160 @@
+/**
+ * @file loading-spinner.css
+ * @description 通用加载动画样式
+ * @author 陆凯
+ * @version 1.0.0
+ * @created 2024-06-30
+ */
+
+/* 加载动画基本样式 */
+@keyframes spinner-rotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse-text {
+    0% { opacity: 0.7; }
+    50% { opacity: 1; }
+    100% { opacity: 0.7; }
+}
+
+/* 淡入动画 */
+@keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* 通用加载spinner */
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(52, 152, 219, 0.1); /* 降低边框透明度 */
+    border-top-color: rgba(52, 152, 219, 0.7); /* 使用半透明的--secondary-color */
+    border-radius: 50%;
+    margin: 0 auto 12px;
+    opacity: 0; /* 初始透明 */
+    animation: spinner-rotate 1s linear infinite, fade-in 0.3s ease forwards;
+}
+
+/* 不同尺寸的加载动画 */
+.loading-small .loading-spinner {
+    width: 24px;
+    height: 24px;
+    border-width: 2px;
+    margin-bottom: 8px;
+}
+
+.loading-large .loading-spinner {
+    width: 56px;
+    height: 56px;
+    border-width: 4px;
+    margin-bottom: 16px;
+}
+
+/* 不同颜色主题 */
+.loading-primary .loading-spinner {
+    border: 3px solid rgba(44, 62, 80, 0.1); /* 降低边框透明度 */
+    border-top-color: rgba(44, 62, 80, 0.7); /* 使用半透明的--primary-color */
+}
+
+.loading-success .loading-spinner {
+    border: 3px solid rgba(39, 174, 96, 0.1); /* 降低边框透明度 */
+    border-top-color: rgba(39, 174, 96, 0.7); /* 使用半透明的成功色 */
+}
+
+.loading-warning .loading-spinner {
+    border: 3px solid rgba(243, 156, 18, 0.1); /* 降低边框透明度 */
+    border-top-color: rgba(243, 156, 18, 0.7); /* 使用半透明的警告色 */
+}
+
+.loading-danger .loading-spinner {
+    border: 3px solid rgba(231, 76, 60, 0.1); /* 降低边框透明度 */
+    border-top-color: rgba(231, 76, 60, 0.7); /* 使用半透明的危险色 */
+}
+
+/* 行内加载样式 */
+.loading-inline {
+    display: flex;
+    align-items: center;
+}
+
+.loading-inline .loading-spinner {
+    width: 20px;
+    height: 20px;
+    border-width: 2px;
+    margin: 0 8px 0 0;
+}
+
+/* 加载文本样式 */
+.loading-text {
+    color: #666;
+    font-size: 14px;
+    text-align: center;
+    width: 100%;
+    padding: 0;
+    font-weight: normal;
+    letter-spacing: 0.5px;
+    opacity: 0; /* 初始透明 */
+    animation: fade-in 0.3s ease 0.15s forwards; /* 延迟0.15秒淡入 */
+}
+
+/* 通用加载容器样式 */
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    text-align: center;
+}
+
+/* 加载蒙层样式 */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+/* 确保分页加载中的spinner样式一致 */
+.load-more-container .loading-spinner {
+    border: 3px solid rgba(52, 152, 219, 0.1);
+    border-top-color: rgba(52, 152, 219, 0.7);
+    opacity: 1; /* 分页加载的spinner直接显示 */
+}
+
+/* 通用加载按钮样式 */
+.load-more-btn {
+    background-color: #f5f8fc;
+    color: #4a86e8;
+    border: 1px solid #e0e7f3;
+    padding: 8px 24px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.load-more-btn:hover {
+    background-color: #ecf2fc;
+    box-shadow: 0 2px 5px rgba(74, 134, 232, 0.15);
+}
+
+/* 没有更多内容提示样式 */
+.no-more {
+    padding: 8px 20px;
+    color: #999;
+    font-size: 14px;
+    text-align: center;
+    letter-spacing: 0.5px;
+    border-top: none;
+    font-style: italic;
+    opacity: 0.8;
+} 

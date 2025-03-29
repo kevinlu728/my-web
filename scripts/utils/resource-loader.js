@@ -98,6 +98,12 @@ class ResourceLoader {
         
         logger.warn(`⚠️ 资源加载失败: ${url}`);
         
+        // 检测是否为FontAwesome资源
+        if (url.includes('font-awesome') || url.includes('fontawesome')) {
+            logger.warn('🚨 FontAwesome加载失败，启用Unicode备选图标');
+            document.documentElement.classList.add('no-fontawesome');
+        }
+        
         // 检查元素是否有自定义的资源类型
         const resourceType = element.getAttribute('data-resource-type');
         const localFallback = element.getAttribute('data-local-fallback');

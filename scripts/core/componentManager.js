@@ -18,6 +18,7 @@ import { initNavigation } from '../components/navigation.js';
 import { initParticleBackground } from '../components/particleBackground.js';
 import { initContactModals } from '../components/contactModals.js';
 import { initChatWidget } from '../components/chatWidget.js';
+import { initScrollbar } from '../components/scrollbar.js';
 import logger from '../utils/logger.js';
 
 /**
@@ -31,6 +32,14 @@ class ComponentManager {
      */
     static initJsComponents() {
         logger.debug('初始化JavaScript功能组件...');
+        
+        try {
+            // 初始化滚动条
+            initScrollbar();
+            logger.info('✅ 滚动条已初始化');
+        } catch (error) {
+            logger.error('❌ 滚动条初始化失败:', error);
+        }
         
         try {
             // 初始化导航菜单

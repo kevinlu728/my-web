@@ -22,7 +22,7 @@
  * 搜索功能已移至articleSearchManager.js模块。
  */
 
-import { showStatus, showLoading, showError } from '../utils/utils.js';
+import { showStatus, showError } from '../utils/utils.js';
 import { getArticles, getArticleContent } from '../services/notionService.js';
 import { categoryManager } from './categoryManager.js';
 import { renderNotionBlocks, initializeLazyLoading } from '../components/articleRenderer.js';
@@ -49,11 +49,35 @@ import { imageLazyLoader } from '../utils/image-lazy-loader.js';
 import { categoryConfig } from '../config/categories.js';
 import config from '../config/config.js';
 import logger from '../utils/logger.js';
+import { showLoadingSpinner } from '../utils/utils.js';
 
 // 导入目录导航组件
 import tableOfContents from '../components/tableOfContents.js';
 
 import { getArticlePlaceholder } from '../utils/placeholder-templates.js';
+
+// 显示文章树加载状态
+function showTreeLoading(message = '加载中...') {
+    const treeChildren = document.querySelector('#article-tree .root-item > .tree-children');
+    if (!treeChildren) {
+        logger.warn('文章列表元素未找到');
+        return;
+    }
+    
+    // 创建加载容器
+    const loadingItem = document.createElement('li');
+    loadingItem.className = 'loading';
+    
+    // 使用showLoadingSpinner函数添加加载内容
+    showLoadingSpinner(message, loadingItem, {
+        containerClass: '',
+        size: 'medium'
+    });
+    
+    // 将li元素添加到树形结构中
+    treeChildren.innerHTML = '';
+    treeChildren.appendChild(loadingItem);
+}
 
 class ArticleManager {
     constructor() {
@@ -91,7 +115,7 @@ class ArticleManager {
             const signal = this.abortController.signal;
             
             // 显示加载状态
-            showLoading('正在加载文章列表...');
+            showTreeLoading('正在加载文章列表...');
             
             logger.info(`开始加载文章，数据库ID: ${this.currentDatabaseId}`);
             
@@ -124,6 +148,9 @@ class ArticleManager {
             } catch (testError) {
                 logger.error('API 测试异常:', testError);
             }
+            
+            // 添加人为延迟以确保加载提示可见
+            await new Promise(resolve => setTimeout(resolve, 3000));
             
             // 获取文章列表
             logger.info('正在从 API 获取文章列表...');

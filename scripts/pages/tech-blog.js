@@ -30,6 +30,8 @@ import { imageLazyLoader } from '../utils/image-lazy-loader.js';
 import { initializeLazyLoading } from '../components/articleRenderer.js';
 // 导入资源加载器
 import { resourceLoader } from '../utils/resource-loader.js';
+import { resourceChecker } from '../utils/resource-checker.js';
+import { scrollToTop } from '../components/scrollbar.js';
 import logger from '../utils/logger.js';
 
 logger.info('🚀 tech-blog.js 开始加载...');
@@ -38,7 +40,7 @@ logger.info('🚀 tech-blog.js 开始加载...');
  * 初始化页面
  */
 async function initializePage() {
-    logger.info('开始初始化页面...');
+    logger.info('初始化技术博客页面...');
     
     // 检查依赖项
     logger.info('检查依赖项：');
@@ -47,6 +49,9 @@ async function initializePage() {
     logger.info('- categoryManager:', !!categoryManager);
     logger.info('- apiService:', !!window.apiService);
 
+    // 初始化返回顶部按钮
+    initializeBackToTop();
+    
     const currentDatabaseId = config.notion.databaseId || config.debug.defaultDatabaseId;
     logger.info('当前数据库ID:', currentDatabaseId);
 
@@ -268,11 +273,81 @@ async function initializePage() {
     // 为页面图片应用样式（如果有的话）
     applyImageStyles();
     
+    // 修复FontAwesome图标显示 - 移至此处执行，确保DOM已加载完毕
+    fixFontAwesomeIcons();
+    
     // 彻底移除加载遮罩
     handleLoadingMask('remove');
     
     // 清除"正在初始化页面..."的状态消息
     showStatus('', false);
+}
+
+/**
+ * 修复FontAwesome图标显示问题
+ * 确保树状列表中的图标正确使用FontAwesome而非Unicode，并添加平滑旋转动画
+ */
+function fixFontAwesomeIcons() {
+    // 监听DOM变化，确保在图标创建后应用正确样式
+    const observer = new MutationObserver(mutations => {
+        mutations.forEach(mutation => {
+            if (mutation.addedNodes.length) {
+                // 查找新添加的树形图标
+                mutation.addedNodes.forEach(node => {
+                    if (node.nodeType === 1) { // 元素节点
+                        const icons = node.querySelectorAll ? 
+                            node.querySelectorAll('.tree-toggle i') : [];
+                        
+                        if (icons.length > 0) {
+                            icons.forEach(applyFontAwesomeStyle);
+                        } else if (node.classList && node.classList.contains('fas')) {
+                            applyFontAwesomeStyle(node);
+                        }
+                    }
+                });
+            }
+        });
+    });
+    
+    // 监视整个文档，特别是树形容器区域
+    observer.observe(document.body, { 
+        childList: true, 
+        subtree: true 
+    });
+    
+    // 立即处理已有的图标
+    setTimeout(() => {
+        document.querySelectorAll('.tree-toggle i').forEach(applyFontAwesomeStyle);
+        logger.info('✅ 已应用FontAwesome样式到现有图标');
+    }, 100);
+    
+    // 处理单个图标元素
+    function applyFontAwesomeStyle(icon) {
+        if (!icon) return;
+        
+        // 确保使用FontAwesome字体
+        icon.style.fontFamily = '"Font Awesome 6 Free", FontAwesome, sans-serif';
+        icon.style.fontWeight = '900';
+        icon.style.display = 'inline-block';
+        
+        // 确保内容为空，让FontAwesome的默认图标机制生效
+        if (icon.innerHTML === '▶' || icon.innerHTML === '▼') {
+            icon.innerHTML = '';
+        }
+        
+        // 确保有正确的基础类名
+        if (icon.parentNode && icon.parentNode.classList.contains('tree-toggle')) {
+            if (!icon.classList.contains('fas')) {
+                icon.classList.add('fas');
+            }
+            
+            // 统一使用fa-chevron-right，方向通过CSS旋转控制
+            if (!icon.classList.contains('fa-chevron-right')) {
+                icon.classList.remove('fa-chevron-down'); // 移除任何向下箭头类
+                icon.classList.add('fa-chevron-right');   // 统一使用向右箭头类
+            }
+        }
+    }
 }
 
 // 导出显示文章的全局函数
@@ -463,7 +538,7 @@ function initializeResizableLeftColumn() {
     // 隐藏拖动指示器
     function hideDragIndicator() {
         if (separatorLine) {
-            separatorLine.style.opacity = '0.6';
+            separatorLine.style.opacity = '0'; // 恢复到低不透明度状态
         }
     }
     
@@ -630,10 +705,21 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         const leftColumn = document.querySelector('.left-column');
         const resizeHandle = document.querySelector('.resize-handle');
+        const separatorLine = document.querySelector('.separator-line');
         
         if (leftColumn && resizeHandle) {
-            // 确保拖动手柄是可见的
+            // 确保拖动手柄是可见的 - 直接设置内联样式以确保优先级最高
             resizeHandle.style.visibility = 'visible';
+            resizeHandle.style.cursor = 'col-resize';
+            
+            if (separatorLine) {
+                separatorLine.style.width = '3px';
+                separatorLine.style.backgroundColor = '#77a0ff';
+            }
+            
+            logger.info('✅ 拖动手柄初始化完成，设置为低可见度状态');
+        } else {
+            logger.warn('⚠️ 未找到拖动手柄或左侧栏元素，无法初始化');
         }
     }, 100);
 });
@@ -672,10 +758,15 @@ function initializeArticleList() {
 
 /**
  * 初始化返回顶部按钮
- * 当页面滚动超过一定距离时显示按钮，点击按钮可平滑回到顶部
  */
 function initializeBackToTop() {
     logger.info('初始化返回顶部按钮...');
+    
+    // 检查是否已存在返回顶部按钮，避免重复创建
+    if (document.querySelector('.back-to-top')) {
+        logger.info('返回顶部按钮已存在，跳过创建');
+        return;
+    }
     
     // 创建按钮元素
     const backToTopBtn = document.createElement('div');
@@ -695,35 +786,20 @@ function initializeBackToTop() {
     
     logger.info('✅ 返回顶部按钮创建成功');
     
-    // 监听滚动事件，控制按钮显示隐藏
-    let scrollThreshold = 300; // 滚动超过300px显示按钮
-    let scrollingTimer;
-    
-    window.addEventListener('scroll', () => {
-        clearTimeout(scrollingTimer);
-        
-        // 检查是否超过阈值
-        if (window.scrollY > scrollThreshold) {
-            backToTopBtn.classList.add('visible');
-        } else {
-            backToTopBtn.classList.remove('visible');
-        }
-        
-        // 延迟一段时间后检查是否停止滚动
-        scrollingTimer = setTimeout(() => {
-            // 这里可以添加额外的逻辑，比如一段时间不滚动后隐藏按钮
-        }, 200);
-    });
-    
-    // 点击按钮回到顶部
+    // 点击按钮回到顶部，使用scrollToTop函数
     backToTopBtn.addEventListener('click', () => {
         logger.info('点击返回顶部');
         
-        // 平滑滚动回顶部
-        window.scrollTo({
-            top: 0,
-            behavior: 'smooth'
-        });
+        // 使用scrollToTop处理滚动行为
+        if (typeof scrollToTop === 'function') {
+            scrollToTop(true); // 使用平滑滚动
+        } else {
+            // 回退方案：使用默认滚动
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
         
         // 聚焦到页面顶部的元素（可选）
         const firstFocusableElement = document.querySelector('h1, h2, p, .article-title');
@@ -741,6 +817,8 @@ function initializeBackToTop() {
     });
     
     logger.info('✅ 返回顶部按钮初始化完成');
+    
+    // 注意：按钮的显示/隐藏现在由scrollbar.js中的滚动事件处理
 }
 
 /**
@@ -807,4 +885,18 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // 导出函数供外部使用
-export { initializePage, applyImageStyles }; 
+export { initializePage, applyImageStyles };
+
+// 添加全局测试方法，供控制台调用
+window.testFontAwesomeFallback = function() {
+    // 直接使用导入的resourceChecker
+    if (resourceChecker && typeof resourceChecker.testFontAwesomeFallback === 'function') {
+        // 调用测试方法
+        resourceChecker.testFontAwesomeFallback();
+        console.log('FontAwesome回退测试已激活，页面图标应已切换为Unicode字符');
+        return true;
+    } else {
+        console.error('无法找到resourceChecker或测试方法');
+        return false;
+    }
+}; 

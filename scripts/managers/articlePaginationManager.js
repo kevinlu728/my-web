@@ -19,6 +19,7 @@ import tableOfContents from '../components/tableOfContents.js';
 import config from '../config/config.js';
 import { articleCacheManager } from './articleCacheManager.js';
 import logger from '../utils/logger.js';
+import { showLoadingSpinner } from '../utils/utils.js';
 
 class ArticlePaginationManager {
     constructor() {
@@ -39,6 +40,12 @@ class ArticlePaginationManager {
         
         // 防抖/节流相关
         this.triggerDebounceTimeout = null;
+        
+        // 绑定方法的this上下文
+        this.handleWindowResize = this.handleWindowResize.bind(this);
+        
+        // 添加窗口尺寸变化监听
+        window.addEventListener('resize', this.handleWindowResize);
     }
 
     /**
@@ -55,9 +62,35 @@ class ArticlePaginationManager {
         
         // 先移除可能存在的旧监听器
         if (this.scrollHandler) {
-            window.removeEventListener('scroll', this.scrollHandler);
+            if (this.scrollContainer) {
+                this.scrollContainer.removeEventListener('scroll', this.scrollHandler);
+            } else {
+                window.removeEventListener('scroll', this.scrollHandler);
+            }
             this.scrollHandler = null;
         }
+
+        // 获取正确的滚动容器
+        const pageType = document.body.classList.contains('article-page') ? 'article-page' : 'home-page';
+        
+        // 根据页面类型确定滚动容器
+        if (pageType === 'article-page') {
+            // 在博客页面检查是否使用自定义滚动区域
+            if (window.innerWidth <= 768) {
+                // 小屏幕使用主内容区域
+                this.scrollContainer = document.querySelector('.blog-content');
+            } else {
+                // 大屏幕使用右侧栏
+                this.scrollContainer = document.querySelector('.blog-content .right-column');
+            }
+        }
+        
+        // 如果没有找到特定的滚动容器，使用window作为后备
+        if (!this.scrollContainer) {
+            this.scrollContainer = window;
+        }
+        
+        logger.info('使用滚动容器:', this.scrollContainer === window ? 'window' : this.scrollContainer.className);
 
         // 使用throttle函数创建节流处理函数
         this.scrollHandler = throttle(() => {
@@ -76,10 +109,20 @@ class ArticlePaginationManager {
             const loadMoreContainer = document.querySelector('.load-more-container');
             if (!loadMoreContainer) return;
 
-            // 检测滚动位置是否接近页面底部
-            const scrollPosition = window.scrollY + window.innerHeight;
-            const totalHeight = document.documentElement.scrollHeight;
-            const scrollPercentage = (scrollPosition / totalHeight) * 100;
+            // 检测滚动位置是否接近底部 - 适应不同滚动容器
+            let scrollPercentage;
+            if (this.scrollContainer === window) {
+                // 如果容器是window，使用原来的逻辑
+                const scrollPosition = window.scrollY + window.innerHeight;
+                const totalHeight = document.documentElement.scrollHeight;
+                scrollPercentage = (scrollPosition / totalHeight) * 100;
+            } else {
+                // 如果是自定义容器，计算其滚动百分比
+                const container = this.scrollContainer;
+                const scrollPosition = container.scrollTop + container.clientHeight;
+                const totalHeight = container.scrollHeight;
+                scrollPercentage = (scrollPosition / totalHeight) * 100;
+            }
             
             // 降低触发门槛，更早地触发加载更多内容
             const isNearPageBottom = scrollPercentage > 85; // 原来是90，现在降低到85
@@ -103,9 +146,9 @@ class ArticlePaginationManager {
             }
         }, 300); // 减少节流时间，从500ms改为300ms，让响应更快
         
-        // 添加滚动监听
-        window.addEventListener('scroll', this.scrollHandler);
-        logger.info('滚动监听器已添加');
+        // 添加滚动监听到正确的容器
+        this.scrollContainer.addEventListener('scroll', this.scrollHandler);
+        logger.info('滚动监听器已添加到', this.scrollContainer === window ? 'window' : '自定义容器');
     }
 
     /**
@@ -124,7 +167,11 @@ class ArticlePaginationManager {
                 }
                 // 移除滚动监听
                 if (this.scrollHandler) {
-                    window.removeEventListener('scroll', this.scrollHandler);
+                    if (this.scrollContainer) {
+                        this.scrollContainer.removeEventListener('scroll', this.scrollHandler);
+                    } else {
+                        window.removeEventListener('scroll', this.scrollHandler);
+                    }
                     this.scrollHandler = null;
                 }
             }
@@ -141,7 +188,7 @@ class ArticlePaginationManager {
         // 直接修改加载指示器显示加载中状态
         if (loadMoreContainer) {
             // 显示加载中状态
-            loadMoreContainer.innerHTML = '<div class="loading-spinner"></div><div class="loading-text">加载中...</div>';
+            showLoadingState();
             
             // 使用防抖延迟，避免频繁触发
             this.triggerDebounceTimeout = setTimeout(() => {
@@ -226,7 +273,11 @@ class ArticlePaginationManager {
             
             // 确保移除滚动监听器
             if (this.scrollHandler) {
-                window.removeEventListener('scroll', this.scrollHandler);
+                if (this.scrollContainer) {
+                    this.scrollContainer.removeEventListener('scroll', this.scrollHandler);
+                } else {
+                    window.removeEventListener('scroll', this.scrollHandler);
+                }
                 this.scrollHandler = null;
             }
         }
@@ -248,9 +299,15 @@ class ArticlePaginationManager {
         
         // 确保移除滚动监听器
         if (this.scrollHandler) {
-            window.removeEventListener('scroll', this.scrollHandler);
+            if (this.scrollContainer) {
+                this.scrollContainer.removeEventListener('scroll', this.scrollHandler);
+            } else {
+                window.removeEventListener('scroll', this.scrollHandler);
+            }
             this.scrollHandler = null;
         }
+        
+        // 不要重置滚动容器引用，因为可能还需要在同一页面中使用
         
         logger.info('已更新加载更多状态：没有更多内容');
     }
@@ -521,11 +578,47 @@ class ArticlePaginationManager {
         
         // 移除滚动监听器
         if (this.scrollHandler) {
-            window.removeEventListener('scroll', this.scrollHandler);
+            if (this.scrollContainer) {
+                this.scrollContainer.removeEventListener('scroll', this.scrollHandler);
+            } else {
+                window.removeEventListener('scroll', this.scrollHandler);
+            }
             this.scrollHandler = null;
+        }
+        
+        // 移除窗口尺寸变化监听器并重新添加
+        window.removeEventListener('resize', this.handleWindowResize);
+        window.addEventListener('resize', this.handleWindowResize);
+        
+        // 重置滚动容器引用
+        this.scrollContainer = null;
+    }
+
+    /**
+     * 处理窗口尺寸变化事件
+     */
+    handleWindowResize() {
+        // 只有在博客页面才重新应用滚动行为
+        if (this.currentPageId && this.hasMore && this.nextCursor) {
+            // 尺寸变化可能导致滚动容器变化，需要重新设置监听器
+            logger.info('窗口尺寸变化，重新设置滚动监听');
+            this.setupScrollListener();
         }
     }
 }
 
 // 导出单例实例
-export const articlePaginationManager = new ArticlePaginationManager(); 
+export const articlePaginationManager = new ArticlePaginationManager();
+
+// 显示加载状态
+function showLoadingState() {
+    const loadMoreContainer = document.querySelector('.load-more-container');
+    if (!loadMoreContainer) return;
+    
+    // 清除容器内容，避免加载指示器重复添加
+    loadMoreContainer.innerHTML = '';
+    
+    showLoadingSpinner('加载中...', loadMoreContainer, {
+        containerClass: 'loading-container'
+    });
+} 

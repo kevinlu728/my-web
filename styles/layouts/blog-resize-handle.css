@@ -1,0 +1,70 @@
+/**
+ * @file blog-resize-handle.css
+ * @description 博客页面拖动手柄的外观样式
+ * @author 陆凯
+ * @created 2024-05-22
+ * @updated 2024-05-22
+ * 
+ * 该文件专注于博客页面拖动手柄的外观样式，包括：
+ * - 拖动手柄的基本样式
+ * - 分隔线的样式
+ * - 交互状态（悬停、激活）的样式
+ * 注意：拖动手柄的位置和尺寸等布局属性由blog-layout.css控制
+ */
+
+/* 拖动手柄的基本外观样式 */
+.resize-handle {
+    background-color: rgba(207, 232, 252, 0.05); /* 非常微弱背景色 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: col-resize; /* 强制使用水平调整光标 */
+    /* 不再定义z-index，由blog-layout.css提供 */
+}
+
+/* 拖动手柄的分隔线 */
+.separator-line {
+    position: absolute;
+    width: 1px; /* 较细的分隔线宽度 */
+    height: 100%; /* 确保占满全高 */
+    background-color: #77a0ff; /* 蓝色 */
+    left: 50%;
+    transform: translateX(-50%);
+    transition: width 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
+    opacity: 0.25; /* 低不透明度，默认状态下轻微可见 */
+    pointer-events: none; /* 确保不干扰鼠标事件 */
+}
+
+/* 拖动手柄悬停效果 */
+.resize-handle:hover {
+    background-color: rgba(207, 232, 252, 0.3); /* 稍增加背景色 */
+    width: 8px; /* 悬停时增加宽度 */
+}
+
+.resize-handle:hover .separator-line {
+    width: 2px; /* 悬停时增加分隔线宽度 */
+    background-color: #90b3ff; /* 更淡的蓝色 */
+    opacity: 0.8;
+}
+
+/* 拖动状态 */
+.resize-handle.active {
+    background-color: rgba(207, 232, 252, 0.5); /* 明显的背景色 */
+    width: 8px; /* 拖动时增加宽度 */
+}
+
+.resize-handle.active .separator-line {
+    width: 3px; /* 拖动时增加分隔线宽度 */
+    background-color: #77a0ff; /* 更淡的活动蓝色 */
+    opacity: 1;
+    box-shadow: 0 0 4px rgba(119, 160, 255, 0.5); /* 阴影效果 */
+}
+
+/* 响应式布局适配 */
+@media (max-width: 1200px) {
+    /* 中等屏幕下拖动手柄外观保持一致，不需要特殊调整 */
+}
+
+@media (max-width: 768px) {
+    /* 小屏幕下拖动手柄由blog-layout.css的display:none控制隐藏，这里无需定义 */
+} 

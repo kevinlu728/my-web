@@ -14,6 +14,12 @@
     box-sizing: border-box;
 }
 
+/* 页面特定样式 - 仅针对博客页面 */
+body.article-page {
+    overflow: hidden; /* 博客页面禁用默认滚动条，内容区域自己处理滚动 */
+    height: 100vh; /* 确保填满整个视口 */
+}
+
 /* 基础页面样式 */
 body {
     font-family: 'Arial', sans-serif;

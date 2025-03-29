@@ -91,8 +91,8 @@ class CategoryManager {
         // 检查是否是重新渲染
         const isAllCollapsed = rootItem.classList.contains('all-collapsed');
         
-        // 选择正确的图标 - 如果不是全部折叠状态，则使用向下图标
-        const chevronClass = isAllCollapsed ? 'fa-chevron-right' : 'fa-chevron-down';
+        // 选择正确的图标 - 始终使用向右图标
+        const chevronClass = 'fa-chevron-right';
         
         // 创建根节点内容
         rootItem.innerHTML = `
@@ -124,11 +124,14 @@ class CategoryManager {
                     rootItem.classList.add('all-collapsed');
                     rootItem.classList.remove('expanded');
                     
-                    // 更新图标方向
+                    // 更新图标方向 - 旋转由CSS控制，无需改变类名
                     const toggleIcon = rootItem.querySelector('.tree-toggle i');
                     if (toggleIcon) {
-                        toggleIcon.classList.remove('fa-chevron-down');
-                        toggleIcon.classList.add('fa-chevron-right');
+                        // 确保使用的是fa-chevron-right
+                        if (!toggleIcon.classList.contains('fa-chevron-right')) {
+                            toggleIcon.classList.remove('fa-chevron-down');
+                            toggleIcon.classList.add('fa-chevron-right');
+                        }
                     }
                     
                     // 清空已展开分类集合
@@ -146,11 +149,14 @@ class CategoryManager {
                     rootItem.classList.remove('all-collapsed');
                     rootItem.classList.add('expanded');
                     
-                    // 更新图标方向
+                    // 更新图标方向 - 旋转由CSS控制，无需改变类名
                     const toggleIcon = rootItem.querySelector('.tree-toggle i');
                     if (toggleIcon) {
-                        toggleIcon.classList.remove('fa-chevron-right');
-                        toggleIcon.classList.add('fa-chevron-down');
+                        // 确保使用的是fa-chevron-right
+                        if (!toggleIcon.classList.contains('fa-chevron-right')) {
+                            toggleIcon.classList.remove('fa-chevron-down');
+                            toggleIcon.classList.add('fa-chevron-right');
+                        }
                     }
                     
                     // 重新渲染分类列表
@@ -225,15 +231,11 @@ class CategoryManager {
                     // 切换展开/折叠状态
                     categoryNode.classList.toggle('expanded');
                     
-                    // 更新图标方向
+                    // 更新图标方向 - 旋转由CSS控制，无需改变类名
                     const toggleIcon = categoryNode.querySelector('.tree-toggle i');
                     if (toggleIcon) {
-                        if (categoryNode.classList.contains('expanded')) {
-                            // 只更改图标类，保留旋转效果
-                            toggleIcon.classList.remove('fa-chevron-right');
-                            toggleIcon.classList.add('fa-chevron-down');
-                        } else {
-                            // 只更改图标类，保留旋转效果
+                        // 确保使用的是fa-chevron-right
+                        if (!toggleIcon.classList.contains('fa-chevron-right')) {
                             toggleIcon.classList.remove('fa-chevron-down');
                             toggleIcon.classList.add('fa-chevron-right');
                         }
@@ -265,22 +267,8 @@ class CategoryManager {
         // 默认展开根节点（除非处于全部收起状态）
         if (!isAllCollapsed) {
             rootItem.classList.add('expanded');
-            
-            // 确保根节点图标正确
-            const rootToggleIcon = rootItem.querySelector('.tree-toggle i');
-            if (rootToggleIcon) {
-                rootToggleIcon.classList.remove('fa-chevron-right');
-                rootToggleIcon.classList.add('fa-chevron-down');
-            }
         } else {
             rootItem.classList.remove('expanded');
-            
-            // 确保根节点图标正确
-            const rootToggleIcon = rootItem.querySelector('.tree-toggle i');
-            if (rootToggleIcon) {
-                rootToggleIcon.classList.remove('fa-chevron-down');
-                rootToggleIcon.classList.add('fa-chevron-right');
-            }
         }
     }
 

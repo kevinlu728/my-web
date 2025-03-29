@@ -1,0 +1,152 @@
+/**
+ * @file blog-right-column.css
+ * @description 博客页面右侧栏的内部样式
+ * @author 陆凯
+ * @created 2024-05-22
+ * @updated 2024-05-22
+ * 
+ * 该文件专注于博客页面右侧栏的内部样式和外观，包括：
+ * - 右侧栏的基本样式（背景、圆角、阴影等）
+ * - 文章标题和分类标签样式
+ * - 目录导航样式
+ * - 内部元素的响应式调整
+ * 注意：右侧栏的主要布局/定位/大小等由blog-layout.css控制
+ */
+
+/* 右侧栏内部样式 - 不包含定位和大小相关属性 */
+.blog-content .right-column {
+    background: #ffffff;
+    padding: 25px 35px; /* 右侧栏内边距 */
+    border-radius: 0 12px 12px 0; /* 右侧圆角 */
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08); /* 阴影效果 */
+    border: 1px solid rgba(0, 0, 0, 0.05); /* 细微边框 */
+    border-left: none; /* 移除左边框，与拖动手柄衔接 */
+    display: flex; /* flex布局 */
+    flex-direction: column; /* 垂直排列 */
+    /* 注意: 位置、边距等布局属性由blog-layout.css控制 */
+}
+
+/* 右侧栏文章容器 */
+.blog-content .right-column #article-container,
+.blog-content .right-column .article-content,
+.blog-content .right-column .article-body {
+    padding-bottom: 20px; /* 大幅减少底部填充 */
+    overflow: visible !important; /* 确保内容不产生滚动条 */
+    height: auto !important; /* 高度自适应内容 */
+    max-height: none !important; /* 移除最大高度限制 */
+}
+
+/* 注意：所有分页加载相关样式已移至 article.css */
+
+/* 文章标题 */
+.blog-content .right-column .article-title {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 28px;
+    font-weight: 600;
+    color: #333;
+}
+
+/* 主题分类标签 */
+.blog-content .right-column .category-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 20px 0;
+}
+
+.blog-content .right-column .category-tag {
+    padding: 5px 12px;
+    border-radius: 16px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+/* 返回顶部按钮已移至scrollbar.css中统一定义 */
+
+/* 优化占位图样式 */
+.placeholder-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    padding: 30px;
+    text-align: center;
+}
+
+.placeholder-image {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background-color: #f5f7f9;
+}
+
+.placeholder-text {
+    font-size: 18px;
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.placeholder-hint {
+    font-size: 14px;
+    color: #999;
+}
+
+/* 脉动动画 */
+@keyframes pulse {
+    0% {
+        opacity: 0.5;
+        transform: scale(0.98);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 0.5;
+        transform: scale(0.98);
+    }
+}
+
+/* 注意：文章目录导航相关样式已移至 article.css */
+
+/* 响应式布局适配 */
+@media (max-width: 1200px) {    
+    /* 中等屏幕右侧栏调整 */
+    .blog-content .right-column {
+        padding: 20px 25px; /* 仅保留内边距调整 */
+    }
+}
+
+@media (max-width: 992px) {
+    /* 无特殊样式 */
+}
+
+@media (max-width: 768px) {
+    /* 小屏幕右侧栏调整 */
+    .blog-content .right-column {
+        padding: 15px 20px; /* 仅保留内边距调整 */
+        border-radius: 12px; /* 样式调整 */
+        border: 1px solid rgba(0, 0, 0, 0.05); /* 样式调整 */
+    }
+    
+    /* 返回顶部按钮的响应式样式已移至scrollbar.css */
+}
+
+/* 确保所有内部元素不创建额外的滚动区域 */
+.blog-content .right-column > div,
+.blog-content .right-column #article-container,
+.blog-content .right-column .article-container {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+}
+
+/* 移除左侧栏滚动条样式，使用统一的类 */ 

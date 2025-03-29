@@ -101,6 +101,9 @@ export class TableOfContents {
         this.initialized = true;
         logger.info('目录导航初始化完成，共解析', this.headings.length, '个标题');
         
+        // 设置位置监听，确保目录位置与左栏保持同步
+        this.setupPositionObserver();
+        
         return true;
     }
 
@@ -113,8 +116,8 @@ export class TableOfContents {
         if (rightColumn) {
             // 获取右侧栏相对于视口的位置信息
             const rect = rightColumn.getBoundingClientRect();
-            // 设置CSS变量，用于目录导航的位置定位
-            document.documentElement.style.setProperty('--right-column-top', `${rect.top}px`);
+            // 设置CSS变量，仅用于目录导航的位置定位，不影响右栏本身
+            document.documentElement.style.setProperty('--toc-top', `${rect.top}px`);
             logger.info('已设置目录顶部位置变量:', `${rect.top}px`);
         }
     }
@@ -455,28 +458,149 @@ export class TableOfContents {
         const tocItems = this.tocContainer.querySelectorAll('.toc-item a');
         
         // 为每个目录项添加点击事件
-        tocItems.forEach(item => {
-            item.addEventListener('click', (e) => {
+        tocItems.forEach((item, index) => {
+            // 移除旧的事件监听器（防止重复绑定）
+            const oldClickHandler = item._clickHandler;
+            if (oldClickHandler) {
+                item.removeEventListener('click', oldClickHandler);
+            }
+            
+            // 确保链接元素具有正确的样式和属性
+            item.style.cursor = 'pointer';
+            item.style.pointerEvents = 'auto';
+            
+            // 使用箭头函数保持this引用
+            const clickHandler = (e) => {
+                logger.info(`目录项 ${index+1} 被点击: ${item.textContent}`);
                 e.preventDefault();
+                e.stopPropagation(); // 阻止事件冒泡
+                
+                // 保存点击前的目录位置
+                const tocPositionBefore = this.tocContainer.getBoundingClientRect().top;
                 
                 // 获取目标标题ID
                 const targetId = item.getAttribute('href').substring(1);
+                logger.info(`查找目标标题: #${targetId}`);
+                
                 const targetHeading = document.getElementById(targetId);
                 
                 if (targetHeading) {
-                    // 计算目标位置（考虑固定导航栏等因素）
-                    const offset = targetHeading.getBoundingClientRect().top + window.scrollY - 80;
+                    logger.info(`找到目标标题，滚动到: #${targetId}`);
                     
-                    // 平滑滚动到目标位置
-                    window.scrollTo({
-                        top: offset,
-                        behavior: 'smooth'
-                    });
-                    
-                    // 更新URL（可选）
-                    history.pushState(null, null, `#${targetId}`);
+                    try {
+                        // 点击时临时固定目录位置，避免在滚动过程中位置变化
+                        const rightColumn = document.querySelector('.blog-content .right-column');
+                        const rightColumnTop = rightColumn.getBoundingClientRect().top;
+                        
+                        // 添加特殊类，并强制设置位置
+                        this.tocContainer.classList.add('fixed-during-scroll');
+                        this.tocContainer.style.top = `${rightColumnTop}px`;
+                        
+                        // 获取右栏的滚动元素
+                        const rightColumnScrollElement = rightColumn; // 右栏本身是可滚动元素
+                        
+                        // 计算目标位置（相对于右栏）
+                        // 注意：这里使用的是相对于右栏的位置，而不是整个窗口
+                        const targetOffsetTop = targetHeading.offsetTop - 80; // 减去头部空间
+                        
+                        // 滚动右栏到目标位置，而不是滚动整个窗口
+                        rightColumnScrollElement.scrollTo({
+                            top: targetOffsetTop,
+                            behavior: 'smooth'
+                        });
+                        
+                        // 确保在滚动后修复目录位置
+                        setTimeout(() => {
+                            // 移除特殊类
+                            this.tocContainer.classList.remove('fixed-during-scroll');
+                            
+                            // 滚动完成后重新设置目录位置
+                            this.updateRightColumnPosition(tocPositionBefore);
+                        }, 400); // 延长时间确保滚动完成
+                        
+                        // 高亮当前点击的目录项
+                        this.tocContainer.querySelectorAll('.toc-item').forEach(el => {
+                            el.classList.remove('active');
+                        });
+                        item.parentElement.classList.add('active');
+                        
+                        // 更新URL（但不会改变页面滚动位置）
+                        if (history.pushState) {
+                            history.pushState(null, null, `#${targetId}`);
+                        } else {
+                            // 这种方式可能会导致页面滚动，所以需要小心使用
+                            // 如果目标已经滚动到位，这里只更新hash部分
+                            const currentScrollPos = rightColumnScrollElement.scrollTop;
+                            location.hash = `#${targetId}`;
+                            rightColumnScrollElement.scrollTop = currentScrollPos;
+                        }
+                    } catch (error) {
+                        logger.error(`滚动到目标位置时出错:`, error);
+                        // 使用最简单的方法作为最后手段
+                        try {
+                            // 尝试直接滚动到元素，这将滚动右栏
+                            targetHeading.scrollIntoView({behavior: 'smooth'});
+                        } catch (e) {
+                            // 如果上面的方法也失败，直接更新hash（可能导致页面滚动）
+                            location.hash = `#${targetId}`;
+                        }
+                        
+                        // 即使出错也尝试修复位置
+                        setTimeout(() => {
+                            this.updateRightColumnPosition(tocPositionBefore);
+                        }, 300);
+                    }
+                } else {
+                    logger.warn(`未找到目标标题元素: #${targetId}`);
+                    // 尝试重新定位所有标题
+                    this.extractHeadings();
+                    const retryTarget = document.getElementById(targetId);
+                    if (retryTarget) {
+                        logger.info(`重新扫描后找到标题，跳转到 #${targetId}`);
+                        retryTarget.scrollIntoView({behavior: 'smooth'});
+                        
+                        // 修复目录位置
+                        setTimeout(() => {
+                            this.updateRightColumnPosition(tocPositionBefore);
+                        }, 300);
+                    }
                 }
-            });
+            };
+            
+            // 保存点击处理函数的引用
+            item._clickHandler = clickHandler;
+            
+            // 添加事件监听器，使用捕获模式确保事件被处理
+            item.addEventListener('click', clickHandler, true);
+            
+            // 为父元素（li.toc-item）也添加点击事件
+            const parentItem = item.parentElement;
+            if (parentItem && parentItem.classList.contains('toc-item')) {
+                parentItem.style.cursor = 'pointer';
+                parentItem.style.pointerEvents = 'auto';
+                
+                // 移除旧的事件监听器
+                const oldParentClickHandler = parentItem._clickHandler;
+                if (oldParentClickHandler) {
+                    parentItem.removeEventListener('click', oldParentClickHandler);
+                }
+                
+                // 添加新的点击处理函数
+                const parentClickHandler = (e) => {
+                    // 只有当点击的不是链接本身时才触发
+                    if (e.target !== item) {
+                        logger.info(`目录项父元素被点击，转发到链接: ${item.textContent}`);
+                        // 模拟点击链接
+                        clickHandler(e);
+                    }
+                };
+                
+                // 保存点击处理函数的引用
+                parentItem._clickHandler = parentClickHandler;
+                
+                // 添加事件监听器，使用捕获模式
+                parentItem.addEventListener('click', parentClickHandler, true);
+            }
         });
     }
 
@@ -544,6 +668,12 @@ export class TableOfContents {
         if (this.resizeHandler) {
             window.removeEventListener('resize', this.resizeHandler);
             this.resizeHandler = null;
+        }
+        
+        // 清除位置观察器
+        if (this._positionObserver) {
+            clearInterval(this._positionObserver);
+            this._positionObserver = null;
         }
         
         // 移除目录容器
@@ -623,17 +753,22 @@ export class TableOfContents {
         // 创建新的目录列表
         const tocList = document.createElement('ul');
         tocList.className = 'toc-list';
-        // 不再设置内联样式，依赖CSS文件设置
+        tocList.style.pointerEvents = 'auto'; // 确保列表可以接收鼠标事件
         
         // 遍历所有标题生成目录项
         this.headings.forEach(heading => {
             const tocItem = document.createElement('li');
             tocItem.className = `toc-item toc-level-${heading.level}`;
             tocItem.setAttribute('data-target', heading.id);
+            tocItem.style.pointerEvents = 'auto'; // 确保项目可以接收鼠标事件
+            tocItem.style.zIndex = '10'; // 增加z-index确保在顶层
             
             const tocLink = document.createElement('a');
             tocLink.href = `#${heading.id}`;
             tocLink.textContent = heading.text;
+            tocLink.style.pointerEvents = 'auto'; // 确保链接可以接收鼠标事件
+            tocLink.style.cursor = 'pointer'; // 明确指示可点击
+            tocLink.style.zIndex = '10'; // 增加z-index确保在顶层
             
             tocItem.appendChild(tocLink);
             tocList.appendChild(tocItem);
@@ -642,7 +777,11 @@ export class TableOfContents {
         // 将新列表添加到容器中
         existingContainer.appendChild(tocList);
         
-        // 设置目录项点击事件
+        // 明确设置容器可接收鼠标事件
+        existingContainer.style.pointerEvents = 'auto';
+        
+        logger.info('重新设置目录项点击事件...');
+        // 设置目录项点击事件 - 确保这里调用了更新的方法
         this.setupTocItemClickEvents();
         
         // 确保滚动监听器仍然有效
@@ -659,25 +798,11 @@ export class TableOfContents {
         }
         
         // 还原滚动位置
-        if (existingContainer && currentState.scrollTop > 0) {
-            existingContainer.scrollTop = currentState.scrollTop;
-            
-            // 保留特殊处理确保底部内容可见的逻辑
-            setTimeout(() => {
-                const lastItem = existingContainer.querySelector('.toc-item:last-child');
-                if (lastItem) {
-                    // 检查最后一项是否完全可见
-                    const containerRect = existingContainer.getBoundingClientRect();
-                    const itemRect = lastItem.getBoundingClientRect();
-                    if (itemRect.bottom > containerRect.bottom && existingContainer.scrollTop < existingContainer.scrollHeight - existingContainer.clientHeight) {
-                        // 如果最后一项不完全可见且还有滚动空间，确保它可见
-                        existingContainer.scrollTop = existingContainer.scrollHeight - existingContainer.clientHeight;
-                    }
-                }
-            }, 100);
+        if (currentState.scrollTop > 0) {
+            this.tocContainer.scrollTop = currentState.scrollTop;
         }
         
-        logger.info('目录内容已更新，保持容器状态');
+        logger.info('目录内容更新完成，新标题数:', this.headings.length);
         return true;
     }
 
@@ -721,9 +846,93 @@ export class TableOfContents {
             return func(...args);
         };
     }
+
+    /**
+     * 设置位置观察器，持续监听目录与左栏的对齐情况
+     */
+    setupPositionObserver() {
+        // 清除之前的位置观察器
+        if (this._positionObserver) {
+            clearInterval(this._positionObserver);
+            this._positionObserver = null;
+        }
+        
+        // 获取初始位置
+        const rightColumn = document.querySelector('.blog-content .right-column');
+        if (!rightColumn || !this.tocContainer) return;
+        
+        const initialRightColumnTop = rightColumn.getBoundingClientRect().top;
+        document.documentElement.style.setProperty('--toc-top', `${initialRightColumnTop}px`);
+        logger.info(`初始目录位置: ${initialRightColumnTop}px`);
+        
+        // 创建位置观察器，每300ms检查一次位置关系
+        this._positionObserver = setInterval(() => {
+            if (!this.tocContainer || !document.body.contains(this.tocContainer)) {
+                clearInterval(this._positionObserver);
+                this._positionObserver = null;
+                return;
+            }
+            
+            // 如果目录正在特殊状态（滚动中或手动调整中），不干预位置
+            if (this.tocContainer.classList.contains('fixed-during-scroll') || 
+                this.tocContainer.classList.contains('freeze-position')) {
+                return;
+            }
+            
+            const rightColumn = document.querySelector('.blog-content .right-column');
+            if (!rightColumn) return;
+            
+            const rightColumnTop = rightColumn.getBoundingClientRect().top;
+            const tocTop = this.tocContainer.getBoundingClientRect().top;
+            const positionDiff = Math.abs(tocTop - rightColumnTop);
+            
+            // 如果位置差异超过5px，更新位置
+            if (positionDiff > 5) {
+                document.documentElement.style.setProperty('--toc-top', `${rightColumnTop}px`);
+                
+                // 在滚动过程中可能会有位置误差，如果超过阈值则直接将目录顶部与右栏对齐
+                if (positionDiff > 20) {
+                    this.tocContainer.style.top = `${rightColumnTop}px`;
+                    logger.info(`强制矫正目录位置: ${rightColumnTop}px (差值: ${positionDiff}px)`);
+                }
+            }
+        }, 300); // 频率提高到300ms，以便更及时地检测并修正位置变化
+    }
+
+    /**
+     * 恢复右侧目录的位置
+     * @param {number} originalPosition - 原始位置，通常是点击前的位置
+     */
+    updateRightColumnPosition(originalPosition) {
+        if (!this.tocContainer) return;
+        
+        try {
+            // 获取右侧栏元素作为参考
+            const rightColumn = document.querySelector('.blog-content .right-column');
+            if (!rightColumn) return;
+            
+            // 获取右侧栏当前位置
+            const rightColumnTop = rightColumn.getBoundingClientRect().top;
+            
+            // 直接更新CSS变量为右栏的顶部位置
+            document.documentElement.style.setProperty('--toc-top', `${rightColumnTop}px`);
+            
+            // 强制目录容器使用新的top值
+            this.tocContainer.style.top = `${rightColumnTop}px`;
+            
+            logger.info(`更新目录位置: ${rightColumnTop}px`);
+        } catch (error) {
+            logger.error('调整目录位置时出错:', error);
+        }
+    }
 }
 
 // 创建单例实例
 const tableOfContents = new TableOfContents();
+
+// 在页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => tableOfContents.initialize(), 100);
+});
 
 export default tableOfContents;

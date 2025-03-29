@@ -8,12 +8,20 @@
 
 /* ===== 基本图标回退样式 ===== */
 /* 用于图标资源加载失败时提供的基本图标样式 */
-.fas.fa-chevron-right:before { content: "▶" !important; }
-.fas.fa-chevron-down:before { content: "▼" !important; }
-.fas.fa-search:before { content: "🔍" !important; }
-.fas.fa-times:before { content: "✕" !important; }
-.fas.fa-sync:before { content: "↻" !important; }
-.fas.fa-spinner:before { content: "⟳" !important; }
+/* 仅当存在no-fontawesome类时才应用回退样式 */
+html.no-fontawesome .fas.fa-chevron-right:before { content: "▸" !important; }
+html.no-fontawesome .fas.fa-chevron-down:before { content: "▾" !important; transform: rotate(0deg) !important; display: inline-block !important; }
+html.no-fontawesome .fas.fa-search:before { content: "🔍" !important; }
+html.no-fontawesome .fas.fa-times:before { content: "✕" !important; }
+html.no-fontawesome .fas.fa-sync:before { content: "↻" !important; }
+html.no-fontawesome .fas.fa-spinner:before { content: "⟳" !important; }
+/* 添加分类目录和文章图标回退 */
+html.no-fontawesome .fas.fa-folder:before, 
+html.no-fontawesome .fas.fa-folder-open:before { content: "📁" !important; }
+html.no-fontawesome .fas.fa-file:before,
+html.no-fontawesome .fas.fa-file-alt:before { content: "📄" !important; }
+html.no-fontawesome .fas.fa-tag:before { content: "🏷️" !important; }
+html.no-fontawesome .fas.fa-tags:before { content: "🏷️🏷️" !important; }
 .spin { animation: spin 2s linear infinite; }
 @keyframes spin { 100% { transform: rotate(360deg); } }
 
@@ -66,8 +74,60 @@
 }
 
 /* 基本的图标回退样式 - 仅在图标资源加载失败时使用 */
-.fas, .far, .fab, .bi, .material-icons {
-    font-family: sans-serif;
+html.no-fontawesome .fas, 
+html.no-fontawesome .far, 
+html.no-fontawesome .fab, 
+html.no-fontawesome .bi, 
+html.no-fontawesome .material-icons {
+    font-family: sans-serif !important;
+    transform: none !important;
+    -webkit-transform: none !important;
+}
+
+/* 分类和文章图标基本样式 */
+html.no-fontawesome .category-icon i:before,
+html.no-fontawesome .tree-item-icon i.fa-folder:before,
+html.no-fontawesome .tree-item-icon i.fa-folder-open:before {
+    font-size: 14px;
+    vertical-align: -1px;
+}
+
+html.no-fontawesome .article-icon i:before,
+html.no-fontawesome .tree-item-icon i.fa-file:before,
+html.no-fontawesome .tree-item-icon i.fa-file-alt:before {
+    font-size: 14px;
+    vertical-align: -1px;
+}
+
+/* 确保三角形图标方向正确 - 增强版 */
+html.no-fontawesome .tree-toggle i:before,
+html.no-fontawesome .unicode-icon {
+    display: inline-block !important;
+    transform: none !important;
+    -webkit-transform: none !important;
+    rotation: 0deg !important;
+    text-align: center !important;
+    font-style: normal !important;
+}
+
+/* 特定精确覆盖 - 最高优先级 */
+html.no-fontawesome .tree-item.expanded > .tree-item-content .tree-toggle i:before {
+    content: "▾" !important;
+}
+
+html.no-fontawesome .tree-item:not(.expanded) > .tree-item-content .tree-toggle i:before {
+    content: "▸" !important;
+}
+
+/* 完全禁用任何可能干扰的CSS转换 */
+html.no-fontawesome * {
+    transition: none !important;
+}
+
+html.no-fontawesome .tree-toggle i {
+    transform: none !important;
+    -webkit-transform: none !important;
+    transition: none !important;
 }
 
 /* 代码块最小回退样式 - 仅在代码高亮资源加载失败时使用 */

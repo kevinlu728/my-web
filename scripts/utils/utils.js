@@ -57,33 +57,178 @@ export function showStatus(message, isError = false, type = 'info') {
     }
 }
 
-// 显示加载中状态
-export function showLoading(message = '加载中...') {
-    const treeChildren = document.querySelector('#article-tree .root-item > .tree-children');
-    if (!treeChildren) {
-        logger.warn('文章列表元素未找到');
-        return;
+/**
+ * 显示加载动画
+ * @param {string} text - 加载提示文本
+ * @param {string} container - 容器元素的选择器
+ * @param {string} customClass - 自定义类名
+ */
+export function showLoading(text = '加载中...', container = '.main-content', customClass = 'loading') {
+    const containerEl = document.querySelector(container);
+    if (!containerEl) return;
+
+    // 创建加载动画元素
+    const loadingEl = document.createElement('div');
+    loadingEl.classList.add(customClass);
+    loadingEl.innerHTML = `<span>${text}</span>`;
+    containerEl.appendChild(loadingEl);
+
+    // 防止快速加载闪烁
+    return {
+        clear: () => {
+            setTimeout(() => {
+                if (loadingEl && loadingEl.parentNode) {
+                    loadingEl.parentNode.removeChild(loadingEl);
+                }
+            }, 300);
+        }
+    };
+}
+
+/**
+ * 显示通用加载动画
+ * @param {string} text - 加载提示文本
+ * @param {string} container - 容器元素的选择器或DOM元素
+ * @param {Object} options - 配置选项
+ * @param {string} options.containerClass - 容器自定义类名
+ * @param {string} options.spinnerClass - 加载动画自定义类名
+ * @param {string} options.textClass - 文本自定义类名
+ * @param {string} options.theme - 主题 (primary, success, warning, danger)
+ * @param {string} options.size - 尺寸 (small, normal, large)
+ * @param {boolean} options.inline - 是否使用内联布局
+ * @param {boolean} options.useOverlay - 是否使用遮罩
+ * @returns {Object} 包含clear方法的对象
+ */
+export function showLoadingSpinner(text = '加载中...', container = '.main-content', options = {}) {
+    // 默认选项
+    const defaultOptions = {
+        containerClass: 'loading-container',
+        spinnerClass: 'loading-spinner',
+        textClass: 'loading-text',
+        theme: '',
+        size: '',
+        inline: false,
+        useOverlay: false
+    };
+
+    // 合并选项
+    const mergedOptions = {...defaultOptions, ...options};
+    
+    // 获取容器元素
+    const containerEl = typeof container === 'string' 
+        ? document.querySelector(container) 
+        : container;
+        
+    if (!containerEl) {
+        logger.warn(`找不到容器: ${container}`);
+        return { clear: () => {} };
+    }
+
+    // 创建加载容器
+    const loadingContainer = document.createElement('div');
+    
+    // 确保containerClass不为空字符串再添加
+    if (mergedOptions.containerClass && typeof mergedOptions.containerClass === 'string' && mergedOptions.containerClass.trim() !== '') {
+        loadingContainer.classList.add(mergedOptions.containerClass);
     }
     
-    treeChildren.innerHTML = `
-        <li class="loading">
-            <div class="resource-loading-spinner"></div>
-            <span>${message}</span>
-        </li>`;
+    // 添加主题和尺寸类 - 确保只有当theme和size不为空时才添加对应的类
+    if (mergedOptions.theme && typeof mergedOptions.theme === 'string' && mergedOptions.theme.trim() !== '') {
+        loadingContainer.classList.add(`loading-${mergedOptions.theme}`);
+    }
+    
+    if (mergedOptions.size && typeof mergedOptions.size === 'string' && mergedOptions.size.trim() !== '') {
+        loadingContainer.classList.add(`loading-${mergedOptions.size}`);
+    }
+    
+    if (mergedOptions.inline) {
+        loadingContainer.classList.add('loading-inline');
+    }
+    
+    if (mergedOptions.useOverlay) {
+        loadingContainer.classList.add('loading-overlay');
+    }
+    
+    // 创建加载动画元素
+    const spinner = document.createElement('div');
+    // 确保spinnerClass不为空字符串再添加
+    if (mergedOptions.spinnerClass && typeof mergedOptions.spinnerClass === 'string' && mergedOptions.spinnerClass.trim() !== '') {
+        spinner.classList.add(mergedOptions.spinnerClass);
+    } else {
+        // 默认使用loading-spinner类
+        spinner.classList.add('loading-spinner');
+    }
+    loadingContainer.appendChild(spinner);
+    
+    // 创建加载文本
+    if (text) {
+        const textEl = document.createElement('div');
+        // 确保textClass不为空字符串再添加
+        if (mergedOptions.textClass && typeof mergedOptions.textClass === 'string' && mergedOptions.textClass.trim() !== '') {
+            textEl.classList.add(mergedOptions.textClass);
+        } else {
+            // 默认使用loading-text类
+            textEl.classList.add('loading-text');
+        }
+        textEl.textContent = text;
+        loadingContainer.appendChild(textEl);
+    }
+    
+    // 添加到容器
+    containerEl.appendChild(loadingContainer);
+    
+    // 返回清除方法
+    return {
+        clear: (delay = 300) => {
+            setTimeout(() => {
+                if (loadingContainer && loadingContainer.parentNode) {
+                    // 添加淡出动画
+                    loadingContainer.style.opacity = '0';
+                    loadingContainer.style.transition = 'opacity 0.2s ease';
+                    
+                    // 动画结束后移除元素
+                    setTimeout(() => {
+                        if (loadingContainer.parentNode) {
+                            loadingContainer.parentNode.removeChild(loadingContainer);
+                        }
+                    }, 200);
+                }
+            }, delay);
+        },
+        // 获取加载容器元素
+        getElement: () => loadingContainer
+    };
 }
 
 // 显示错误信息
 export function showError(message) {
+    // 确保message不为undefined、null或空字符串
+    let errorMessage = '发生未知错误';
+    
+    if (message && typeof message === 'string' && message.trim() !== '') {
+        errorMessage = message;
+    } else if (message && typeof message === 'object') {
+        // 尝试从错误对象中提取有用信息
+        if (message.message && typeof message.message === 'string' && message.message.trim() !== '') {
+            errorMessage = message.message;
+        } else if (message.name) {
+            errorMessage = `错误类型: ${message.name}`;
+        }
+    }
+    
+    // 在UI中显示错误信息
     const statusEl = document.getElementById('status-message');
     if (statusEl) {
-        statusEl.textContent = message;
+        statusEl.textContent = errorMessage;
         statusEl.className = 'status-message error';
     }
     
+    // 在文章树中显示错误信息
     const treeChildren = document.querySelector('#article-tree .root-item > .tree-children');
     if (treeChildren) {
-        treeChildren.innerHTML = `<li class="error">${message}</li>`;
+        treeChildren.innerHTML = `<li class="error">${errorMessage}</li>`;
     }
     
-    logger.error(message);
+    // 记录错误
+    logger.error(`发生错误: ${errorMessage}`, message);
 } 

@@ -1,0 +1,220 @@
+/**
+ * @file scrollbar.css
+ * @description 统一的自定义滚动条样式
+ * @author 陆凯
+ * @created 2024-05-23
+ * 
+ * 该文件定义了全站统一的自定义滚动条样式，包括：
+ * - 浏览器通用的WebKit滚动条样式（Chrome/Safari/Edge等）
+ * - Firefox专用的滚动条样式
+ * - 滚动条的尺寸、颜色、圆角等视觉属性
+ */
+
+/* 通用滚动条样式 - 适用于所有需要自定义滚动条的元素 */
+.custom-scrollbar {
+    /* Firefox滚动条样式 */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(155, 155, 155, 0.5) transparent;
+}
+
+/* WebKit滚动条样式（Chrome/Safari/Edge） */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(155, 155, 155, 0.5);
+    border-radius: 4px;
+    border: 2px solid transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(155, 155, 155, 0.7);
+}
+
+/* 窄版滚动条 - 用于侧栏等较窄区域 */
+.narrow-scrollbar {
+    /* Firefox滚动条样式 */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(155, 155, 155, 0.5) transparent;
+}
+
+/* WebKit窄版滚动条样式 */
+.narrow-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.narrow-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 3px;
+}
+
+.narrow-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(155, 155, 155, 0.5);
+    border-radius: 3px;
+    border: 1px solid transparent;
+}
+
+.narrow-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(155, 155, 155, 0.7);
+}
+
+/* 应用于主体滚动 */
+html, body {
+    /* 默认使用自定义滚动条 */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(155, 155, 155, 0.5) transparent;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+    width: 8px;
+    background-color: transparent;
+}
+
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 4px;
+}
+
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb {
+    background-color: rgba(155, 155, 155, 0.5);
+    border-radius: 4px;
+    border: 2px solid transparent;
+}
+
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(155, 155, 155, 0.7);
+}
+
+/* 专为首页设计的滚动条样式 */
+.home-page {
+    /* 首页使用全局滚动，Body需要添加滚动条样式 */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(155, 155, 155, 0.5) transparent;
+}
+
+.home-page::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.home-page::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 4px;
+}
+
+.home-page::-webkit-scrollbar-thumb {
+    background-color: rgba(155, 155, 155, 0.5);
+    border-radius: 4px;
+    border: 2px solid transparent;
+}
+
+.home-page::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(155, 155, 155, 0.7);
+}
+
+/* 博客页面特定的滚动条样式 */
+.article-page .blog-content {
+    /* 博客内容区在大屏幕模式下不滚动 */
+    position: relative;
+    overflow: hidden;
+}
+
+@media (max-width: 768px) {
+    /* 小屏幕下的博客内容区滚动行为 */
+    .article-page .blog-content {
+        overflow-y: auto !important;
+        height: 100vh !important;
+    }
+    
+    /* 小屏幕下右栏不独立滚动 */
+    .article-page .right-column {
+        overflow: visible !important;
+        height: auto !important;
+    }
+}
+
+/* "返回顶部"按钮样式 */
+.back-to-top {
+    position: fixed;
+    right: 30px;
+    bottom: 30px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background-color: rgba(71, 132, 196, 0.85);
+    color: white;
+    box-shadow: 0 4px 10px rgba(71, 132, 196, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px);
+    z-index: 1000; /* 确保按钮显示在最上层 */
+}
+
+.back-to-top.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.back-to-top:hover {
+    background-color: rgba(95, 149, 194, 0.9);
+    box-shadow: 0 6px 15px rgba(95, 149, 194, 0.3);
+    transform: translateY(-3px);
+}
+
+.back-to-top:hover::before {
+    content: "返回顶部";
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.back-to-top:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(95, 149, 194, 0.3);
+}
+
+.back-to-top svg {
+    width: 24px;
+    height: 24px;
+    fill: currentColor;
+}
+
+/* 优化平板和移动设备上的"返回顶部"按钮 */
+@media (max-width: 768px) {
+    .back-to-top {
+        width: 42px;
+        height: 42px;
+        bottom: 20px;
+        right: 20px;
+    }
+    
+    .back-to-top svg {
+        width: 20px;
+        height: 20px;
+    }
+} 
