@@ -42,6 +42,14 @@ logger.info('🚀 tech-blog.js 开始加载...');
 async function initializePage() {
     logger.info('初始化技术博客页面...');
     
+    // 添加环境类名到body元素
+    const config = window.config || {};
+    if (config.getEnvironment) {
+        const env = config.getEnvironment();
+        document.body.classList.add(env);
+        logger.info(`当前环境: ${env}`);
+    }
+    
     // 检查依赖项
     logger.info('检查依赖项：');
     logger.info('- imageLazyLoader:', !!imageLazyLoader);

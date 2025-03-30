@@ -21,133 +21,6 @@
 
 import logger from '../utils/logger.js';
 
-// 资源加载状态跟踪对象
-const resourceStatus = {
-    resources: {},
-    statusElement: null,
-    listElement: null,
-    
-    // 添加资源记录
-    addResource: function(name, url) {
-        const resourceId = name.toLowerCase().replace(/[^a-z0-9]/g, '-');
-        this.resources[resourceId] = {
-            name: name,
-            url: url,
-            status: 'loading',
-            startTime: new Date().getTime()
-        };
-        
-        this.updateStatusUI();
-        return resourceId;
-    },
-    
-    // 更新资源状态
-    updateResource: function(resourceId, status) {
-        if (this.resources[resourceId]) {
-            this.resources[resourceId].status = status;
-            this.resources[resourceId].endTime = new Date().getTime();
-            this.updateStatusUI();
-        }
-    },
-    
-    // 更新UI显示
-    updateStatusUI: function() {
-        if (!this.listElement) return;
-        
-        // 清空列表
-        this.listElement.innerHTML = '';
-        
-        // 按状态排序：错误 > 加载中 > 成功
-        const sortedResources = Object.values(this.resources).sort((a, b) => {
-            const priority = { 'error': 0, 'loading': 1, 'success': 2 };
-            return priority[a.status] - priority[b.status];
-        });
-        
-        // 添加每个资源的状态
-        sortedResources.forEach(resource => {
-            const item = document.createElement('li');
-            item.className = 'resource-status-item';
-            
-            let statusIcon = '';
-            if (resource.status === 'loading') {
-                statusIcon = '<i class="status-icon status-loading fas fa-spinner fa-spin"></i>';
-            } else if (resource.status === 'success') {
-                statusIcon = '<i class="status-icon status-success fas fa-check"></i>';
-            } else if (resource.status === 'error') {
-                statusIcon = '<i class="status-icon status-error fas fa-times"></i>';
-            }
-            
-            item.innerHTML = `
-                ${statusIcon}
-                <span class="resource-name">${resource.name}</span>
-            `;
-            
-            this.listElement.appendChild(item);
-        });
-        
-        // 更新错误和加载中资源的计数
-        const hasFailedResources = Object.values(this.resources).some(res => res.status === 'error');
-        const hasLoadingResources = Object.values(this.resources).some(res => res.status === 'loading');
-        
-        // 如果有任何加载失败的资源，更新标题
-        const statusTitle = document.querySelector('.resource-status-title');
-        if (statusTitle) {
-            if (hasFailedResources) {
-                statusTitle.innerHTML = '资源加载状态 <span class="resource-status-alert">⚠️</span>';
-                statusTitle.classList.add('has-error');
-            } else if (!hasLoadingResources) {
-                statusTitle.innerHTML = '资源加载状态 ✅';
-                statusTitle.classList.remove('has-error');
-            } else {
-                statusTitle.innerHTML = '资源加载状态';
-                statusTitle.classList.remove('has-error');
-            }
-        }
-    },
-    
-    // 初始化资源状态监控
-    init: function() {
-        // 创建原始loadScript函数的扩展版本
-        const originalLoadScript = window.loadScript;
-        window.loadScript = (src, backupSrc) => {
-            const resourceName = src.split('/').pop();
-            const resourceId = this.addResource(resourceName, src);
-            
-            return new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.async = false; // 保持执行顺序
-                script.src = src;
-                
-                script.onload = () => {
-                    this.updateResource(resourceId, 'success');
-                    resolve(script);
-                };
-                
-                script.onerror = function() {
-                    logger.warn(`加载脚本失败: ${src}`);
-                    
-                    if (backupSrc) {
-                        logger.info(`尝试备用源: ${backupSrc}`);
-                        this.src = backupSrc;
-                        
-                        // 备用源也可能失败
-                        this.onerror = function() {
-                            logger.error(`备用源也加载失败: ${backupSrc}`);
-                            resourceStatus.updateResource(resourceId, 'error');
-                            reject(new Error(`Failed to load script from main and backup sources: ${src}, ${backupSrc}`));
-                        };
-                    } else {
-                        resourceStatus.updateResource(resourceId, 'error');
-                        reject(new Error(`Failed to load script: ${src}`));
-                    }
-                };
-                
-                document.head.appendChild(script);
-            });
-        };
-    }
-};
-
 // 初始化调试面板
 export function initDebugPanel(currentDatabaseId, { 
     onConfigUpdate, 
@@ -224,24 +97,28 @@ export function initDebugPanel(currentDatabaseId, {
     // 设置面板拖拽功能
     initDraggablePanel(debugPanel);
     
-    // 添加键盘快捷键切换调试面板 (Ctrl+Shift+D 或 Mac上的 Command+Shift+D)
+    // 修复键盘快捷键处理函数
     // 使用命名函数便于后续移除
     const keyboardShortcutHandler = function(e) {
         const isMac = navigator.platform.indexOf('Mac') !== -1;
-        const modifierKey = isMac ? e.metaKey : e.ctrlKey; // Mac用metaKey(Command键)
+        const modifierKey = isMac ? e.metaKey : e.ctrlKey;
         
-        if (modifierKey && e.shiftKey && e.key === 'D') {
+        // 使用keyCode 75 (字母K)和altKey替代之前的组合
+        if (modifierKey && e.altKey && e.keyCode === 75) {
             const toggleCheckbox = document.getElementById('debug-mode-toggle');
-            toggleCheckbox.checked = !toggleCheckbox.checked;
-            
-            // 触发change事件
-            toggleCheckbox.dispatchEvent(new Event('change'));
+            if (toggleCheckbox) {
+                toggleCheckbox.checked = !toggleCheckbox.checked;
+                
+                // 触发change事件
+                toggleCheckbox.dispatchEvent(new Event('change'));
+            }
             
             // 阻止默认行为
             e.preventDefault();
+            e.stopPropagation();
         }
     };
-    
+
     // 移除可能存在的旧键盘事件监听器
     document.removeEventListener('keydown', window._debugPanelKeyHandler);
     window._debugPanelKeyHandler = keyboardShortcutHandler;
@@ -597,12 +474,6 @@ export function initDebugPanel(currentDatabaseId, {
         }
     }
     
-    // 初始化资源加载监控区域
-    initResourceMonitor();
-    
-    // 初始化资源加载状态跟踪
-    resourceStatus.init();
-    
     logger.info('调试面板初始化完成');
 }
 
@@ -638,44 +509,6 @@ function initEnvironmentInfo() {
         // 立即尝试获取环境信息，不等待其他初始化
         setTimeout(() => updateEnvironmentInfoFromAPI(), 0);
     }
-}
-
-// 初始化资源加载监控区域
-function initResourceMonitor() {
-    // 获取调试面板
-    const debugPanel = document.getElementById('debug-panel');
-    if (!debugPanel) return;
-    
-    // 创建资源监控部分
-    const resourceMonitorSection = document.createElement('div');
-    resourceMonitorSection.id = 'resource-monitor';
-    resourceMonitorSection.className = 'resource-monitor-section';
-    
-    // 添加标题和内容
-    resourceMonitorSection.innerHTML = `
-        <div class="section-header">
-            <div class="resource-status-title">资源加载状态</div>
-            <button id="clear-resources-btn" class="clear-resources-btn">清除</button>
-        </div>
-        <div class="resource-status-container">
-            <ul id="resource-status-list" class="resource-status-list"></ul>
-        </div>
-    `;
-    
-    // 添加到调试面板
-    debugPanel.appendChild(resourceMonitorSection);
-    
-    // 设置资源状态的列表元素引用
-    resourceStatus.listElement = document.getElementById('resource-status-list');
-    
-    // 添加清除按钮事件
-    document.getElementById('clear-resources-btn').addEventListener('click', function() {
-        resourceStatus.resources = {};
-        resourceStatus.updateStatusUI();
-    });
-    
-    // 初始化资源列表
-    resourceStatus.updateStatusUI();
 }
 
 // 更新环境信息

@@ -510,4 +510,16 @@
 .clear-resources-btn:hover {
     background-color: #e2e8f0;
     color: #334155;
+}
+
+/* 查找类似这样的选择器，并确保其中的内容符合新的快捷键 */
+.debug-shortcut-hint:after {
+    content: "⌘+⌥+K"; /* 使用Mac键盘符号 */
+}
+
+/* 在生产环境下隐藏调试面板相关元素 */
+body.production .debug-section,
+body.production #debug-panel-container,
+body.production #debug-panel {
+    display: none !important;
 } 

@@ -19,14 +19,37 @@ import logger from '../utils/logger.js';
  * @returns {Promise<void>}
  */
 export async function loadDebugPanel(options = {}) {
-    const {
-        containerId = 'debug-toggle-container',
-        panelContainerId = 'debug-panel-container',
-        databaseId = '1a932af826e680df8bf7f320b51930b9',
-        callbacks = {}
-    } = options;
-    
     try {
+        // 导入配置模块
+        const config = window.config || {};
+        
+        // 检查环境 - 在生产环境直接返回，不加载调试面板
+        if (config.getEnvironment && config.getEnvironment() === 'production') {
+            // 在生产环境下不加载调试面板
+            logger.info('在生产环境中不显示调试面板');
+            return;
+        }
+        
+        // 只在开发环境继续执行
+        const containerId = options.containerId || 'debug-toggle-container';
+        const panelContainerId = options.panelContainerId || 'debug-panel-container';
+        const databaseId = options.databaseId || '';
+        const callbacks = options.callbacks || {};
+        
+        // 获取放置调试开关的容器
+        const container = document.getElementById(containerId);
+        if (!container) {
+            logger.warn(`调试开关容器不存在: #${containerId}`);
+            return;
+        }
+        
+        // 获取放置调试面板的容器
+        const panelContainer = document.getElementById(panelContainerId);
+        if (!panelContainer) {
+            logger.warn(`调试面板容器不存在: #${panelContainerId}`);
+            return;
+        }
+        
         logger.info('正在加载调试面板组件...');
         
         // 获取组件HTML
@@ -49,34 +72,10 @@ export async function loadDebugPanel(options = {}) {
             throw new Error('调试面板HTML结构不完整，无法加载组件');
         }
         
-        // 获取容器元素
-        let toggleContainer = document.getElementById(containerId);
-        const panelContainer = document.getElementById(panelContainerId);
-        
-        if (!toggleContainer) {
-            logger.warn(`调试开关容器 #${containerId} 不存在，将创建一个新的`);
-            
-            // 创建一个新的容器
-            const newContainer = document.createElement('div');
-            newContainer.id = containerId;
-            
-            // 如果要放在侧边栏，尝试找到左栏
-            const leftColumn = document.querySelector('.left-column');
-            if (leftColumn) {
-                leftColumn.appendChild(newContainer);
-            } else {
-                // 否则添加到body
-                document.body.appendChild(newContainer);
-            }
-            
-            // 更新引用
-            toggleContainer = newContainer;
-        }
-        
         // 将开关部分添加到指定容器
-        if (toggleContainer) {
-            toggleContainer.innerHTML = '';
-            toggleContainer.appendChild(debugSection.cloneNode(true));
+        if (container) {
+            container.innerHTML = '';
+            container.appendChild(debugSection.cloneNode(true));
         } else {
             throw new Error('无法创建或找到调试开关容器');
         }
@@ -102,7 +101,7 @@ export async function loadDebugPanel(options = {}) {
                 const shortcutEl = document.getElementById('debug-shortcut');
                 if (shortcutEl) {
                     const isMac = navigator.platform.indexOf('Mac') !== -1;
-                    shortcutEl.textContent = isMac ? '⌘+Shift+D' : 'Ctrl+Shift+D';
+                    shortcutEl.textContent = isMac ? '⌘+⌥+K' : 'Ctrl+Alt+K';
                 }
                 
                 // 初始化调试面板功能
@@ -131,10 +130,37 @@ export async function loadDebugPanel(options = {}) {
                         }
                     },
                     getDatabaseInfo: callbacks.getDatabaseInfo || async function(dbId) {
-                        if (window.apiService && typeof window.apiService.getDatabaseInfo === 'function') {
-                            return await window.apiService.getDatabaseInfo(dbId);
+                        try {
+                            if (window.apiService && typeof window.apiService.getDatabaseInfo === 'function') {
+                                const result = await window.apiService.getDatabaseInfo(dbId);
+                                
+                                // 格式适配层：统一返回格式，提高兼容性
+                                // 检查各种可能的成功响应格式
+                                if (result.success === true || 
+                                    (result.data && !result.error) || 
+                                    (result.results && !result.error)) {
+                                    
+                                    return {
+                                        success: true,
+                                        data: result.data || result,
+                                        results: result.results || (result.data ? [result.data] : [])
+                                    };
+                                } else {
+                                    // 统一错误响应格式
+                                    return {
+                                        success: false,
+                                        error: result.error || '未知错误'
+                                    };
+                                }
+                            }
+                            return { success: false, error: 'API服务不可用' };
+                        } catch (error) {
+                            logger.error('获取数据库信息出错:', error);
+                            return { 
+                                success: false, 
+                                error: error.message || '未知错误' 
+                            };
                         }
-                        return { success: false, error: 'API服务不可用' };
                     },
                     testApiConnection: callbacks.testApiConnection || async function() {
                         if (window.apiService && typeof window.apiService.testConnection === 'function') {
@@ -143,10 +169,36 @@ export async function loadDebugPanel(options = {}) {
                         return { success: false, error: 'API服务不可用' };
                     },
                     getDatabases: callbacks.getDatabases || async function() {
-                        if (window.apiService && typeof window.apiService.getDatabases === 'function') {
-                            return await window.apiService.getDatabases();
+                        try {
+                            if (window.apiService && typeof window.apiService.getDatabases === 'function') {
+                                const result = await window.apiService.getDatabases();
+                                
+                                // 格式适配层：统一返回格式
+                                // 不同的API实现可能返回不同格式
+                                if (result.success === true || 
+                                    (result.results && Array.isArray(result.results)) ||
+                                    (Array.isArray(result))) {
+                                    
+                                    return {
+                                        success: true,
+                                        results: result.results || result
+                                    };
+                                } else {
+                                    // 统一错误响应格式
+                                    return {
+                                        success: false,
+                                        error: result.error || '未知错误'
+                                    };
+                                }
+                            }
+                            return { success: false, error: 'API服务不可用' };
+                        } catch (error) {
+                            logger.error('获取数据库列表出错:', error);
+                            return { 
+                                success: false, 
+                                error: error.message || '未知错误' 
+                            };
                         }
-                        return { success: false, error: 'API服务不可用' };
                     }
                 });
                 

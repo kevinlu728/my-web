@@ -437,12 +437,18 @@
         document.addEventListener('DOMContentLoaded', () => {
             console.log('初始化技术博客页面组件...');
             
-            // 加载调试面板组件
-            loadDebugPanel({
-                databaseId: config.notion.databaseId || config.debug.defaultDatabaseId
-            }).catch(err => {
-                console.error('加载调试面板时出错:', err);
-            });
+            // 导入配置并检查环境
+            const isProduction = config && config.getEnvironment && config.getEnvironment() === 'production';
+            
+            // 仅在非生产环境加载调试面板
+            if (!isProduction) {
+                // 加载调试面板组件
+                loadDebugPanel({
+                    databaseId: config.notion.databaseId || config.debug.defaultDatabaseId
+                }).catch(err => {
+                    console.error('加载调试面板时出错:', err);
+                });
+            }
             
             // 初始化页面
             initializePage().catch(err => {
