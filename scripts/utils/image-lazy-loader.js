@@ -405,6 +405,12 @@ class ImageLazyLoader {
                 this.openModal(originalSrc);
             });
             
+            // 创建加载指示器容器前，先检查并移除可能已存在的指示器
+            const existingLoader = img.parentNode.querySelector('.loader-container');
+            if (existingLoader) {
+                existingLoader.remove();
+            }
+            
             // 创建加载指示器容器
             const loaderContainer = document.createElement('div');
             loaderContainer.className = 'loader-container';
@@ -427,6 +433,13 @@ class ImageLazyLoader {
             
             wrapper.appendChild(loaderContainer);
             
+            // 确保在图片加载/错误事件中一定会清理指示器
+            const clearLoader = () => {
+                if (loaderContainer && loaderContainer.parentNode) {
+                    loaderContainer.remove();
+                }
+            };
+            
             // 设置懒加载
             if (this.hasIntersectionObserver) {
                 img.setAttribute('data-src', originalSrc);
@@ -437,28 +450,28 @@ class ImageLazyLoader {
                 img.src = originalSrc;
             }
             
-            // 处理加载完成 - 简化逻辑
+            // 监听加载完成事件
             img.addEventListener('load', () => {
-                if (!img.src.startsWith('data:image/svg+xml')) {
-                    // 只移除我们的加载容器
-                    const loader = wrapper.querySelector('.loader-container');
-                    if (loader) {
-                        loader.remove();
-                    }
-                    
-                    img.classList.add('loaded');
-                    img.classList.remove('lazy-image');
-                    
-                    // 使用图片的原始尺寸
-                    if (img.naturalWidth && img.naturalHeight) {
-                        this.applyCustomStyles(img);
-                    }
+                if (img.src.startsWith('data:image/svg+xml')) return;
+                
+                // 确保指示器被移除
+                clearLoader();
+                
+                img.classList.add('loaded');
+                img.classList.remove('lazy-image');
+                
+                // 使用图片的原始尺寸
+                if (img.naturalWidth && img.naturalHeight) {
+                    this.applyCustomStyles(img);
                 }
             });
             
             // 处理加载错误
             img.addEventListener('error', () => {
                 if (img.src.startsWith('data:image/svg+xml')) return;
+                
+                // 确保指示器被移除
+                clearLoader();
                 
                 const retryCount = parseInt(img.dataset.retryCount || '0');
                 const maxRetries = 3;
@@ -472,10 +485,6 @@ class ImageLazyLoader {
                     }, 1000 * Math.pow(2, retryCount));
                 } else {
                     logger.error('❌ 图片加载失败（已达到最大重试次数）:', originalSrc);
-                    
-                    // 移除加载指示器
-                    const loader = wrapper.querySelector('.loader-container');
-                    if (loader) loader.remove();
                     
                     // 使用统一的错误处理方法
                     this.handleImageError(img);
