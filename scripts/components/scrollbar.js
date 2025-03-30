@@ -34,6 +34,7 @@ const PageTypes = {
  */
 const ScrollTargets = {
     BLOG_LEFT_COLUMN: '.blog-content .left-column',
+    BLOG_ARTICLE_TREE: '.article-tree-container',
     BLOG_RIGHT_COLUMN: '.blog-content .right-column',
     BLOG_CONTENT: '.blog-content',
     ARTICLE_TOC: '.article-toc',
@@ -88,6 +89,9 @@ function initializeBlogPageScrollbars() {
     
     // 应用左侧栏窄版滚动条
     applyScrollbarStyle(ScrollTargets.BLOG_LEFT_COLUMN, ScrollbarClasses.NARROW);
+    
+    // 应用文章树容器窄版滚动条
+    applyScrollbarStyle(ScrollTargets.BLOG_ARTICLE_TREE, ScrollbarClasses.NARROW);
     
     // 应用右侧栏通用滚动条
     applyScrollbarStyle(ScrollTargets.BLOG_RIGHT_COLUMN, ScrollbarClasses.CUSTOM);

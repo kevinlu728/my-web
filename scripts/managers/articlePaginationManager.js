@@ -49,6 +49,67 @@ class ArticlePaginationManager {
     }
 
     /**
+     * 检测滚动位置是否接近底部 - 适应不同滚动容器
+     * @private
+     * @returns {boolean} 是否应该触发加载
+     */
+    _shouldTriggerLoad() {
+        const loadMoreContainer = document.querySelector('.load-more-container');
+        if (!loadMoreContainer) return false;
+
+        // 检查加载容器的可见性和内容
+        if (loadMoreContainer.querySelector('.no-more')) {
+            // 如果显示"没有更多内容"，则不触发加载
+            return false;
+        }
+        
+        // 检查容器是否可见
+        const containerRect = loadMoreContainer.getBoundingClientRect();
+        
+        // 获取viewport高度和总高度
+        let viewportHeight;
+        let scrollBottom;
+        let totalHeight;
+        
+        if (this.scrollContainer === window) {
+            viewportHeight = window.innerHeight;
+            scrollBottom = window.scrollY + viewportHeight;
+            totalHeight = document.documentElement.scrollHeight;
+        } else {
+            viewportHeight = this.scrollContainer.clientHeight;
+            scrollBottom = this.scrollContainer.scrollTop + viewportHeight;
+            totalHeight = this.scrollContainer.scrollHeight;
+        }
+        
+        // 改进底部检测 - 提高误差容忍度
+        const isAtBottom = totalHeight - scrollBottom < 10; // 10px误差容忍
+        
+        // 容器是否在视图内或接近视图
+        const isContainerNearOrInView = containerRect.top <= viewportHeight + 500; // 增加预加载距离
+        
+        // 是否接近页面底部
+        const scrollPercentage = (scrollBottom / totalHeight) * 100;
+        const isNearPageBottom = scrollPercentage > 85;
+        
+        // 调试日志
+        if (config.debug && (isAtBottom || isNearPageBottom || isContainerNearOrInView)) {
+            logger.info('增强滚动检测:', {
+                '滚动百分比': scrollPercentage.toFixed(2) + '%',
+                '到达底部': isAtBottom,
+                '容器可见或接近': isContainerNearOrInView,
+                '接近底部': isNearPageBottom,
+                '容器位置': `顶部${containerRect.top.toFixed(0)}px, 底部${containerRect.bottom.toFixed(0)}px`,
+                '视口高度': viewportHeight,
+                '内容总高度': totalHeight,
+                '当前滚动位置': scrollBottom
+            });
+        }
+        
+        // 综合多个条件判断是否应该触发加载
+        return isAtBottom || (isNearPageBottom && isContainerNearOrInView);
+    }
+
+    /**
      * 设置文章滚动监听以加载更多内容
      */
     setupScrollListener() {
@@ -94,9 +155,8 @@ class ArticlePaginationManager {
 
         // 使用throttle函数创建节流处理函数
         this.scrollHandler = throttle(() => {
-            // 每次滚动时再次检查状态，确保不发送无效请求
+            // 基本状态检查保持不变
             if (this.isLoading || !this.hasMore || !this.nextCursor) {
-                // 减少日志输出，仅在调试模式时输出
                 if (config.debug) {
                     logger.info('跳过加载：', 
                         this.isLoading ? '正在加载中' : 
@@ -106,49 +166,76 @@ class ArticlePaginationManager {
                 return;
             }
 
-            const loadMoreContainer = document.querySelector('.load-more-container');
-            if (!loadMoreContainer) return;
-
-            // 检测滚动位置是否接近底部 - 适应不同滚动容器
-            let scrollPercentage;
-            if (this.scrollContainer === window) {
-                // 如果容器是window，使用原来的逻辑
-                const scrollPosition = window.scrollY + window.innerHeight;
-                const totalHeight = document.documentElement.scrollHeight;
-                scrollPercentage = (scrollPosition / totalHeight) * 100;
-            } else {
-                // 如果是自定义容器，计算其滚动百分比
-                const container = this.scrollContainer;
-                const scrollPosition = container.scrollTop + container.clientHeight;
-                const totalHeight = container.scrollHeight;
-                scrollPercentage = (scrollPosition / totalHeight) * 100;
+            // 使用改进的方法检测是否应该触发加载
+            if (this._shouldTriggerLoad()) {
+                const loadMoreContainer = document.querySelector('.load-more-container');
+                this.triggerLoadMoreContent(loadMoreContainer, 0);
             }
-            
-            // 降低触发门槛，更早地触发加载更多内容
-            const isNearPageBottom = scrollPercentage > 85; // 原来是90，现在降低到85
-            
-            // 备用检测：加载容器是否接近视口底部
-            const containerRect = loadMoreContainer.getBoundingClientRect();
-            // 当容器进入视图区域的前300px时就开始准备加载
-            const isNearViewportBottom = containerRect.top <= window.innerHeight + 300; // 原来是200，增加到300
-
-            // 减少调试日志，仅在调试模式或触发加载时输出
-            if (isNearPageBottom && config.debug) {
-                logger.info('滚动检测：', {
-                    '滚动百分比': scrollPercentage.toFixed(2) + '%',
-                    '接近页面底部': isNearPageBottom
-                });
-            }
-
-            // 使用较宽松的条件触发加载
-            if (isNearPageBottom || (isNearViewportBottom && containerRect.bottom > 0)) {
-                this.triggerLoadMoreContent(loadMoreContainer, scrollPercentage);
-            }
-        }, 300); // 减少节流时间，从500ms改为300ms，让响应更快
+        }, 200); 
         
         // 添加滚动监听到正确的容器
         this.scrollContainer.addEventListener('scroll', this.scrollHandler);
         logger.info('滚动监听器已添加到', this.scrollContainer === window ? 'window' : '自定义容器');
+        
+        // 新增：主动触发初始检查，可能页面一开始就需要加载更多
+        setTimeout(() => this._checkIfShouldLoadMore(), 1000);
+        
+        // 新增：添加定期检查机制，解决滚动事件可能不触发的问题
+        this._setupPeriodicCheck();
+    }
+
+    /**
+     * 设置定期检查机制，确保即使没有滚动事件也能检测到需要加载的情况
+     * @private
+     */
+    _setupPeriodicCheck() {
+        // 清除可能存在的旧定时器
+        if (this._periodicCheckInterval) {
+            clearInterval(this._periodicCheckInterval);
+        }
+        
+        // 添加定期检查，每2秒检查一次是否应该加载更多
+        this._periodicCheckInterval = setInterval(() => {
+            this._checkIfShouldLoadMore();
+        }, 2000);
+        
+        // 确保页面不可见时暂停检查，节省资源
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                clearInterval(this._periodicCheckInterval);
+            } else {
+                // 页面再次可见时，重新开始检查并立即执行一次检查
+                clearInterval(this._periodicCheckInterval);
+                this._checkIfShouldLoadMore();
+                this._setupPeriodicCheck();
+            }
+        });
+    }
+
+    /**
+     * 检查是否应该加载更多并执行加载
+     * @private
+     */
+    _checkIfShouldLoadMore() {
+        // 如果没有更多内容或正在加载，则跳过
+        if (this.isLoading || this.isLoadingMore || !this.hasMore || !this.nextCursor) {
+            return;
+        }
+        
+        // 确保加载状态没有错误地保持锁定超过预期时间
+        if (this.isLoadingMore && Date.now() - this._loadingStartTime > 15000) {
+            logger.warn('检测到加载状态锁定超过15秒，强制重置状态');
+            this.isLoadingMore = false;
+            this.isLoading = false;
+        }
+        
+        // 检查是否应该触发加载
+        if (this._shouldTriggerLoad()) {
+            const loadMoreContainer = document.querySelector('.load-more-container');
+            if (loadMoreContainer) {
+                this.triggerLoadMoreContent(loadMoreContainer, 0);
+            }
+        }
     }
 
     /**
@@ -157,6 +244,9 @@ class ArticlePaginationManager {
      * @param {number} scrollPercentage - 滚动百分比
      */
     triggerLoadMoreContent(loadMoreContainer, scrollPercentage) {
+        // 记录加载开始时间，用于超时检测
+        this._loadingStartTime = Date.now();
+        
         // 再次检查状态有效性
         if (this.isLoading || !this.hasMore || !this.nextCursor) {
             // 如果状态无效，可能是在文章切换过程中仍触发了滚动事件
@@ -592,6 +682,12 @@ class ArticlePaginationManager {
         
         // 重置滚动容器引用
         this.scrollContainer = null;
+        
+        // 新增：清除定期检查间隔
+        if (this._periodicCheckInterval) {
+            clearInterval(this._periodicCheckInterval);
+            this._periodicCheckInterval = null;
+        }
     }
 
     /**

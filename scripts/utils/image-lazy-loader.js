@@ -22,6 +22,7 @@
  */
 
 import logger from './logger.js';
+import { showLoadingSpinner } from './utils.js';
 
 class ImageLazyLoader {
     constructor() {
@@ -56,9 +57,25 @@ class ImageLazyLoader {
      * @returns {HTMLElement}
      */
     createLoader() {
-        const loader = document.createElement('div');
-        loader.className = 'image-loader';
-        return loader;
+        // 创建容器
+        const container = document.createElement('div');
+        container.className = 'image-loader';
+        container.style.position = 'absolute';
+        container.style.top = '0';
+        container.style.left = '50%'; // 设置左侧位置为50%
+        container.style.transform = 'translateX(-50%)'; // 水平居中偏移
+        container.style.width = '400px'; // 设置固定宽度
+        container.style.minWidth = '400px';
+        container.style.height = '100%'; // 恢复高度设置，确保覆盖整个图片区域
+        container.style.backgroundColor = '#f5f5f5';
+        
+        // 直接在容器上使用showLoadingSpinner
+        showLoadingSpinner('图片加载中', container, {
+            size: 'small',
+            theme: 'secondary'
+        });
+        
+        return container;
     }
 
     /**
@@ -357,40 +374,28 @@ class ImageLazyLoader {
         const images = container.querySelectorAll('img');
         
         if (!images.length) {
-            // 移除非关键日志
-            // console.log('📢 容器中没有找到图片');
             return;
         }
-        // 简化日志，只保留关键信息
         logger.debug(`处理${images.length}张图片懒加载`);
         
         images.forEach((img, index) => {
-            // 获取原始图片URL和尺寸信息
+            // 获取原始图片URL
             const originalSrc = img.getAttribute('data-original-src') || img.src;
-            // 删除过于详细的图片信息日志
-            // console.log('图片信息:', {
-            //     src: originalSrc,
-            //     naturalWidth: img.naturalWidth,
-            //     naturalHeight: img.naturalHeight,
-            //     width: img.width,
-            //     height: img.height,
-            //     dataWidth: img.getAttribute('data-width'),
-            //     dataHeight: img.getAttribute('data-height'),
-            //     dataset: img.dataset
-            // });
 
             if (!originalSrc || originalSrc.startsWith('data:image/svg+xml')) {
                 logger.warn('⚠️ 图片没有有效的源URL');
                 return;
             }
-
-            // 创建包装容器
+            
+            // 创建包装容器，该容器用于承载实际图片
             const wrapper = document.createElement('div');
+            wrapper.className = 'image-wrapper';
             wrapper.style.position = 'relative';
-            wrapper.style.width = 'fit-content';
-            wrapper.style.maxWidth = '100%';
-            wrapper.style.minHeight = '50px';
-            wrapper.style.margin = '0.5rem 0'; // 减小上下边距
+            wrapper.style.display = 'block';
+            wrapper.style.width = '100%';
+            wrapper.style.margin = '0.5rem 0';
+            
+            // 将图片放入包装器
             img.parentNode.insertBefore(wrapper, img);
             wrapper.appendChild(img);
             
@@ -400,9 +405,27 @@ class ImageLazyLoader {
                 this.openModal(originalSrc);
             });
             
-            // 添加加载状态指示器
-            const loader = this.createLoader();
-            wrapper.appendChild(loader);
+            // 创建加载指示器容器
+            const loaderContainer = document.createElement('div');
+            loaderContainer.className = 'loader-container';
+            loaderContainer.style.position = 'absolute';
+            loaderContainer.style.top = '10px'; // 从顶部偏移一点
+            loaderContainer.style.left = '50%';
+            loaderContainer.style.transform = 'translateX(-50%)';
+            loaderContainer.style.width = '200px'; // 减小宽度
+            loaderContainer.style.minWidth = '200px'; // 减小最小宽度
+            loaderContainer.style.height = '120px'; // 减小高度
+            loaderContainer.style.backgroundColor = '#f5f5f5';
+            loaderContainer.style.borderRadius = '8px'; // 添加圆角使其更美观
+            loaderContainer.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)'; // 轻微阴影
+            loaderContainer.style.zIndex = '1'; // 确保在图片上层
+            
+            showLoadingSpinner('图片加载中', loaderContainer, {
+                size: 'small',
+                theme: 'secondary'
+            });
+            
+            wrapper.appendChild(loaderContainer);
             
             // 设置懒加载
             if (this.hasIntersectionObserver) {
@@ -414,19 +437,15 @@ class ImageLazyLoader {
                 img.src = originalSrc;
             }
             
-            // 处理加载完成
+            // 处理加载完成 - 简化逻辑
             img.addEventListener('load', () => {
                 if (!img.src.startsWith('data:image/svg+xml')) {
-                    // 移除详细的加载完成日志
-                    // console.log('✅ 图片加载完成:', {
-                    //     src: img.src,
-                    //     naturalWidth: img.naturalWidth,
-                    //     naturalHeight: img.naturalHeight
-                    // });
-                    
-                    if (loader.parentNode === wrapper) {
+                    // 只移除我们的加载容器
+                    const loader = wrapper.querySelector('.loader-container');
+                    if (loader) {
                         loader.remove();
                     }
+                    
                     img.classList.add('loaded');
                     img.classList.remove('lazy-image');
                     
@@ -449,18 +468,15 @@ class ImageLazyLoader {
                     logger.warn(`⚠️ 图片加载失败，正在进行第 ${retryCount + 1} 次重试:`, originalSrc);
                     
                     setTimeout(() => {
-                        // 清除所有已存在的错误提示
-                        const existingErrors = wrapper.querySelectorAll('.error-message');
-                        existingErrors.forEach(error => error.remove());
-                        
                         img.src = originalSrc + '?retry=' + Date.now();
                     }, 1000 * Math.pow(2, retryCount));
-                    
                 } else {
                     logger.error('❌ 图片加载失败（已达到最大重试次数）:', originalSrc);
-                    if (loader.parentNode === wrapper) {
-                        loader.remove();
-                    }
+                    
+                    // 移除加载指示器
+                    const loader = wrapper.querySelector('.loader-container');
+                    if (loader) loader.remove();
+                    
                     // 使用统一的错误处理方法
                     this.handleImageError(img);
                 }

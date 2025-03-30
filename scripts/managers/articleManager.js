@@ -754,6 +754,29 @@ class ArticleManager {
     getArticles() {
         return this.articles;
     }
+
+    // 文章内容渲染后处理
+    _afterRenderArticle(container) {
+        // 重要：遍历所有图片，标记为已处理
+        const images = container.querySelectorAll('img');
+        images.forEach(img => {
+            // 添加标记，避免重复处理
+            img.setAttribute('data-lazy-processed', 'true');
+        });
+        
+        // 处理表格等其他懒加载内容，但跳过图片
+        // initLazyLoading(container); // 删除这行代码
+        
+        // 或者修改为仅处理表格
+        if (typeof window.tableLazyLoader !== 'undefined' && typeof window.tableLazyLoader.processTables === 'function') {
+            window.tableLazyLoader.processTables(container);
+        }
+        
+        // 处理代码块
+        this.processCodeBlocks(container);
+        
+        // ...其他处理...
+    }
 }
 
 export const articleManager = new ArticleManager(); 

@@ -23,6 +23,7 @@
 import { tableLazyLoader } from '../utils/table-lazy-loader.js';
 import { codeLazyLoader } from '../utils/code-lazy-loader.js';
 import logger from '../utils/logger.js';
+import { showLoadingSpinner } from '../utils/utils.js';
 
 // 主渲染函数
 export function renderNotionBlocks(blocks) {
@@ -210,7 +211,12 @@ function renderImage(block) {
         return `<div class="image-placeholder">图片</div>`;
     }
     
-    return `<img src="${url}" alt="图片" style="max-width: 100%;">`;
+    // 简化图片渲染，移除内联加载器，完全依赖image-lazy-loader
+    return `
+        <div class="article-image-container">
+            <img src="${url}" alt="图片" data-original-src="${url}" style="max-width: 100%;">
+        </div>
+    `;
 }
 
 // 渲染公式块
