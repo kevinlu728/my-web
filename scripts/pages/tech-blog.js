@@ -22,7 +22,7 @@
 import { initDebugPanel } from '../components/debugPanel.js';
 // 保留原始服务导入，以便在apiService不可用时使用
 import { getDatabaseInfo, testApiConnection, getDatabases } from '../services/notionService.js';
-import { showStatus } from '../utils/utils.js';
+import { showStatus, showError } from '../utils/utils.js';
 import { categoryManager } from '../managers/categoryManager.js';
 import { articleManager } from '../managers/articleManager.js';
 import config from '../config/config.js';
