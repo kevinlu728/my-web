@@ -81,11 +81,6 @@ class ArticleManager {
         this.abortController = null;
         this.fetchDelay = 1000; // 防抖延迟，单位毫秒
         this.fetchDelayTimer = null;
-        // 添加加载锁，防止重复加载
-        this.loadingLock = false;
-        
-        // 添加加载锁，防止重复加载
-        this.loadingLock = false;
         
         // 添加分类名称映射
         this.categoryNameMap = categoryConfig.nameMap || {
@@ -104,15 +99,6 @@ class ArticleManager {
     // 加载文章列表
     async loadArticles(options = {}) {
         try {
-            // 防止重复加载 - 添加加载锁检查
-            if (this.loadingLock === true) {
-                logger.info('已有文章列表加载请求正在处理中，跳过重复加载');
-                return this.articles || [];
-            }
-            
-            // 设置加载锁
-            this.loadingLock = true;
-            
             // 取消之前的请求
             this.cancelCurrentLoading();
             
@@ -227,8 +213,6 @@ class ArticleManager {
         } finally {
             // 清除 AbortController
             this.abortController = null;
-            // 无论成功失败都释放加载锁
-            this.loadingLock = false;
         }
     }
 

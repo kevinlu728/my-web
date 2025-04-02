@@ -38,295 +38,257 @@ logger.info('🚀 tech-blog.js 开始加载...');
 
 /**
  * 初始化页面
- * @param {boolean} forceApiTest - 是否强制检查API可用性
- * @returns {Promise<void>}
  */
-export async function initializePage(forceApiTest = false) {
-    try {
-        // 防止重复初始化 - 添加初始化锁
-        if (window._pageInitializing === true) {
-            logger.info('页面正在初始化中，跳过重复初始化');
-            return;
-        }
-        
-        // 设置初始化锁
-        window._pageInitializing = true;
-        
-        // 检查是否已经初始化
-        if (window.blogPageInitialized && !forceApiTest) {
-            logger.info('页面已初始化，跳过初始化过程');
-            window._pageInitializing = false; // 释放锁
-            return;
-        }
+async function initializePage() {
+    logger.info('初始化技术博客页面...');
+    
+    // 添加环境类名到body元素
+    const config = window.config || {};
+    if (config.getEnvironment) {
+        const env = config.getEnvironment();
+        document.body.classList.add(env);
+        logger.info(`当前环境: ${env}`);
+    }
+    
+    // 检查依赖项
+    logger.info('检查依赖项：');
+    logger.info('- imageLazyLoader:', !!imageLazyLoader);
+    logger.info('- articleManager:', !!articleManager);
+    logger.info('- categoryManager:', !!categoryManager);
+    logger.info('- apiService:', !!window.apiService);
 
-        // 设置状态
-        window.blogPageInitialized = true;
-        window.blogPageLoading = true;
+    // 初始化返回顶部按钮
+    initializeBackToTop();
+    
+    const currentDatabaseId = config.notion.databaseId || config.debug.defaultDatabaseId;
+    logger.info('当前数据库ID:', currentDatabaseId);
 
+    // 直接处理加载遮罩
+    handleLoadingMask('fade');
+    
+    // 检查API服务可用性
+    if (window.apiService) {
+        logger.info('✅ 检测到apiService，将使用API服务自动选择功能');
         try {
-            logger.info('初始化技术博客页面...');
-            
-            // 添加环境类名到body元素
-            const config = window.config || {};
-            if (config.getEnvironment) {
-                const env = config.getEnvironment();
-                document.body.classList.add(env);
-                logger.info(`当前环境: ${env}`);
-            }
-            
-            // 检查依赖项
-            logger.info('检查依赖项：');
-            logger.info('- imageLazyLoader:', !!imageLazyLoader);
-            logger.info('- articleManager:', !!articleManager);
-            logger.info('- categoryManager:', !!categoryManager);
-            logger.info('- apiService:', !!window.apiService);
-
-            // 初始化返回顶部按钮
-            initializeBackToTop();
-            
-            const currentDatabaseId = config.notion.databaseId || config.debug.defaultDatabaseId;
-            logger.info('当前数据库ID:', currentDatabaseId);
-
-            // 直接处理加载遮罩
-            handleLoadingMask('fade');
-            
-            // 检查API服务可用性
-            if (window.apiService) {
-                logger.info('✅ 检测到apiService，将使用API服务自动选择功能');
-                try {
-                    const apiStatus = await window.apiService.testConnection();
-                    if (apiStatus.success) {
-                        logger.info('✅ API服务连接成功，使用实现:', apiStatus.implementation);
-                    } else {
-                        logger.warn('⚠️ API服务连接测试失败，将回退到直接服务调用');
-                    }
-                } catch (error) {
-                    logger.error('❌ API服务测试出错:', error);
-                }
+            const apiStatus = await window.apiService.testConnection();
+            if (apiStatus.success) {
+                logger.info('✅ API服务连接成功，使用实现:', apiStatus.implementation);
             } else {
-                logger.info('⚠️ 未检测到apiService，将使用直接服务调用');
+                logger.warn('⚠️ API服务连接测试失败，将回退到直接服务调用');
             }
-
-            // 扩展 articleManager 的显示文章方法
-            if (articleManager && articleManager.showArticle) {
-                const originalShowArticle = articleManager.showArticle;
-                articleManager.showArticle = async function(pageId) {
-                    logger.info('📄 准备加载文章:', pageId);
-                    
-                    // 检查是否已经加载了相同的文章
-                    const container = document.getElementById('article-container');
-                    const articleBody = container.querySelector('.article-body');
-                    
-                    if (articleBody && articleBody.getAttribute('data-article-id') === pageId) {
-                        logger.info('文章已加载，跳过重复加载:', pageId);
-                        return; // 如果已经加载了相同的文章，跳过
-                    }
-                    
-                    // 移除占位内容
-                    if (container && container.querySelector('.placeholder-content')) {
-                        logger.info('移除占位内容...');
-                        // 添加淡出效果
-                        const placeholder = container.querySelector('.placeholder-content');
-                        placeholder.style.transition = 'opacity 0.3s ease';
-                        placeholder.style.opacity = '0';
-                        
-                        // 等待淡出动画完成后移除元素
-                        setTimeout(() => {
-                            if (placeholder.parentNode === container) {
-                                container.removeChild(placeholder);
-                            }
-                        }, 300);
-                    }
-                    
-                    // 调用原始方法加载文章
-                    return originalShowArticle.call(this, pageId);
-                };
-                logger.info('✅ articleManager.showArticle 方法扩展完成');
-            } else {
-                logger.error('❌ articleManager 或 showArticle 方法未找到');
-            }
-
-            // 重写 showWelcomePage 方法，使用新的占位图样式
-            if (articleManager && articleManager.showWelcomePage) {
-                const originalShowWelcomePage = articleManager.showWelcomePage;
-                articleManager.showWelcomePage = function() {
-                    logger.info('显示欢迎页...');
-                    
-                    const container = document.getElementById('article-container');
-                    if (container) {
-                        // 检查是否已有内容(不是占位图)
-                        if (container.querySelector('.welcome-page') || 
-                            container.querySelector('.article-body')) {
-                            // 如果已经有欢迎页或文章内容，直接返回，避免重复渲染
-                            logger.info('已有页面内容，跳过欢迎页重新渲染');
-                            return;
-                        }
-                        
-                        // 检查是否已存在占位图
-                        let placeholder = container.querySelector('.placeholder-content');
-                        
-                        // 如果不存在占位图，才创建新的占位图
-                        if (!placeholder) {
-                            container.innerHTML = `
-                                <div class="placeholder-content">
-                                    <div class="placeholder-image"></div>
-                                    <div class="placeholder-text">正在准备内容</div>
-                                    <div class="placeholder-hint">欢迎页面加载中，请稍候片刻...</div>
-                                </div>
-                            `;
-                            placeholder = container.querySelector('.placeholder-content');
-                        }
-                        
-                        // 直接调用原始方法显示欢迎页内容，仅保留很短的延迟
-                        setTimeout(() => {
-                            originalShowWelcomePage.call(this);
-                        }, 100);
-                    }
-                };
-                logger.info('✅ articleManager.showWelcomePage 方法扩展完成');
-            }
-
-            // 初始化文章管理器
-            logger.info('初始化文章管理器...');
-            await articleManager.initialize(currentDatabaseId);
-
-            // 设置分类变更回调
-            categoryManager.setOnCategoryChange((category) => {
-                logger.info('分类变更为:', category);
-                articleManager.filterAndRenderArticles();
-            });
-
-            // 创建API服务包装函数，优先使用apiService，失败时回退到原始服务
-            const wrappedGetDatabaseInfo = async (databaseId) => {
-                try {
-                    // 如果apiService可用且提供了getDatabaseInfo方法
-                    if (window.apiService && typeof window.apiService.getDatabaseInfo === 'function') {
-                        logger.info('通过apiService获取数据库信息');
-                        return await window.apiService.getDatabaseInfo(databaseId);
-                    }
-                    // 回退到原始实现
-                    logger.info('通过原始服务获取数据库信息');
-                    return await getDatabaseInfo(databaseId);
-                } catch (error) {
-                    logger.error('获取数据库信息失败:', error);
-                    // 确保返回一个合理的结果
-                    return { success: false, error: error.message };
-                }
-            };
-
-            const wrappedTestApiConnection = async () => {
-                try {
-                    // 如果apiService可用
-                    if (window.apiService) {
-                        logger.info('通过apiService测试API连接');
-                        return await window.apiService.testConnection();
-                    }
-                    // 回退到原始实现
-                    logger.info('通过原始服务测试API连接');
-                    return await testApiConnection();
-                } catch (error) {
-                    logger.error('API连接测试失败:', error);
-                    return { success: false, error: error.message };
-                }
-            };
-
-            const wrappedGetDatabases = async () => {
-                try {
-                    // 如果apiService可用且提供了getDatabases方法
-                    if (window.apiService && typeof window.apiService.getDatabases === 'function') {
-                        logger.info('通过apiService获取数据库列表');
-                        return await window.apiService.getDatabases();
-                    }
-                    // 回退到原始实现
-                    logger.info('通过原始服务获取数据库列表');
-                    return await getDatabases();
-                } catch (error) {
-                    logger.error('获取数据库列表失败:', error);
-                    return { success: false, error: error.message, results: [] };
-                }
-            };
-
-            // 初始化调试面板
-            initDebugPanel(currentDatabaseId, {
-                onConfigUpdate: (newDatabaseId) => articleManager.updateDatabaseId(newDatabaseId),
-                onRefresh: () => articleManager.loadArticles(),
-                showStatus,
-                // 使用包装后的API函数
-                getDatabaseInfo: wrappedGetDatabaseInfo,
-                testApiConnection: wrappedTestApiConnection,
-                getDatabases: wrappedGetDatabases
-            });
-
-            // 检查URL中是否有指定文章参数
-            try {
-                const urlParams = new URLSearchParams(window.location.search);
-                const articleIdFromUrl = urlParams.get('article');
-                
-                if (articleIdFromUrl) {
-                    // 仅当URL中指定了文章ID时才加载文章
-                    logger.info(`从URL参数加载文章: ${articleIdFromUrl}`);
-                    await articleManager.showArticle(articleIdFromUrl);
-                } else {
-                    // 确保文章数据已加载完成后再显示欢迎页面
-                    logger.info('确保文章数据已加载后显示欢迎页面...');
-                    // 如果还没有文章数据，先加载文章
-                    if (!articleManager.articles || articleManager.articles.length === 0) {
-                        logger.info('文章数据尚未加载，先加载文章数据...');
-                        await articleManager.loadArticles();
-                    }
-                    // 显示欢迎页面
-                    logger.info('显示欢迎页面...');
-                    articleManager.showWelcomePage();
-                }
-            } catch (error) {
-                logger.error('页面初始化过程中出错:', error);
-                // 即使出错，也尝试加载文章数据再显示欢迎页面
-                if (!articleManager.articles || articleManager.articles.length === 0) {
-                    try {
-                        await articleManager.loadArticles();
-                    } catch (loadError) {
-                        logger.error('加载文章数据出错:', loadError);
-                    }
-                }
-                articleManager.showWelcomePage();
-            }
-
-            logger.info('✅ 页面初始化完成！');
-            
-            // 初始化辅助功能
-            setupDebugShortcut();
-            initializeHelpPopup();
-            initializeArticleSearch();
-            initializeArticleList();
-            
-            // 初始化左栏宽度调整功能
-            initializeResizableLeftColumn();
-            
-            // 为页面图片应用样式（如果有的话）
-            applyImageStyles();
-            
-            // 修复FontAwesome图标显示 - 移至此处执行，确保DOM已加载完毕
-            fixFontAwesomeIcons();
-            
-            // 彻底移除加载遮罩
-            handleLoadingMask('remove');
-            
-            // 清除"正在初始化页面..."的状态消息
-            showStatus('', false);
         } catch (error) {
-            logger.error('初始化页面时出错:', error);
-            window.blogPageLoading = false;
-            throw error;
-        } finally {
-            // 释放初始化锁
-            window._pageInitializing = false;
+            logger.error('❌ API服务测试出错:', error);
+        }
+    } else {
+        logger.info('⚠️ 未检测到apiService，将使用直接服务调用');
+    }
+
+    // 扩展 articleManager 的显示文章方法
+    if (articleManager && articleManager.showArticle) {
+        const originalShowArticle = articleManager.showArticle;
+        articleManager.showArticle = async function(pageId) {
+            logger.info('📄 准备加载文章:', pageId);
+            
+            // 检查是否已经加载了相同的文章
+            const container = document.getElementById('article-container');
+            const articleBody = container.querySelector('.article-body');
+            
+            if (articleBody && articleBody.getAttribute('data-article-id') === pageId) {
+                logger.info('文章已加载，跳过重复加载:', pageId);
+                return; // 如果已经加载了相同的文章，跳过
+            }
+            
+            // 移除占位内容
+            if (container && container.querySelector('.placeholder-content')) {
+                logger.info('移除占位内容...');
+                // 添加淡出效果
+                const placeholder = container.querySelector('.placeholder-content');
+                placeholder.style.transition = 'opacity 0.3s ease';
+                placeholder.style.opacity = '0';
+                
+                // 等待淡出动画完成后移除元素
+                setTimeout(() => {
+                    if (placeholder.parentNode === container) {
+                        container.removeChild(placeholder);
+                    }
+                }, 300);
+            }
+            
+            // 调用原始方法加载文章
+            return originalShowArticle.call(this, pageId);
+        };
+        logger.info('✅ articleManager.showArticle 方法扩展完成');
+    } else {
+        logger.error('❌ articleManager 或 showArticle 方法未找到');
+    }
+
+    // 重写 showWelcomePage 方法，使用新的占位图样式
+    if (articleManager && articleManager.showWelcomePage) {
+        const originalShowWelcomePage = articleManager.showWelcomePage;
+        articleManager.showWelcomePage = function() {
+            logger.info('显示欢迎页...');
+            
+            const container = document.getElementById('article-container');
+            if (container) {
+                // 检查是否已有内容(不是占位图)
+                if (container.querySelector('.welcome-page') || 
+                    container.querySelector('.article-body')) {
+                    // 如果已经有欢迎页或文章内容，直接返回，避免重复渲染
+                    logger.info('已有页面内容，跳过欢迎页重新渲染');
+                    return;
+                }
+                
+                // 检查是否已存在占位图
+                let placeholder = container.querySelector('.placeholder-content');
+                
+                // 如果不存在占位图，才创建新的占位图
+                if (!placeholder) {
+                    container.innerHTML = `
+                        <div class="placeholder-content">
+                            <div class="placeholder-image"></div>
+                            <div class="placeholder-text">正在准备内容</div>
+                            <div class="placeholder-hint">欢迎页面加载中，请稍候片刻...</div>
+                        </div>
+                    `;
+                    placeholder = container.querySelector('.placeholder-content');
+                }
+                
+                // 直接调用原始方法显示欢迎页内容，仅保留很短的延迟
+                setTimeout(() => {
+                    originalShowWelcomePage.call(this);
+                }, 100);
+            }
+        };
+        logger.info('✅ articleManager.showWelcomePage 方法扩展完成');
+    }
+
+    // 初始化文章管理器
+    logger.info('初始化文章管理器...');
+    await articleManager.initialize(currentDatabaseId);
+
+    // 设置分类变更回调
+    categoryManager.setOnCategoryChange((category) => {
+        logger.info('分类变更为:', category);
+        articleManager.filterAndRenderArticles();
+    });
+
+    // 创建API服务包装函数，优先使用apiService，失败时回退到原始服务
+    const wrappedGetDatabaseInfo = async (databaseId) => {
+        try {
+            // 如果apiService可用且提供了getDatabaseInfo方法
+            if (window.apiService && typeof window.apiService.getDatabaseInfo === 'function') {
+                logger.info('通过apiService获取数据库信息');
+                return await window.apiService.getDatabaseInfo(databaseId);
+            }
+            // 回退到原始实现
+            logger.info('通过原始服务获取数据库信息');
+            return await getDatabaseInfo(databaseId);
+        } catch (error) {
+            logger.error('获取数据库信息失败:', error);
+            // 确保返回一个合理的结果
+            return { success: false, error: error.message };
+        }
+    };
+
+    const wrappedTestApiConnection = async () => {
+        try {
+            // 如果apiService可用
+            if (window.apiService) {
+                logger.info('通过apiService测试API连接');
+                return await window.apiService.testConnection();
+            }
+            // 回退到原始实现
+            logger.info('通过原始服务测试API连接');
+            return await testApiConnection();
+        } catch (error) {
+            logger.error('API连接测试失败:', error);
+            return { success: false, error: error.message };
+        }
+    };
+
+    const wrappedGetDatabases = async () => {
+        try {
+            // 如果apiService可用且提供了getDatabases方法
+            if (window.apiService && typeof window.apiService.getDatabases === 'function') {
+                logger.info('通过apiService获取数据库列表');
+                return await window.apiService.getDatabases();
+            }
+            // 回退到原始实现
+            logger.info('通过原始服务获取数据库列表');
+            return await getDatabases();
+        } catch (error) {
+            logger.error('获取数据库列表失败:', error);
+            return { success: false, error: error.message, results: [] };
+        }
+    };
+
+    // 初始化调试面板
+    initDebugPanel(currentDatabaseId, {
+        onConfigUpdate: (newDatabaseId) => articleManager.updateDatabaseId(newDatabaseId),
+        onRefresh: () => articleManager.loadArticles(),
+        showStatus,
+        // 使用包装后的API函数
+        getDatabaseInfo: wrappedGetDatabaseInfo,
+        testApiConnection: wrappedTestApiConnection,
+        getDatabases: wrappedGetDatabases
+    });
+
+    // 检查URL中是否有指定文章参数
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const articleIdFromUrl = urlParams.get('article');
+        
+        if (articleIdFromUrl) {
+            // 仅当URL中指定了文章ID时才加载文章
+            logger.info(`从URL参数加载文章: ${articleIdFromUrl}`);
+            await articleManager.showArticle(articleIdFromUrl);
+        } else {
+            // 确保文章数据已加载完成后再显示欢迎页面
+            logger.info('确保文章数据已加载后显示欢迎页面...');
+            // 如果还没有文章数据，先加载文章
+            if (!articleManager.articles || articleManager.articles.length === 0) {
+                logger.info('文章数据尚未加载，先加载文章数据...');
+                await articleManager.loadArticles();
+            }
+            // 显示欢迎页面
+            logger.info('显示欢迎页面...');
+            articleManager.showWelcomePage();
         }
     } catch (error) {
-        logger.error('页面初始化过程中发生严重错误:', error);
-        showError('页面初始化失败，请稍后重试');
-        window._pageInitializing = false; // 确保锁总是释放
-        throw error;
+        logger.error('页面初始化过程中出错:', error);
+        // 即使出错，也尝试加载文章数据再显示欢迎页面
+        if (!articleManager.articles || articleManager.articles.length === 0) {
+            try {
+                await articleManager.loadArticles();
+            } catch (loadError) {
+                logger.error('加载文章数据出错:', loadError);
+            }
+        }
+        articleManager.showWelcomePage();
     }
+
+    logger.info('✅ 页面初始化完成！');
+    
+    // 初始化辅助功能
+    setupDebugShortcut();
+    initializeHelpPopup();
+    initializeArticleSearch();
+    initializeArticleList();
+    
+    // 初始化左栏宽度调整功能
+    initializeResizableLeftColumn();
+    
+    // 为页面图片应用样式（如果有的话）
+    applyImageStyles();
+    
+    // 修复FontAwesome图标显示 - 移至此处执行，确保DOM已加载完毕
+    fixFontAwesomeIcons();
+    
+    // 彻底移除加载遮罩
+    handleLoadingMask('remove');
+    
+    // 清除"正在初始化页面..."的状态消息
+    showStatus('', false);
 }
 
 /**
@@ -929,6 +891,9 @@ document.addEventListener('DOMContentLoaded', () => {
     logger.info('DOM内容已加载，准备预加载关键资源');
     preloadCriticalResources();
 });
+
+// 导出函数供外部使用
+export { initializePage, applyImageStyles };
 
 // 添加全局测试方法，供控制台调用
 window.testFontAwesomeFallback = function() {

@@ -43,6 +43,12 @@ export const articleTreeSkeleton = {
                 return;
             }
             
+            // 防止重复添加骨架屏
+            if (container.querySelector('.article-tree-skeleton')) {
+                logger.debug('骨架屏已存在，跳过重复显示');
+                return;
+            }
+
             // 清空容器
             container.innerHTML = '';
             
