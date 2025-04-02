@@ -27,4 +27,8 @@ backups/
 
 *.code-workspace
 
-docs/
+docs/*
+docs/article-tree-list-req.md
+
+.DS_Store
+​**/.DS_Store
