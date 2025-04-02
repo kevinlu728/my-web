@@ -56,6 +56,8 @@ import tableOfContents from '../components/tableOfContents.js';
 
 import { getArticlePlaceholder } from '../utils/placeholder-templates.js';
 
+import { articleTreeSkeleton } from '../utils/skeleton-loader.js';
+
 // 显示文章树加载状态
 function showTreeLoading(message = '加载中...') {
     const treeChildren = document.querySelector('#article-tree .root-item > .tree-children');
@@ -64,19 +66,8 @@ function showTreeLoading(message = '加载中...') {
         return;
     }
     
-    // 创建加载容器
-    const loadingItem = document.createElement('li');
-    loadingItem.className = 'loading';
-    
-    // 使用showLoadingSpinner函数添加加载内容
-    showLoadingSpinner(message, loadingItem, {
-        containerClass: '',
-        size: 'medium'
-    });
-    
-    // 将li元素添加到树形结构中
-    treeChildren.innerHTML = '';
-    treeChildren.appendChild(loadingItem);
+    // 使用骨架屏替代简单的加载提示
+    articleTreeSkeleton.show(treeChildren);
 }
 
 class ArticleManager {
@@ -105,7 +96,7 @@ class ArticleManager {
     }
 
     // 加载文章列表
-    async loadArticles() {
+    async loadArticles(options = {}) {
         try {
             // 取消之前的请求
             this.cancelCurrentLoading();

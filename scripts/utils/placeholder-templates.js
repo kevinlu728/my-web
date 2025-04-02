@@ -20,4 +20,54 @@ export const getArticlePlaceholder = () => {
         <div class="placeholder-hint">请稍候片刻...</div>
     </div>
   `;
+};
+
+// 文章树骨架屏模板
+export const getArticleTreeSkeletonTemplate = () => {
+  return `
+    <div class="article-tree-skeleton">
+        <li class="skeleton-category">
+            <span class="skeleton-toggle skeleton-pulse"></span>
+            <span class="skeleton-icon skeleton-pulse"></span>
+            <span class="skeleton-name skeleton-cat-name-1 skeleton-pulse"></span>
+            <span class="skeleton-spacer"></span>
+            <span class="skeleton-count skeleton-pulse"></span>
+        </li>
+        <li class="skeleton-category">
+            <span class="skeleton-toggle skeleton-pulse"></span>
+            <span class="skeleton-icon skeleton-pulse"></span>
+            <span class="skeleton-name skeleton-cat-name-2 skeleton-pulse"></span>
+            <span class="skeleton-spacer"></span>
+            <span class="skeleton-count skeleton-pulse"></span>
+        </li>
+        <li class="skeleton-category">
+            <span class="skeleton-toggle skeleton-pulse"></span>
+            <span class="skeleton-icon skeleton-pulse"></span>
+            <span class="skeleton-name skeleton-cat-name-3 skeleton-pulse"></span>
+            <span class="skeleton-spacer"></span>
+            <span class="skeleton-count skeleton-pulse"></span>
+        </li>
+        <li class="skeleton-category">
+            <span class="skeleton-toggle skeleton-pulse"></span>
+            <span class="skeleton-icon skeleton-pulse"></span>
+            <span class="skeleton-name skeleton-cat-name-4 skeleton-pulse"></span>
+            <span class="skeleton-spacer"></span>
+            <span class="skeleton-count skeleton-pulse"></span>
+        </li>
+        <li class="skeleton-category">
+            <span class="skeleton-toggle skeleton-pulse"></span>
+            <span class="skeleton-icon skeleton-pulse"></span>
+            <span class="skeleton-name skeleton-cat-name-5 skeleton-pulse"></span>
+            <span class="skeleton-spacer"></span>
+            <span class="skeleton-count skeleton-pulse"></span>
+        </li>
+        <li class="skeleton-category">
+            <span class="skeleton-toggle skeleton-pulse"></span>
+            <span class="skeleton-icon skeleton-pulse"></span>
+            <span class="skeleton-name skeleton-cat-name-6 skeleton-pulse"></span>
+            <span class="skeleton-spacer"></span>
+            <span class="skeleton-count skeleton-pulse"></span>
+        </li>
+    </div>
+  `;
 }; 

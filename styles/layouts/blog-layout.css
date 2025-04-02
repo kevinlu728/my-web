@@ -39,7 +39,7 @@
     top: 72px; /* 与顶部导航栏底部对齐 */
     left: 15px; /* 添加左侧定位 */
     height: calc(100vh - 85px); /* 设置高度与内容区域一致 */
-    width: 250px; /* 初始宽度 */
+    width: 300px; /* 初始宽度 */
     overflow-y: auto; /* 如果左侧内容过多允许滚动 */
     overflow-x: hidden;
     z-index: 2;
@@ -49,7 +49,7 @@
 /* 右侧栏基本定位和大小 */
 .blog-content .right-column {
     position: relative; /* 保持固定定位以防止上移问题 */
-    margin-left: calc(10px + 250px + 3px); /* 使用更小的左侧内边距但保持拖动手柄宽度 */
+    margin-left: calc(10px + 300px + 3px); /* 使用更小的左侧内边距但保持拖动手柄宽度 */
     flex: 1; /* 填充剩余空间 */
     height: calc(100vh - 85px); /* 固定高度，与左栏保持一致 */
     min-width: 0; /* 允许收缩 */
@@ -63,7 +63,7 @@
 .resize-handle {
     position: fixed; /* 保持固定定位 */
     top: 72px; /* 与左侧栏顶部对齐 */
-    left: calc(15px + 250px); /* 与左侧栏右边对齐 */
+    left: calc(15px + 300px); /* 与左侧栏右边对齐 */
     height: calc(100vh - 85px); /* 与左侧栏高度一致 */
     width: 3px; /* 拖动手柄宽度 */
     margin: 0;

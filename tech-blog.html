@@ -459,5 +459,30 @@
             initNavigation();
         });
     </script>
+
+    <!-- 在现有脚本导入之后添加 -->
+    <script type="module">
+        // 导入骨架屏加载器
+        import { articleTreeSkeleton } from './scripts/utils/skeleton-loader.js?v=1.0.0';
+        
+        // 将骨架屏加载器添加到全局作用域以便调试
+        window.articleTreeSkeleton = articleTreeSkeleton;
+        
+        // DOM加载完成后添加配置UI
+        document.addEventListener('DOMContentLoaded', () => {
+            // 如果在URL参数中有debug=true，显示骨架屏配置
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('debug') && urlParams.get('debug') === 'true') {
+                // 创建配置容器
+                const configContainer = document.createElement('div');
+                configContainer.id = 'skeleton-config-container';
+                configContainer.className = 'skeleton-config visible';
+                document.body.appendChild(configContainer);
+                
+                // 添加配置UI
+                articleTreeSkeleton.addConfigUI('skeleton-config-container');
+            }
+        });
+    </script>
 </body>
 </html>

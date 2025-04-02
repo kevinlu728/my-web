@@ -279,4 +279,237 @@
         margin-left: 0.8rem;
         padding-left: 0.6rem;
     }
+}
+
+/* 文章列表骨架屏样式 */
+.article-tree-skeleton {
+    padding: 12px 0;
+    transition: opacity 0.3s ease;
+}
+
+.skeleton-tree-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 8px;
+    margin-bottom: 4px;
+    position: relative;
+}
+
+.skeleton-root-item {
+    font-weight: bold;
+}
+
+/* 骨架屏闪烁动画 */
+@keyframes shimmer {
+    0% {
+        background-position: -200px 0;
+    }
+    100% {
+        background-position: 200px 0;
+    }
+}
+
+/* 骨架屏通用样式 */
+.skeleton-toggle-icon,
+.skeleton-category-icon,
+.skeleton-title-text,
+.skeleton-count-badge {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 400px 100%;
+    animation: shimmer 1.5s infinite linear;
+    border-radius: 4px;
+}
+
+/* 折叠/展开图标骨架 */
+.skeleton-toggle-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 6px;
+    display: inline-block;
+}
+
+/* 分类图标骨架 */
+.skeleton-category-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    display: inline-block;
+}
+
+/* 分类名称骨架 - 宽度在JS中动态设置 */
+.skeleton-title-text {
+    height: 16px;
+    max-width: 80%;
+    min-width: 40px;
+    flex-grow: 1;
+    display: inline-block;
+}
+
+/* 文章数量骨架 */
+.skeleton-count-badge {
+    width: 24px;
+    height: 16px;
+    margin-left: auto;
+    border-radius: 10px;
+    display: inline-block;
+}
+
+/* 降级加载提示样式 */
+.fallback-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.fallback-loading .loading-spinner {
+    margin-bottom: 8px;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .skeleton-tree-item {
+        padding: 6px 8px;
+    }
+    
+    .skeleton-toggle-icon,
+    .skeleton-category-icon,
+    .skeleton-title-text,
+    .skeleton-count-badge {
+        height: 14px;
+    }
+    
+    .skeleton-toggle-icon,
+    .skeleton-category-icon {
+        width: 14px;
+    }
+}
+
+/* 骨架屏样式 */
+.skeleton-categories {
+    padding-left: 18px;
+    list-style: none;
+}
+
+.skeleton-category {
+    display: flex;
+    align-items: center;
+    padding: 8px 10px; /* 增加内边距 */
+    margin-bottom: 10px; /* 增加外边距 */
+    height: 36px; /* 增加高度 */
+}
+
+/* 不同宽度的标题，模拟不同长度 */
+.skeleton-cat-name-1 { width: 30px; }
+.skeleton-cat-name-2 { width: 65px; }
+.skeleton-cat-name-3 { width: 50px; }
+.skeleton-cat-name-4 { width: 90px; }
+.skeleton-cat-name-5 { width: 70px; }
+.skeleton-cat-name-6 { width: 40px; }
+
+/* 骨架屏动画效果 */
+.skeleton-pulse {
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
+    background: linear-gradient(90deg, #e2e8f0 0%, #edf2f7 50%, #e2e8f0 100%);
+    background-size: 200% 100%;
+}
+
+@keyframes skeleton-pulse {
+    0% { background-position: 0% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* 骨架屏适配器 */
+.article-tree-skeleton-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+/* 骨架屏元素 */
+.skeleton-toggle {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    margin-right: 6px;
+    display: inline-block;
+}
+
+.skeleton-icon {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    margin-right: 8px;
+    display: inline-block;
+}
+
+.skeleton-name {
+    height: 16px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.skeleton-count {
+    width: 24px;
+    height: 16px;
+    background-color: #e2e8f0;
+    border-radius: 4px;
+    margin-left: auto; /* 推到右侧 */
+    flex-shrink: 0; /* 防止收缩 */
+}
+
+/* 骨架屏配置开关样式 */
+.skeleton-config {
+    display: none; /* 默认隐藏，仅在调试模式下显示 */
+    margin-top: 10px;
+    padding: 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background-color: #f8fafc;
+}
+
+.skeleton-config.visible {
+    display: block;
+}
+
+.skeleton-config label {
+    display: flex;
+    align-items: center;
+    font-size: 0.85rem;
+    color: #4a5568;
+}
+
+.skeleton-config input {
+    margin-right: 8px;
+}
+
+/* 骨架屏容器高度设置 */
+.article-tree-container .tree-children.skeleton-loaded {
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 添加空白区域样式 */
+.skeleton-spacer {
+    flex: 1;  /* 占据剩余空间 */
+    min-width: 20px;  /* 确保最小宽度 */
+}
+
+/* 降级加载提示样式 */
+.fallback-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.fallback-loading .loading-spinner {
+    margin-bottom: 8px;
 } 

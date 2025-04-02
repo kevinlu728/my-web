@@ -552,7 +552,7 @@ function initializeResizableLeftColumn() {
     
     // 双击重置宽度
     resizeHandle.addEventListener('dblclick', () => {
-        const defaultWidth = 250;
+        const defaultWidth = 300;
         leftColumn.style.width = `${defaultWidth}px`;
         leftColumn.style.flex = `0 0 ${defaultWidth}px`;
         

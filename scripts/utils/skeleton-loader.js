@@ -1,0 +1,191 @@
+/**
+ * @file skeleton-loader.js
+ * @description 提供骨架屏加载器功能，用于文章列表和欢迎页面的加载状态显示
+ * @author Claude AI
+ * @version 1.0.0
+ * @created 2024-07-11
+ */
+
+import logger from './logger.js';
+import { getArticleTreeSkeletonTemplate } from './placeholder-templates.js';
+
+/**
+ * 文章树形列表骨架屏加载器
+ */
+export const articleTreeSkeleton = {
+    // 骨架屏配置
+    config: {
+        enabled: true, // 默认启用骨架屏
+        categories: [
+            { name: 'AI', width: 'skeleton-cat-name-1' },
+            { name: '终端技术', width: 'skeleton-cat-name-2' },
+            { name: '编程语言', width: 'skeleton-cat-name-3' },
+            { name: '数据结构和算法', width: 'skeleton-cat-name-4' },
+            { name: '计算机基础', width: 'skeleton-cat-name-5' },
+            { name: '测试', width: 'skeleton-cat-name-6' }
+        ]
+    },
+    
+    /**
+     * 显示骨架屏
+     * @param {HTMLElement} container - 骨架屏容器
+     */
+    show(container) {
+        if (!this.config.enabled) {
+            logger.info('骨架屏已禁用，使用默认加载提示');
+            this.showFallback(container);
+            return;
+        }
+        
+        try {
+            if (!container) {
+                logger.warn('骨架屏容器不存在');
+                return;
+            }
+            
+            // 清空容器
+            container.innerHTML = '';
+            
+            // 添加骨架屏标识类，用于应用高度样式
+            container.classList.add('skeleton-loaded');
+            
+            // 创建骨架屏HTML - 使用模板
+            const skeletonHTML = getArticleTreeSkeletonTemplate();
+            
+            // 添加到容器
+            container.innerHTML = skeletonHTML;
+            
+            logger.info('文章树形列表骨架屏已显示');
+        } catch (error) {
+            logger.error('显示骨架屏失败:', error);
+            this.showFallback(container);
+        }
+    },
+    
+    /**
+     * 隐藏骨架屏
+     * @param {HTMLElement} container - 骨架屏容器
+     */
+    hide(container) {
+        try {
+            if (!container) {
+                logger.warn('骨架屏容器不存在');
+                return;
+            }
+            
+            // 检查是否有骨架屏
+            const skeletonElement = container.querySelector('.article-tree-skeleton');
+            if (skeletonElement) {
+                // 添加淡出效果
+                skeletonElement.style.opacity = '0';
+                
+                // 延迟移除元素
+                setTimeout(() => {
+                    if (container && container.contains(skeletonElement)) {
+                        container.removeChild(skeletonElement);
+                    }
+                    container.classList.remove('skeleton-loaded');
+                }, 300);
+                
+                logger.info('文章树形列表骨架屏已隐藏');
+            }
+        } catch (error) {
+            logger.error('隐藏骨架屏失败:', error);
+        }
+    },
+    
+    /**
+     * 显示降级的加载提示
+     * @param {HTMLElement} container - 容器
+     */
+    showFallback(container) {
+        if (!container) return;
+        
+        container.innerHTML = `
+            <div class="fallback-loading">
+                <div class="loading-spinner small"></div>
+                <div>加载文章列表中...</div>
+            </div>
+        `;
+        
+        logger.info('已显示降级加载提示');
+    },
+    
+    /**
+     * 切换骨架屏启用状态
+     * @param {boolean} enabled - 是否启用
+     */
+    toggleEnabled(enabled) {
+        this.config.enabled = enabled;
+        logger.info(`骨架屏已${enabled ? '启用' : '禁用'}`);
+        
+        // 保存配置到localStorage
+        try {
+            localStorage.setItem('article_tree_skeleton_enabled', enabled.toString());
+        } catch (e) {
+            logger.warn('无法保存骨架屏配置到localStorage');
+        }
+    },
+    
+    /**
+     * 加载配置
+     */
+    loadConfig() {
+        try {
+            // 从localStorage加载配置
+            const enabled = localStorage.getItem('article_tree_skeleton_enabled');
+            if (enabled !== null) {
+                this.config.enabled = enabled === 'true';
+                logger.info(`从存储加载骨架屏配置: ${this.config.enabled ? '启用' : '禁用'}`);
+            }
+        } catch (e) {
+            logger.warn('无法从localStorage加载骨架屏配置');
+        }
+    },
+    
+    /**
+     * 添加控制UI
+     * @param {string} containerId - 控制器容器ID
+     */
+    addConfigUI(containerId = 'debug-panel') {
+        try {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            const configContainer = document.createElement('div');
+            configContainer.className = 'skeleton-config visible';
+            configContainer.innerHTML = `
+                <label>
+                    <input type="checkbox" ${this.config.enabled ? 'checked' : ''} id="skeleton-toggle">
+                    启用文章列表骨架屏
+                </label>
+            `;
+            
+            container.appendChild(configContainer);
+            
+            // 添加切换事件
+            const toggle = document.getElementById('skeleton-toggle');
+            if (toggle) {
+                toggle.addEventListener('change', () => {
+                    this.toggleEnabled(toggle.checked);
+                });
+            }
+            
+            logger.info('已添加骨架屏配置UI');
+        } catch (e) {
+            logger.warn('添加骨架屏配置UI失败:', e);
+        }
+    },
+    
+    /**
+     * 初始化骨架屏加载器
+     */
+    initialize() {
+        this.loadConfig();
+        logger.info('骨架屏加载器已初始化', this.config.enabled ? '已启用' : '已禁用');
+        return this;
+    }
+};
+
+// 自动初始化骨架屏加载器
+articleTreeSkeleton.initialize(); 
