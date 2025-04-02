@@ -30,6 +30,13 @@ export function initDebugPanel(currentDatabaseId, {
     testApiConnection,
     getDatabases
 }) {
+    // 检查是否为生产环境，如果是则直接返回
+    const config = window.config || {};
+    if (config.getEnvironment && config.getEnvironment() === 'production') {
+        logger.info('在生产环境中不初始化调试面板');
+        return;
+    }
+    
     // 防止重复初始化
     if (window._debugPanelInitialized) {
         logger.info('调试面板已初始化，跳过重复初始化');
@@ -65,7 +72,9 @@ export function initDebugPanel(currentDatabaseId, {
             // 重新绑定事件
             newToggle.addEventListener('change', function(e) {
                 const debugPanel = document.getElementById('debug-panel');
-                debugPanel.style.display = e.target.checked ? 'block' : 'none';
+                if (debugPanel) {
+                    debugPanel.style.display = e.target.checked ? 'block' : 'none';
+                }
                 localStorage.setItem('debug-mode', e.target.checked);
                 
                 if (e.target.checked) {
@@ -91,11 +100,16 @@ export function initDebugPanel(currentDatabaseId, {
     
     // 显示面板状态
     const debugPanel = document.getElementById('debug-panel');
-    const debugMode = localStorage.getItem('debug-mode') === 'true';
-    debugPanel.style.display = debugMode ? 'block' : 'none';
-    
-    // 设置面板拖拽功能
-    initDraggablePanel(debugPanel);
+    if (debugPanel) {
+        const debugMode = localStorage.getItem('debug-mode') === 'true';
+        debugPanel.style.display = debugMode ? 'block' : 'none';
+        
+        // 设置面板拖拽功能
+        initDraggablePanel(debugPanel);
+    } else {
+        logger.warn('调试面板元素不存在，无法设置显示状态');
+        return; // 如果面板不存在，提前退出
+    }
     
     // 修复键盘快捷键处理函数
     // 使用命名函数便于后续移除

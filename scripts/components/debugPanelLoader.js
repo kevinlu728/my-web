@@ -23,12 +23,22 @@ export async function loadDebugPanel(options = {}) {
         // 导入配置模块
         const config = window.config || {};
         
-        // 检查环境 - 在生产环境直接返回，不加载调试面板
-        if (config.getEnvironment && config.getEnvironment() === 'production') {
-            // 在生产环境下不加载调试面板
-            logger.info('在生产环境中不显示调试面板');
+        // 检查是否为生产环境
+        const isProduction = config.getEnvironment && config.getEnvironment() === 'production';
+        
+        // 在生产环境中直接返回，不进行后续操作
+        if (isProduction) {
+            logger.info('在生产环境中不加载调试面板');
+            // 移除可能已存在的调试面板元素
+            const existingPanel = document.getElementById('debug-panel');
+            if (existingPanel) {
+                existingPanel.remove();
+            }
             return;
         }
+        
+        // 添加环境标记到body，方便CSS选择器使用
+        document.body.classList.add(isProduction ? 'production' : 'development');
         
         // 只在开发环境继续执行
         const containerId = options.containerId || 'debug-toggle-container';
@@ -97,11 +107,24 @@ export async function loadDebugPanel(options = {}) {
         // 确保DOM已经更新
         setTimeout(() => {
             try {
+                // 再次检查环境，防止期间环境变化
+                if (config.getEnvironment && config.getEnvironment() === 'production') {
+                    logger.info('环境已变为生产环境，取消调试面板初始化');
+                    return;
+                }
+                
                 // 设置正确的快捷键文本
                 const shortcutEl = document.getElementById('debug-shortcut');
                 if (shortcutEl) {
                     const isMac = navigator.platform.indexOf('Mac') !== -1;
                     shortcutEl.textContent = isMac ? '⌘+⌥+K' : 'Ctrl+Alt+K';
+                }
+                
+                // 确认调试面板元素存在后再初始化
+                const debugPanelEl = document.getElementById('debug-panel');
+                if (!debugPanelEl) {
+                    logger.warn('调试面板元素不存在，无法初始化调试面板');
+                    return;
                 }
                 
                 // 初始化调试面板功能
