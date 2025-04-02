@@ -38,8 +38,8 @@ export function renderWelcomePage(options) {
         articleContainer.innerHTML = `
             <div class="welcome-page">
                 <div class="welcome-header">
-                    <h1>温故知新，回望前行</h1>
-                    <p class="welcome-subtitle">这里记录了一些技术学习和思考，欢迎讨论</p>
+                    <h1>忙时有序，专注前行</h1>
+                    <p class="welcome-subtitle">记录了一些终端开发相关的知识库，欢迎讨论</p>
                 </div>
                 <div class="welcome-content">
                     <p>暂无文章，请稍后再试</p>
@@ -52,8 +52,8 @@ export function renderWelcomePage(options) {
     articleContainer.innerHTML = `
         <div class="welcome-page">
             <div class="welcome-header">
-                <h1>温故知新，回望前行</h1>
-                <p class="welcome-subtitle">这里记录了一些技术学习和思考，欢迎交流</p>
+                <h1>忙时有序，专注前行</h1>
+                <p class="welcome-subtitle">记录了一些终端开发相关的知识库，欢迎交流</p>
             </div>
             
             <div class="welcome-content">
