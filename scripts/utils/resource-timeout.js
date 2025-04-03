@@ -33,54 +33,40 @@ class ResourceTimeout {
 
     /**
      * 设置资源加载超时处理
-     * @param {string} resourceType - 资源类型 (styles/scripts)
+     * @param {string} resourceType - 资源类型
      * @param {string} url - 资源URL
-     * @param {string} priority - 资源优先级 (critical/high/medium/low)
-     * @param {Function} callback - 超时回调函数，如果未提供则使用默认回调
+     * @param {string} priority - 资源优先级
      * @returns {number} 超时处理器ID
      */
-    setResourceTimeout(resourceType, url, priority = 'medium', callback) {
-        // 如果已经有超时处理器，则先清除
-        if (this.timeoutHandlers.has(url)) {
-            clearTimeout(this.timeoutHandlers.get(url));
-            this.timeoutHandlers.delete(url);
+    setResourceTimeout(resourceType, url, priority = 'medium') {
+        // 根据资源优先级设置不同的超时时间
+        let timeout = 8000; // 默认8秒
+        
+        if (priority === 'critical') {
+            timeout = 10000; // 关键资源10秒
+        } else if (priority === 'high') {
+            timeout = 8000; // 高优先级8秒
+        } else if (priority === 'medium') {
+            timeout = 6000; // 中优先级6秒
+        } else if (priority === 'low') {
+            timeout = 5000; // 低优先级5秒
         }
         
-        // 根据优先级获取超时时间
-        let timeout = this.resourceTimeouts[priority] || 8000; // 默认8秒
-        
-        // 确定回调函数
-        const timeoutCallback = callback || this.timeoutCallback;
+        // 对于可视化库资源，直接设置较短的超时时间
+        if (url.includes('chart.js') || url.includes('mermaid') || 
+            url.includes('d3') || url.includes('particles')) {
+            timeout = 3000; // 可视化库3秒
+        }
         
         // 设置超时处理
-        const handler = setTimeout(() => {
-            logger.warn(`⏱️ 资源加载超时 (${timeout}ms): ${url}`);
-            
-            // 移除超时处理器
-            this.timeoutHandlers.delete(url);
-            
-            // 创建超时事件
-            const event = new CustomEvent('resource-timeout', {
-                detail: { 
-                    url, 
-                    resourceType,
-                    priority,
-                    timeoutMs: timeout
-                }
-            });
-            document.dispatchEvent(event);
-            
-            // 执行超时回调
-            if (typeof timeoutCallback === 'function') {
-                timeoutCallback(url, resourceType, priority, timeout);
-            }
-            
+        const timeoutId = setTimeout(() => {
+            this.handleTimeout(url, resourceType, priority);
         }, timeout);
         
-        // 保存超时处理器
-        this.timeoutHandlers.set(url, handler);
+        // 保存超时处理器ID
+        this.timeoutHandlers.set(url, timeoutId);
         
-        return handler;
+        return timeoutId;
     }
     
     /**
@@ -143,6 +129,47 @@ class ResourceTimeout {
      */
     getActiveTimeoutsCount() {
         return this.timeoutHandlers.size;
+    }
+
+    /**
+     * 处理资源加载超时
+     * @param {string} url - 资源URL
+     * @param {string} resourceType - 资源类型
+     * @param {string} priority - 资源优先级
+     */
+    handleTimeout(url, resourceType, priority) {
+        // 计算实际使用的超时时间
+        let timeout = 8000;
+        if (priority === 'critical') {
+            timeout = 10000;
+        } else if (priority === 'high') {
+            timeout = 8000;
+        } else if (priority === 'medium') {
+            timeout = 6000;
+        } else if (priority === 'low') {
+            timeout = 5000;
+        }
+        
+        logger.warn(`⏱️ 资源加载超时 (${timeout}ms): ${url}`);
+        
+        // 移除超时处理器
+        this.timeoutHandlers.delete(url);
+        
+        // 创建超时事件
+        const event = new CustomEvent('resource-timeout', {
+            detail: { 
+                url, 
+                resourceType,
+                priority,
+                timeoutMs: timeout
+            }
+        });
+        document.dispatchEvent(event);
+        
+        // 执行超时回调
+        if (typeof this.timeoutCallback === 'function') {
+            this.timeoutCallback(url, resourceType, priority, timeout);
+        }
     }
 }
 

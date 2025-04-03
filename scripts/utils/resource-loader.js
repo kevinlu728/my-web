@@ -557,17 +557,79 @@ class ResourceLoader {
      * 在页面空闲时或特定条件下加载
      */
     lazyLoadLowPriorityResources() {
+        // 获取当前页面类型
+        const isHomePage = this.isHomePage();
+        const isBlogPage = window.location.pathname.includes('/blog') || 
+                          window.location.pathname.includes('/article');
+        
+        // 筛选低优先级资源
+        const lowPriorityResources = [];
+        
+        // 如果是首页，加载animation资源组
+        if (isHomePage) {
+            lowPriorityResources.push({
+                type: 'resourceGroup',
+                name: 'animation'
+            });
+        }
+        
+        // 如果是博客页面且检测到页面中有数学公式，加载math资源组
+        if (isBlogPage && this.pageContainsMath()) {
+            lowPriorityResources.push({
+                type: 'resourceGroup',
+                name: 'math'
+            });
+        }
+        
+        // 如果没有低优先级资源需要加载，直接返回
+        if (lowPriorityResources.length === 0) {
+            logger.debug('📌 没有需要延迟加载的低优先级资源');
+            return;
+        }
+        
         // 如果浏览器支持requestIdleCallback，使用它在空闲时间加载
         if ('requestIdleCallback' in window) {
             requestIdleCallback(() => {
-                this.loadResourcesByPriority('low');
+                this.loadFilteredLowPriorityResources(lowPriorityResources);
             }, { timeout: 5000 }); // 设置5秒超时，确保资源最终会被加载
         } else {
             // 否则使用setTimeout延迟加载
             setTimeout(() => {
-                this.loadResourcesByPriority('low');
+                this.loadFilteredLowPriorityResources(lowPriorityResources);
             }, 2000); // 2秒后加载低优先级资源
         }
+    }
+    
+    /**
+     * 加载筛选后的低优先级资源
+     * @param {Array} resources - 资源列表
+     */
+    loadFilteredLowPriorityResources(resources) {
+        logger.debug(`🚀 开始加载${resources.length}个低优先级资源...`);
+        
+        resources.forEach(item => {
+            if (item.type === 'resourceGroup') {
+                this.loadResourceGroup(item.name);
+            } else {
+                this.loadResource(item.type, item.name);
+            }
+        });
+    }
+    
+    /**
+     * 检查页面是否包含数学公式
+     * @returns {boolean} 是否包含数学公式
+     */
+    pageContainsMath() {
+        // 检查页面中是否有常见的数学公式标记
+        const hasLatexSyntax = document.body.innerHTML.includes('\\(') || 
+                               document.body.innerHTML.includes('\\[') ||
+                               document.body.innerHTML.includes('$$');
+        
+        // 检查是否有.math类或data-math属性的元素
+        const hasMathElements = document.querySelectorAll('.math, [data-math]').length > 0;
+        
+        return hasLatexSyntax || hasMathElements;
     }
     
     /**
@@ -635,23 +697,29 @@ class ResourceLoader {
                 ]);
                 
             case 'chart':
-                // 加载图表相关资源
-                return this.loadResource('scripts', 'chart');
+                // 暂时跳过图表相关资源加载
+                logger.debug('📌 跳过图表资源加载，当前未使用');
+                return Promise.resolve();
                 
             case 'diagram':
-                // 加载流程图相关资源
-                return this.loadResource('scripts', 'mermaid');
+                // 暂时跳过流程图相关资源加载
+                logger.debug('📌 跳过流程图资源加载，当前未使用');
+                return Promise.resolve();
                 
             case 'tagcloud':
-                // 加载标签云相关资源
-                return Promise.all([
-                    this.loadResource('scripts', 'd3'),
-                    this.loadResource('scripts', 'd3-cloud')
-                ]);
+                // 暂时跳过标签云相关资源加载
+                logger.debug('📌 跳过标签云资源加载，当前未使用');
+                return Promise.resolve();
                 
             case 'animation':
-                // 加载动画相关资源
-                return this.loadResource('scripts', 'particles');
+                // 仅在首页加载动画相关资源
+                if (this.isHomePage()) {
+                    logger.debug('📌 检测到首页，加载粒子动画资源');
+                    return this.loadResource('scripts', 'particles');
+                } else {
+                    logger.debug('📌 非首页，跳过粒子动画资源加载');
+                    return Promise.resolve();
+                }
                 
             case 'code':
                 // 加载代码高亮相关资源
@@ -1292,6 +1360,16 @@ class ResourceLoader {
         
         // 开始加载第一个资源组
         return loadNext(0);
+    }
+
+    /**
+     * 检查当前页面是否为首页
+     * @returns {boolean} 是否为首页
+     */
+    isHomePage() {
+        // 检查URL路径判断是否为首页
+        const path = window.location.pathname;
+        return path === '/' || path === '/index.html' || path.endsWith('/home');
     }
 }
 
