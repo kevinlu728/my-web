@@ -59,6 +59,11 @@ import { getArticlePlaceholder } from '../utils/placeholder-templates.js';
 
 import { articleTreeSkeleton } from '../utils/skeleton-loader.js';
 
+import { welcomePageManager } from './welcomePageManager.js';
+
+// 导入 contentViewManager
+import { contentViewManager, ViewMode } from './contentViewManager.js';
+
 // 显示文章树加载状态
 function showTreeLoading(message = '加载中...') {
     const treeChildren = document.querySelector('#article-tree .root-item > .tree-children');
@@ -455,6 +460,9 @@ class ArticleManager {
                 return false;
             }
 
+            // 在加载开始时设置加载模式
+            contentViewManager.setMode(ViewMode.LOADING);
+            
             try {
                 // 更新URL参数 - 使用路由工具
                 articleRouteUtils.updateArticleParam(pageId);
@@ -530,12 +538,19 @@ class ArticleManager {
                     }
                 }
                 
+                // 在渲染成功后才设置文章模式
+                contentViewManager.markContent(articleContainer, 'article');
+                contentViewManager.setMode(ViewMode.ARTICLE);
+                
                 return true;
             } catch (error) {
                 logger.error('渲染文章失败:', error);
                 
                 // 使用showArticleError显示错误信息
                 showArticleError(error.message, 'article-container', pageId);
+                
+                // 设置错误模式
+                contentViewManager.setMode(ViewMode.ERROR);
                 return false;
             } finally {
                 // 重置加载状态
@@ -666,68 +681,21 @@ class ArticleManager {
 
     // 显示欢迎页面
     showWelcomePage() {
-        logger.info('显示欢迎页面');
+        logger.info('显示欢迎页面 (委托给welcomePageManager)');
+        
+        // 首先切换到加载模式
+        contentViewManager.setMode(ViewMode.LOADING);
         
         // 确保有文章数据
         if (!this.articles || this.articles.length === 0) {
-            logger.info('欢迎页面需要文章数据，但当前没有数据，尝试加载文章数据...');
-            // 尝试从缓存加载
-            const cachedArticles = articleCacheManager.loadArticlesFromCache();
-            
-            if (cachedArticles && cachedArticles.length > 0) {
-                logger.info('从缓存加载到文章数据:', cachedArticles.length);
-                this.articles = cachedArticles;
-            } else {
-                logger.info('缓存中没有文章数据，将异步加载文章数据');
-                // 异步加载文章，并在加载完成后显示欢迎页面
-                this.loadArticles().then(() => {
-                    if (this.articles && this.articles.length > 0) {
-                        logger.info('文章数据加载完成，重新渲染欢迎页面');
-                        this.renderWelcomePage();
-                    }
-                }).catch(err => {
-                    logger.error('加载文章数据失败:', err);
-                });
-                
-                // 显示一个简单的加载中状态，避免空白页面
-                const container = document.getElementById('article-container');
-                if (container) {
-                    container.innerHTML = `
-                        <div class="welcome-page">
-                            <div class="welcome-header">
-                                <h1>忙时有序，专注前行</h1>
-                                <p class="welcome-subtitle">记录了一些终端开发相关的知识库，欢迎讨论</p>
-                            </div>
-                            <div class="welcome-content">
-                                <p>正在加载文章数据，请稍候...</p>
-                            </div>
-                        </div>
-                    `;
-                }
-                return; // 等待异步加载完成
-            }
+            logger.info('欢迎页面需要文章数据，但当前没有数据...');
+            // 委托给welcomePageManager处理
+            welcomePageManager.ensureArticleDataAndShowWelcome(() => this.loadArticles());
+            return;
         }
         
-        // 现在确保有文章数据，渲染欢迎页面
-        this.renderWelcomePage();
-    }
-    
-    // 实际渲染欢迎页面的方法
-    renderWelcomePage() {
-        // 使用welcomePageRenderer组件渲染欢迎页面
-        renderWelcomePage({
-            articles: this.articles,
-            onCategorySelect: (category) => {
-                categoryManager.selectCategory(category);
-            },
-            onArticleSelect: (articleId) => {
-                this.showArticle(articleId);
-            },
-            categoryConfig: {
-                nameMap: this.categoryNameMap,
-                colors: categoryConfig.colors
-            }
-        });
+        // 如果已有文章数据，直接显示欢迎页面
+        welcomePageManager.showWelcomePage(this.articles);
     }
 
     // 添加一个新方法，用于强制重置加载状态 - 可在页面中暴露使用
@@ -784,6 +752,23 @@ class ArticleManager {
         this.processCodeBlocks(container);
         
         // ...其他处理...
+    }
+
+    // 修改加载状态方法，使用视图管理器
+    showArticleLoadingState() {
+        // 现有代码...
+        
+        // 设置加载中模式
+        contentViewManager.setMode(ViewMode.LOADING);
+    }
+
+    // 修改错误显示方法
+    showArticleError(message) {
+        // 现有代码...
+        
+        // 设置错误模式
+        contentViewManager.markContent(document.getElementById('article-container'), 'error');
+        contentViewManager.setMode(ViewMode.ERROR);
     }
 }
 

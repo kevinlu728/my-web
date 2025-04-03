@@ -149,4 +149,52 @@
     height: auto !important;
 }
 
-/* 移除左侧栏滚动条样式，使用统一的类 */ 
+/* 移除左侧栏滚动条样式，使用统一的类 */
+
+/* 内容视图模式样式 */
+#article-container.view-mode-welcome {
+    background-color: transparent; /* 改为透明背景而非浅灰色 */
+    transition: background-color 0.3s ease;
+}
+
+#article-container.view-mode-article {
+    background-color: transparent; /* 同样改为透明背景 */
+    transition: background-color 0.3s ease;
+}
+
+#article-container.view-mode-loading {
+    background-color: transparent; /* 已经修改为透明背景 */
+    position: relative;
+    min-height: 300px;
+    transition: background-color 0.3s ease;
+}
+
+#article-container.view-mode-error {
+    background-color: transparent; /* 也改为透明，保持一致 */
+    transition: background-color 0.3s ease;
+}
+
+/* 内容类型标记 */
+.welcome-content {
+    padding: 25px;
+    border-radius: 8px;
+}
+
+.article-content {
+    padding-top: 10px;
+}
+
+.loading-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px;
+    /* 可以在这里添加局部背景色，如果需要的话 */
+    /* background-color: #f8f9fa; */
+}
+
+.error-content {
+    padding: 30px;
+    text-align: center;
+    color: #d32f2f;
+} 

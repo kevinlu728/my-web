@@ -17,6 +17,7 @@ import logger from '../utils/logger.js';
  * @param {Function} options.onArticleSelect 文章选择回调
  * @param {Object} options.categoryConfig 分类配置
  * @param {string} options.containerId 容器ID
+ * @param {boolean} options.fromCache 是否来自缓存
  */
 export function renderWelcomePage(options) {
     const { 
@@ -24,7 +25,8 @@ export function renderWelcomePage(options) {
         onCategorySelect, 
         onArticleSelect,
         categoryConfig = {},
-        containerId = 'article-container'
+        containerId = 'article-container',
+        fromCache = false
     } = options;
     
     const articleContainer = document.getElementById(containerId);
@@ -50,10 +52,11 @@ export function renderWelcomePage(options) {
     }
 
     articleContainer.innerHTML = `
-        <div class="welcome-page">
+        <div class="welcome-page${fromCache ? ' from-cache' : ''}">
             <div class="welcome-header">
                 <h1>忙时有序，专注前行</h1>
                 <p class="welcome-subtitle">记录了一些终端开发相关的知识库，欢迎交流</p>
+                ${fromCache ? '<span class="cache-badge">缓存数据</span>' : ''}
             </div>
             
             <div class="welcome-content">
@@ -86,7 +89,7 @@ export function renderWelcomePage(options) {
     renderRecentArticles(articles, onArticleSelect);
     
     // 添加或更新样式
-    addWelcomePageStyles();
+    addWelcomePageStyles(fromCache);
 }
 
 /**
@@ -198,8 +201,9 @@ function renderRecentArticles(articles, onArticleSelect) {
 
 /**
  * 添加欢迎页面样式
+ * @param {boolean} fromCache 是否来自缓存
  */
-function addWelcomePageStyles() {
+function addWelcomePageStyles(fromCache = false) {
     // 移除已存在的样式标签
     const existingStyle = document.getElementById('welcome-page-style');
     if (existingStyle) {
@@ -335,6 +339,29 @@ function addWelcomePageStyles() {
             tagContainer.style.marginTop = '1.2rem';
         }
     }, 0);
+
+    // 添加缓存标识样式
+    if (fromCache) {
+        const cacheStyles = `
+            .welcome-page.from-cache {
+                position: relative;
+            }
+            
+            .cache-badge {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                font-size: 12px;
+                padding: 3px 8px;
+                background: #f8f9fa;
+                border: 1px solid #e9ecef;
+                border-radius: 4px;
+                color: #6c757d;
+            }
+        `;
+        
+        styleElement.textContent += cacheStyles;
+    }
 }
 
 /**

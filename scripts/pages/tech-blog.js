@@ -33,6 +33,8 @@ import { resourceLoader } from '../utils/resource-loader.js';
 import { resourceChecker } from '../utils/resource-checker.js';
 import { scrollToTop } from '../components/scrollbar.js';
 import logger from '../utils/logger.js';
+import { welcomePageManager } from '../managers/welcomePageManager.js';
+import { contentViewManager, ViewMode } from '../managers/contentViewManager.js';
 
 logger.info('🚀 tech-blog.js 开始加载...');
 
@@ -107,50 +109,11 @@ export async function initializePage(forceApiTest = false) {
                 logger.info('⚠️ 未检测到apiService，将使用直接服务调用');
             }
 
-            // 扩展 articleManager 的显示文章方法
-            if (articleManager && articleManager.showArticle) {
-                const originalShowArticle = articleManager.showArticle;
-                articleManager.showArticle = async function(pageId) {
-                    logger.info('📄 准备加载文章:', pageId);
-                    
-                    // 检查是否已经加载了相同的文章
-                    const container = document.getElementById('article-container');
-                    const articleBody = container.querySelector('.article-body');
-                    
-                    if (articleBody && articleBody.getAttribute('data-article-id') === pageId) {
-                        logger.info('文章已加载，跳过重复加载:', pageId);
-                        return; // 如果已经加载了相同的文章，跳过
-                    }
-                    
-                    // 移除占位内容
-                    if (container && container.querySelector('.placeholder-content')) {
-                        logger.info('移除占位内容...');
-                        // 添加淡出效果
-                        const placeholder = container.querySelector('.placeholder-content');
-                        placeholder.style.transition = 'opacity 0.3s ease';
-                        placeholder.style.opacity = '0';
-                        
-                        // 等待淡出动画完成后移除元素
-                        setTimeout(() => {
-                            if (placeholder.parentNode === container) {
-                                container.removeChild(placeholder);
-                            }
-                        }, 300);
-                    }
-                    
-                    // 调用原始方法加载文章
-                    return originalShowArticle.call(this, pageId);
-                };
-                logger.info('✅ articleManager.showArticle 方法扩展完成');
-            } else {
-                logger.error('❌ articleManager 或 showArticle 方法未找到');
-            }
-
             // 重写 showWelcomePage 方法，使用新的占位图样式
             if (articleManager && articleManager.showWelcomePage) {
                 const originalShowWelcomePage = articleManager.showWelcomePage;
                 articleManager.showWelcomePage = function() {
-                    logger.info('显示欢迎页...');
+                    logger.info('显示欢迎页面 (使用视图管理器和欢迎页管理器)');
                     
                     const container = document.getElementById('article-container');
                     if (container) {
@@ -189,6 +152,18 @@ export async function initializePage(forceApiTest = false) {
             // 初始化文章管理器
             logger.info('初始化文章管理器...');
             await articleManager.initialize(currentDatabaseId);
+
+            // 初始化欢迎页面管理器
+            logger.info('初始化欢迎页面管理器...');
+            welcomePageManager.initialize({
+                getArticles: () => articleManager.getArticles(),
+                onCategorySelect: (category) => {
+                    categoryManager.selectCategory(category);
+                },
+                onArticleSelect: (articleId) => {
+                    articleManager.showArticle(articleId);
+                }
+            });
 
             // 设置分类变更回调
             categoryManager.setOnCategoryChange((category) => {
@@ -267,16 +242,10 @@ export async function initializePage(forceApiTest = false) {
                     logger.info(`从URL参数加载文章: ${articleIdFromUrl}`);
                     await articleManager.showArticle(articleIdFromUrl);
                 } else {
-                    // 确保文章数据已加载完成后再显示欢迎页面
-                    logger.info('确保文章数据已加载后显示欢迎页面...');
-                    // 如果还没有文章数据，先加载文章
-                    if (!articleManager.articles || articleManager.articles.length === 0) {
-                        logger.info('文章数据尚未加载，先加载文章数据...');
-                        await articleManager.loadArticles();
-                    }
-                    // 显示欢迎页面
-                    logger.info('显示欢迎页面...');
-                    articleManager.showWelcomePage();
+                    // 视图管理器会自动处理视图模式
+                    determineInitialViewState();
+                    // 委托给欢迎页管理器处理
+                    welcomePageManager.ensureArticleDataAndShowWelcome(() => articleManager.loadArticles());
                 }
             } catch (error) {
                 logger.error('页面初始化过程中出错:', error);
@@ -313,6 +282,18 @@ export async function initializePage(forceApiTest = false) {
             
             // 清除"正在初始化页面..."的状态消息
             showStatus('', false);
+
+            // 初始化内容视图管理器
+            logger.info('初始化内容视图管理器...');
+            contentViewManager.initialize('article-container');
+
+            // 监听视图模式变化
+            document.getElementById('article-container')?.addEventListener('viewModeChanged', (event) => {
+                logger.info(`内容视图模式已变更: ${event.detail.previousMode} -> ${event.detail.mode}`);
+            });
+
+            // 在contentViewManager初始化后调用
+            determineInitialViewState();
         } catch (error) {
             logger.error('初始化页面时出错:', error);
             window.blogPageLoading = false;
@@ -872,34 +853,12 @@ function initializeBackToTop() {
  * @param {string} action - 'fade' 淡出遮罩，'remove' 彻底移除遮罩
  */
 function handleLoadingMask(action = 'fade') {
-    const container = document.getElementById('article-container');
-    if (!container) {
-        logger.warn('未找到文章容器，无法处理加载遮罩');
-        return;
-    }
-    
-    const placeholder = container.querySelector('.placeholder-content');
-    if (!placeholder) {
-        logger.info('加载占位内容不存在或已被移除');
-        return;
-    }
-    
+    // 使用视图管理器控制加载状态
     if (action === 'fade') {
-        logger.info('淡出加载占位内容...');
-        placeholder.style.transition = 'opacity 0.5s ease';
-        placeholder.style.opacity = '0.5'; // 降低不透明度但不完全隐藏
+        contentViewManager.setMode(ViewMode.LOADING);
     } else if (action === 'remove') {
-        logger.info('彻底移除加载占位内容...');
-        // 先确保淡出效果完成
-        placeholder.style.transition = 'opacity 0.5s ease';
-        placeholder.style.opacity = '0';
-        
-        // 延迟移除元素，等待淡出动画完成
-        setTimeout(() => {
-            if (placeholder.parentNode) {
-                placeholder.parentNode.removeChild(placeholder);
-            }
-        }, 550);
+        // 根据当前状态设置适当的模式
+        determineInitialViewState();
     }
 }
 
@@ -917,10 +876,21 @@ function preloadCriticalResources() {
         // 调用资源加载器的非阻塞核心内容加载
         resourceLoader.loadNonBlockingCoreContent();
         logger.info('✅ 非阻塞核心内容加载已启动');
+        
+        // 预加载欢迎页面数据
+        preloadWelcomePageData();
     } catch (error) {
         logger.error('❌ 非阻塞资源加载失败:', error);
         // 设置全局标志，指示内容已解锁，以便初始化可以继续
         window.contentUnblocked = true;
+    }
+}
+
+// 添加欢迎页面数据预加载函数
+function preloadWelcomePageData() {
+    if (welcomePageManager) {
+        welcomePageManager.loadFromCache();
+        setTimeout(() => welcomePageManager.refreshDataInBackground(), 2000);
     }
 }
 
@@ -930,16 +900,24 @@ document.addEventListener('DOMContentLoaded', () => {
     preloadCriticalResources();
 });
 
-// 添加全局测试方法，供控制台调用
-window.testFontAwesomeFallback = function() {
-    // 直接使用导入的resourceChecker
-    if (resourceChecker && typeof resourceChecker.testFontAwesomeFallback === 'function') {
-        // 调用测试方法
-        resourceChecker.testFontAwesomeFallback();
-        console.log('FontAwesome回退测试已激活，页面图标应已切换为Unicode字符');
-        return true;
-    } else {
-        console.error('无法找到resourceChecker或测试方法');
-        return false;
+// 在初始化流程中添加
+function determineInitialViewState() {
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const articleId = urlParams.get('article');
+        
+        if (articleId) {
+            contentViewManager.setMode(ViewMode.ARTICLE);
+        } else {
+            contentViewManager.setMode(ViewMode.WELCOME);
+        }
+    } catch (error) {
+        logger.error('确定初始视图状态时出错:', error);
+        // 出错时默认设置为欢迎页模式
+        try {
+            contentViewManager.setMode('welcome');
+        } catch (e) {
+            // 忽略二次错误
+        }
     }
-}; 
+} 

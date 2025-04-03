@@ -228,8 +228,6 @@ function toggleBackToTopButton(show) {
         return;
     }
     
-    logger.debug(`切换返回顶部按钮可见性: ${show ? '显示' : '隐藏'}`);
-    
     if (show) {
         backToTopButton.classList.add('visible');
         // 确保元素可见
