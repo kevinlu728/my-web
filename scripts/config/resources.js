@@ -231,15 +231,21 @@ export const resources = {
             group: 'code',
             source: {
                 primary: {
-                    provider: 'cdnjs',
-                    library: 'prism',
+                    provider: 'jsdelivr',
+                    package: 'prismjs',
                     version: versions.prism,
                     path: 'prism.min.js'
                 },
                 fallbacks: [
                     {
+                        provider: 'cdnjs',
+                        package: 'prism',
+                        version: versions.prism,
+                        path: 'prism.min.js'
+                    },
+                    {
                         provider: 'local',
-                        library: 'prism',
+                        package: 'prism',
                         path: 'prism.min.js'
                     }
                 ]
@@ -262,13 +268,13 @@ export const resources = {
                 fallbacks: [
                     {
                         provider: 'cdnjs',
-                        library: 'prism',
+                        package: 'prism',
                         version: versions.prism,
                         path: 'components/prism-core.js'
                     },
                     {
                         provider: 'local',
-                        library: 'prism',
+                        package: 'prism',
                         path: 'components/prism-core.js'
                     }
                 ],
@@ -326,7 +332,7 @@ export const resources = {
                 fallbacks: [
                     {
                         provider: 'cdnjs',
-                        library: 'KaTeX',
+                        package: 'KaTeX',
                         version: versions.katex,
                         path: 'katex.min.js'
                     },
@@ -355,7 +361,7 @@ export const resources = {
                 fallbacks: [
                     {
                         provider: 'cdnjs',
-                        library: 'KaTeX',
+                        package: 'KaTeX',
                         version: versions.katex,
                         path: 'contrib/auto-render.min.js'
                     },

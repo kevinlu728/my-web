@@ -23,6 +23,7 @@
 
 import { codeStyles, addCodeStylesToDocument } from '../styles/code-styles.js';
 import logger from './logger.js';
+import { resourceLoader } from './resource-loader.js';
 
 class CodeLazyLoader {
     constructor() {
@@ -37,7 +38,8 @@ class CodeLazyLoader {
         // 检查是否有代码块
         setTimeout(() => {
             if (document.querySelectorAll('.lazy-block.code-block').length > 0) {
-                this.loadPrismLibrary(); // 预加载Prism库，但不立即应用
+                // 使用ResourceLoader预加载代码高亮资源
+                resourceLoader.loadCodeHighlightResources();
             }
         }, 500);
     }
@@ -131,67 +133,37 @@ class CodeLazyLoader {
         `;
         document.head.appendChild(style);
     }
-
-    // 加载Prism库，但不应用高亮
-    loadPrismLibrary() {
-        // 如果已在加载，跳过
-        if (window.prismLoading || window.prismLoaded) return;
-        
-        // 标记为正在加载中
-        window.prismLoading = true;
-        logger.info('预加载Prism库...');
-        
-        try {
-            // 加载外部Prism库而不是内置版本
-            const prismScript = document.createElement('script');
-            prismScript.src = 'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js';
-            prismScript.onload = () => {
-                logger.info('Prism核心库加载完成');
-                
-                // 加载额外的语言组件
-                this.loadPrismComponents(['java', 'javascript', 'cpp', 'python', 'bash']);
-                
-                window.prismLoaded = true;
-                window.prismLoading = false;
-            };
-            prismScript.onerror = () => {
-                logger.error('Prism核心库加载失败，尝试备用源');
-                // 尝试备用源
-                prismScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js';
-                // 备用源也失败的处理在onload里已经包含
-            };
-            
-            document.head.appendChild(prismScript);
-        } catch (error) {
-            logger.error('加载Prism库失败:', error);
-            window.prismLoaded = false;
-            window.prismLoading = false;
-        }
-    }
-    
-    // 加载Prism语言组件
-    loadPrismComponents(languages) {
-        languages.forEach(lang => {
-            const script = document.createElement('script');
-            script.src = `https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-${lang}.min.js`;
-            script.onerror = () => {
-                logger.warn(`${lang}语言组件加载失败，尝试备用源`);
-                script.src = `https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-${lang}.min.js`;
-            };
-            document.head.appendChild(script);
-        });
-    }
     
     // 处理等待中的代码块
     processWaitingBlocks() {
-        if (!window.prismLoaded || !window.Prism) return;
+        if (!window.prismLoaded || !window.Prism) {
+            // 如果Prism尚未加载，使用完整的高亮资源加载功能
+            logger.info('Prism库尚未加载，正在请求加载代码高亮资源...');
+            return resourceLoader.loadCodeHighlightResources()
+                .then(success => {
+                    if (success && window.Prism) {
+                        logger.info('✅ 代码高亮资源加载成功，处理等待中的代码块');
+                        this._highlightWaitingBlocks();
+                        return true;
+                    } else {
+                        logger.error('❌ 代码高亮资源加载失败');
+                        return false;
+                    }
+                });
+        }
         
+        // 如果Prism已加载，直接处理等待中的块
+        this._highlightWaitingBlocks();
+        return Promise.resolve(true);
+    }
+    
+    // 内部方法：高亮所有等待中的代码块
+    _highlightWaitingBlocks() {
         try {
             document.querySelectorAll('.waiting-for-highlight').forEach(block => {
                 const codeElement = block.querySelector('code');
-                if (codeElement) {
+                if (codeElement && window.Prism && typeof window.Prism.highlightElement === 'function') {
                     try {
-                        // 使用浏览器的Prism库高亮
                         window.Prism.highlightElement(codeElement);
                     } catch (e) {
                         logger.warn('高亮处理失败', e);
@@ -246,28 +218,32 @@ class CodeLazyLoader {
             this.addCopyButton(codeBlock);
             
             // 确保Prism库已加载
-            if (!window.prismLoaded && !window.prismLoading && this.shouldLoadPrism) {
-                this.loadPrismLibrary();
-            }
-            
-            // 标记为等待高亮
             if (this.shouldLoadPrism) {
+                // 标记为等待高亮
                 codeBlock.classList.add('waiting-for-highlight');
                 
                 // 如果Prism已加载，立即高亮
                 if (window.prismLoaded && window.Prism) {
                     this.highlightCode(codeBlock);
                 } else {
-                    // 否则，设置一个轮询器，在Prism加载后高亮
-                    const checkInterval = setInterval(() => {
-                        if (window.prismLoaded && window.Prism) {
-                            this.highlightCode(codeBlock);
-                            clearInterval(checkInterval);
-                        }
-                    }, 200);
-                    
-                    // 防止无限等待
-                    setTimeout(() => clearInterval(checkInterval), 5000);
+                    // 否则，加载高亮资源并处理代码块
+                    resourceLoader.loadCodeHighlightResources()
+                        .then(success => {
+                            if (success && window.Prism) {
+                                this.highlightCode(codeBlock);
+                            } else {
+                                // 如果加载失败，设置一个轮询器检查Prism是否可用
+                                const checkInterval = setInterval(() => {
+                                    if (window.prismLoaded && window.Prism) {
+                                        this.highlightCode(codeBlock);
+                                        clearInterval(checkInterval);
+                                    }
+                                }, 200);
+                                
+                                // 防止无限等待
+                                setTimeout(() => clearInterval(checkInterval), 5000);
+                            }
+                        });
                 }
             }
         } catch (error) {
@@ -340,7 +316,7 @@ class CodeLazyLoader {
                 codeBlock.classList.remove('waiting-for-highlight');
                 codeElement.classList.remove('no-highlight');
             } else {
-                // 标记为等待高亮
+                // 标记为等待高亮，后续处理
                 codeBlock.classList.add('waiting-for-highlight');
             }
         } catch (error) {
@@ -403,9 +379,11 @@ class CodeLazyLoader {
         
         logger.info(`找到 ${codeBlocks.length} 个代码块，准备懒加载...`);
         
-        // 如果有代码块，确保Prism库已加载
+        // 如果有代码块，确保代码高亮资源已加载或正在加载
         if (codeBlocks.length > 0 && this.shouldLoadPrism) {
-            this.loadPrismLibrary();
+            if (!window.prismLoaded && !window.prismLoading) {
+                resourceLoader.loadCodeHighlightResources();
+            }
         }
         
         // 断开旧的观察器连接
