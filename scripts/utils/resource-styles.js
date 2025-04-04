@@ -247,6 +247,44 @@ class ResourceStyles {
             this.clearResourceTimeout = dependencies.clearResourceTimeout;
         }
     }
+
+    /**
+     * 注入Font Awesome备用样式
+     * 当Font Awesome无法加载时，提供基本图标替代
+     */
+    injectFontAwesomeFallbackStyles() {
+        // 避免重复注入
+        if (document.getElementById('fa-fallback-styles')) {
+            logger.debug('Font Awesome备用样式已存在，跳过注入');
+            return;
+        }
+        
+        logger.info('💉 注入Font Awesome备用图标样式');
+        
+        // 创建样式元素
+        const style = document.createElement('style');
+        style.id = 'fa-fallback-styles';
+        
+        // 基本的图标映射
+        style.textContent = `
+            /* Font Awesome备用样式 - 使用Unicode字符 */
+            .no-fontawesome .fas.fa-check:before { content: "✓"; }
+            .no-fontawesome .fas.fa-times:before { content: "✗"; }
+            .no-fontawesome .fas.fa-star:before { content: "★"; }
+            .no-fontawesome .fas.fa-user:before { content: "👤"; }
+            .no-fontawesome .fas.fa-home:before { content: "🏠"; }
+            .no-fontawesome .fas.fa-search:before { content: "🔍"; }
+            .no-fontawesome .fas.fa-cog:before { content: "⚙"; }
+            .no-fontawesome .fas.fa-bars:before { content: "☰"; }
+            /* 保留原有的图标映射... */
+        `;
+        
+        // 添加到文档
+        document.head.appendChild(style);
+        
+        // 添加no-fontawesome类标记
+        document.documentElement.classList.add('no-fontawesome');
+    }
 }
 
 // 创建一个单例实例并导出

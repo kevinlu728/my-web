@@ -867,22 +867,40 @@ function preloadCriticalResources() {
     // 检查资源加载器是否可用
     if (!resourceLoader) {
         logger.warn('⚠️ 资源加载器不可用，跳过预加载');
+        // 设置全局标志，指示内容已解锁
+        window.contentUnblocked = true;
+        document.dispatchEvent(new Event('content-unblocked'));
         return;
     }
 
     logger.info('🔍 使用非阻塞方式加载关键资源...');
     
     try {
-        // 调用资源加载器的非阻塞核心内容加载
-        resourceLoader.loadNonBlockingCoreContent();
-        logger.info('✅ 非阻塞核心内容加载已启动');
+        // 检查方法是否存在
+        if (typeof resourceLoader.loadNonBlockingCoreContent !== 'function') {
+            throw new Error('资源加载器中缺少loadNonBlockingCoreContent方法');
+        }
         
-        // 预加载欢迎页面数据
-        preloadWelcomePageData();
+        // 调用资源加载器的非阻塞核心内容加载
+        resourceLoader.loadNonBlockingCoreContent()
+            .then(() => {
+                logger.info('✅ 非阻塞核心内容加载已完成');
+                
+                // 预加载欢迎页面数据
+                preloadWelcomePageData();
+            })
+            .catch(error => {
+                logger.error('❌ 非阻塞资源加载失败:', error);
+                // 确保内容已解锁，以便初始化可以继续
+                window.contentUnblocked = true;
+                document.dispatchEvent(new Event('content-unblocked'));
+            });
     } catch (error) {
-        logger.error('❌ 非阻塞资源加载失败:', error);
+        // 捕获同步错误
+        logger.error('❌ 非阻塞资源加载初始化失败:', error);
         // 设置全局标志，指示内容已解锁，以便初始化可以继续
         window.contentUnblocked = true;
+        document.dispatchEvent(new Event('content-unblocked'));
     }
 }
 

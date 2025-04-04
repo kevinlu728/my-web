@@ -112,6 +112,10 @@ export class CdnMapper {
                 .replace('{path}', config.path);
         }
         
+        if (config.component && config.component === 'core') {
+            // 这里可能错误地构建了 components 路径
+        }
+        
         return '';
     }
     

@@ -22,6 +22,11 @@
     <link rel="preload" href="./styles/main.css" as="style">
     <link rel="preload" href="./styles/layouts/blog-layout.css" as="style">
     <link rel="preload" href="./scripts/utils/resource-loader.js" as="script" crossorigin="anonymous">
+    <!-- 使用本地Font Awesome资源 -->
+    <link rel="stylesheet" href="/assets/libs/font-awesome/all.min.css" 
+          id="local-font-awesome" 
+          data-source="local-resource"
+          data-resource-type="font-awesome">
     <!-- CSS资源 - 使用相对路径 -->
     <link rel="stylesheet" href="./styles/main.css">
     <link rel="stylesheet" href="./styles/components/header.css">
@@ -95,10 +100,18 @@
         import { resourceLoader } from './scripts/utils/resource-loader.js';
         import { resourceStyles } from './scripts/utils/resource-styles.js';
         
-        // 加载FontAwesome CSS，但不阻塞内容
-        resourceStyles.loadCssNonBlocking('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css', {
-            priority: 'medium'
-        });
+        // 优先使用本地Font Awesome资源
+        const localFA = document.getElementById('local-font-awesome');
+        if (!localFA) {
+            // 如果没有预先加载，添加本地Font Awesome
+            console.log('添加本地Font Awesome到页面');
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = '/assets/libs/font-awesome/all.min.css';
+            link.id = 'local-font-awesome';
+            link.setAttribute('data-source', 'local-resource');
+            document.head.appendChild(link);
+        }
     </script>
     
     <!-- Prism.js - 使用集中式资源管理加载 -->
@@ -313,6 +326,9 @@
         });
     })();
     </script>
+
+    <!-- 优先使用本地Font Awesome资源 -->
+    <link rel="stylesheet" href="/assets/libs/font-awesome/all.min.css" id="local-font-awesome" data-source="local-resource">
 </head>
 <body class="article-page">
     <header class="header">
