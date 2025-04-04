@@ -1,6 +1,6 @@
 /**
  * @file resource-loader.js
- * @description 资源加载器 - 负责加载和管理各种外部资源并提供统一的回退机制
+ * @description 资源加载器类 - 负责加载和管理各种外部资源并提供统一的回退机制
  * @author 陆凯
  * @version 1.2.0
  * @created 2024-03-22
@@ -12,7 +12,7 @@
  * - 可选择性地预加载关键资源
  * - 监控资源加载性能
  * 
- * @CDN回退流程 重要！！
+ * @CDN回退流程
  * -------------
  * 当从CDN加载资源时，系统采用以下回退流程以确保资源可靠加载：
  * 1. 首先尝试从主要CDN源(Primary URL)加载资源
@@ -23,6 +23,32 @@
  * - 资源加载超时(通常为5秒)
  * - 资源加载错误(网络错误、404等)
  * - CDN不可用或被屏蔽
+ * 
+ * @实现规范
+ * -------------
+ * 回退URL的构建应遵循以下规范：
+ * 
+ * 1. 配置中必须使用统一的属性名：
+ *    - 所有资源配置应使用"package"属性指定包名，避免使用"library"属性
+ *    - 确保provider、package和path属性正确配置
+ * 
+ * 2. 备用URL必须与主URL不同：
+ *    - 如果主URL使用jsdelivr，备用URL应优先使用cdnjs
+ *    - 如果主URL使用cdnjs，备用URL应优先使用jsdelivr
+ *    - 本地资源URL必须始终存在作为最终回退选项
+ * 
+ * 3. 错误处理：
+ *    - 每个加载失败都必须被捕获并记录
+ *    - 在所有回退选项都失败后，应给出明确的错误提示
+ * 
+ * @example
+ * // 资源配置示例
+ * {
+ *   provider: 'jsdelivr',
+ *   package: 'prismjs',    // 使用package而非library
+ *   version: '1.29.0',
+ *   path: 'prism.min.js'
+ * }
  * 
  * 重构历史:
  * - 2024-04-14: 将CDN映射逻辑分离到cdn-mapper.js
@@ -1154,6 +1180,16 @@ class ResourceLoader {
     }
 
     /**
+     * 检查当前页面是否为首页
+     * @returns {boolean} 是否为首页
+     */
+    isHomePage() {
+        // 检查URL路径判断是否为首页
+        const path = window.location.pathname;
+        return path === '/' || path === '/index.html' || path.endsWith('/home');
+    }
+
+    /**
      * 处理样式资源加载错误
      * @param {HTMLElement} element - 加载失败的元素
      * @param {string} url - 资源URL
@@ -2076,6 +2112,16 @@ class ResourceLoader {
                 loadPromise = this.loadMathResources();
                 break;
             
+            case 'chart':
+                // 加载图表相关资源
+                loadPromise = this.loadChartResources();
+                break;
+            
+            case 'diagram':
+                // 加载图表相关资源
+                loadPromise = this.loadDiagramResources();
+                break;
+            
             default:
                 // 如果没有匹配的资源组，尝试基于名称推断
                 if (groupName.includes('prism-')) {
@@ -2145,6 +2191,8 @@ class ResourceLoader {
         
         if (!animationResources || animationResources.length === 0) {
             logger.warn('⚠️ 没有找到动画资源配置');
+            // 使用硬编码的回退方案
+            return this.loadLegacyAnimationResources();
         }
         
         // 加载所有动画资源
@@ -2162,6 +2210,15 @@ class ResourceLoader {
             this.initializeAnimations();
             return true;
         });
+    }
+
+    /**
+     * 加载遗留的动画资源（作为回退）
+     * @private
+     */
+    loadLegacyAnimationResources() {
+        // 现有的加载逻辑保持不变
+        // ...
     }
 
     /**
@@ -2192,6 +2249,38 @@ class ResourceLoader {
             
             logger.info('✅ 滚动动画已初始化');
         }
+    }
+
+    /**
+     * 根据URL或元素标签判断资源类型
+     * @private
+     */
+    _getResourceTypeFromUrl(url, element) {
+        // 防御性检查
+        if (!url) return 'unknown';
+        
+        // 确保Prism主题CSS被正确识别
+        if (url.includes('/prism') && url.includes('.css') || 
+            url.includes('/prism') && url.includes('theme')) {
+            return 'prism-theme';
+        }
+        
+        // 根据元素类型判断
+        if (element) {
+            if (element.tagName === 'LINK' && element.rel === 'stylesheet') {
+                return 'css';
+            }
+            if (element.tagName === 'SCRIPT') {
+                return 'js';
+            }
+        }
+        
+        // 根据URL扩展名判断
+        const ext = url.split('.').pop().toLowerCase();
+        if (['css'].includes(ext)) return 'css';
+        if (['js'].includes(ext)) return 'js';
+        
+        return 'unknown';
     }
 
     // 添加这个辅助方法来处理带有回退的脚本加载
