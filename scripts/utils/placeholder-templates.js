@@ -70,4 +70,50 @@ export const getArticleTreeSkeletonTemplate = () => {
         </li>
     </div>
   `;
+};
+
+// 添加欢迎页面骨架屏模板
+export const getWelcomePageSkeletonTemplate = () => {
+  return `
+    <div class="welcome-page-skeleton">
+      <div class="skeleton-welcome-header">
+        <div class="skeleton-title skeleton-pulse"></div>
+        <div class="skeleton-subtitle skeleton-pulse"></div>
+      </div>
+      
+      <div class="skeleton-welcome-content">
+        <div class="skeleton-section">
+          <div class="skeleton-section-title skeleton-pulse"></div>
+          <div class="skeleton-list">
+            <div class="skeleton-list-item skeleton-pulse"></div>
+            <div class="skeleton-list-item skeleton-pulse"></div>
+            <div class="skeleton-list-item skeleton-pulse"></div>
+          </div>
+        </div>
+        
+        <div class="skeleton-section">
+          <div class="skeleton-section-title skeleton-pulse"></div>
+          <div class="skeleton-category-tags">
+            <div class="skeleton-category-tag skeleton-cat-1 skeleton-pulse"></div>
+            <div class="skeleton-category-tag skeleton-cat-2 skeleton-pulse"></div>
+            <div class="skeleton-category-tag skeleton-cat-3 skeleton-pulse"></div>
+            <div class="skeleton-category-tag skeleton-cat-4 skeleton-pulse"></div>
+            <div class="skeleton-category-tag skeleton-cat-5 skeleton-pulse"></div>
+            <div class="skeleton-category-tag skeleton-cat-6 skeleton-pulse"></div>
+          </div>
+        </div>
+        
+        <div class="skeleton-section">
+          <div class="skeleton-section-title skeleton-pulse"></div>
+          <div class="skeleton-recent-articles">
+            <div class="skeleton-article-item skeleton-pulse"></div>
+            <div class="skeleton-article-item skeleton-pulse"></div>
+            <div class="skeleton-article-item skeleton-pulse"></div>
+            <div class="skeleton-article-item skeleton-pulse"></div>
+            <div class="skeleton-article-item skeleton-pulse"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 }; 

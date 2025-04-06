@@ -7,7 +7,10 @@
  */
 
 import logger from './logger.js';
-import { getArticleTreeSkeletonTemplate } from './placeholder-templates.js';
+import { 
+  getArticleTreeSkeletonTemplate, 
+  getWelcomePageSkeletonTemplate 
+} from './placeholder-templates.js';
 
 /**
  * 文章树形列表骨架屏加载器
@@ -193,5 +196,172 @@ export const articleTreeSkeleton = {
     }
 };
 
+/**
+ * 欢迎页面骨架屏加载器
+ */
+export const welcomePageSkeleton = {
+    // 骨架屏配置
+    config: {
+        enabled: true, // 默认启用骨架屏
+    },
+    
+    /**
+     * 显示欢迎页面骨架屏
+     * @param {HTMLElement|string} container - 骨架屏容器或容器ID
+     */
+    show(container) {
+        if (!this.config.enabled) {
+            logger.info('欢迎页面骨架屏已禁用，使用默认加载提示');
+            this.showFallback(container);
+            return;
+        }
+        
+        try {
+            // 获取容器元素
+            const containerElement = typeof container === 'string' 
+                ? document.getElementById(container) 
+                : container;
+                
+            if (!containerElement) {
+                logger.warn('欢迎页面骨架屏容器不存在');
+                return;
+            }
+            
+            // 添加更详细的调试
+            logger.info('欢迎页面骨架屏显示前，容器内容:', containerElement.innerHTML.substring(0, 100) + '...');
+            
+            // 防止重复添加骨架屏
+            if (containerElement.querySelector('.welcome-page-skeleton')) {
+                logger.debug('欢迎页面骨架屏已存在，跳过重复显示');
+                return;
+            }
+
+            // 清空容器 - 这一步很关键，确保容器是空的
+            containerElement.innerHTML = '';
+            
+            // 添加骨架屏标识类，用于应用高度样式
+            containerElement.classList.add('welcome-skeleton-loaded');
+            
+            // 创建骨架屏HTML - 使用模板
+            const skeletonHTML = getWelcomePageSkeletonTemplate();
+            
+            // 添加到容器
+            containerElement.innerHTML = skeletonHTML;
+            
+            // 检查是否真的添加成功
+            const addedSkeleton = containerElement.querySelector('.welcome-page-skeleton');
+            if (addedSkeleton) {
+                logger.info('欢迎页面骨架屏已成功显示');
+            } else {
+                logger.error('欢迎页面骨架屏HTML已设置但未找到元素');
+            }
+        } catch (error) {
+            logger.error('显示欢迎页面骨架屏失败:', error);
+            this.showFallback(container);
+        }
+    },
+    
+    /**
+     * 隐藏欢迎页面骨架屏
+     * @param {HTMLElement|string} container - 骨架屏容器或容器ID
+     */
+    hide(container) {
+        try {
+            // 获取容器元素
+            const containerElement = typeof container === 'string' 
+                ? document.getElementById(container) 
+                : container;
+                
+            if (!containerElement) {
+                logger.warn('欢迎页面骨架屏容器不存在');
+                return;
+            }
+            
+            // 检查是否有骨架屏
+            const skeletonElement = containerElement.querySelector('.welcome-page-skeleton');
+            if (skeletonElement) {
+                // 添加淡出效果
+                skeletonElement.style.opacity = '0';
+                
+                // 延迟移除元素
+                setTimeout(() => {
+                    if (containerElement && containerElement.contains(skeletonElement)) {
+                        containerElement.removeChild(skeletonElement);
+                    }
+                    containerElement.classList.remove('welcome-skeleton-loaded');
+                }, 300);
+                
+                logger.info('欢迎页面骨架屏已隐藏');
+            }
+        } catch (error) {
+            logger.error('隐藏欢迎页面骨架屏失败:', error);
+        }
+    },
+    
+    /**
+     * 显示降级的加载提示
+     * @param {HTMLElement|string} container - 容器或容器ID
+     */
+    showFallback(container) {
+        // 获取容器元素
+        const containerElement = typeof container === 'string' 
+            ? document.getElementById(container) 
+            : container;
+            
+        if (!containerElement) return;
+        
+        containerElement.innerHTML = `
+            <div class="placeholder-content">
+                <div class="placeholder-text">正在准备内容...</div>
+                <div class="placeholder-hint">欢迎页面加载中，请稍候片刻...</div>
+            </div>
+        `;
+        
+        logger.info('已显示欢迎页面降级加载提示');
+    },
+    
+    /**
+     * 切换骨架屏启用状态
+     * @param {boolean} enabled - 是否启用
+     */
+    toggleEnabled(enabled) {
+        this.config.enabled = enabled;
+        logger.info(`欢迎页面骨架屏已${enabled ? '启用' : '禁用'}`);
+        
+        // 保存配置到localStorage
+        try {
+            localStorage.setItem('welcome_page_skeleton_enabled', enabled.toString());
+        } catch (e) {
+            logger.warn('无法保存欢迎页面骨架屏配置到localStorage');
+        }
+    },
+    
+    /**
+     * 加载配置
+     */
+    loadConfig() {
+        try {
+            // 从localStorage加载配置
+            const enabled = localStorage.getItem('welcome_page_skeleton_enabled');
+            if (enabled !== null) {
+                this.config.enabled = enabled === 'true';
+                logger.info(`从存储加载欢迎页面骨架屏配置: ${this.config.enabled ? '启用' : '禁用'}`);
+            }
+        } catch (e) {
+            logger.warn('无法从localStorage加载欢迎页面骨架屏配置');
+        }
+    },
+    
+    /**
+     * 初始化骨架屏加载器
+     */
+    initialize() {
+        this.loadConfig();
+        logger.info('欢迎页面骨架屏加载器已初始化', this.config.enabled ? '已启用' : '已禁用');
+        return this;
+    }
+};
+
 // 自动初始化骨架屏加载器
-articleTreeSkeleton.initialize(); 
+articleTreeSkeleton.initialize();
+welcomePageSkeleton.initialize(); 

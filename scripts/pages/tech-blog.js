@@ -35,6 +35,7 @@ import { scrollToTop } from '../components/scrollbar.js';
 import logger from '../utils/logger.js';
 import { welcomePageManager } from '../managers/welcomePageManager.js';
 import { contentViewManager, ViewMode } from '../managers/contentViewManager.js';
+import { welcomePageSkeleton } from '../utils/skeleton-loader.js';
 
 logger.info('🚀 tech-blog.js 开始加载...');
 
@@ -862,20 +863,20 @@ function handleLoadingMask(action = 'fade') {
     }
 }
 
-// 预加载关键资源，使用资源加载器的非阻塞加载机制
+// 在预加载关键资源函数中添加欢迎页面骨架屏相关资源
 function preloadCriticalResources() {
-    // 检查资源加载器是否可用
-    if (!resourceLoader) {
-        logger.warn('⚠️ 资源加载器不可用，跳过预加载');
-        // 设置全局标志，指示内容已解锁
-        window.contentUnblocked = true;
-        document.dispatchEvent(new Event('content-unblocked'));
-        return;
-    }
-
-    logger.info('🔍 使用非阻塞方式加载关键资源...');
-    
     try {
+        // 检查资源加载器是否可用
+        if (!resourceLoader) {
+            logger.warn('⚠️ 资源加载器不可用，跳过预加载');
+            // 设置全局标志，指示内容已解锁
+            window.contentUnblocked = true;
+            document.dispatchEvent(new Event('content-unblocked'));
+            return;
+        }
+
+        logger.info('🔍 使用非阻塞方式加载关键资源...');
+        
         // 检查方法是否存在
         if (typeof resourceLoader.loadNonBlockingCoreContent !== 'function') {
             throw new Error('资源加载器中缺少loadNonBlockingCoreContent方法');
@@ -895,6 +896,9 @@ function preloadCriticalResources() {
                 window.contentUnblocked = true;
                 document.dispatchEvent(new Event('content-unblocked'));
             });
+
+        // 预加载骨架屏相关资源
+        resourceLoader.preloadCSS('blog-right-column.css');
     } catch (error) {
         // 捕获同步错误
         logger.error('❌ 非阻塞资源加载初始化失败:', error);
@@ -904,11 +908,23 @@ function preloadCriticalResources() {
     }
 }
 
-// 添加欢迎页面数据预加载函数
+// 修改 preloadWelcomePageData 函数，在这里就显示骨架屏
 function preloadWelcomePageData() {
-    if (welcomePageManager) {
-        welcomePageManager.loadFromCache();
-        setTimeout(() => welcomePageManager.refreshDataInBackground(), 2000);
+    try {
+        const container = document.getElementById('article-container');
+        if (container) {
+            // 立即显示欢迎页面骨架屏
+            logger.info('预加载欢迎页面前先显示骨架屏');
+            welcomePageSkeleton.show(container);
+        }
+        
+        // 其他预加载逻辑
+        if (welcomePageManager) {
+            welcomePageManager.loadFromCache();
+            setTimeout(() => welcomePageManager.refreshDataInBackground(), 2000);
+        }
+    } catch (error) {
+        logger.error('预加载欢迎页面数据时出错:', error);
     }
 }
 

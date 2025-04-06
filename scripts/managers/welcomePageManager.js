@@ -17,6 +17,7 @@ import { renderWelcomePage } from '../components/welcomePageRenderer.js';
 import { categoryConfig } from '../config/categories.js';
 import logger from '../utils/logger.js';
 import { contentViewManager, ViewMode } from './contentViewManager.js';
+import { welcomePageSkeleton } from '../utils/skeleton-loader.js';
 
 // 缓存键名常量
 const WELCOME_PAGE_CACHE_KEY = 'welcome_page_data';
@@ -68,8 +69,8 @@ class WelcomePageManager {
             return;
         }
         
-        // 首先显示基本欢迎页面，避免白屏
-        this.showBasicWelcomePage();
+        // 首先显示骨架屏，避免白屏
+        this.showWelcomePageSkeleton();
         
         // 优先使用传入的文章数据，并保存到缓存中
         if (articles && articles.length > 0) {
@@ -102,36 +103,37 @@ class WelcomePageManager {
         }
         
         // 如果没有任何数据，显示基本欢迎页面已在方法开始时完成
-        logger.info('没有可用数据，保持基本欢迎页面');
+        logger.info('没有可用数据，保持骨架屏');
     }
     
     /**
-     * 显示基本欢迎页面（无文章数据时）
+     * 显示欢迎页面骨架屏
      */
-    showBasicWelcomePage() {
+    showWelcomePageSkeleton() {
         const container = document.getElementById('article-container');
         if (!container) {
-            logger.warn('文章容器不存在，无法显示欢迎页面');
+            logger.warn('文章容器不存在，无法显示欢迎页面骨架屏');
             return;
         }
         
-        container.innerHTML = `
-            <div class="welcome-page basic-welcome">
-                <div class="welcome-header">
-                    <h1>忙时有序，专注前行</h1>
-                    <p class="welcome-subtitle">记录终端（移动端）开发相关技术的小型知识库</p>
-                </div>
-                <div class="welcome-content">
-                    <p>正在准备内容，请稍候...</p>
-                </div>
-            </div>
-        `;
+        // 确保内容视图处于加载状态
+        contentViewManager.setMode(ViewMode.LOADING);
         
-        // 标记内容
-        contentViewManager.markContent(container, 'welcome');
+        // 使用骨架屏加载器显示骨架屏
+        welcomePageSkeleton.show(container);
         
-        // 切换视图模式
-        contentViewManager.setMode(ViewMode.WELCOME);
+        // 只在骨架屏显示后再标记内容
+        setTimeout(() => {
+            contentViewManager.markContent(container, 'welcome');
+        }, 10);
+    }
+    
+    /**
+     * 显示基本欢迎页面（无文章数据时）- 已被骨架屏替代
+     */
+    showBasicWelcomePage() {
+        // 为保持兼容性，调用骨架屏方法
+        this.showWelcomePageSkeleton();
     }
     
     /**
@@ -139,6 +141,10 @@ class WelcomePageManager {
      * @param {Array} articles 文章数据
      */
     renderWelcomePage(articles) {
+        // 获取容器
+        const container = document.getElementById('article-container');
+        
+        // 渲染欢迎页面
         renderWelcomePage({
             articles: articles,
             onCategorySelect: this.onCategorySelect,
@@ -149,9 +155,9 @@ class WelcomePageManager {
             }
         });
         
-        // 标记内容并设置视图模式
-        const container = document.getElementById('article-container');
+        // 隐藏骨架屏
         if (container) {
+            welcomePageSkeleton.hide(container);
             contentViewManager.markContent(container, 'welcome');
             contentViewManager.setMode(ViewMode.WELCOME);
         }
@@ -163,8 +169,8 @@ class WelcomePageManager {
      * @returns {Promise<void>}
      */
     async ensureArticleDataAndShowWelcome(loadArticles) {
-        // 先显示基本欢迎页面
-        this.showBasicWelcomePage();
+        // 先显示骨架屏
+        this.showWelcomePageSkeleton();
         
         // 获取文章数据
         let articles = typeof this.getArticles === 'function' ? this.getArticles() : [];
@@ -306,6 +312,9 @@ class WelcomePageManager {
         
         logger.info('使用缓存数据渲染欢迎页面');
         
+        // 获取容器
+        const container = document.getElementById('article-container');
+        
         renderWelcomePage({
             articles: recentArticles,
             onCategorySelect: this.onCategorySelect,
@@ -317,9 +326,9 @@ class WelcomePageManager {
             fromCache: true
         });
         
-        // 标记内容并设置视图模式
-        const container = document.getElementById('article-container');
+        // 隐藏骨架屏
         if (container) {
+            welcomePageSkeleton.hide(container);
             contentViewManager.markContent(container, 'welcome');
             contentViewManager.setMode(ViewMode.WELCOME);
         }
