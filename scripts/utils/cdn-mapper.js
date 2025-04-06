@@ -93,7 +93,7 @@ export class CdnMapper {
         
         if (config.provider === 'jsdelivr') {
             return cdnProviders.jsdelivr.npmTemplate
-                .replace('{package}', config.package)
+                .replace('{library}', config.library)
                 .replace('{version}', config.version)
                 .replace('{path}', config.path);
         } else if (config.provider === 'cdnjs') {
@@ -103,7 +103,7 @@ export class CdnMapper {
                 .replace('{path}', config.path);
         } else if (config.provider === 'unpkg') {
             return cdnProviders.unpkg.template
-                .replace('{package}', config.package)
+                .replace('{library}', config.library)
                 .replace('{version}', config.version)
                 .replace('{path}', config.path);
         } else if (config.provider === 'local') {

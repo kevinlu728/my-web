@@ -50,7 +50,7 @@ export const versions = {
 export const cdnProviders = {
     jsdelivr: {
         name: 'jsDelivr',
-        npmTemplate: 'https://cdn.jsdelivr.net/npm/{package}@{version}/{path}',
+        npmTemplate: 'https://cdn.jsdelivr.net/npm/{library}@{version}/{path}',
         githubTemplate: 'https://cdn.jsdelivr.net/gh/{user}/{repo}@{version}/{path}'
     },
     cdnjs: {
@@ -59,7 +59,7 @@ export const cdnProviders = {
     },
     unpkg: {
         name: 'UNPKG',
-        template: 'https://unpkg.com/{package}@{version}/{path}'
+        template: 'https://unpkg.com/{library}@{version}/{path}'
     },
     local: {
         name: '本地资源',
@@ -114,7 +114,7 @@ export const resources = {
             source: {
                 primary: {
                     provider: 'jsdelivr',
-                    package: 'bootstrap-icons',
+                    library: 'bootstrap-icons',
                     version: versions.bootstrapIcons,
                     path: 'font/bootstrap-icons.css'
                 },
@@ -168,7 +168,7 @@ export const resources = {
             source: {
                 primary: {
                     provider: 'jsdelivr',
-                    package: 'prismjs',
+                    library: 'prismjs',
                     version: versions.prism,
                     path: 'themes/prism-tomorrow.min.css'
                 },
@@ -198,7 +198,7 @@ export const resources = {
             source: {
                 primary: {
                     provider: 'jsdelivr',
-                    package: 'katex',
+                    library: 'katex',
                     version: versions.katex,
                     path: 'dist/katex.min.css'
                 },
@@ -232,20 +232,20 @@ export const resources = {
             source: {
                 primary: {
                     provider: 'jsdelivr',
-                    package: 'prismjs',
+                    library: 'prismjs',
                     version: versions.prism,
                     path: 'prism.min.js'
                 },
                 fallbacks: [
                     {
                         provider: 'cdnjs',
-                        package: 'prism',
+                        library: 'prism',
                         version: versions.prism,
                         path: 'prism.min.js'
                     },
                     {
                         provider: 'local',
-                        package: 'prism',
+                        library: 'prism',
                         path: 'prism.min.js'
                     }
                 ]
@@ -261,20 +261,20 @@ export const resources = {
             source: {
                 primary: {
                     provider: 'jsdelivr',
-                    package: 'prismjs',
+                    library: 'prismjs',
                     version: versions.prism,
                     path: 'components/prism-core.js'
                 },
                 fallbacks: [
                     {
                         provider: 'cdnjs',
-                        package: 'prism',
+                        library: 'prism',
                         version: versions.prism,
                         path: 'components/prism-core.js'
                     },
                     {
                         provider: 'local',
-                        package: 'prism',
+                        library: 'prism',
                         path: 'components/prism-core.js'
                     }
                 ],
@@ -325,14 +325,14 @@ export const resources = {
             source: {
                 primary: {
                     provider: 'jsdelivr',
-                    package: 'katex',
+                    library: 'katex',
                     version: versions.katex,
                     path: 'dist/katex.min.js'
                 },
                 fallbacks: [
                     {
                         provider: 'cdnjs',
-                        package: 'KaTeX',
+                        library: 'KaTeX',
                         version: versions.katex,
                         path: 'katex.min.js'
                     },
@@ -354,14 +354,14 @@ export const resources = {
             source: {
                 primary: {
                     provider: 'jsdelivr',
-                    package: 'katex',
+                    library: 'katex',
                     version: versions.katex,
                     path: 'dist/contrib/auto-render.min.js'
                 },
                 fallbacks: [
                     {
                         provider: 'cdnjs',
-                        package: 'KaTeX',
+                        library: 'KaTeX',
                         version: versions.katex,
                         path: 'contrib/auto-render.min.js'
                     },
@@ -383,7 +383,7 @@ export const resources = {
             source: {
                 primary: {
                     provider: 'jsdelivr',
-                    package: 'mathjax',
+                    library: 'mathjax',
                     version: versions.mathjax,
                     path: 'es5/tex-mml-chtml.js'
                 },
@@ -407,7 +407,7 @@ export const resources = {
             source: {
                 primary: {
                     provider: 'jsdelivr',
-                    package: 'chart.js',
+                    library: 'chart.js',
                     version: versions.chartjs,
                     path: 'dist/chart.umd.min.js'
                 },
@@ -431,7 +431,7 @@ export const resources = {
             source: {
                 primary: {
                     provider: 'jsdelivr',
-                    package: 'mermaid',
+                    library: 'mermaid',
                     version: versions.mermaid,
                     path: 'dist/mermaid.min.js'
                 },
@@ -455,7 +455,7 @@ export const resources = {
             source: {
                 primary: {
                     provider: 'jsdelivr',
-                    package: 'd3',
+                    library: 'd3',
                     version: versions.d3,
                     path: 'dist/d3.min.js'
                 },
@@ -479,7 +479,7 @@ export const resources = {
             source: {
                 primary: {
                     provider: 'jsdelivr',
-                    package: 'd3-cloud',
+                    library: 'd3-cloud',
                     version: versions.d3Cloud,
                     path: 'build/d3.layout.cloud.min.js'
                 },
@@ -604,7 +604,7 @@ function buildUrlFromConfig(config, resourceType, resourceName) {
         switch (config.provider) {
             case 'jsdelivr':
                 return provider.npmTemplate
-                    .replace('{package}', config.package)
+                    .replace('{library}', config.library)
                     .replace('{version}', config.version)
                     .replace('{path}', config.path);
                 
@@ -616,7 +616,7 @@ function buildUrlFromConfig(config, resourceType, resourceName) {
                 
             case 'unpkg':
                 return provider.template
-                    .replace('{package}', config.package)
+                    .replace('{library}', config.library)
                     .replace('{version}', config.version)
                     .replace('{path}', config.path);
                 

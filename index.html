@@ -31,9 +31,6 @@
         console.log('✅ 资源加载器已预加载');
     </script>
     
-    <!-- 直接加载粒子效果库 - 首页必备 -->
-    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
-    
     <!-- API服务，首页暂时不依赖API服务，所以可以放在head的最后加载 -->
     <script src="./scripts/api-service.js"></script>
 
@@ -119,33 +116,6 @@
 
     <div id="chat-widget-container"></div>
 
-    <!-- 直接初始化粒子效果 - 不依赖资源加载器 -->
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            if (window.particlesJS) {
-                particlesJS('particles-js', {
-                    particles: {
-                        number: { value: 80, density: { enable: true, value_area: 800 } },
-                        color: { value: '#3370ff' },
-                        opacity: { value: 0.5, random: false },
-                        size: { value: 3, random: true },
-                        line_linked: { enable: true, distance: 150, color: '#3370ff', opacity: 0.4, width: 1 },
-                        move: { enable: true, speed: 2, direction: 'none', random: false, straight: false, out_mode: 'out', bounce: false }
-                    },
-                    interactivity: {
-                        detect_on: 'canvas',
-                        events: { onhover: { enable: true, mode: 'grab' }, onclick: { enable: true, mode: 'push' }, resize: true },
-                        modes: { grab: { distance: 140, line_linked: { opacity: 1 } }, push: { particles_nb: 4 } }
-                    },
-                    retina_detect: true
-                });
-                console.log('✅ 粒子效果已初始化');
-            } else {
-                console.error('❌ particles.js 库未加载');
-            }
-        });
-    </script>
-    
     <!-- 确保componentManager最后加载 -->
     <script src="scripts/core/componentManager.js" type="module"></script>
 </body>
