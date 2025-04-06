@@ -119,7 +119,7 @@ class WelcomePageManager {
             <div class="welcome-page basic-welcome">
                 <div class="welcome-header">
                     <h1>忙时有序，专注前行</h1>
-                    <p class="welcome-subtitle">记录了一些终端开发相关的知识库，欢迎讨论</p>
+                    <p class="welcome-subtitle">记录终端（移动端）开发相关技术的小型知识库</p>
                 </div>
                 <div class="welcome-content">
                     <p>正在准备内容，请稍候...</p>
