@@ -17,21 +17,43 @@ export function initNavigation() {
     const hamburger = document.querySelector('.hamburger');
     const navMenu = document.querySelector('.nav-menu');
     
-    if (hamburger && navMenu) {
-        // 汉堡菜单点击事件
+    if (hamburger) {
         hamburger.addEventListener('click', () => {
             hamburger.classList.toggle('active');
             navMenu.classList.toggle('active');
         });
-        
-        // 点击菜单项后关闭菜单
-        document.querySelectorAll('.nav-menu a').forEach(link => {
-            link.addEventListener('click', () => {
-                hamburger.classList.remove('active');
-                navMenu.classList.remove('active');
-            });
-        });
     }
+    
+    // 高亮当前页面
+    highlightCurrentPage();
+}
+
+function highlightCurrentPage() {
+    // 获取当前页面的URL路径
+    const currentPath = window.location.pathname;
+    
+    // 查找所有导航链接
+    const navLinks = document.querySelectorAll('.nav-menu a');
+    
+    // 遍历每个链接，检查是否匹配当前路径
+    navLinks.forEach(link => {
+        const linkPath = new URL(link.href, window.location.origin).pathname;
+        const linkFilename = linkPath.split('/').pop();
+        const currentFilename = currentPath.split('/').pop() || 'index.html';
+        
+        // 清除之前的标记
+        link.removeAttribute('aria-current');
+        link.parentElement.classList.remove('active');
+        
+        // 如果链接匹配当前页面或者首页特殊情况
+        if (linkFilename === currentFilename || 
+            (currentFilename === '' && linkFilename === 'index.html')) {
+            // 添加WAI-ARIA标记
+            link.setAttribute('aria-current', 'page');
+            // 添加高亮类
+            link.parentElement.classList.add('active');
+        }
+    });
 }
 
 export default { initNavigation }; 
