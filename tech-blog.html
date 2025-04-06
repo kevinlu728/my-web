@@ -5,28 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>技术沉淀 - 云栖小栈</title>
     <!-- SEO元标签 -->
-    <meta name="description" content="云栖小栈技术博客 - 分享终端技术、AI工程化、架构设计等技术文章和学习心得">
-    <meta name="keywords" content="技术博客,终端技术,AI工程化,架构设计,Notion">
-    <!-- Open Graph标签 -->
-    <meta property="og:title" content="技术沉淀 - 云栖小栈">
-    <meta property="og:description" content="分享终端技术、AI工程化、架构设计等技术文章和学习心得">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://yourdomain.com/tech-blog.html">
-    <meta property="og:image" content="https://yourdomain.com/assets/tech-blog-cover.jpg">
-    <!-- Twitter卡片 -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="技术沉淀 - 云栖小栈">
-    <meta name="twitter:description" content="分享终端技术、AI工程化、架构设计等技术文章和学习心得">
-    <meta name="twitter:image" content="https://yourdomain.com/assets/tech-blog-cover.jpg">
+    <meta name="description" content="云栖小栈个人网站 - 分享终端相关的技术文章">
+    <meta name="keywords" content="技术博客,终端技术,移动端技术,大前端技术,AI工程化">
     <!-- 预加载策略 - 核心CSS使用preload，非关键资源使用prefetch -->
     <link rel="preload" href="./styles/main.css" as="style">
     <link rel="preload" href="./styles/layouts/blog-layout.css" as="style">
     <link rel="preload" href="./scripts/utils/resource-loader.js" as="script" crossorigin="anonymous">
-    <!-- 使用本地Font Awesome资源 -->
-    <link rel="stylesheet" href="/assets/libs/font-awesome/all.min.css" 
-          id="local-font-awesome" 
-          data-source="local-resource"
-          data-resource-type="font-awesome">
     <!-- CSS资源 - 使用相对路径 -->
     <link rel="stylesheet" href="./styles/main.css">
     <link rel="stylesheet" href="./styles/components/header.css">
@@ -39,11 +23,16 @@
     <link rel="stylesheet" href="./styles/components/code-block.css">
     <link rel="stylesheet" href="./styles/components/table-block.css">
     <link rel="stylesheet" href="./styles/sections/article.css">
+    <!-- 优先使用本地Font Awesome资源 -->
+    <link rel="stylesheet" href="/assets/libs/font-awesome/all.min.css" 
+        id="local-font-awesome" 
+        data-source="local-resource"
+        data-resource-type="font-awesome">
+    <!-- 网站图标 -->
+    <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
     
     <!-- 加载遮罩样式 - 很小，直接内联不会影响性能 -->
-    <style>
-        /* 移除旧的遮罩样式 */
-        
+    <style>   
         /* 占位图加载动画 */
         .loading-animation {
             position: relative;
@@ -81,24 +70,14 @@
     <!-- 再加载API服务 -->
     <script src="./scripts/api-service.js"></script>
     
-    <!-- 资源加载器初始化 -->
-    <script type="module">
-        // 导入资源加载器
-        import { resourceLoader } from './scripts/utils/resource-loader.js';
-        
-        // DOM加载完成后初始化资源加载策略
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('🚀 DOM加载完成，优先处理内容渲染');
-            // 优先处理内容渲染 - 这部分已在initResourceLoadingStrategy中执行，无需重复
-            // resourceLoader.prioritizeContentRendering();
-        });
-    </script>
-    
-    <!-- FontAwesome - 使用集中资源管理加载 -->
+    <!-- 然后使用集中资源管理加载必要资源 -->
     <script type="module">
         // 导入资源加载器和样式加载器
         import { resourceLoader } from './scripts/utils/resource-loader.js';
         import { resourceStyles } from './scripts/utils/resource-styles.js';
+        // 在全局作用域中暴露资源加载器
+        window.resourceLoader = resourceLoader;
+        console.log('✅ 资源加载器已预加载');
         
         // 优先使用本地Font Awesome资源
         const localFA = document.getElementById('local-font-awesome');
@@ -112,68 +91,7 @@
             link.setAttribute('data-source', 'local-resource');
             document.head.appendChild(link);
         }
-    </script>
-    
-    <!-- Prism.js - 使用集中式资源管理加载 -->
-    <script type="module">
-        // 导入资源加载器
-        import { resourceLoader } from './scripts/utils/resource-loader.js';
-        
-        // 为代码区域添加标记，以支持按需加载
-        document.addEventListener('DOMContentLoaded', function() {
-            // 标记所有代码块为'code'资源组
-            document.querySelectorAll('pre code, .code-block, code[class*="language-"]').forEach(el => {
-                el.closest('pre') ? el.closest('pre').setAttribute('data-resource-group', 'code') : el.setAttribute('data-resource-group', 'code');
-            });
-            
-            // 如果页面包含代码块，立即加载Prism资源
-            const hasCodeBlocks = document.querySelectorAll('pre code, .code-block, code[class*="language-"]').length > 0;
-            
-            if (hasCodeBlocks) {
-                console.log('📝 检测到页面包含代码块，立即加载代码高亮资源');
-                resourceLoader.loadResourceGroup('code').then(() => {
-                    console.log('✅ 代码高亮资源加载完成');
-                    
-                    // 如果Prism已加载，手动触发高亮
-                    if (typeof window.Prism !== 'undefined' && typeof window.Prism.highlightAll === 'function') {
-                        window.Prism.highlightAll();
-                    }
-                });
-            }
-        });
-    </script>
-    
-    <!-- KaTeX - 使用集中式资源管理加载 -->
-    <script type="module">
-        // 导入资源加载器
-        import { resourceLoader } from './scripts/utils/resource-loader.js';
-        
-        // 为数学公式区域添加标记，以支持按需加载
-        document.addEventListener('DOMContentLoaded', function() {
-            // 初始化默认公式渲染器
-            document.body.addEventListener('math-rendered', function(e) {
-                console.log('✅ 数学公式渲染完成:', e.detail.count + '个公式');
-            });
-        });
-    </script>
-    
-    <!-- 网站图标 -->
-    <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
-    
-    <!-- 先加载资源加载器 -->
-    <script type="module">
-        // 立即加载资源加载器
-        import { resourceLoader } from './scripts/utils/resource-loader.js';
-        // 在全局作用域中暴露资源加载器
-        window.resourceLoader = resourceLoader;
-        console.log('✅ 资源加载器已预加载');
-    </script>
-    
-    <!-- 字体图标 - 使用集中资源管理加载 -->
-    <script type="module">
-        // 导入资源加载器
-        import { resourceLoader } from './scripts/utils/resource-loader.js';
-        
+
         // 立即执行：提前标记重要元素的资源组属性
         (function() {
             // 为body添加animation资源组标记
@@ -201,134 +119,143 @@
             
             // 尝试立即执行一次
             setupEarlyResourceGroups();
-            
-            // 为保险起见，也添加到DOMContentLoaded事件
-            document.addEventListener('DOMContentLoaded', setupEarlyResourceGroups);
         })();
-    </script>
-    
-    <!-- 结构化数据 -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Blog",
-      "name": "技术沉淀 - 云栖小栈",
-      "description": "分享终端技术、AI工程化、架构设计等技术文章和学习心得",
-      "url": "https://yourdomain.com/tech-blog.html",
-      "author": {
-        "@type": "Person",
-        "name": "陆凯"
-      }
-    }
+
+        // DOM加载完成后初始化其他资源
+        document.addEventListener('DOMContentLoaded', function() {
+            // 标记所有代码块为'code'资源组
+            document.querySelectorAll('pre code, .code-block, code[class*="language-"]').forEach(el => {
+                el.closest('pre') ? el.closest('pre').setAttribute('data-resource-group', 'code') : el.setAttribute('data-resource-group', 'code');
+            });
+            
+            // 如果页面包含代码块，立即加载Prism资源
+            const hasCodeBlocks = document.querySelectorAll('pre code, .code-block, code[class*="language-"]').length > 0;
+            
+            if (hasCodeBlocks) {
+                console.log('📝 检测到页面包含代码块，立即加载代码高亮资源');
+                resourceLoader.loadResourceGroup('code').then(() => {
+                    console.log('✅ 代码高亮资源加载完成');
+                    
+                    // 如果Prism已加载，手动触发高亮
+                    if (typeof window.Prism !== 'undefined' && typeof window.Prism.highlightAll === 'function') {
+                        window.Prism.highlightAll();
+                    }
+                });
+            }
+            // 再次运行setupEarlyResourceGroups以确保完整覆盖
+            setupEarlyResourceGroups();
+        });
     </script>
 
     <!-- 预加载资源清理脚本 - 在页面加载早期阶段就清理不需要的预加载 -->
     <script type="module">
-    // 导入资源配置和加载器
-    import { resourceLoader } from './scripts/utils/resource-loader.js';
-    import resourceConfig from './scripts/config/resources.js';
-    
-    (function() {
-        console.log('🚀 [早期资源管理] 开始初始化资源加载策略');
+        // 导入资源配置和加载器
+        import { resourceLoader } from './scripts/utils/resource-loader.js';
+        import resourceConfig from './scripts/config/resources.js';
         
-        // 初始化资源加载策略
-        resourceLoader.initResourceLoadingStrategy();
-        
-        // 辅助函数：监视并阻止新添加的预加载标签
-        function monitorDynamicPreloads() {
-            // 需要阻止的资源URL片段
-            const blockedResourcesPatterns = [
-                'highlight.js@11.7.0/styles/tomorrow.min.css',
-                'katex@0.16.8/dist/katex.min.css',
-                'prism@1.29.0/themes/prism-tomorrow.min.css',
-            ];
+        (function() {
+            console.log('🚀 [早期资源管理] 开始初始化资源加载策略');
             
-            // 保存原始的createElement方法
-            const originalCreateElement = document.createElement;
+            // 初始化资源加载策略
+            resourceLoader.initResourceLoadingStrategy();
             
-            // 替换createElement方法以拦截预加载标签的创建
-            document.createElement = function(tagName) {
-                const element = originalCreateElement.call(document, tagName);
+            // 辅助函数：监视并阻止新添加的预加载标签
+            function monitorDynamicPreloads() {
+                // 需要阻止的资源URL片段
+                const blockedResourcesPatterns = [
+                    'highlight.js@11.7.0/styles/tomorrow.min.css',
+                    'katex@0.16.8/dist/katex.min.css',
+                    'prism@1.29.0/themes/prism-tomorrow.min.css',
+                ];
                 
-                // 如果创建的是link元素，监听其属性设置
-                if (tagName.toLowerCase() === 'link') {
-                    const originalSetAttribute = element.setAttribute;
+                // 保存原始的createElement方法
+                const originalCreateElement = document.createElement;
+                
+                // 替换createElement方法以拦截预加载标签的创建
+                document.createElement = function(tagName) {
+                    const element = originalCreateElement.call(document, tagName);
                     
-                    // 重写setAttribute方法来检查预加载URL
-                    element.setAttribute = function(name, value) {
-                        if (name === 'href' && this.rel === 'preload' && 
-                            blockedResourcesPatterns.some(pattern => value.includes(pattern))) {
-                            console.warn(`🚫 [拦截] 阻止预加载资源: ${value}`);
-                            return; // 不设置href，有效阻止预加载
-                        }
-                        return originalSetAttribute.call(this, name, value);
-                    };
-                }
+                    // 如果创建的是link元素，监听其属性设置
+                    if (tagName.toLowerCase() === 'link') {
+                        const originalSetAttribute = element.setAttribute;
+                        
+                        // 重写setAttribute方法来检查预加载URL
+                        element.setAttribute = function(name, value) {
+                            if (name === 'href' && this.rel === 'preload' && 
+                                blockedResourcesPatterns.some(pattern => value.includes(pattern))) {
+                                console.warn(`🚫 [拦截] 阻止预加载资源: ${value}`);
+                                return; // 不设置href，有效阻止预加载
+                            }
+                            return originalSetAttribute.call(this, name, value);
+                        };
+                    }
+                    
+                    return element;
+                };
                 
-                return element;
-            };
-            
-            console.log('✅ [拦截器] 已安装预加载资源拦截器');
-        }
-        
-        // 辅助函数：清理不需要的预加载
-        function cleanupUnusedPreloads() {
-            const blockedResourcesPatterns = [
-                'highlight.js@11.7.0/styles/tomorrow.min.css',
-                'katex@0.16.8/dist/katex.min.css',
-                'prism@1.29.0/themes/prism-tomorrow.min.css',
-            ];
-            
-            const preloads = document.querySelectorAll('link[rel="preload"]');
-            let cleanedCount = 0;
-            
-            preloads.forEach(link => {
-                const href = link.getAttribute('href');
-                if (href && blockedResourcesPatterns.some(pattern => href.includes(pattern))) {
-                    console.log(`🧹 [清理] 移除预加载资源: ${href}`);
-                    link.parentNode.removeChild(link);
-                    cleanedCount++;
-                }
-            });
-            
-            if (cleanedCount > 0) {
-                console.log(`✅ [清理] 已移除${cleanedCount}个不需要的预加载资源`);
+                console.log('✅ [拦截器] 已安装预加载资源拦截器');
             }
-        }
-        
-        // 立即执行
-        monitorDynamicPreloads();
-        cleanupUnusedPreloads();
-        
-        // 额外标记页面中需要按需加载的区域
-        document.addEventListener('DOMContentLoaded', function() {
-            // 标记需要数学公式的区域
-            document.querySelectorAll('.article-body .math-block, .article-body .formula, .article-body .math').forEach(el => {
-                el.setAttribute('data-resource-group', 'math');
-            });
             
-            // 标记需要图表的区域
-            document.querySelectorAll('.article-body .chart-container').forEach(el => {
-                el.setAttribute('data-resource-group', 'chart');
-            });
+            // 辅助函数：清理不需要的预加载
+            function cleanupUnusedPreloads() {
+                const blockedResourcesPatterns = [
+                    'highlight.js@11.7.0/styles/tomorrow.min.css',
+                    'katex@0.16.8/dist/katex.min.css',
+                    'prism@1.29.0/themes/prism-tomorrow.min.css',
+                ];
+                
+                const preloads = document.querySelectorAll('link[rel="preload"]');
+                let cleanedCount = 0;
+                
+                preloads.forEach(link => {
+                    const href = link.getAttribute('href');
+                    if (href && blockedResourcesPatterns.some(pattern => href.includes(pattern))) {
+                        console.log(`🧹 [清理] 移除预加载资源: ${href}`);
+                        link.parentNode.removeChild(link);
+                        cleanedCount++;
+                    }
+                });
+                
+                if (cleanedCount > 0) {
+                    console.log(`✅ [清理] 已移除${cleanedCount}个不需要的预加载资源`);
+                }
+            }
             
-            // 标记需要流程图的区域
-            document.querySelectorAll('.article-body .mermaid').forEach(el => {
-                el.setAttribute('data-resource-group', 'diagram');
-            });
+            // 立即执行
+            monitorDynamicPreloads();
+            cleanupUnusedPreloads();
             
-            // 标记需要标签云的区域
-            document.querySelectorAll('.tag-cloud').forEach(el => {
-                el.setAttribute('data-resource-group', 'tagcloud');
+            // 额外标记页面中需要按需加载的区域
+            document.addEventListener('DOMContentLoaded', function() {
+                // 标记需要数学公式的区域
+                document.querySelectorAll('.article-body .math-block, .article-body .formula, .article-body .math').forEach(el => {
+                    el.setAttribute('data-resource-group', 'math');
+                });
+                
+                // 标记需要标签云的区域
+                document.querySelectorAll('.tag-cloud').forEach(el => {
+                    el.setAttribute('data-resource-group', 'tagcloud');
+                });
+                
+                console.log('✅ [资源管理] 区域标记完成，已设置按需加载');
             });
-            
-            console.log('✅ [资源管理] 区域标记完成，已设置按需加载');
-        });
-    })();
+        })();
     </script>
 
-    <!-- 优先使用本地Font Awesome资源 -->
-    <link rel="stylesheet" href="/assets/libs/font-awesome/all.min.css" id="local-font-awesome" data-source="local-resource">
+    <!-- 结构化数据 -->
+    <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "Blog",
+            "name": "技术沉淀 - 云栖小栈",
+            "description": "分享终端技术、AI工程化、架构设计等技术文章和学习心得",
+            "url": "https://yourdomain.com/tech-blog.html",
+            "author": {
+            "@type": "Person",
+            "name": "陆凯"
+            }
+        }
+    </script>
 </head>
 <body class="article-page">
     <header class="header">
@@ -450,13 +377,6 @@
         import { initializePage } from './scripts/pages/tech-blog.js?v=1.0.1';
         import { initNavigation } from './scripts/components/navigation.js?v=1.0.1';
         import { loadDebugPanel } from './scripts/components/debugPanelLoader.js?v=1.0.0';
-        
-        // 确保资源加载器已初始化
-        if (!resourceLoader.isInitialized) {
-            console.log('🚀 初始化资源加载策略 (主模块)');
-            // 资源加载策略已在页面早期初始化，这里不需要重复
-            // resourceLoader.initResourceLoadingStrategy();
-        }
         
         // 为正确加载Particles.js，确保body具有资源组标记
         if (!document.body.hasAttribute('data-resource-group')) {

@@ -5,42 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>云栖小栈</title>
     <!-- SEO元标签 -->
-    <meta name="description" content="云栖小栈 - 终端技术架构专家与AI终端工程化先行者的个人网站，分享技术沉淀和生活驿站">
-    <meta name="keywords" content="终端技术,AI工程化,技术架构,华为,美团,京东">
-    <!-- Open Graph标签 -->
-    <meta property="og:title" content="云栖小栈">
-    <meta property="og:description" content="终端技术架构专家与AI终端工程化先行者的个人网站">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://yourdomain.com/">
-    <meta property="og:image" content="https://yourdomain.com/assets/profile.jpeg">
-    <!-- Twitter卡片 -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="云栖小栈">
-    <meta name="twitter:description" content="终端技术架构专家与AI终端工程化先行者的个人网站">
-    <meta name="twitter:image" content="https://yourdomain.com/assets/profile.jpeg">
-    
-    <!-- 预加载策略 - 核心CSS使用preload -->
+    <meta name="description" content="云栖小栈个人网站 - 分享技术文章和生活趣事">
+    <meta name="keywords" content="技术博客,终端技术,移动端技术,大前端技术,AI工程化,华为,京东,美团">
+    <!-- 预加载策略 - 核心CSS使用preload，非关键资源使用prefetch -->
     <link rel="preload" href="./styles/main.css" as="style">
-    
     <!-- CSS资源 - 使用相对路径 -->
     <link rel="stylesheet" href="./styles/main.css">
     <link rel="stylesheet" href="./styles/components/header.css">
     <link rel="stylesheet" href="./styles/components/footer.css">
     <link rel="stylesheet" href="./styles/components/scrollbar.css">
     <link rel="stylesheet" href="./styles/layouts/home-layout.css">
-    
-    <!-- 对于首页，直接加载关键图标和UI库，不使用资源加载器 -->
-    <!-- 使用本地Font Awesome资源，由资源加载器管理 -->
-    <link rel="stylesheet" href="/assets/libs/font-awesome/all.min.css" id="local-font-awesome" data-source="local-resource">
-    <!-- Iconfont -->
-    <link rel="stylesheet" href="//at.alicdn.com/t/c/font_4447411_ky6yxhm8dc.css">
-    
+    <!-- 优先使用本地Font Awesome资源。对于首页，直接加载关键图标资源，不使用资源加载器  -->
+    <link rel="stylesheet" href="/assets/libs/font-awesome/all.min.css" 
+          id="local-font-awesome" 
+          data-source="local-resource"
+          data-resource-type="font-awesome">
     <!-- 网站图标 -->
     <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
     
     <!-- 先加载资源加载器但不用于首页核心资源 -->
     <script type="module">
-        // 立即加载资源加载器
         import { resourceLoader } from './scripts/utils/resource-loader.js';
         // 在全局作用域中暴露资源加载器
         window.resourceLoader = resourceLoader;
@@ -50,7 +34,7 @@
     <!-- 直接加载粒子效果库 - 首页必备 -->
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
     
-    <!-- API服务 -->
+    <!-- API服务，首页暂时不依赖API服务，所以可以放在head的最后加载 -->
     <script src="./scripts/api-service.js"></script>
 </head>
 <body class="home-page">

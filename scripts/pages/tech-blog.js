@@ -896,9 +896,6 @@ function preloadCriticalResources() {
                 window.contentUnblocked = true;
                 document.dispatchEvent(new Event('content-unblocked'));
             });
-
-        // 预加载骨架屏相关资源
-        resourceLoader.preloadCSS('blog-right-column.css');
     } catch (error) {
         // 捕获同步错误
         logger.error('❌ 非阻塞资源加载初始化失败:', error.message);
