@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>技术沉淀 - 云栖小栈</title>
     <!-- SEO元标签 -->
-    <meta name="description" content="云栖小栈个人网站 - 分享终端相关的技术文章">
+    <meta name="description" content="云栖小栈 - 陆凯的个人网站">
     <meta name="keywords" content="技术博客,终端技术,移动端技术,大前端技术,AI工程化">
     <!-- 预加载策略 - 核心CSS使用preload，非关键资源使用prefetch -->
     <link rel="preload" href="./styles/main.css" as="style">
@@ -106,7 +106,7 @@
             }
             
             // 添加一个助手函数，在DOM完全加载前就能识别关键元素
-            function setupEarlyResourceGroups() {
+            window.setupEarlyResourceGroups = function() {
                 // 搜索用户可能立即看到的重要元素
                 document.querySelectorAll('pre, code').forEach(el => {
                     el.setAttribute('data-resource-group', 'code');
@@ -118,7 +118,7 @@
             }
             
             // 尝试立即执行一次
-            setupEarlyResourceGroups();
+            window.setupEarlyResourceGroups();
         })();
 
         // DOM加载完成后初始化其他资源
@@ -143,7 +143,7 @@
                 });
             }
             // 再次运行setupEarlyResourceGroups以确保完整覆盖
-            setupEarlyResourceGroups();
+            window.setupEarlyResourceGroups();
         });
     </script>
 
@@ -246,10 +246,10 @@
     <script type="application/ld+json">
         {
             "@context": "https://schema.org",
-            "@type": "Blog",
-            "name": "技术沉淀 - 云栖小栈",
-            "description": "分享终端技术、AI工程化、架构设计等技术文章和学习心得",
-            "url": "https://yourdomain.com/tech-blog.html",
+            "@type": "Person",
+            "name": "技术沉底 - 云栖小栈",
+            "description": "云栖小栈 - 陆凯的个人网站",
+            "url": "https://clouddweller.cn/tech-blog.html",
             "author": {
             "@type": "Person",
             "name": "陆凯"

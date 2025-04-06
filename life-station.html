@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生活驿站 - 云栖小栈</title>
+    <!-- SEO元标签 -->
+    <meta name="description" content="云栖小栈 - 陆凯的个人网站">
+    <meta name="keywords" content="生活博客,旅行,阅读,电影,足球,兴趣爱好">
+    <!-- 预加载策略 -->
+    <link rel="preload" href="./styles/main.css" as="style">
+    <!-- CSS资源 - 使用相对路径 -->
+    <link rel="stylesheet" href="./styles/main.css">
+    <link rel="stylesheet" href="./styles/components/header.css">
+    <link rel="stylesheet" href="./styles/components/footer.css">
+    <link rel="stylesheet" href="./styles/components/scrollbar.css">
+    <!-- 优先使用本地Font Awesome资源 -->
+    <link rel="stylesheet" href="/assets/libs/font-awesome/all.min.css" 
+          id="local-font-awesome" 
+          data-source="local-resource"
+          data-resource-type="font-awesome">
+    <!-- 网站图标 -->
+    <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
+    
+    <!-- 简单的维护中页面样式 -->
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+        }
+        
+        main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .maintenance-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .maintenance-icon {
+            font-size: 4rem;
+            color: #3370ff;
+            margin-bottom: 1.5rem;
+            animation: pulse 2s infinite;
+        }
+        
+        .maintenance-title {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        
+        .maintenance-message {
+            font-size: 1.2rem;
+            max-width: 600px;
+            line-height: 1.6;
+            color: #666;
+            margin-bottom: 2rem;
+        }
+        
+        .return-button {
+            background-color: #3370ff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .return-button:hover {
+            background-color: #2860db;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .footer {
+            margin-top: auto;
+            position: relative;
+        }
+    </style>
+    
+    <!-- 先加载资源加载器但不用于首页核心资源 -->
+    <script type="module">
+        import { resourceLoader } from './scripts/utils/resource-loader.js';
+        // 在全局作用域中暴露资源加载器
+        window.resourceLoader = resourceLoader;
+        console.log('✅ 资源加载器已预加载');
+    </script>
+    
+    <!-- 结构化数据 -->
+    <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "Person",
+            "name": "生活驿站 - 云栖小栈",
+            "description": "云栖小栈 - 陆凯的个人网站",
+            "url": "https://clouddweller.cn/life-station.html",
+            "author": {
+                "@type": "Person",
+                "name": "陆凯"
+            }
+        }
+    </script>
+</head>
+<body>
+    <header class="header">
+        <nav class="nav-container">
+            <div class="web-title">
+                云 栖 小 栈
+            </div>
+            <button class="hamburger" aria-label="菜单">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <ul class="nav-menu">
+                <li><a href="index.html">首页</a></li>
+                <li><a href="tech-blog.html">技术沉淀</a></li>
+                <li><a href="life-station.html" aria-current="page">生活驿站</a></li>
+                <li><a href="contact.html">联系方式</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <div class="maintenance-container">
+            <i class="fas fa-tools maintenance-icon"></i>
+            <h1 class="maintenance-title">页面维护中</h1>
+            <p class="maintenance-message">
+                感谢您的访问！生活驿站频道正在维护中，很快就能与您见面。
+                这里将分享旅行见闻、读书心得、电影感想和其他生活点滴。
+            </p>
+            <a href="index.html" class="return-button">返回首页</a>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div id="social-links-container"></div>
+        <div class="copyright">
+            © 2024 陆凯 - All rights reserved
+        </div>
+    </footer>
+
+    <!-- 确保navigation脚本正确加载 -->
+    <script type="module">
+        import { initNavigation } from './scripts/components/navigation.js';
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            // 初始化导航
+            initNavigation();
+        });
+    </script>
+</body>
+</html> 

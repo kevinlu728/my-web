@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>云栖小栈</title>
     <!-- SEO元标签 -->
-    <meta name="description" content="云栖小栈个人网站 - 分享技术文章和生活趣事">
+    <meta name="description" content="云栖小栈 - 陆凯的个人网站">
     <meta name="keywords" content="技术博客,终端技术,移动端技术,大前端技术,AI工程化,华为,京东,美团">
     <!-- 预加载策略 - 核心CSS使用preload，非关键资源使用prefetch -->
     <link rel="preload" href="./styles/main.css" as="style">
@@ -36,6 +36,20 @@
     
     <!-- API服务，首页暂时不依赖API服务，所以可以放在head的最后加载 -->
     <script src="./scripts/api-service.js"></script>
+
+    <!-- 结构化数据 -->
+    <script type="application/ld+json">
+        {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "陆凯",
+        "description": "云栖小栈 - 陆凯的个人网站",
+        "url": "https://clouddweller.cn/",
+        "sameAs": [
+            "https://www.linkedin.com/in/kevinlu728/",
+        ]
+        }
+    </script>
 </head>
 <body class="home-page">
     <div id="particles-js"></div>
@@ -71,7 +85,7 @@
                         <div class="intro-items-container">
                             <div class="intro-item">9年终端技术纵深：从华为终端芯片层到美团亿级流量终端架构</div>
                             <div class="intro-item">5年技术管理沉淀：0-1组建3个创新团队（华为HiAI/京东端智能/美团终端PaaS）</div>
-                            <div class="intro-item">AI全栈实践能力：覆盖端侧推理 → 大模型应用（GPT/Diffusion）→ AI工具链（Copilot）</div>
+                            <div class="intro-item">AI端云实践经历：熟悉大模型应用（GPT/Claude/DS）和端智能框架（TFLite/CoreML）</div>
                         </div>
                     </div>
                     <div class="intro">
@@ -104,22 +118,6 @@
     <div id="contact-modal-container"></div>
 
     <div id="chat-widget-container"></div>
-
-    <!-- 结构化数据 -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Person",
-      "name": "陆凯",
-      "jobTitle": "终端技术架构专家",
-      "description": "终端技术架构专家与AI终端工程化先行者",
-      "url": "https://yourdomain.com/",
-      "sameAs": [
-        "https://www.linkedin.com/in/kevinlu728/",
-        "https://github.com/yourusername"
-      ]
-    }
-    </script>
 
     <!-- 直接初始化粒子效果 - 不依赖资源加载器 -->
     <script>
