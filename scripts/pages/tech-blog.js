@@ -891,7 +891,7 @@ function preloadCriticalResources() {
                 preloadWelcomePageData();
             })
             .catch(error => {
-                logger.error('❌ 非阻塞资源加载失败:', error);
+                logger.error('❌ 非阻塞资源加载失败:', error.message);
                 // 确保内容已解锁，以便初始化可以继续
                 window.contentUnblocked = true;
                 document.dispatchEvent(new Event('content-unblocked'));
@@ -901,7 +901,7 @@ function preloadCriticalResources() {
         resourceLoader.preloadCSS('blog-right-column.css');
     } catch (error) {
         // 捕获同步错误
-        logger.error('❌ 非阻塞资源加载初始化失败:', error);
+        logger.error('❌ 非阻塞资源加载初始化失败:', error.message);
         // 设置全局标志，指示内容已解锁，以便初始化可以继续
         window.contentUnblocked = true;
         document.dispatchEvent(new Event('content-unblocked'));

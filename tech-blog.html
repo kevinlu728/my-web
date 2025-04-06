@@ -389,13 +389,46 @@
             <div class="separator-line"></div>
         </div>
         <div class="right-column">
-            <div id="article-container" data-resource-group="core">
-                <!-- 移除额外的加载遮罩，仅使用占位图 -->
-                <!-- 初始显示占位图，不再显示简单欢迎语 -->
-                <div class="placeholder-content">
-                    <div class="placeholder-image loading-animation"></div>
-                    <div class="placeholder-text">正在准备内容</div>
-                    <div class="placeholder-hint">欢迎页面加载中，请稍候片刻...</div>
+            <div id="article-container" class="welcome-skeleton-loaded">
+                <div class="welcome-page-skeleton">
+                  <div class="skeleton-welcome-header">
+                    <div class="skeleton-title skeleton-pulse"></div>
+                    <div class="skeleton-subtitle skeleton-pulse"></div>
+                  </div>
+                  
+                  <div class="skeleton-welcome-content">
+                    <div class="skeleton-section">
+                      <div class="skeleton-section-title skeleton-pulse"></div>
+                      <div class="skeleton-list">
+                        <div class="skeleton-list-item skeleton-pulse"></div>
+                        <div class="skeleton-list-item skeleton-pulse"></div>
+                        <div class="skeleton-list-item skeleton-pulse"></div>
+                      </div>
+                    </div>
+                    
+                    <div class="skeleton-section">
+                      <div class="skeleton-section-title skeleton-pulse"></div>
+                      <div class="skeleton-category-tags">
+                        <div class="skeleton-category-tag skeleton-cat-1 skeleton-pulse"></div>
+                        <div class="skeleton-category-tag skeleton-cat-2 skeleton-pulse"></div>
+                        <div class="skeleton-category-tag skeleton-cat-3 skeleton-pulse"></div>
+                        <div class="skeleton-category-tag skeleton-cat-4 skeleton-pulse"></div>
+                        <div class="skeleton-category-tag skeleton-cat-5 skeleton-pulse"></div>
+                        <div class="skeleton-category-tag skeleton-cat-6 skeleton-pulse"></div>
+                      </div>
+                    </div>
+                    
+                    <div class="skeleton-section">
+                      <div class="skeleton-section-title skeleton-pulse"></div>
+                      <div class="skeleton-recent-articles">
+                        <div class="skeleton-article-item skeleton-pulse"></div>
+                        <div class="skeleton-article-item skeleton-pulse"></div>
+                        <div class="skeleton-article-item skeleton-pulse"></div>
+                        <div class="skeleton-article-item skeleton-pulse"></div>
+                        <div class="skeleton-article-item skeleton-pulse"></div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
             </div>
         </div>
