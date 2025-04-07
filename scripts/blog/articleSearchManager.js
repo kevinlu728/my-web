@@ -11,8 +11,7 @@
  * - 处理搜索状态重置
  */
 
-import { highlightSearchTerm } from '../utils/article-utils.js';
-import { searchArticles } from '../utils/article-data-processor.js';
+import { highlightSearchTerm, searchArticles } from '../utils/article-utils.js';
 import logger from '../utils/logger.js';
 
 class ArticleSearchManager {

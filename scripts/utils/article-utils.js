@@ -6,25 +6,9 @@
  * @created 2024-03-20
  */
 
-import { UrlUtils } from './url-utils.js';
+import { imageLazyLoader } from '../blog/imageLazyLoader.js';   
+import { formatDate } from './common-utils.js';
 import logger from './logger.js';
-
-/**
- * 节流函数 - 限制函数在特定时间内只能执行一次
- * @param {Function} func 要执行的函数
- * @param {number} limit 时间间隔（毫秒）
- * @returns {Function} 节流后的函数
- */
-export function throttle(func, limit) {
-    let inThrottle;
-    return function(...args) {
-        if (!inThrottle) {
-            func.apply(this, args);
-            inThrottle = true;
-            setTimeout(() => inThrottle = false, limit);
-        }
-    };
-}
 
 /**
  * 在文本中高亮显示搜索词
@@ -37,55 +21,6 @@ export function highlightSearchTerm(text, searchTerm) {
     
     const regex = new RegExp(searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
     return text.replace(regex, match => `<span class="search-highlight">${match}</span>`);
-}
-
-/**
- * 格式化Notion页面ID，确保使用正确的格式
- * @param {string} pageId 原始页面ID
- * @returns {string} 格式化后的页面ID
- */
-export function getFormattedPageId(pageId) {
-    // 如果ID包含连字符，直接返回
-    if (pageId.includes('-')) {
-        return pageId;
-    }
-    
-    // 如果ID是纯数字字符串，这可能是错误的ID
-    if (/^\d+$/.test(pageId)) {
-        logger.warn(`发现纯数字ID: ${pageId}，这可能不是有效的Notion页面ID`);
-        return pageId;
-    }
-    
-    // 如果ID是32个字符但没有连字符，添加连字符
-    if (pageId.length === 32) {
-        // 按照Notion UUID格式添加连字符: 8-4-4-4-12
-        return `${pageId.substring(0, 8)}-${pageId.substring(8, 12)}-${pageId.substring(12, 16)}-${pageId.substring(16, 20)}-${pageId.substring(20)}`;
-    }
-    
-    // 其他情况，尽量返回原始ID
-    return pageId;
-}
-
-/**
- * 格式化日期为YYYY/M/D格式
- * @param {string|Date} date 日期对象或日期字符串
- * @returns {string} 格式化后的日期字符串
- */
-export function formatDate(date) {
-    if (!date) return '';
-    
-    const dateObj = date instanceof Date ? date : new Date(date);
-    return `${dateObj.getFullYear()}/${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
-}
-
-/**
- * 检查缓存是否过期
- * @param {number} timestamp 缓存的时间戳
- * @param {number} expirationTime 过期时间（毫秒）
- * @returns {boolean} 是否已过期
- */
-export function isCacheExpired(timestamp, expirationTime) {
-    return Date.now() - timestamp > expirationTime;
 }
 
 /**
@@ -126,21 +61,315 @@ export function extractCategoryFromProperties(properties) {
 }
 
 /**
- * 从URL中提取查询参数
- * @param {string} paramName 参数名
- * @returns {string|null} 参数值或null
- * @deprecated 请使用 UrlUtils.getParam 代替
+ * 渲染文章列表项
+ * @param {Object} article 文章对象
+ * @param {string} searchTerm 搜索词(用于高亮)
+ * @param {string} currentArticleId 当前选中的文章ID
+ * @returns {string} 文章列表项的HTML
  */
-export function getQueryParam(paramName) {
-    return UrlUtils.getParam(paramName);
+export function renderArticleListItem(article, searchTerm = '', currentArticleId = null) {
+    // 提取标题
+    const title = article.title || 'Untitled';
+    
+    // 提取分类
+    const category = article.category || 'Uncategorized';
+    
+    // 提取日期
+    let date = '';
+    if (article.publish_date) {
+        date = formatDate(article.publish_date);
+    } else if (article.created_time) {
+        date = formatDate(article.created_time);
+    }
+    
+    // 只在搜索时高亮显示
+    const highlightedTitle = searchTerm ? highlightSearchTerm(title, searchTerm) : title;
+    
+    // 检查是否是当前选中的文章
+    const isActive = currentArticleId === article.id ? 'active' : '';
+    
+    return `
+        <li class="article-item ${isActive}" data-category="${category}" data-article-id="${article.id}">
+            <a href="#" onclick="showArticle('${article.id}'); return false;">
+                <span class="article-title-text">${highlightedTitle}</span>
+                ${date ? `<span class="article-date">${date}</span>` : ''}
+            </a>
+        </li>
+    `;
 }
 
 /**
- * 更新URL查询参数而不重新加载页面
- * @param {string} paramName 参数名
- * @param {string} value 参数值
- * @deprecated 请使用 UrlUtils.updateParam 代替
+ * 渲染文章列表
+ * @param {Array} articles 文章数组
+ * @param {string} searchTerm 搜索词
+ * @param {string} currentArticleId 当前显示的文章ID
+ * @param {string} containerId 容器ID
  */
-export function updateUrlParam(paramName, value) {
-    UrlUtils.updateParam(paramName, value);
-} 
+export function renderArticleList(articles, searchTerm = '', currentArticleId = null, containerId = 'article-tree') {
+    // 修改为使用article-tree中的子元素
+    const articleTree = document.getElementById(containerId);
+    if (!articleTree) {
+        logger.warn('文章树元素不存在');
+        return;
+    }
+    
+    // 获取根节点的子元素容器
+    const articleList = articleTree.querySelector('.root-item > .tree-children');
+    if (!articleList) {
+        logger.warn('文章列表子元素不存在');
+        return;
+    }
+
+    // 如果没有文章，显示提示
+    if (!articles || articles.length === 0) {
+        articleList.innerHTML = '<li class="no-results">暂无文章</li>';
+        return;
+    }
+    
+    // 渲染文章列表
+    articleList.innerHTML = articles.map(article => 
+        renderArticleListItem(article, searchTerm, currentArticleId)
+    ).join('');
+}
+
+/**
+ * 显示加载状态
+ * @param {string} containerId 容器ID
+ */
+export function showArticleLoadingState(containerId = 'article-container') {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    container.innerHTML = `
+        <div class="article-loading">
+            <div class="loading-content">
+                <div class="loading-skeleton">
+                    <div class="skeleton-title"></div>
+                    <div class="skeleton-meta"></div>
+                    <div class="skeleton-paragraph">
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line" style="width: 80%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * 显示文章内容
+ * @param {Object} articleData 文章数据
+ * @param {Function} renderBlocks 渲染文章块的函数
+ * @param {string} containerId 容器ID
+ * @param {boolean} hasMore 是否有更多内容
+ */
+export function displayArticleContent(articleData, renderBlocks, containerId = 'article-container', hasMore = false) {
+    const articleContainer = document.getElementById(containerId);
+    if (!articleContainer) return;
+    
+    // 提取标题和块
+    const { title, blocks } = extractArticleData(articleData);
+    
+    // 渲染文章内容
+    const contentHtml = blocks && blocks.length > 0 ? 
+        renderBlocks(blocks) : 
+        '<p>该文章暂无内容</p>';
+    
+    // 更新DOM
+    articleContainer.innerHTML = `
+        <h1 class="article-title">${title}</h1>
+        <div class="article-body" data-article-id="${articleData.page?.id || ''}">
+            ${contentHtml}
+        </div>
+        <div class="load-more-container">
+            ${hasMore ? 
+                '<div class="loading-text">下拉加载更多</div>' : 
+                '<div class="no-more">没有更多内容</div>'}
+        </div>
+    `;
+
+    // 处理文章中的图片和其他内容
+    const articleBody = articleContainer.querySelector('.article-body');
+    if (articleBody) {
+        imageLazyLoader.processImages(articleBody);
+    }
+    
+    return articleBody;
+}
+
+/**
+ * 从文章数据中提取必要的元素
+ * @param {Object} articleData 文章数据
+ * @returns {Object} 提取的数据
+ */
+function extractArticleData(articleData) {
+    if (!articleData) {
+        return { title: '无标题', blocks: [] };
+    }
+    
+    // 提取标题
+    let title = '无标题';
+    if (articleData.page && articleData.page.properties) {
+        const titleProp = articleData.page.properties.Title || articleData.page.properties.Name;
+        if (titleProp && titleProp.title && titleProp.title.length > 0) {
+            title = titleProp.title[0].plain_text;
+        }
+    }
+    
+    return {
+        title,
+        blocks: articleData.blocks || []
+    };
+}
+
+/**
+ * 显示错误消息
+ * @param {string} message 错误消息
+ * @param {string} containerId 容器ID
+ * @param {string} pageId 文章ID(用于重试按钮)
+ */
+export function showArticleError(message, containerId = 'article-container', pageId = null) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    container.innerHTML = `
+        <h1 class="article-title">加载失败</h1>
+        <div class="article-body">
+            <p>文章加载失败: ${message}</p>
+            ${pageId ? `<p><button onclick="showArticle('${pageId}')">重试</button></p>` : ''}
+        </div>
+    `;
+}
+
+/**
+ * 显示加载更多状态
+ * @param {boolean} isLoading 是否正在加载
+ * @param {boolean} hasMore 是否有更多内容
+ * @param {string} errorMessage 错误消息(如果有)
+ */
+export function updateLoadMoreStatus(isLoading, hasMore, errorMessage = null) {
+    const loadMoreContainer = document.querySelector('.load-more-container');
+    if (!loadMoreContainer) return;
+    
+    if (errorMessage) {
+        loadMoreContainer.innerHTML = `
+            <div class="error">
+                ${errorMessage}，<a href="#" onclick="articleManager.loadMoreContent(); return false;">点击重试</a>
+            </div>
+        `;
+    } else if (isLoading) {
+        loadMoreContainer.innerHTML = '<div class="loading-spinner"></div><div class="loading-text">加载中...</div>';
+    } else if (hasMore) {
+        loadMoreContainer.innerHTML = '<div class="loading-text">下拉加载更多</div>';
+    } else {
+        loadMoreContainer.innerHTML = '<div class="no-more">没有更多内容</div>';
+    }
+}
+
+/********以下是文章和文章列表的数据处理相关工具函数 ******/
+/**
+ * 处理文章列表数据，转换为应用需要的格式
+ * @param {Array} articles 从API获取的原始文章数据
+ * @returns {Array} 处理后的文章数据
+ */
+export function processArticleListData(articles) {
+    if (!articles || !Array.isArray(articles)) {
+        logger.error('无效的文章数据:', articles);
+        return [];
+    }
+    
+    logger.info('处理文章数据...');
+    const processedArticles = [];
+    
+    for (const page of articles) {
+        try {
+            // 确保页面有 ID
+            if (!page.id) {
+                logger.error('文章缺少ID:', page);
+                continue;
+            }
+            
+            // 提取标题
+            const title = extractTitleFromProperties(page.properties);
+            
+            // 提取 URL
+            let url = '';
+            if (page.url) {
+                url = page.url;
+            } else if (page.public_url) {
+                url = page.public_url;
+            }
+            
+            // 使用原始 ID
+            const pageId = page.id;
+            
+            // 提取分类
+            const category = extractCategoryFromProperties(page.properties);
+            
+            // 提取发布时间
+            let publishDate = null;
+            if (page.properties && page.properties['Publish Date'] && page.properties['Publish Date'].date) {
+                publishDate = page.properties['Publish Date'].date.start;
+            }
+            
+            // 构建文章对象
+            const article = {
+                id: pageId,
+                title: title,
+                url: url,
+                created_time: page.created_time,
+                last_edited_time: page.last_edited_time,
+                publish_date: publishDate,
+                category: category,
+                properties: page.properties, // 保留原始属性以备后用
+                originalPage: page // 保留原始页面数据
+            };
+            
+            processedArticles.push(article);
+        } catch (error) {
+            logger.error('处理文章数据时出错:', error, page);
+        }
+    }
+    
+    // 按发布时间排序，没有发布时间的排在最后
+    processedArticles.sort((a, b) => {
+        // 如果两篇文章都有发布时间，按发布时间降序排序
+        if (a.publish_date && b.publish_date) {
+            return new Date(b.publish_date) - new Date(a.publish_date);
+        }
+        // 如果只有 a 有发布时间，a 排在前面
+        if (a.publish_date) return -1;
+        // 如果只有 b 有发布时间，b 排在前面
+        if (b.publish_date) return 1;
+        // 如果都没有发布时间，按创建时间降序排序
+        return new Date(b.created_time) - new Date(a.created_time);
+    });
+    
+    logger.info(`处理完成，共 ${processedArticles.length} 篇文章`);
+    return processedArticles;
+}
+
+/**
+ * 搜索文章
+ * @param {Array} articles 文章列表
+ * @param {string} searchTerm 搜索词
+ * @returns {Array} 匹配的文章
+ */
+export function searchArticles(articles, searchTerm) {
+    if (!searchTerm || !articles || articles.length === 0) return articles;
+
+    const term = searchTerm.toLowerCase();
+    logger.info(`搜索文章，关键词: "${term}"`);
+
+    return articles.filter(article => {
+        // 搜索标题匹配
+        const titleMatch = article.title?.toLowerCase().includes(term);
+        
+        // 搜索分类匹配
+        const categoryMatch = article.category?.toLowerCase().includes(term);
+        
+        return titleMatch || categoryMatch;
+    });
+}

@@ -28,6 +28,45 @@ export function debounce(func, wait = 300) {
     };
 }
 
+/**
+ * 节流函数 - 限制函数在特定时间内只能执行一次
+ * @param {Function} func 要执行的函数
+ * @param {number} limit 时间间隔（毫秒）
+ * @returns {Function} 节流后的函数
+ */
+export function throttle(func, limit) {
+    let inThrottle;
+    return function(...args) {
+        if (!inThrottle) {
+            func.apply(this, args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
+        }
+    };
+}
+
+/**
+ * 格式化日期为YYYY/M/D格式
+ * @param {string|Date} date 日期对象或日期字符串
+ * @returns {string} 格式化后的日期字符串
+ */
+export function formatDate(date) {
+    if (!date) return '';
+    
+    const dateObj = date instanceof Date ? date : new Date(date);
+    return `${dateObj.getFullYear()}/${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
+}
+
+/**
+ * 检查缓存是否过期
+ * @param {number} timestamp 缓存的时间戳
+ * @param {number} expirationTime 过期时间（毫秒）
+ * @returns {boolean} 是否已过期
+ */
+export function isCacheExpired(timestamp, expirationTime) {
+    return Date.now() - timestamp > expirationTime;
+}
+
 // 显示状态消息
 export function showStatus(message, isError = false, type = 'info') {
     const statusEl = document.getElementById('status-message');

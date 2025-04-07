@@ -7,6 +7,7 @@
  */
 
 import logger from '../utils/logger.js';
+import { throttle } from '../utils/common-utils.js';
 
 /**
  * 文章目录导航类
@@ -333,17 +334,17 @@ export class TableOfContents {
      * 设置滚动监听，实现目录高亮
      */
     setupScrollListener() {
-        // 移除之前的滚动监听
+        // 移除旧的监听器（如果存在）
         if (this.scrollHandler) {
             window.removeEventListener('scroll', this.scrollHandler);
-            this.scrollHandler = null;
         }
         
         // 创建新的滚动监听
-        this.scrollHandler = this.throttle(() => {
+        this.scrollHandler = throttle(() => {
             this.updateActiveHeading();
         }, 100); // 100ms的节流，优化性能
         
+        // 添加滚动监听器
         window.addEventListener('scroll', this.scrollHandler);
         
         // 初始化时执行一次更新
@@ -646,7 +647,7 @@ export class TableOfContents {
      */
     setupResizeListener() {
         // 创建一个节流版本的更新函数，避免频繁更新
-        this.resizeHandler = this.throttle(() => {
+        this.resizeHandler = throttle(() => {
             this.updateRightColumnTopVariable();
         }, 100);
         
@@ -827,24 +828,6 @@ export class TableOfContents {
             this.destroy();
         }
         return this.initialize();
-    }
-
-    /**
-     * 简单的节流函数实现
-     * @param {Function} func 要执行的函数
-     * @param {number} delay 延迟时间(ms)
-     * @returns {Function} 节流后的函数
-     */
-    throttle(func, delay) {
-        let lastCall = 0;
-        return function(...args) {
-            const now = new Date().getTime();
-            if (now - lastCall < delay) {
-                return;
-            }
-            lastCall = now;
-            return func(...args);
-        };
     }
 
     /**

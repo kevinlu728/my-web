@@ -21,7 +21,7 @@
  * 导出单例codeLazyLoader供其他模块使用。
  */
 
-import logger from './logger.js';
+import logger from '../utils/logger.js';
 import { prismLoader } from '../resource/prismLoader.js';
 
 class CodeLazyLoader {

@@ -15,9 +15,6 @@ scripts/
 │   ├── router.js          # 路由管理
 │   └── ...
 ├── managers/              # 管理器脚本
-│   ├── articleManager.js  # 文章管理
-│   ├── themeManager.js    # 主题管理
-│   ├── categoryManager.js # 分类管理
 │   ├── resourceManager.js # 资源管理
 │   └── ...
 ├── services/              # 服务脚本
@@ -25,8 +22,6 @@ scripts/
 │   ├── storageService.js  # 存储服务
 │   └── ...
 ├── utils/                 # 工具脚本
-│   ├── table-lazy-loader.js # 表格懒加载
-│   ├── code-lazy-loader.js  # 代码块懒加载
 │   ├── article-utils.js   # 文章相关工具函数
 │   ├── article-cache.js   # 文章缓存工具
 │   ├── logger.js          # 统一日志管理工具
@@ -53,22 +48,15 @@ scripts/
 
 ### 组件脚本
 
-- **components/articleRenderer.js**: 负责渲染文章内容，包括处理各种内容块（文本、代码、表格等）
 - **components/codeBlock.js**: 处理代码块的语法高亮和交互功能
 - **components/tableBlock.js**: 处理表格的渲染和交互功能
-- **components/welcomePageRenderer.js**: 渲染网站欢迎页面，展示文章分类和推荐内容
 
 ### 管理器脚本
 
-- **managers/articleManager.js**: 管理文章的加载、缓存和展示
-- **managers/themeManager.js**: 管理主题切换和持久化
-- **managers/categoryManager.js**: 管理文章分类的加载、显示和交互
 - **managers/resourceManager.js**: 管理资源加载、错误处理和回退机制
 
 ### 工具脚本
 
-- **utils/table-lazy-loader.js**: 表格懒加载实现，提高页面性能
-- **utils/code-lazy-loader.js**: 代码块懒加载实现，提高页面性能
 - **utils/article-utils.js**: 文章相关工具函数集合
 - **utils/article-cache.js**: 文章缓存管理工具
 - **utils/logger.js**: 统一日志管理工具，提供不同级别的日志输出和格式化功能

@@ -18,7 +18,7 @@
  * - detectImageSupport: 检测浏览器对特定图片格式的支持
  * - preloadCriticalImages: 预加载关键图片
  * 
- * 该模块与image-lazy-loader.js配合使用，提供完整的图片优化解决方案。
+ * 该模块与imageLazyLoader.js配合使用，提供完整的图片优化解决方案。
  */
 
 import logger from './logger.js';

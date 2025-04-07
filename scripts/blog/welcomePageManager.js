@@ -13,7 +13,7 @@
  * 该模块与articleManager解耦，但目前仍需引用articleManager获取文章数据
  */
 
-import { renderWelcomePage } from '../components/welcomePageRenderer.js';
+import { renderWelcomePage } from './welcomePageRenderer.js';
 import { categoryConfig } from '../config/categories.js';
 import logger from '../utils/logger.js';
 import { contentViewManager, ViewMode } from './contentViewManager.js';

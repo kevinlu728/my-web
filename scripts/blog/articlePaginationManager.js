@@ -11,15 +11,14 @@
  * - 管理加载状态和UI反馈
  */
 
-import { throttle } from '../utils/article-utils.js';
-import { initializeLazyLoading } from '../components/articleRenderer.js';
-import { imageLazyLoader } from '../utils/image-lazy-loader.js';
-import { updateLoadMoreStatus } from '../utils/article-ui.js';
-import tableOfContents from '../components/tableOfContents.js';
+import { articleCacheManager } from '../blog/articleCacheManager.js';   
+import { imageLazyLoader } from '../blog/imageLazyLoader.js';
+import { initializeLazyLoading } from './articleRenderer.js';
+import tableOfContents from './tableOfContents.js';
 import config from '../config/config.js';
-import { articleCacheManager } from './articleCacheManager.js';
+import { updateLoadMoreStatus } from '../utils/article-utils.js';
+import { throttle, showLoadingSpinner } from '../utils/common-utils.js';
 import logger from '../utils/logger.js';
-import { showLoadingSpinner } from '../utils/utils.js';
 
 class ArticlePaginationManager {
     constructor() {
@@ -287,7 +286,7 @@ class ArticlePaginationManager {
                     logger.info('执行加载更多内容操作');
                     
                     // 导入渲染函数，使得加载更多能够直接触发
-                    import('../components/articleRenderer.js').then(({ renderNotionBlocks }) => {
+                    import('./articleRenderer.js').then(({ renderNotionBlocks }) => {
                         this.loadMoreContent(renderNotionBlocks, (pageId, newBlocks, hasMore, nextCursor) => {
                             // 使用缓存管理器
                             articleCacheManager.updateArticleCache(pageId, newBlocks, hasMore, nextCursor);

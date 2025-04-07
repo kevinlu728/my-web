@@ -14,11 +14,11 @@
  */
 
 // 导入JavaScript功能组件
-import { initNavigation } from '../components/navigation.js';
-import { initParticleBackground } from '../components/particleBackground.js';
-import { initContactModals } from '../components/contactModals.js';
-import { initChatWidget } from '../components/chatWidget.js';
-import { initScrollbar } from '../components/scrollbar.js';
+import { initNavigation } from './navigation.js';
+import { initParticleBackground } from './particleBackground.js';
+import { initContactModals } from './contactModals.js';
+import { initChatWidget } from './chatWidget.js';
+import { initScrollbar } from './scrollbar.js';
 import logger from '../utils/logger.js';
 
 /**

@@ -1,5 +1,5 @@
 /**
- * @file table-lazy-loader.js
+ * @file tableLazyLoader.js
  * @description 表格懒加载工具，实现表格的延迟加载和交互功能
  * @author 陆凯
  * @version 1.0.0
@@ -21,7 +21,7 @@
  * 导出单例tableLazyLoader供其他模块使用。
  */
 
-import logger from './logger.js';
+import logger from '../utils/logger.js';
 
 class TableLazyLoader {
     constructor() {

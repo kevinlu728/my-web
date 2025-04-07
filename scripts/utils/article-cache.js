@@ -6,7 +6,7 @@
  * @created 2024-03-20
  */
 
-import { isCacheExpired } from './article-utils.js';
+import { isCacheExpired } from './common-utils.js';
 import logger from './logger.js';
 
 /**

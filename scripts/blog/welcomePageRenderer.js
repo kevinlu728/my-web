@@ -6,7 +6,7 @@
  * @created 2024-03-20
  */
 
-import { formatDate } from '../utils/article-utils.js';
+import { formatDate } from '../utils/common-utils.js';
 import logger from '../utils/logger.js';
 
 /**

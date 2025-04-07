@@ -22,11 +22,11 @@
 
 import { articleManager } from './articleManager.js';
 import { categoryConfig } from '../config/categories.js';
-import { showStatus } from '../utils/utils.js';
+import { showStatus } from '../utils/common-utils.js';
 import { PageTypes } from '../components/scrollbar.js';
 import { articleTreeSkeleton } from '../utils/skeleton-loader.js';
 import logger from '../utils/logger.js';
-import { articleRouteUtils } from '../utils/article-route-utils.js';
+import { articleRouteUtils } from '../utils/article-router.js';
 
 /**
  * 分类管理器类

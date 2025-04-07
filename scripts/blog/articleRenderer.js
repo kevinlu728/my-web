@@ -17,13 +17,13 @@
  * - renderNotionBlocks: 渲染Notion块数组为HTML
  * - initializeLazyLoading: 初始化懒加载功能
  * 
- * 依赖于table-lazy-loader.js和code-lazy-loader.js实现懒加载功能。
+ * 依赖于tableLazyLoader.js和codeLazyLoader.js实现懒加载功能。
  */
 
-import { tableLazyLoader } from '../utils/table-lazy-loader.js';
-import { codeLazyLoader } from '../utils/code-lazy-loader.js';
+import { tableLazyLoader } from './tableLazyLoader.js';
+import { codeLazyLoader } from './codeLazyLoader.js';
 import logger from '../utils/logger.js';
-import { showLoadingSpinner } from '../utils/utils.js';
+import { showLoadingSpinner } from '../utils/common-utils.js';
 
 // 主渲染函数
 export function renderNotionBlocks(blocks) {
@@ -211,7 +211,7 @@ function renderImage(block) {
         return `<div class="image-placeholder">图片</div>`;
     }
     
-    // 简化图片渲染，移除内联加载器，完全依赖image-lazy-loader
+    // 简化图片渲染，移除内联加载器，完全依赖imageLazyLoader
     return `
         <div class="article-image-container">
             <img src="${url}" alt="图片" data-original-src="${url}" style="max-width: 100%;">

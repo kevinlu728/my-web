@@ -7,10 +7,7 @@
  */
 
 import logger from './logger.js';
-import { 
-  getArticleTreeSkeletonTemplate, 
-  getWelcomePageSkeletonTemplate 
-} from './placeholder-templates.js';
+import { getArticleTreeSkeletonTemplate, getWelcomePageSkeletonTemplate } from './placeholder-templates.js';
 
 /**
  * 文章树形列表骨架屏加载器

@@ -1,5 +1,5 @@
 /**
- * @file image-lazy-loader.js
+ * @file imageLazyLoader.js
  * @description 图片懒加载工具，实现图片的延迟加载和优化
  * @author 陆凯
  * @version 1.0.0
@@ -21,8 +21,8 @@
  * 导出单例imageLazyLoader供其他模块使用。
  */
 
-import logger from './logger.js';
-import { showLoadingSpinner } from './utils.js';
+import logger from '../utils/logger.js';
+import { showLoadingSpinner } from '../utils/common-utils.js';
 
 class ImageLazyLoader {
     constructor() {
@@ -320,7 +320,7 @@ class ImageLazyLoader {
                 startX = distance;
                 initialScale = currentScale;
             }
-        });
+        }, { passive: true });
         
         this.modalContainer.addEventListener('touchmove', (e) => {
             if (e.touches.length === 2) {
@@ -333,7 +333,7 @@ class ImageLazyLoader {
                 currentScale = Math.min(Math.max(currentScale, 0.5), 3);
                 img.style.transform = `scale(${currentScale})`;
             }
-        });
+        }, { passive: false });
     }
 
     /**
