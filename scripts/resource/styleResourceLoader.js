@@ -1,19 +1,34 @@
 /**
  * 资源样式加载器 - 处理样式资源的加载、注入和管理
- * 从ResourceLoader中提取的样式相关功能
+ * 从ResourceManager中提取的样式相关功能
  */
 
 import logger from '../utils/logger.js';
 
 class StyleResourceLoader {
-    /**
-     * 初始化资源样式处理器
-     */
     constructor() {
-        // 已加载的资源集合
-        this.loadedResources = new Set();
-        // 资源加载超时处理器
-        this.resourceTimeouts = {};
+        // 移除独立的loadedResources集合
+        // 将通过setDependencies方法注入resourceManager的loadedResources
+    }
+
+    /**
+     * 设置依赖方法
+     * 允许依赖注入，避免循环依赖
+     * @param {Object} dependencies - 依赖方法对象
+     */
+    setDependencies(dependencies) {
+        if (dependencies.loadedResources) {
+            this.loadedResources = dependencies.loadedResources;
+        }
+        if (dependencies.handleResourceError) {
+            this.handleResourceError = dependencies.handleResourceError;
+        }
+        if (dependencies.setResourceTimeout) {
+            this.setResourceTimeout = dependencies.setResourceTimeout;
+        }
+        if (dependencies.clearResourceTimeout) {
+            this.clearResourceTimeout = dependencies.clearResourceTimeout;
+        }
     }
 
     /**
@@ -30,8 +45,11 @@ class StyleResourceLoader {
                 return reject(new Error('无效的CSS URL'));
             }
             
+            // 确保loadedResources存在
+            const loadedResources = this.loadedResources || new Set();
+            
             // 跳过已加载的资源
-            if (this.loadedResources.has(url)) {
+            if (loadedResources.has(url)) {
                 return resolve();
             }
             
@@ -65,7 +83,10 @@ class StyleResourceLoader {
                     this.clearResourceTimeout(url);
                 }
                 
-                this.loadedResources.add(url);
+                // 确保loadedResources存在
+                if (this.loadedResources) {
+                    this.loadedResources.add(url);
+                }
                 logger.debug(`✅ CSS加载完成: ${url}`);
                 resolve();
             };
@@ -103,8 +124,11 @@ class StyleResourceLoader {
             return;
         }
         
+        // 确保loadedResources存在
+        const loadedResources = this.loadedResources || new Set();
+        
         // 跳过已加载的资源
-        if (this.loadedResources.has(url)) {
+        if (loadedResources.has(url)) {
             return;
         }
         
@@ -142,7 +166,11 @@ class StyleResourceLoader {
             
             // 样式已加载，现在应用它
             link.media = 'all';
-            this.loadedResources.add(url);
+            
+            // 确保loadedResources存在
+            if (this.loadedResources) {
+                this.loadedResources.add(url);
+            }
             logger.debug(`✅ 非阻塞加载CSS完成: ${url}`);
         };
         
@@ -196,6 +224,8 @@ class StyleResourceLoader {
         if (document.getElementById('basic-icon-styles')) {
             return;
         }
+        
+        logger.info('🔄 加载本地Font Awesome资源');
         
         // 始终从外部文件加载基本图标样式，无论Font Awesome是否加载成功
         const link = document.createElement('link');
@@ -268,29 +298,11 @@ class StyleResourceLoader {
         // 添加no-fontawesome类标记
         document.documentElement.classList.add('no-fontawesome');
     }
-
-    /**
-     * 设置依赖方法
-     * 允许依赖注入，避免循环依赖
-     * @param {Object} dependencies - 依赖方法对象
-     */
-    setDependencies(dependencies) {
-        if (dependencies.handleResourceError) {
-            this.handleResourceError = dependencies.handleResourceError;
-        }
-        if (dependencies.setResourceTimeout) {
-            this.setResourceTimeout = dependencies.setResourceTimeout;
-        }
-        if (dependencies.clearResourceTimeout) {
-            this.clearResourceTimeout = dependencies.clearResourceTimeout;
-        }
-    }
-
 }
 
-// 创建一个单例实例并导出
+// 创建一个单例实例
 const styleResourceLoader = new StyleResourceLoader();
 
 // 导出单例和类
-export { styleResourceLoader, StyleResourceLoader as StyleResourceLoader };
+export { styleResourceLoader, StyleResourceLoader };
 export default styleResourceLoader; 

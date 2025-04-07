@@ -22,7 +22,7 @@
  */
 
 import logger from './logger.js';
-import { resourceManager } from '../managers/resourceManager.js';
+import { prismLoader } from '../resource/prismLoader.js';
 
 class CodeLazyLoader {
     constructor() {
@@ -37,8 +37,8 @@ class CodeLazyLoader {
         // 检查是否有代码块
         setTimeout(() => {
             if (document.querySelectorAll('.lazy-block.code-block').length > 0) {
-                // 使用ResourceLoader预加载代码高亮资源
-                resourceManager.loadCodeHighlightResources();
+                // 使用PrismLoader预加载代码高亮资源
+                prismLoader.loadCodeHighlightResources();
             }
         }, 500);
     }
@@ -167,7 +167,7 @@ class CodeLazyLoader {
         if (!window.prismLoaded || !window.Prism) {
             // 如果Prism尚未加载，使用完整的高亮资源加载功能
             logger.info('Prism库尚未加载，正在请求加载代码高亮资源...');
-            return resourceManager.loadCodeHighlightResources()
+            return prismLoader.loadCodeHighlightResources()
                 .then(success => {
                     if (success && window.Prism) {
                         logger.info('✅ 代码高亮资源加载成功，处理等待中的代码块');
@@ -255,7 +255,7 @@ class CodeLazyLoader {
                     this.highlightCode(codeBlock);
                 } else {
                     // 否则，加载高亮资源并处理代码块
-                    resourceManager.loadCodeHighlightResources()
+                    prismLoader.loadCodeHighlightResources()
                         .then(success => {
                             if (success && window.Prism) {
                                 this.highlightCode(codeBlock);
@@ -410,7 +410,7 @@ class CodeLazyLoader {
         // 如果有代码块，确保代码高亮资源已加载或正在加载
         if (codeBlocks.length > 0 && this.shouldLoadPrism) {
             if (!window.prismLoaded && !window.prismLoading) {
-                resourceManager.loadCodeHighlightResources();
+                prismLoader.loadCodeHighlightResources();
             }
         }
         

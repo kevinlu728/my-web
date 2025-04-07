@@ -1,23 +1,3 @@
-/**
- * @file prismLoader.js
- * @description Prism代码高亮加载器 - 从resourceManager中提取的专门处理Prism加载的模块
- * @version 1.0.0
- */
-
-// 导入必要的依赖
-import logger from '../utils/logger.js';
-import resourceConfig from '../config/resources.js';
-import { styleResourceLoader } from './styleResourceLoader.js';
-import { scriptResourceLoader } from './scriptResourceLoader.js';
-
-/**
- * Prism代码高亮加载器类
- */
-class PrismLoader {
-    constructor() {
-        this.resourceConfig = resourceConfig;   
-    }
-    
     /**
      * 加载代码高亮相关资源
      * @returns {Promise} - 加载完成的Promise
@@ -348,65 +328,37 @@ class PrismLoader {
     loadPrismLanguageComponents(languages, config) {
         // 确保languages是有效数组
         if (!languages || !Array.isArray(languages) || languages.length === 0) {
-            // 默认加载几种常见语言
-            languages = ['javascript', 'css', 'markup', 'java', 'python'];
-        }
-        
-        // 过滤无效语言
-        const validLanguages = languages.filter(lang => typeof lang === 'string' && lang.trim());
-        
-        // 如果没有有效语言，则直接返回成功
-        if (validLanguages.length === 0) {
+            logger.debug('没有指定要加载的Prism语言组件');
             return Promise.resolve(true);
         }
         
-        // 追踪原始请求的组件数量
-        const originalCount = validLanguages.length;
+        // 记录初始请求的语言数量
+        const originalCount = languages.length;
+        logger.debug(`准备加载${originalCount}个Prism语言组件: ${languages.join(', ')}`);
         
-        logger.debug(`🔄 加载 ${originalCount} 个Prism语言组件`);
+        // 确保语言数组有效
+        const validLanguages = languages.filter(lang => typeof lang === 'string' && lang.trim());
+        if (validLanguages.length === 0) {
+            logger.warn('没有有效的Prism语言组件');
+            return Promise.resolve(true);
+        }
         
-        // 记录已处理的组件状态
+        // 处理语言依赖关系
+        const allLanguages = [...validLanguages];
+        // 跟踪组件的处理状态
         const processedComponents = new Map();
         
-        // 语言依赖关系图谱
+        // 依赖关系映射 - 为确保组件按正确顺序加载
         const dependencyMap = {
-            'javascript': [],
-            'typescript': ['javascript'],
-            'jsx': ['markup', 'javascript'],
+            'cpp': ['c'],           // C++依赖于C
+            'java-extras': ['java'],
+            'php-extras': ['php'],
+            'jsx': ['javascript'],
             'tsx': ['jsx', 'typescript'],
-            'c': [],
-            'cpp': ['c'],
-            'csharp': ['c'],
-            'java': [],
-            'kotlin': [],
-            'scala': ['java'],
-            'go': [],
-            'rust': [],
-            'python': [],
-            'ruby': [],
-            'php': ['markup'],
-            'sql': [],
-            'bash': [],
-            'powershell': [],
-            'markup': [],
-            'css': [],
-            'scss': ['css'],
-            'less': ['css'],
-            'graphql': [],
-            'yaml': [],
-            'json': [],
-            'toml': [],
-            'markdown': ['markup'],
-            'wasm': [],
-            'dart': [],
-            'swift': [],
-            'r': []
+            'scala': ['java']
         };
         
-        // 构建完整的语言列表，包括依赖项
-        const allLanguages = [...validLanguages]; // 初始化为用户指定的语言
-        
-        // 添加所有依赖
+        // 添加所有依赖语言并记录状态
         validLanguages.forEach(lang => {
             const langId = lang.toLowerCase().trim();
             processedComponents.set(langId, { requested: true, loaded: false });
@@ -737,11 +689,3 @@ class PrismLoader {
             }, 200);
         }
     }
-}
-
-// 创建并导出单例实例
-const prismLoader = new PrismLoader();
-
-// 同时提供命名导出和默认导出，保持与其他加载器一致
-export { prismLoader, PrismLoader };
-export default prismLoader;
