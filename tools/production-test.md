@@ -83,7 +83,7 @@ npm start
 2. 切换到Memory标签页
 3. 选择"Heap snapshot"
 4. 拍摄快照
-5. 在过滤器中搜索"CdnMapper"和"ResourceManager"
+5. 在过滤器中搜索"ResourceManager"
 6. 分析实例数量和内存占用
 
 ## 使用Performance API收集数据

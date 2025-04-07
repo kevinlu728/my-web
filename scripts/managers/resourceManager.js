@@ -23,16 +23,10 @@
  * - 资源加载超时(通常为5秒)
  * - 资源加载错误(网络错误、404等)
  * - CDN不可用或被屏蔽
- * 
- * 重构历史:
- * - 2024-04-14: 将CDN映射逻辑分离到cdn-mapper.js
- * - 2024-05-01: 将资源检查逻辑分离到resource-checker.js
- * - 2024-05-01: 将超时管理逻辑分离到resource-timeout.js
  */
 
 // 导入集中式资源配置
 import resourceConfig, { resourceStrategies } from '../config/resources.js';
-import { CdnMapper } from '../utils/cdn-mapper.js';
 import { styleResourceLoader } from '../resource/styleResourceLoader.js';
 import { resourceChecker } from '../resource/resourceChecker.js';
 import resourceTimeout from '../resource/resourceTimeout.js';
@@ -43,12 +37,10 @@ const RESOURCE_STRATEGIES = resourceStrategies.mapping;
 
 class ResourceManager {
     constructor() {
+        logger.debug('ResourceManager, 构造函数');
         this.loadedResources = new Set();
         this.failedResources = new Set();
         this.resourceConfig = resourceConfig;
-        
-        // 创建CDN映射器实例
-        this.cdnMapper = new CdnMapper(resourceConfig);
         
         // 配置项：是否启用KaTeX本地资源
         this.katexLocalResourceConfirmed = false;
@@ -90,9 +82,6 @@ class ResourceManager {
         
         // 初始化错误处理和资源扫描
         this.initializeErrorHandling();
-        if (this.cdnMapper && typeof this.cdnMapper.scanExistingResources === 'function') {
-        this.cdnMapper.scanExistingResources();
-        }
         
         // 资源错误处理策略映射
         this.errorHandlers = {
@@ -757,8 +746,8 @@ class ResourceManager {
      * @param {string} resourceId - 资源ID
      */
     tryLoadFromCDN(element, resourceType, resourceId) {
-        // 获取下一个CDN URL
-        const cdnUrl = this.cdnMapper.getNextCdnUrl(resourceType, resourceId);
+        // 获取下一个CDN URL, getNextCdnUrl方法尚未实现，需在resources.js中实现
+        const cdnUrl = this.resourceConfig.getNextCdnUrl(resourceType, resourceId);
         
         if (!cdnUrl) {
             logger.warn(`⚠️ 没有可用的CDN资源: ${resourceType}-${resourceId}`);

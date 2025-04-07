@@ -539,47 +539,6 @@ function buildUrlFromConfig(config, resourceType, resourceName) {
 }
 
 /**
- * 获取所有关键资源
- * 这些资源通常需要在页面初始化时预加载
- * @returns {Array} 关键资源列表
- */
-export function getCriticalResources() {
-    return [
-        // 移除不再是关键资源的项目
-        getResourceUrl('styles', 'bootstrap-icons'),
-        // getResourceUrl('styles', 'katex'),
-        // getResourceUrl('styles', 'prism-theme')
-    ];
-}
-
-/**
- * 获取所有高优先级资源
- * 这些资源在页面加载后应立即加载
- * @returns {Array} 高优先级资源列表
- */
-export function getHighPriorityResources() {
-    const highPriorityResources = [];
-    
-    // 遍历所有样式资源
-    Object.keys(resources.styles).forEach(name => {
-        const resource = resources.styles[name];
-        if (resource.priority === 'high') {
-            highPriorityResources.push(getResourceUrl('styles', name));
-        }
-    });
-    
-    // 遍历所有脚本资源
-    Object.keys(resources.scripts).forEach(name => {
-        const resource = resources.scripts[name];
-        if (resource.priority === 'high') {
-            highPriorityResources.push(getResourceUrl('scripts', name));
-        }
-    });
-    
-    return highPriorityResources;
-}
-
-/**
  * 获取指定优先级的资源
  * @param {string} priority - 资源优先级 ('critical', 'high', 'medium', 'low')
  * @returns {Array} 资源列表和类型
@@ -614,41 +573,6 @@ export function getResourcesByPriority(priority) {
     return result;
 }
 
-/**
- * 获取特定组的所有资源
- * @param {string} groupName - 资源组名称
- * @returns {Array} 资源列表
- */
-export function getResourcesByGroup(groupName) {
-    const result = [];
-    
-    // 查找样式资源
-    Object.keys(resources.styles).forEach(name => {
-        const resource = resources.styles[name];
-        if (resource.group === groupName) {
-            result.push({
-                type: 'styles',
-                name: name,
-                resource: getResourceUrl('styles', name)
-            });
-        }
-    });
-    
-    // 查找脚本资源
-    Object.keys(resources.scripts).forEach(name => {
-        const resource = resources.scripts[name];
-        if (resource.group === groupName) {
-            result.push({
-                type: 'scripts',
-                name: name,
-                resource: getResourceUrl('scripts', name)
-            });
-        }
-    });
-    
-    return result;
-}
-
 // 导出资源配置
 export default {
     versions,
@@ -656,8 +580,5 @@ export default {
     resources,
     resourceStrategies,
     getResourceUrl,
-    getCriticalResources,
-    getHighPriorityResources,
     getResourcesByPriority,
-    getResourcesByGroup
 }; 
