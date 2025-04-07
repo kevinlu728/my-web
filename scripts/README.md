@@ -238,11 +238,6 @@ const url = cdnMapper.buildUrlFromProvider(jsDelivrConfig);
 `ResourceTimeout` 模块通过依赖注入模式与 `ResourceLoader` 集成，避免循环依赖。在 `ResourceLoader` 中：
 
 ```javascript
-// 配置资源超时管理器
-resourceTimeout.updateConfig({
-    timeoutCallback: this.handleResourceTimeout.bind(this)
-});
-
 // ResourceLoader提供setResourceTimeout方法委托给resourceTimeout
 setResourceTimeout(resourceType, url, priority = 'medium') {
     return resourceTimeout.setResourceTimeout(resourceType, url, priority);

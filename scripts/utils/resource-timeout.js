@@ -52,12 +52,6 @@ class ResourceTimeout {
             timeout = 5000; // 低优先级5秒
         }
         
-        // 对于可视化库资源，直接设置较短的超时时间
-        if (url.includes('chart.js') || url.includes('mermaid') || 
-            url.includes('d3') || url.includes('particles')) {
-            timeout = 3000; // 可视化库3秒
-        }
-        
         // 设置超时处理
         const timeoutId = setTimeout(() => {
             this.handleTimeout(url, resourceType, priority);

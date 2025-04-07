@@ -86,7 +86,6 @@ export const resourceStrategies = {
         'bootstrap-icons': 'cdn-first', // 优先CDN资源
         'prism': 'cdn-first',
         'katex': 'cdn-first',
-        'chartjs': 'cdn-first',
         'default': 'cdn-first'  // 默认策略
     },
     
@@ -398,102 +397,6 @@ export const resources = {
             },
             attributes: {
                 'data-resource-type': 'mathjax'
-            }
-        },
-        'chart': {
-            type: 'js',
-            priority: 'low',
-            group: 'visualization',
-            source: {
-                primary: {
-                    provider: 'jsdelivr',
-                    library: 'chart.js',
-                    version: versions.chartjs,
-                    path: 'dist/chart.umd.min.js'
-                },
-                fallbacks: [
-                    {
-                        provider: 'cdnjs',
-                        library: 'Chart.js',
-                        version: versions.chartjs,
-                        path: 'chart.umd.min.js'
-                    }
-                ]
-            },
-            attributes: {
-                'data-resource-type': 'chart'
-            }
-        },
-        'mermaid': {
-            type: 'js',
-            priority: 'low',
-            group: 'visualization',
-            source: {
-                primary: {
-                    provider: 'jsdelivr',
-                    library: 'mermaid',
-                    version: versions.mermaid,
-                    path: 'dist/mermaid.min.js'
-                },
-                fallbacks: [
-                    {
-                        provider: 'cdnjs',
-                        library: 'mermaid',
-                        version: versions.mermaid,
-                        path: 'mermaid.min.js'
-                    }
-                ]
-            },
-            attributes: {
-                'data-resource-type': 'mermaid'
-            }
-        },
-        'd3': {
-            type: 'js',
-            priority: 'low',
-            group: 'visualization',
-            source: {
-                primary: {
-                    provider: 'jsdelivr',
-                    library: 'd3',
-                    version: versions.d3,
-                    path: 'dist/d3.min.js'
-                },
-                fallbacks: [
-                    {
-                        provider: 'cdnjs',
-                        library: 'd3',
-                        version: versions.d3,
-                        path: 'd3.min.js'
-                    }
-                ]
-            },
-            attributes: {
-                'data-resource-type': 'd3'
-            }
-        },
-        'd3-cloud': {
-            type: 'js',
-            priority: 'low',
-            group: 'visualization',
-            source: {
-                primary: {
-                    provider: 'jsdelivr',
-                    library: 'd3-cloud',
-                    version: versions.d3Cloud,
-                    path: 'build/d3.layout.cloud.min.js'
-                },
-                fallbacks: [
-                    {
-                        provider: 'cdnjs',
-                        library: 'd3-cloud',
-                        version: versions.d3Cloud,
-                        path: 'd3.layout.cloud.min.js'
-                    }
-                ]
-            },
-            attributes: {
-                'data-resource-type': 'd3-cloud'
             }
         }
     }

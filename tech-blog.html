@@ -94,11 +94,6 @@
 
         // 立即执行：提前标记重要元素的资源组属性
         (function() {
-            // 为body添加animation资源组标记
-            if (!document.body.hasAttribute('data-resource-group')) {
-                document.body.setAttribute('data-resource-group', 'animation');
-            }
-            
             // 为文章容器添加core资源组标记
             const articleContainer = document.getElementById('article-container');
             if (articleContainer && !articleContainer.hasAttribute('data-resource-group')) {
@@ -377,11 +372,6 @@
         import { initializePage } from './scripts/pages/tech-blog.js?v=1.0.1';
         import { initNavigation } from './scripts/components/navigation.js?v=1.0.1';
         import { loadDebugPanel } from './scripts/components/debugPanelLoader.js?v=1.0.0';
-        
-        // 为正确加载Particles.js，确保body具有资源组标记
-        if (!document.body.hasAttribute('data-resource-group')) {
-            document.body.setAttribute('data-resource-group', 'animation');
-        }
         
         // 为关键容器添加资源组标记
         const articleContainer = document.getElementById('article-container');
