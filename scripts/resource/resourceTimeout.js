@@ -4,7 +4,7 @@
  * @created 2024-05-01
  */
 
-import logger from './logger.js';
+import logger from '../utils/logger.js';
 
 /**
  * 资源超时管理器类

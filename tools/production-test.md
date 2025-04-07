@@ -74,7 +74,7 @@ npm start
 4. 刷新页面
 5. 停止录制
 6. 分析JavaScript执行时间，特别关注：
-   - `resource-loader.js` 和 `cdn-mapper.js` 的执行时间
+   - `resourceManager.js` 和 `cdn-mapper.js` 的执行时间
    - 资源加载相关的函数调用时间
 
 ### 内存使用监控
@@ -83,7 +83,7 @@ npm start
 2. 切换到Memory标签页
 3. 选择"Heap snapshot"
 4. 拍摄快照
-5. 在过滤器中搜索"CdnMapper"和"ResourceLoader"
+5. 在过滤器中搜索"CdnMapper"和"ResourceManager"
 6. 分析实例数量和内存占用
 
 ## 使用Performance API收集数据
@@ -139,26 +139,6 @@ document.addEventListener('DOMContentLoaded', () => {
 为了在真实用户环境中评估重构效果，可以设置A/B测试：
 
 ```javascript
-// 在页面头部添加如下代码，随机选择用户组
-<script>
-  // 生成介于0和1之间的随机数
-  const testGroup = Math.random();
-  
-  // 50%的用户使用重构后的代码，50%使用原始代码
-  if (testGroup < 0.5) {
-    // 加载重构后的代码
-    document.write('<script src="scripts/utils/cdn-mapper.js" type="module"><\/script>');
-    document.write('<script src="scripts/utils/resource-loader-new.js" type="module"><\/script>');
-    console.log('用户组: 重构版本');
-  } else {
-    // 加载原始代码
-    document.write('<script src="scripts/utils/resource-loader-original.js" type="module"><\/script>');
-    console.log('用户组: 原始版本');
-  }
-  
-  // 记录性能数据
-  window.perfGroup = testGroup < 0.5 ? 'refactored' : 'original';
-</script>
 ```
 
 ## 结果分析和比较

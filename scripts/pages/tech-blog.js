@@ -29,8 +29,8 @@ import config from '../config/config.js';
 import { imageLazyLoader } from '../utils/image-lazy-loader.js';
 import { initializeLazyLoading } from '../components/articleRenderer.js';
 // 导入资源加载器
-import { resourceLoader } from '../utils/resource-loader.js';
-import { resourceChecker } from '../utils/resource-checker.js';
+import { resourceManager } from '../managers/resourceManager.js';
+import { resourceChecker } from '../resource/resourceChecker.js';
 import { scrollToTop } from '../components/scrollbar.js';
 import logger from '../utils/logger.js';
 import { welcomePageManager } from '../managers/welcomePageManager.js';
@@ -867,7 +867,7 @@ function handleLoadingMask(action = 'fade') {
 function preloadCriticalResources() {
     try {
         // 检查资源加载器是否可用
-        if (!resourceLoader) {
+        if (!resourceManager) {
             logger.warn('⚠️ 资源加载器不可用，跳过预加载');
             // 设置全局标志，指示内容已解锁
             window.contentUnblocked = true;
@@ -878,12 +878,12 @@ function preloadCriticalResources() {
         logger.info('🔍 使用非阻塞方式加载关键资源...');
         
         // 检查方法是否存在
-        if (typeof resourceLoader.loadNonBlockingCoreContent !== 'function') {
+        if (typeof resourceManager.loadNonBlockingCoreContent !== 'function') {
             throw new Error('资源加载器中缺少loadNonBlockingCoreContent方法');
         }
         
         // 调用资源加载器的非阻塞核心内容加载
-        resourceLoader.loadNonBlockingCoreContent()
+        resourceManager.loadNonBlockingCoreContent()
             .then(() => {
                 logger.info('✅ 非阻塞核心内容加载已完成');
                 

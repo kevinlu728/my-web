@@ -21,16 +21,15 @@
  * 导出单例codeLazyLoader供其他模块使用。
  */
 
-import { codeStyles, addCodeStylesToDocument } from '../styles/code-styles.js';
 import logger from './logger.js';
-import { resourceLoader } from './resource-loader.js';
+import { resourceManager } from '../managers/resourceManager.js';
 
 class CodeLazyLoader {
     constructor() {
         this.observer = null;
         this.initObserver();
         this.addInlineStyles();
-        addCodeStylesToDocument();
+        this.addCodeStylesToDocument();
         
         // 默认使用高亮，但使用懒加载方式
         this.shouldLoadPrism = true;
@@ -39,7 +38,7 @@ class CodeLazyLoader {
         setTimeout(() => {
             if (document.querySelectorAll('.lazy-block.code-block').length > 0) {
                 // 使用ResourceLoader预加载代码高亮资源
-                resourceLoader.loadCodeHighlightResources();
+                resourceManager.loadCodeHighlightResources();
             }
         }, 500);
     }
@@ -133,13 +132,42 @@ class CodeLazyLoader {
         `;
         document.head.appendChild(style);
     }
+
+    /**
+     * 将代码块样式添加到文档中
+     * 优先使用外部CSS文件，如果加载失败则回退到内联样式
+     */
+    addCodeStylesToDocument() {
+        // 检查样式是否已添加
+        if (document.querySelector('link[data-id="code-styles"]') || 
+            document.querySelector('style[data-id="code-styles"]')) {
+            return;
+        }
+        
+        // 尝试加载外部CSS文件
+        const linkElement = document.createElement('link');
+        linkElement.setAttribute('data-id', 'code-styles');
+        linkElement.rel = 'stylesheet';
+        // CSS文件路径
+        const CSS_FILE_PATH = '/styles/components/code-block.css';
+        linkElement.href = CSS_FILE_PATH;
+        
+        // 添加加载错误处理
+        linkElement.onerror = () => {
+            logger.warn('无法加载代码块样式文件，使用内联样式作为备份');
+            this.addInlineStyles();
+        };
+        
+        // 添加到文档头部
+        document.head.appendChild(linkElement);
+    }
     
     // 处理等待中的代码块
     processWaitingBlocks() {
         if (!window.prismLoaded || !window.Prism) {
             // 如果Prism尚未加载，使用完整的高亮资源加载功能
             logger.info('Prism库尚未加载，正在请求加载代码高亮资源...');
-            return resourceLoader.loadCodeHighlightResources()
+            return resourceManager.loadCodeHighlightResources()
                 .then(success => {
                     if (success && window.Prism) {
                         logger.info('✅ 代码高亮资源加载成功，处理等待中的代码块');
@@ -227,7 +255,7 @@ class CodeLazyLoader {
                     this.highlightCode(codeBlock);
                 } else {
                     // 否则，加载高亮资源并处理代码块
-                    resourceLoader.loadCodeHighlightResources()
+                    resourceManager.loadCodeHighlightResources()
                         .then(success => {
                             if (success && window.Prism) {
                                 this.highlightCode(codeBlock);
@@ -382,7 +410,7 @@ class CodeLazyLoader {
         // 如果有代码块，确保代码高亮资源已加载或正在加载
         if (codeBlocks.length > 0 && this.shouldLoadPrism) {
             if (!window.prismLoaded && !window.prismLoading) {
-                resourceLoader.loadCodeHighlightResources();
+                resourceManager.loadCodeHighlightResources();
             }
         }
         

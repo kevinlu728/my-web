@@ -99,9 +99,9 @@
     
     <!-- 先加载资源加载器但不用于首页核心资源 -->
     <script type="module">
-        import { resourceLoader } from './scripts/utils/resource-loader.js';
+        import { resourceManager } from './scripts/managers/resourceManager.js';
         // 在全局作用域中暴露资源加载器
-        window.resourceLoader = resourceLoader;
+        window.resourceManager = resourceManager;
         console.log('✅ 资源加载器已预加载');
     </script>
     

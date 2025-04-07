@@ -18,6 +18,7 @@ scripts/
 │   ├── articleManager.js  # 文章管理
 │   ├── themeManager.js    # 主题管理
 │   ├── categoryManager.js # 分类管理
+│   ├── resourceManager.js # 资源管理
 │   └── ...
 ├── services/              # 服务脚本
 │   ├── apiService.js      # API服务
@@ -29,7 +30,6 @@ scripts/
 │   ├── article-utils.js   # 文章相关工具函数
 │   ├── article-cache.js   # 文章缓存工具
 │   ├── cdn-mapper.js      # CDN映射模块
-│   ├── resource-loader.js # 资源加载器
 │   ├── logger.js          # 统一日志管理工具
 │   ├── url-utils.js       # URL参数处理工具
 │   └── ...
@@ -64,6 +64,7 @@ scripts/
 - **managers/articleManager.js**: 管理文章的加载、缓存和展示
 - **managers/themeManager.js**: 管理主题切换和持久化
 - **managers/categoryManager.js**: 管理文章分类的加载、显示和交互
+- **managers/resourceManager.js**: 管理资源加载、错误处理和回退机制
 
 ### 工具脚本
 
@@ -72,7 +73,6 @@ scripts/
 - **utils/article-utils.js**: 文章相关工具函数集合
 - **utils/article-cache.js**: 文章缓存管理工具
 - **utils/cdn-mapper.js**: CDN资源URL映射与管理
-- **utils/resource-loader.js**: 处理资源加载、错误处理和回退机制
 - **utils/logger.js**: 统一日志管理工具，提供不同级别的日志输出和格式化功能
 - **utils/url-utils.js**: URL参数处理工具函数
 
@@ -203,7 +203,7 @@ const url = cdnMapper.buildUrlFromProvider(jsDelivrConfig);
 - 支持新的资源类型：扩展`buildUrlsFromConfig`方法
 - 改进回退策略：修改`getNextFallbackUrl`方法
 
-#### 资源加载器模块 (resource-loader.js)
+#### 资源加载管理 (resourceManager.js)
 
 通过与`CdnMapper`类的集成，资源加载器模块专注于资源的加载、错误处理和超时管理，而将CDN映射逻辑委托给CDN映射器。这种分离使得每个模块更加专注、更易于测试和维护。
 
@@ -235,7 +235,7 @@ const url = cdnMapper.buildUrlFromProvider(jsDelivrConfig);
 
 **与ResourceLoader集成**:
 
-`ResourceTimeout` 模块通过依赖注入模式与 `ResourceLoader` 集成，避免循环依赖。在 `ResourceLoader` 中：
+`ResourceTimeout` 模块通过依赖注入模式与 `ResourceManager` 集成，避免循环依赖。在 `ResourceManager` 中：
 
 ```javascript
 // ResourceLoader提供setResourceTimeout方法委托给resourceTimeout
@@ -308,11 +308,11 @@ const localResourceExists = resourceChecker.checkLocalResourceExists(localFallba
 - 优化了代码块和表格的加载性能
 
 ### 2024-04-14
-- **分离CDN映射逻辑**：将资源加载器中的CDN映射逻辑分离到独立的`cdn-mapper.js`模块中，提高了代码模块化，降低了`resource-loader.js`的复杂度。该重构使CDN资源URL的管理和构建更加集中和高效，为未来扩展CDN提供商支持提供了便利。
+- **分离CDN映射逻辑**：将资源加载器中的CDN映射逻辑分离到独立的`cdn-mapper.js`模块中，提高了代码模块化，降低了`resourceManager.js`的复杂度。该重构使CDN资源URL的管理和构建更加集中和高效，为未来扩展CDN提供商支持提供了便利。
 
 ### 2024-05-01
 - **分离资源检查逻辑**：创建了`resource-checker.js`模块，专门负责检查本地资源是否存在并维护不存在资源的记录。这一重构使得资源检查逻辑更加集中和可维护。
-- **分离资源超时管理**：创建了`resource-timeout.js`模块，专门处理资源加载超时逻辑。该模块支持根据资源优先级设置不同的超时时间，使用事件通知系统资源超时，并提供回调机制执行自定义逻辑。通过依赖注入模式与`ResourceLoader`集成，有效降低了`resource-loader.js`的复杂度，提高了代码的模块化和可测试性。
+- **分离资源超时管理**：创建了`resource-timeout.js`模块，专门处理资源加载超时逻辑。该模块支持根据资源优先级设置不同的超时时间，使用事件通知系统资源超时，并提供回调机制执行自定义逻辑。通过依赖注入模式与`ResourceManager`集成，有效降低了`resourceManager.js`的复杂度，提高了代码的模块化和可测试性。
 
 ### 2024-05-15
 - **日志系统环境感知优化**：增强了`logger.js`模块，使其能够根据配置文件自动调整日志级别。添加了与`config.js`的集成，在开发环境中使用详细日志，在生产环境中自动降低日志级别，提高性能和安全性。

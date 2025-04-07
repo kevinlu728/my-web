@@ -32,16 +32,16 @@
 
 // 导入集中式资源配置
 import resourceConfig, { resourceStrategies } from '../config/resources.js';
-import { CdnMapper } from './cdn-mapper.js';
-import { resourceStyles } from './resource-styles.js';
-import { resourceChecker } from './resource-checker.js';
-import resourceTimeout from './resource-timeout.js';
-import logger from './logger.js';
+import { CdnMapper } from '../utils/cdn-mapper.js';
+import { styleResourceLoader } from '../resource/styleResourceLoader.js';
+import { resourceChecker } from '../resource/resourceChecker.js';
+import resourceTimeout from '../resource/resourceTimeout.js';
+import logger from '../utils/logger.js';
 
 // 替换为从resources.js导入的策略
 const RESOURCE_STRATEGIES = resourceStrategies.mapping;
 
-class ResourceLoader {
+class ResourceManager {
     constructor() {
         this.loadedResources = new Set();
         this.failedResources = new Set();
@@ -77,9 +77,9 @@ class ResourceLoader {
         }
         
         // 添加防御性检查，确保依赖模块可用
-        if (resourceStyles && typeof resourceStyles.setDependencies === 'function') {
+        if (styleResourceLoader && typeof styleResourceLoader.setDependencies === 'function') {
         // 设置resourceStyles的依赖
-        resourceStyles.setDependencies({
+        styleResourceLoader.setDependencies({
             handleResourceError: this.handleResourceError.bind(this),
             setResourceTimeout: this.setResourceTimeout.bind(this),
             clearResourceTimeout: this.clearResourceTimeout.bind(this)
@@ -96,8 +96,8 @@ class ResourceLoader {
         
         // 资源错误处理策略映射
         this.errorHandlers = {
-            'font-awesome': () => resourceStyles && resourceStyles.injectFontAwesomeFallbackStyles(),
-            'bootstrap-icons': () => resourceStyles && resourceStyles.injectBasicIconStyles(),
+            'font-awesome': () => styleResourceLoader && styleResourceLoader.injectFontAwesomeFallbackStyles(),
+            'bootstrap-icons': () => styleResourceLoader && styleResourceLoader.injectBasicIconStyles(),
             // 保留其他现有错误处理器
         };
         
@@ -209,7 +209,7 @@ class ResourceLoader {
         logger.debug('🚀 优先处理内容渲染...');
         
         // 加载关键的回退样式
-        resourceStyles.injectCriticalInlineStyles();
+        styleResourceLoader.injectCriticalInlineStyles();
         
         // 立即解除内容阻塞
         setTimeout(() => {
@@ -291,7 +291,7 @@ class ResourceLoader {
             
             // 对于样式资源
             if (type === 'styles') {
-                return resourceStyles.loadCssNonBlocking(
+                return styleResourceLoader.loadCssNonBlocking(
                     resource.primary,
                     {
                         resourceType: name,
@@ -506,8 +506,8 @@ class ResourceLoader {
         
         // 加载自定义字体和图标，不阻塞页面渲染
         stylesPromises.push(
-            resourceStyles.loadCssNonBlocking('/assets/libs/bootstrap-icons/bootstrap-icons.css'),
-            resourceStyles.loadCssNonBlocking('/assets/libs/prism/themes/prism-tomorrow.min.css')
+            styleResourceLoader.loadCssNonBlocking('/assets/libs/bootstrap-icons/bootstrap-icons.css'),
+            styleResourceLoader.loadCssNonBlocking('/assets/libs/prism/themes/prism-tomorrow.min.css')
         );
         
         // 加载关键脚本
@@ -723,9 +723,9 @@ class ResourceLoader {
         // 对于常见的基础资源，如果所有回退都失败，使用统一的回退样式文件
         if (!silent) {
             if (resourceName === 'bootstrap-icons.css' || resourceName.includes('fontawesome')) {
-                resourceStyles.injectBasicIconStyles();
+                styleResourceLoader.injectBasicIconStyles();
             } else if (resourceName === 'katex.min.css' || resourceName.includes('katex')) {
-                resourceStyles.injectBasicKatexStyles();
+                styleResourceLoader.injectBasicKatexStyles();
             }
         }
         
@@ -834,10 +834,10 @@ class ResourceLoader {
         
         // 特殊资源处理
         if (resourceType === 'font-awesome' || resourceId.includes('font-awesome')) {
-            resourceStyles.injectFontAwesomeFallbackStyles();
+            styleResourceLoader.injectFontAwesomeFallbackStyles();
             document.documentElement.classList.add('no-fontawesome');
         } else if (resourceType === 'bootstrap-icons' || resourceId.includes('bootstrap-icons')) {
-            resourceStyles.injectBasicIconStyles();
+            styleResourceLoader.injectBasicIconStyles();
         } 
         // 可以继续添加其他资源类型的处理...
         
@@ -1026,7 +1026,7 @@ class ResourceLoader {
         link.onload = () => logger.info('✅ 本地Font Awesome资源加载成功');
         link.onerror = () => {
             logger.error('🚨 本地Font Awesome资源加载失败，应用SVG备用方案');
-            resourceStyles.injectFontAwesomeFallbackStyles();
+            styleResourceLoader.injectFontAwesomeFallbackStyles();
         };
         
         // 添加到文档头部
@@ -1726,7 +1726,7 @@ class ResourceLoader {
             }
             
             // 关键修复：确保返回Promise
-            const loadPromise = resourceStyles.loadCssNonBlocking(themeUrl, options);
+            const loadPromise = styleResourceLoader.loadCssNonBlocking(themeUrl, options);
             
             // 如果loadCssNonBlocking没有返回Promise，创建一个新的Promise
             if (!loadPromise || typeof loadPromise.then !== 'function') {
@@ -1796,8 +1796,8 @@ class ResourceLoader {
 }
 
 // 创建一个单例实例并导出
-const resourceLoader = new ResourceLoader();
+const resourceManager = new ResourceManager();
 
 // 导出单例和类
-export { resourceLoader, ResourceLoader };
-export default resourceLoader;
+export { resourceManager, ResourceManager };
+export default resourceManager;

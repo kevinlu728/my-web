@@ -10,7 +10,7 @@
     <!-- 预加载策略 - 核心CSS使用preload，非关键资源使用prefetch -->
     <link rel="preload" href="./styles/main.css" as="style">
     <link rel="preload" href="./styles/layouts/blog-layout.css" as="style">
-    <link rel="preload" href="./scripts/utils/resource-loader.js" as="script" crossorigin="anonymous">
+    <link rel="preload" href="./scripts/managers/resourceManager.js" as="script" crossorigin="anonymous">
     <!-- CSS资源 - 使用相对路径 -->
     <link rel="stylesheet" href="./styles/main.css">
     <link rel="stylesheet" href="./styles/components/header.css">
@@ -73,10 +73,10 @@
     <!-- 然后使用集中资源管理加载必要资源 -->
     <script type="module">
         // 导入资源加载器和样式加载器
-        import { resourceLoader } from './scripts/utils/resource-loader.js';
-        import { resourceStyles } from './scripts/utils/resource-styles.js';
+        import { resourceManager } from './scripts/managers/resourceManager.js';
+        import { styleResourceLoader } from './scripts/resource/styleResourceLoader.js';
         // 在全局作用域中暴露资源加载器
-        window.resourceLoader = resourceLoader;
+        window.resourceManager = resourceManager;
         console.log('✅ 资源加载器已预加载');
         
         // 优先使用本地Font Awesome资源
@@ -128,7 +128,7 @@
             
             if (hasCodeBlocks) {
                 console.log('📝 检测到页面包含代码块，立即加载代码高亮资源');
-                resourceLoader.loadResourceGroup('code').then(() => {
+                resourceManager.loadResourceGroup('code').then(() => {
                     console.log('✅ 代码高亮资源加载完成');
                     
                     // 如果Prism已加载，手动触发高亮
@@ -145,14 +145,14 @@
     <!-- 预加载资源清理脚本 - 在页面加载早期阶段就清理不需要的预加载 -->
     <script type="module">
         // 导入资源配置和加载器
-        import { resourceLoader } from './scripts/utils/resource-loader.js';
+        import { resourceManager } from './scripts/managers/resourceManager.js';
         import resourceConfig from './scripts/config/resources.js';
         
         (function() {
             console.log('🚀 [早期资源管理] 开始初始化资源加载策略');
             
             // 初始化资源加载策略
-            resourceLoader.initResourceLoadingStrategy();
+            resourceManager.initResourceLoadingStrategy();
             
             // 辅助函数：监视并阻止新添加的预加载标签
             function monitorDynamicPreloads() {
@@ -362,7 +362,7 @@
     <!-- 使用统一的模块加载方式 -->
     <script type="module">
         // 导入资源加载器和必要的模块
-        import { resourceLoader } from './scripts/utils/resource-loader.js';
+        import { resourceManager } from './scripts/managers/resourceManager.js';
         import config from './scripts/config/config.js?v=1.0.1';
         import { articleManager } from './scripts/managers/articleManager.js?v=1.0.1';
         import { categoryManager } from './scripts/managers/categoryManager.js?v=1.0.1';

@@ -21,14 +21,13 @@
  * 导出单例tableLazyLoader供其他模块使用。
  */
 
-import { tableStyles, addTableStylesToDocument } from '../styles/table-styles.js';
 import logger from './logger.js';
 
 class TableLazyLoader {
     constructor() {
         this.observer = null;
         this.initObserver();
-        addTableStylesToDocument();
+        this.addTableStylesToDocument();
     }
 
     // 初始化 IntersectionObserver
@@ -39,6 +38,129 @@ class TableLazyLoader {
                 threshold: 0.01 // 当表格有1%进入视口时触发
             });
         }
+    }
+
+    addTableStylesToDocument() {
+        // 检查样式是否已添加
+        if (document.querySelector('link[data-id="table-styles"]') || 
+            document.querySelector('style[data-id="table-styles"]')) {
+            return;
+        }
+        
+        // 尝试加载外部CSS文件
+        const linkElement = document.createElement('link');
+        linkElement.setAttribute('data-id', 'table-styles');
+        linkElement.rel = 'stylesheet';
+        // CSS文件路径
+        const CSS_FILE_PATH = '/styles/components/table-block.css';
+        linkElement.href = CSS_FILE_PATH;
+        
+        // 添加加载错误处理
+        linkElement.onerror = () => {
+            logger.warn('无法加载表格样式文件，使用内联样式作为备份');
+            this.addInlineStyles();
+        };
+        
+        // 添加到文档头部
+        document.head.appendChild(linkElement);
+    }
+
+    addInlineStyles() {
+        // 检查是否已添加内联样式
+        if (document.querySelector('style[data-id="table-styles"]')) {
+            return;
+        }
+        
+        // 创建样式元素
+        const styleElement = document.createElement('style');
+        styleElement.setAttribute('data-id', 'table-styles');
+        styleElement.textContent = `
+        .lazy-block.table-block {
+            background: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        .table-container {
+            overflow-x: auto;
+            margin: 0.2rem 0;
+            background: none;
+            border-radius: 3px;
+            border: 1px solid #e0e0e0;
+        }
+        .table-container table {
+            background: none;
+            width: 100%;
+            table-layout: auto;
+            margin: 0;
+            padding: 0;
+        }
+        .notion-table {
+            border-collapse: collapse;
+            font-size: 14px;
+            margin: 0;
+            padding: 0;
+            background: none !important;
+        }
+        .notion-table tr {
+            background: none !important;
+        }
+        .notion-table th,
+        .notion-table td {
+            border: 1px solid #e0e0e0;
+            padding: 5px 12px;
+            text-align: left;
+            background: none;
+            word-break: break-word;
+        }
+        .notion-table th {
+            background-color: #f5f5f5 !important;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+        .notion-table tr:nth-child(even) {
+            background-color: #fafafa !important;
+        }
+        .notion-table tr:hover {
+            background-color: #f0f0f0 !important;
+        }
+        .table-loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100px;
+            background-color: #f9f9f9;
+            border-radius: 3px;
+            color: #666;
+            font-size: 14px;
+        }
+        .table-loading::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            margin-left: 10px;
+            border: 2px solid #ddd;
+            border-top-color: #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        @media (max-width: 768px) {
+            .notion-table {
+                font-size: 12px;
+            }
+            .notion-table th,
+            .notion-table td {
+                padding: 4px 8px;
+            }
+        }
+        `;
+        
+        // 添加到文档头部
+        document.head.appendChild(styleElement);
     }
 
     // 处理表格懒加载

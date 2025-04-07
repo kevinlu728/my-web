@@ -1,11 +1,11 @@
 /**
- * 资源样式模块 - 处理样式资源的加载、注入和管理
+ * 资源样式加载器 - 处理样式资源的加载、注入和管理
  * 从ResourceLoader中提取的样式相关功能
  */
 
-import logger from './logger.js';
+import logger from '../utils/logger.js';
 
-class ResourceStyles {
+class StyleResourceLoader {
     /**
      * 初始化资源样式处理器
      */
@@ -289,8 +289,8 @@ class ResourceStyles {
 }
 
 // 创建一个单例实例并导出
-const resourceStyles = new ResourceStyles();
+const styleResourceLoader = new StyleResourceLoader();
 
 // 导出单例和类
-export { resourceStyles, ResourceStyles };
-export default resourceStyles; 
+export { styleResourceLoader, StyleResourceLoader as StyleResourceLoader };
+export default styleResourceLoader; 
