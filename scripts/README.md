@@ -43,24 +43,12 @@ scripts/
 
 ### 核心文件
 
-- **core/main.js**: 应用程序的主入口点，负责初始化和协调其他模块
-- **core/router.js**: 处理页面路由和导航
 
 ### 组件脚本
 
-- **components/codeBlock.js**: 处理代码块的语法高亮和交互功能
-- **components/tableBlock.js**: 处理表格的渲染和交互功能
-
-### 管理器脚本
-
-- **managers/resourceManager.js**: 管理资源加载、错误处理和回退机制
 
 ### 工具脚本
 
-- **utils/article-utils.js**: 文章相关工具函数集合
-- **utils/article-cache.js**: 文章缓存管理工具
-- **utils/logger.js**: 统一日志管理工具，提供不同级别的日志输出和格式化功能
-- **utils/url-utils.js**: URL参数处理工具函数
 
 #### 日志工具模块 (logger.js)
 

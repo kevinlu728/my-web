@@ -10,7 +10,7 @@
     <!-- 预加载策略 - 核心CSS使用preload，非关键资源使用prefetch -->
     <link rel="preload" href="./styles/main.css" as="style">
     <link rel="preload" href="./styles/layouts/blog-layout.css" as="style">
-    <link rel="preload" href="./scripts/managers/resourceManager.js" as="script" crossorigin="anonymous">
+    <link rel="preload" href="./scripts/resource/resourceManager.js" as="script" crossorigin="anonymous">
     <!-- CSS资源 - 使用相对路径 -->
     <link rel="stylesheet" href="./styles/main.css">
     <link rel="stylesheet" href="./styles/components/header.css">
@@ -73,7 +73,7 @@
     <!-- 然后使用集中资源管理加载必要资源 -->
     <script type="module">
         // 导入资源加载器和样式加载器
-        import { resourceManager } from './scripts/managers/resourceManager.js';
+        import { resourceManager } from './scripts/resource/resourceManager.js';
         import { styleResourceLoader } from './scripts/resource/styleResourceLoader.js';
         // 在全局作用域中暴露资源加载器
         window.resourceManager = resourceManager;
@@ -145,7 +145,7 @@
     <!-- 预加载资源清理脚本 - 在页面加载早期阶段就清理不需要的预加载 -->
     <script type="module">
         // 导入资源配置和加载器
-        import { resourceManager } from './scripts/managers/resourceManager.js';
+        import { resourceManager } from './scripts/resource/resourceManager.js';
         import resourceConfig from './scripts/config/resources.js';
         
         (function() {
@@ -362,7 +362,7 @@
     <!-- 使用统一的模块加载方式 -->
     <script type="module">
         // 导入资源加载器和必要的模块
-        import { resourceManager } from './scripts/managers/resourceManager.js';
+        import { resourceManager } from './scripts/resource/resourceManager.js';
         import config from './scripts/config/config.js?v=1.0.1';
         import { articleManager } from './scripts/blog/articleManager.js?v=1.0.1';
         import { categoryManager } from './scripts/blog/categoryManager.js?v=1.0.1';

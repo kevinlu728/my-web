@@ -23,16 +23,18 @@ import { initDebugPanel } from '../components/debugPanel.js';
 // 保留原始服务导入，以便在apiService不可用时使用
 import { getDatabaseInfo, testApiConnection, getDatabases } from '../services/notionService.js';
 import { showStatus, showError } from '../utils/common-utils.js';
-import { categoryManager } from './categoryManager.js';
-import { articleManager } from './articleManager.js';
+import { categoryManager } from '../blog/categoryManager.js';
+import { articleManager } from '../blog/articleManager.js';
+import config from '../config/config.js';
 import { imageLazyLoader } from '../blog/imageLazyLoader.js';
-import { initializeLazyLoading } from './articleRenderer.js';
+import { initializeLazyLoading } from '../blog/articleRenderer.js';
 // 导入资源加载器
 import { resourceManager } from '../resource/resourceManager.js';
+import { resourceChecker } from '../resource/resourceChecker.js';
 import { scrollToTop } from '../components/scrollbar.js';
 import logger from '../utils/logger.js';
-import { welcomePageManager } from './welcomePageManager.js';
-import { contentViewManager, ViewMode } from './contentViewManager.js';
+import { welcomePageManager } from '../blog/welcomePageManager.js';
+import { contentViewManager, ViewMode } from '../blog/contentViewManager.js';
 import { welcomePageSkeleton } from '../utils/skeleton-loader.js';
 
 logger.info('🚀 tech-blog.js 开始加载...');

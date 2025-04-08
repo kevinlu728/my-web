@@ -28,11 +28,11 @@
 // 导入集中式资源配置
 import logger from '../utils/logger.js';
 import resourceConfig, { resourceStrategies } from '../config/resources.js';
-import resourceTimeout from '../resource/resourceTimeout.js';
-import { resourceChecker } from '../resource/resourceChecker.js';
-import { styleResourceLoader } from '../resource/styleResourceLoader.js';
-import { scriptResourceLoader } from '../resource/scriptResourceLoader.js';
-import { prismLoader } from '../resource/prismLoader.js';
+import resourceTimeout from './resourceTimeout.js';
+import { resourceChecker } from './resourceChecker.js';
+import { styleResourceLoader } from './styleResourceLoader.js';
+import { scriptResourceLoader } from './scriptResourceLoader.js';
+import { prismLoader } from './prismLoader.js';
 
 // 替换为从resources.js导入的策略
 const RESOURCE_STRATEGIES = resourceStrategies.mapping;

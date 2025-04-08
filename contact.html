@@ -100,7 +100,7 @@
     
     <!-- 先加载资源加载器但不用于首页核心资源 -->
     <script type="module">
-        import { resourceManager } from './scripts/managers/resourceManager.js';
+        import { resourceManager } from './scripts/resource/resourceManager.js';
         // 在全局作用域中暴露资源加载器
         window.resourceManager = resourceManager;
         console.log('✅ 资源加载器已预加载');
