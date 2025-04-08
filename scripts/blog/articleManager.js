@@ -1,27 +1,44 @@
 /**
  * @file articleManager.js
- * @description 文章管理器，负责文章数据的获取、缓存和渲染
+ * @description 文章管理器，负责文章数据的获取、缓存、渲染和状态管理
  * @author 陆凯
- * @version 3.0.0
+ * @version 1.2.0
  * @created 2024-03-09
- * @updated 2024-03-26
+ * @updated 2024-05-15
  * 
  * 该模块是网站文章功能的核心管理器，负责：
- * - 从API获取文章列表和详情
- * - 处理文章的渲染和显示
- * - 实现文章的分页和加载更多功能
+ * - 从API获取文章列表和详情数据
  * - 处理文章的分类和筛选
+ * - 处理文章的渲染和显示逻辑
+ * - 实现文章的分页和加载更多功能
+ * - 管理文章缓存，提高页面性能
+ * - 协调与视图管理器的状态同步
+ * - 防止重复加载相同文章，优化性能
  * 
- * 该模块依赖于notionService.js获取数据，依赖于articleRenderer.js渲染内容。
- * 搜索功能已移至articleSearchManager.js模块。
+ * 主要方法：
+ * - initialize: 初始化文章管理器
+ * - loadArticles: 加载文章列表
+ * - showArticle: 显示单篇文章，包含重复加载检测
+ * - loadAndDisplayArticle: 加载并显示文章内容
+ * - loadMoreContent: 加载更多文章内容（分页）
+ * 
+ * 依赖关系：
+ * - 依赖 notionService.js 获取API数据
+ * - 依赖 contentViewManager.js 管理视图状态
+ * - 依赖 categoryManager.js 管理文章列表
+ * - 依赖 articleSearchManager.js 
+ * - 依赖 articlePaginationManager.js 管理分页
+ * - 依赖 articleCacheManager.js 管理缓存
+ * - 依赖 articleRenderer.js 渲染内容
+ * - 依赖 welcomePageManager.js 管理欢迎页面
  */
 import { getArticles, getArticleContent } from '../services/notionService.js';
+import { contentViewManager, ViewMode, ViewEvents } from './contentViewManager.js';
 import { categoryManager } from './categoryManager.js';
+import { articleSearchManager } from './articleSearchManager.js';
 import { articlePaginationManager } from './articlePaginationManager.js';
 import { articleCacheManager } from './articleCacheManager.js';
-import { articleSearchManager } from './articleSearchManager.js';
 import { welcomePageManager } from './welcomePageManager.js';
-import { contentViewManager, ViewMode, ViewEvents } from './contentViewManager.js';
 import { renderNotionBlocks, initializeLazyLoading } from './articleRenderer.js';
 import tableOfContents from './tableOfContents.js';
 
@@ -58,6 +75,17 @@ class ArticleManager {
         // 添加请求控制相关属性
         this.loadingStatus = new Map(); // 记录每篇文章的加载状态
         this.requestIdentifier = 0; // 添加请求标识符
+        
+        // 添加事件订阅
+        document.addEventListener('categoryManager:initialized', (e) => {
+            logger.debug('接收到分类管理器初始化事件');
+            this.categoryManager = e.detail.manager;
+        });
+        
+        document.addEventListener('articleSearchManager:initialized', (e) => {
+            logger.debug('接收到搜索管理器初始化事件');
+            this.articleSearchManager = e.detail.manager;
+        });
     }
 
     // 初始化
@@ -65,10 +93,18 @@ class ArticleManager {
         logger.info('初始化文章管理器，数据库ID:', databaseId);
         this.currentDatabaseId = databaseId;
         
+        // 发布初始化完成事件
+        this.notifyInitialized();
+        
+        // 尝试使用分类管理器，但要检查它是否已初始化
+        if (this.categoryManager) {
+            this.categoryManager.initialize();
+        } else {
+            // 等待分类管理器初始化事件
+            logger.info('等待分类管理器初始化...');
+        }
+        
         try {
-            // 先初始化分类管理器，因为下面加载文章列表需要使用
-            categoryManager.initialize();
-            
             // 加载文章列表
             const articles = await this.loadArticles();
             
@@ -697,6 +733,18 @@ class ArticleManager {
         return this.articles;
     }
 
+    // 公开初始化完成事件
+    notifyInitialized() {
+        logger.debug('文章管理器初始化完成，发送初始化事件');
+        document.dispatchEvent(new CustomEvent('articleManager:initialized', {
+            detail: { manager: this }
+        }));
+    }
 }
 
-export const articleManager = new ArticleManager(); 
+export const articleManager = new ArticleManager();
+
+// 初始化完成后发送事件 
+setTimeout(() => articleManager.notifyInitialized(), 0);
+
+export default ArticleManager; 

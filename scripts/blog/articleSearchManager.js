@@ -11,6 +11,8 @@
  * - 处理搜索状态重置
  */
 
+// 移除直接导入，避免循环依赖
+// import { categoryManager } from './categoryManager.js'; 
 import { highlightSearchTerm, searchArticles } from '../utils/article-utils.js';
 import logger from '../utils/logger.js';
 
@@ -29,6 +31,12 @@ class ArticleSearchManager {
         this.onSearchResultsCallback = null;
         this.onResetSearchCallback = null;
         this.getArticlesCallback = null;
+        
+        // 添加事件订阅，等待其他模块初始化
+        document.addEventListener('categoryManager:initialized', (e) => {
+            logger.debug('接收到分类管理器初始化事件');
+            this.categoryManager = e.detail.manager;
+        });
     }
 
     /**
@@ -59,6 +67,9 @@ class ArticleSearchManager {
         this.setupEventListeners();
         
         logger.debug('文章搜索管理器已初始化');
+        
+        // 公开初始化完成事件
+        this.notifyInitialized();
     }
 
     /**
@@ -279,7 +290,7 @@ class ArticleSearchManager {
      * @returns {string} 显示用的分类名称
      */
     getCategoryDisplayName(category) {
-        return categoryManager.getCategoryDisplayName(category);
+        return this.categoryManager.getCategoryDisplayName(category);
     }
 
     /**
@@ -345,7 +356,20 @@ class ArticleSearchManager {
         this.updateClearButton();
         this.resetSearch();
     }
+
+    // 公开初始化完成事件
+    notifyInitialized() {
+        logger.debug('搜索管理器初始化完成，发送初始化事件');
+        document.dispatchEvent(new CustomEvent('articleSearchManager:initialized', {
+            detail: { manager: this }
+        }));
+    }
 }
 
 // 导出单例实例
-export const articleSearchManager = new ArticleSearchManager(); 
+export const articleSearchManager = new ArticleSearchManager();
+
+// 初始化完成后发送事件
+setTimeout(() => articleSearchManager.notifyInitialized(), 0);
+
+export default ArticleSearchManager; 

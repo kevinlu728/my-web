@@ -361,17 +361,25 @@
     
     <!-- 使用统一的模块加载方式 -->
     <script type="module">
-        // 导入资源加载器和必要的模块
+        // 首先导入并初始化配置
+        import config from './scripts/config/config.js?v=1.0.0';
+        
+        // 立即将配置对象设置为全局可访问
+        window.config = config;
+        
+        // 记录配置状态，帮助调试
+        console.log('配置已加载:', config);
+        
+        // 然后导入其他模块
         import { resourceManager } from './scripts/resource/resourceManager.js';
-        import config from './scripts/config/config.js?v=1.0.1';
-        import { articleManager } from './scripts/blog/articleManager.js?v=1.0.1';
-        import { categoryManager } from './scripts/blog/categoryManager.js?v=1.0.1';
-        import { imageLazyLoader } from './scripts/blog/imageLazyLoader.js?v=1.0.1';
-        import { tableLazyLoader } from './scripts/blog/tableLazyLoader.js?v=1.0.1';
-        import { codeLazyLoader } from './scripts/blog/codeLazyLoader.js?v=1.0.1';
-        import { initializePage } from './scripts/blog/tech-blog.js?v=1.2.0';
-        import { initNavigation } from './scripts/components/navigation.js?v=1.0.1';
-        import { loadDebugPanel } from './scripts/components/debugPanelLoader.js?v=1.0.0';
+        import { articleManager } from './scripts/blog/articleManager.js';
+        import { categoryManager } from './scripts/blog/categoryManager.js';
+        import { imageLazyLoader } from './scripts/blog/imageLazyLoader.js';
+        import { tableLazyLoader } from './scripts/blog/tableLazyLoader.js';
+        import { codeLazyLoader } from './scripts/blog/codeLazyLoader.js';
+        import { initializePage } from './scripts/blog/tech-blog.js';
+        import { initNavigation } from './scripts/components/navigation.js';
+        import { loadDebugPanel } from './scripts/components/debugPanelLoader.js';
         
         // 为关键容器添加资源组标记
         const articleContainer = document.getElementById('article-container');
@@ -394,9 +402,9 @@
             // 仅在非生产环境加载调试面板
             if (!isProduction) {
                 // 将模块导出到全局作用域，方便调试
-                window.imageLazyLoader = imageLazyLoader;
                 window.articleManager = articleManager;
                 window.categoryManager = categoryManager;
+                window.imageLazyLoader = imageLazyLoader;
                 window.config = config;
                 // 加载调试面板组件
                 loadDebugPanel({

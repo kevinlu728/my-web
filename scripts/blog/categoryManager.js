@@ -13,7 +13,7 @@
  * - 管理分类的状态和UI交互
  */
 
-import { articleManager } from './articleManager.js';
+// import { articleManager } from './articleManager.js';
 import { categoryConfig } from '../config/categories.js';
 import { articleTreeSkeleton } from '../utils/skeleton-loader.js';
 import logger from '../utils/logger.js';
@@ -41,11 +41,32 @@ class CategoryManager {
         this.isDebugMode = false;
         
         // 当文章管理器加载完毕时，我们需要隐藏骨架屏
-        if (articleManager && typeof articleManager.addEventListener === 'function') {
-            articleManager.addEventListener('articlesLoaded', () => {
-                this.hideTreeSkeleton();
-            });
-        }
+        // if (articleManager && typeof articleManager.addEventListener === 'function') {
+        //     articleManager.addEventListener('articlesLoaded', () => {
+        //         this.hideTreeSkeleton();
+        //     });
+        // }
+        
+        // 添加事件订阅
+        document.addEventListener('articleManager:initialized', (e) => {
+            logger.debug('接收到文章管理器初始化事件');
+            this.articleManager = e.detail.manager;
+        });
+        
+        document.addEventListener('articleSearchManager:initialized', (e) => {
+            logger.debug('接收到搜索管理器初始化事件');
+            this.articleSearchManager = e.detail.manager;
+        });
+    }
+
+    /**
+     * 公开初始化完成事件
+     */
+    notifyInitialized() {
+        logger.debug('分类管理器初始化完成，发送初始化事件');
+        document.dispatchEvent(new CustomEvent('categoryManager:initialized', {
+            detail: { manager: this }
+        }));
     }
 
     /**
@@ -749,6 +770,20 @@ class CategoryManager {
             logger.error(`加载分类"${categoryId}"下的文章时出错:`, error.message || error);
         }
     }
+
+    // 使用事件获取的引用
+    someMethodThatNeedsArticleManager() {
+        if (this.articleManager) {
+            // 使用 this.articleManager
+        } else {
+            logger.warn('文章管理器尚未初始化');
+        }
+    }
 }
 
-export const categoryManager = new CategoryManager(); 
+export const categoryManager = new CategoryManager();
+
+// 初始化完成后发送事件
+setTimeout(() => categoryManager.notifyInitialized(), 0);
+
+export default CategoryManager; 
