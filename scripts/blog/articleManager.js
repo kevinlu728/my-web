@@ -228,8 +228,9 @@ class ArticleManager {
                 logger.error('API 测试异常:', testError);
             }
             
-            // 添加人为延迟以确保加载提示可见
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            // 早期添加人为延迟是为了确保加载提示可见。但这个延迟会导致articleManager初始化和welcomePageManager初始化的
+            // 间隔长达约5秒（即使有缓存），导致页面加载很慢。因此现在移除这个延迟（设为0），但暂时保留这行代码，观察一段时间。
+            await new Promise(resolve => setTimeout(resolve, 0));
             
             // 获取文章列表
             logger.info('正在从 API 获取文章列表...');
