@@ -14,10 +14,10 @@
  */
 
 import { renderWelcomePage } from './welcomePageRenderer.js';
-import { categoryConfig } from '../config/categories.js';
-import logger from '../utils/logger.js';
 import { contentViewManager, ViewMode } from './contentViewManager.js';
+import { categoryConfig } from '../config/categories.js';
 import { welcomePageSkeleton } from '../utils/skeleton-loader.js';
+import logger from '../utils/logger.js';
 
 // 缓存键名常量
 const WELCOME_PAGE_CACHE_KEY = 'welcome_page_data';
@@ -129,14 +129,6 @@ class WelcomePageManager {
     }
     
     /**
-     * 显示基本欢迎页面（无文章数据时）- 已被骨架屏替代
-     */
-    showBasicWelcomePage() {
-        // 为保持兼容性，调用骨架屏方法
-        this.showWelcomePageSkeleton();
-    }
-    
-    /**
      * 渲染欢迎页面
      * @param {Array} articles 文章数据
      */
@@ -144,14 +136,14 @@ class WelcomePageManager {
         // 获取容器
         const container = document.getElementById('article-container');
         
-        // 渲染欢迎页面
         renderWelcomePage({
             articles: articles,
             onCategorySelect: this.onCategorySelect,
             onArticleSelect: this.onArticleSelect,
             categoryConfig: {
                 nameMap: this.categoryNameMap,
-                colors: categoryConfig.colors
+                colors: categoryConfig.colors,
+                order: categoryConfig.order
             }
         });
         
@@ -321,7 +313,8 @@ class WelcomePageManager {
             onArticleSelect: this.onArticleSelect,
             categoryConfig: {
                 nameMap: this.categoryNameMap,
-                colors: categoryConfig.colors
+                colors: categoryConfig.colors,
+                order: categoryConfig.order
             },
             fromCache: true
         });

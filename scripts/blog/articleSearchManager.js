@@ -284,18 +284,6 @@ class ArticleSearchManager {
     }
 
     /**
-     * 设置分类显示名称映射
-     * @param {Object} mapping - 分类名称映射表
-     */
-    setCategoryNameMapping(mapping) {
-        if (mapping && typeof mapping === 'object') {
-            this.getCategoryDisplayName = (category) => {
-                return mapping[category] || category;
-            };
-        }
-    }
-
-    /**
      * 获取当前搜索结果
      * @returns {Array} 搜索结果
      */
@@ -309,14 +297,6 @@ class ArticleSearchManager {
      */
     getSearchTerm() {
         return this.searchTerm;
-    }
-
-    /**
-     * 是否正在搜索中
-     * @returns {boolean} 是否搜索中
-     */
-    isInSearchMode() {
-        return this.isSearching;
     }
 
     /**
@@ -344,6 +324,14 @@ class ArticleSearchManager {
         } else {
             this.resetSearch();
         }
+    }
+
+    /**
+     * 是否正在搜索中
+     * @returns {boolean} 是否搜索中
+     */
+    isInSearchMode() {
+        return this.isSearching;
     }
 
     /**

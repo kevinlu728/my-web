@@ -111,9 +111,15 @@ function renderCategoryTags(articles, categoryConfig, onCategorySelect) {
     // 定义分类颜色映射
     const categoryColors = categoryConfig.colors || getCategoryColors();
     const categoryNameMap = categoryConfig.nameMap || {};
+    const categoryOrder = categoryConfig.order || {};
 
     categoriesContainer.innerHTML = Array.from(categories)
-        .sort()
+        .sort((a, b) => {
+            // 使用配置的顺序进行排序
+            const orderA = categoryOrder[a] !== undefined ? categoryOrder[a] : 999;
+            const orderB = categoryOrder[b] !== undefined ? categoryOrder[b] : 999;
+            return orderA - orderB;
+        })
         .map(category => {
             const colors = categoryColors[category] || categoryColors.default;
             const displayName = categoryNameMap[category] || category;

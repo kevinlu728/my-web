@@ -53,46 +53,6 @@ class ImageLazyLoader {
     }
 
     /**
-     * 创建加载状态指示器
-     * @returns {HTMLElement}
-     */
-    createLoader() {
-        // 创建容器
-        const container = document.createElement('div');
-        container.className = 'image-loader';
-        container.style.position = 'absolute';
-        container.style.top = '0';
-        container.style.left = '50%'; // 设置左侧位置为50%
-        container.style.transform = 'translateX(-50%)'; // 水平居中偏移
-        container.style.width = '400px'; // 设置固定宽度
-        container.style.minWidth = '400px';
-        container.style.height = '100%'; // 恢复高度设置，确保覆盖整个图片区域
-        container.style.backgroundColor = '#f5f5f5';
-        
-        // 直接在容器上使用showLoadingSpinner
-        showLoadingSpinner('图片加载中', container, {
-            size: 'small',
-            theme: 'secondary'
-        });
-        
-        return container;
-    }
-
-    /**
-     * 创建错误提示元素
-     * @returns {HTMLElement}
-     */
-    createErrorElement() {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'image-error';
-        errorDiv.innerHTML = `
-            <i class="fas fa-exclamation-circle"></i>
-            <p>图片加载失败</p>
-        `;
-        return errorDiv;
-    }
-
-    /**
      * 创建图片预览模态框
      */
     createImageModal() {

@@ -162,29 +162,6 @@ class CodeLazyLoader {
         document.head.appendChild(linkElement);
     }
     
-    // 处理等待中的代码块
-    processWaitingBlocks() {
-        if (!window.prismLoaded || !window.Prism) {
-            // 如果Prism尚未加载，使用完整的高亮资源加载功能
-            logger.info('Prism库尚未加载，正在请求加载代码高亮资源...');
-            return prismLoader.loadCodeHighlightResources()
-                .then(success => {
-                    if (success && window.Prism) {
-                        logger.info('✅ 代码高亮资源加载成功，处理等待中的代码块');
-                        this._highlightWaitingBlocks();
-                        return true;
-                    } else {
-                        logger.error('❌ 代码高亮资源加载失败');
-                        return false;
-                    }
-                });
-        }
-        
-        // 如果Prism已加载，直接处理等待中的块
-        this._highlightWaitingBlocks();
-        return Promise.resolve(true);
-    }
-    
     // 内部方法：高亮所有等待中的代码块
     _highlightWaitingBlocks() {
         try {
@@ -312,18 +289,6 @@ class CodeLazyLoader {
             logger.error('渲染代码块失败:', error);
             return `<div class="code-error">渲染代码块失败: ${error.message}</div>`;
         }
-    }
-
-    // 维持现有的方法 (但简化逻辑)
-    getSafePrismLanguage(language) {
-        const languageMap = {
-            'js': 'javascript',
-            'ts': 'typescript',
-            'py': 'python',
-            'plain': 'text',
-            'plaintext': 'text'
-        };
-        return languageMap[language?.toLowerCase()] || language || 'text';
     }
     
     escapeHtml(text) {
