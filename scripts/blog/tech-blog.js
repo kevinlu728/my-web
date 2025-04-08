@@ -37,13 +37,41 @@ import logger from '../utils/logger.js';
 
 logger.info('🚀 tech-blog.js 开始加载...');
 
-// 在页面DOM加载完成后预加载关键资源
+/**
+ * 当DOM结构加载完成时执行的初始化操作
+ */
 document.addEventListener('DOMContentLoaded', () => {
-    logger.info('DOM内容已加载，准备预加载关键资源');
+    logger.info('DOM内容已加载，开始初始化...');
+    
+    // 1. 预加载关键资源
     preloadCriticalResources();
+    
+    // 2. 初始化拖动手柄。稍微延迟以确保所有样式已加载
+    setTimeout(() => {
+        const leftColumn = document.querySelector('.left-column');
+        const resizeHandle = document.querySelector('.resize-handle');
+        const separatorLine = document.querySelector('.separator-line');
+        
+        if (leftColumn && resizeHandle) {
+            // 确保拖动手柄是可见的 - 直接设置内联样式以确保优先级最高
+            resizeHandle.style.visibility = 'visible';
+            resizeHandle.style.cursor = 'col-resize';
+            
+            if (separatorLine) {
+                separatorLine.style.width = '3px';
+                separatorLine.style.backgroundColor = '#77a0ff';
+            }
+            
+            logger.info('✅ 拖动手柄初始化完成，设置为低可见度状态');
+        } else {
+            logger.warn('⚠️ 未找到拖动手柄或左侧栏元素，无法初始化');
+        }
+    }, 100);
 });
 
-// 页面加载完成后初始化
+/**
+ * 当页面完全加载后执行的操作
+ */
 window.addEventListener('load', () => {
     logger.info('📃 页面加载完成，开始初始化...');
     
@@ -53,7 +81,6 @@ window.addEventListener('load', () => {
         return;
     }
     
-    // 显示加载状态提示
     showStatus('正在初始化页面...', false);
     
     // 监听资源加载器的内容解锁事件
@@ -67,7 +94,6 @@ window.addEventListener('load', () => {
             // 初始化完成，设置标志
             pageInitialized = true;
             
-            // 清除加载状态消息
             showStatus('', false);
         });
     }, { once: true });
@@ -87,51 +113,41 @@ window.addEventListener('load', () => {
             }
         }, 10000);
     }
-    
-    // 添加返回顶部按钮
-    initializeBackToTop();
 });
 
-// 在预加载关键资源函数中添加欢迎页面骨架屏相关资源
+/**
+ * 预加载核心资源并解锁内容
+ * 通过资源管理器加载关键CSS和JS资源，然后初始化欢迎页面
+ */
 function preloadCriticalResources() {
-    try {
-        // 检查资源加载器是否可用
-        if (!resourceManager) {
-            logger.warn('⚠️ 资源加载器不可用，跳过预加载');
-            // 设置全局标志，指示内容已解锁
-            window.contentUnblocked = true;
-            document.dispatchEvent(new Event('content-unblocked'));
-            return;
-        }
-
-        logger.info('🔍 使用非阻塞方式加载关键资源...');
-        
-        // 检查方法是否存在
-        if (typeof resourceManager.loadNonBlockingCoreContent !== 'function') {
-            throw new Error('资源加载器中缺少loadNonBlockingCoreContent方法');
-        }
-        
-        // 调用资源加载器的非阻塞核心内容加载
-        resourceManager.loadNonBlockingCoreContent()
-            .then(() => {
-                logger.info('✅ 非阻塞核心内容加载已完成');
-                
-                // 预加载欢迎页面数据
-                welcomePageManager.preloadWelcomePageData();
-            })
-            .catch(error => {
-                logger.error('❌ 非阻塞资源加载失败:', error.message);
-                // 确保内容已解锁，以便初始化可以继续
-                window.contentUnblocked = true;
-                document.dispatchEvent(new Event('content-unblocked'));
-            });
-    } catch (error) {
-        // 捕获同步错误
-        logger.error('❌ 非阻塞资源加载初始化失败:', error.message);
-        // 设置全局标志，指示内容已解锁，以便初始化可以继续
-        window.contentUnblocked = true;
-        document.dispatchEvent(new Event('content-unblocked'));
+    // 如果资源管理器不可用，立即解锁内容并返回
+    if (!resourceManager || typeof resourceManager.loadNonBlockingCoreContent !== 'function') {
+        logger.warn('⚠️ 资源管理器不可用或缺少必要方法，跳过预加载');
+        unlockContent();
+        return;
     }
+
+    logger.info('🔍 开始非阻塞方式加载关键资源...');
+    
+    // 使用资源管理器加载核心内容
+    resourceManager.loadNonBlockingCoreContent()
+        .then(() => {
+            logger.info('✅ 核心资源加载完成，预加载欢迎页面数据');
+            welcomePageManager.preloadWelcomePageData();
+        })
+        .catch(error => {
+            logger.error('❌ 核心资源加载失败:', error.message);
+            unlockContent();
+        });
+}
+
+/**
+ * 解锁内容并触发内容解锁事件
+ * 在资源加载失败或不可用时使用此函数
+ */
+function unlockContent() {
+    window.contentUnblocked = true;
+    document.dispatchEvent(new Event('content-unblocked'));
 }
 
 /**
@@ -174,13 +190,10 @@ export async function initializePage(forceApiTest = false) {
             
             // 检查依赖项
             logger.info('检查依赖项：');
-            logger.info('- imageLazyLoader:', !!imageLazyLoader);
             logger.info('- articleManager:', !!articleManager);
             logger.info('- categoryManager:', !!categoryManager);
+            logger.info('- imageLazyLoader:', !!imageLazyLoader);
             logger.info('- apiService:', !!window.apiService);
-
-            // 初始化返回顶部按钮
-            initializeBackToTop();
             
             const currentDatabaseId = config.notion.databaseId || config.debug.defaultDatabaseId;
             logger.info('当前数据库ID:', currentDatabaseId);
@@ -358,15 +371,12 @@ export async function initializePage(forceApiTest = false) {
 
             logger.info('✅ 页面初始化完成！');
             
-            // 初始化辅助功能
-            setupDebugShortcut();
-            initializeHelpPopup();
-            initializeArticleSearch();
-            initializeArticleList();
-            
             // 初始化左栏宽度调整功能
             initializeResizableLeftColumn();
             
+            // 初始化返回顶部按钮
+            initializeBackToTop();
+
             // 为页面图片应用样式（如果有的话）
             applyImageStyles();
             
@@ -405,155 +415,6 @@ export async function initializePage(forceApiTest = false) {
         throw error;
     }
 }
-
-/**
- * 修复FontAwesome图标显示问题
- * 确保树状列表中的图标正确使用FontAwesome而非Unicode，并添加平滑旋转动画
- */
-function fixFontAwesomeIcons() {
-    // 监听DOM变化，确保在图标创建后应用正确样式
-    const observer = new MutationObserver(mutations => {
-        mutations.forEach(mutation => {
-            if (mutation.addedNodes.length) {
-                // 查找新添加的树形图标
-                mutation.addedNodes.forEach(node => {
-                    if (node.nodeType === 1) { // 元素节点
-                        const icons = node.querySelectorAll ? 
-                            node.querySelectorAll('.tree-toggle i') : [];
-                        
-                        if (icons.length > 0) {
-                            icons.forEach(applyFontAwesomeStyle);
-                        } else if (node.classList && node.classList.contains('fas')) {
-                            applyFontAwesomeStyle(node);
-                        }
-                    }
-                });
-            }
-        });
-    });
-    
-    // 监视整个文档，特别是树形容器区域
-    observer.observe(document.body, { 
-        childList: true, 
-        subtree: true 
-    });
-    
-    // 立即处理已有的图标
-    setTimeout(() => {
-        document.querySelectorAll('.tree-toggle i').forEach(applyFontAwesomeStyle);
-        logger.info('✅ 已应用FontAwesome样式到现有图标');
-    }, 100);
-    
-    // 处理单个图标元素
-    function applyFontAwesomeStyle(icon) {
-        if (!icon) return;
-        
-        // 确保使用FontAwesome字体
-        icon.style.fontFamily = '"Font Awesome 6 Free", FontAwesome, sans-serif';
-        icon.style.fontWeight = '900';
-        icon.style.display = 'inline-block';
-        
-        // 确保内容为空，让FontAwesome的默认图标机制生效
-        if (icon.innerHTML === '▶' || icon.innerHTML === '▼') {
-            icon.innerHTML = '';
-        }
-        
-        // 确保有正确的基础类名
-        if (icon.parentNode && icon.parentNode.classList.contains('tree-toggle')) {
-            if (!icon.classList.contains('fas')) {
-                icon.classList.add('fas');
-            }
-            
-            // 统一使用fa-chevron-right，方向通过CSS旋转控制
-            if (!icon.classList.contains('fa-chevron-right')) {
-                icon.classList.remove('fa-chevron-down'); // 移除任何向下箭头类
-                icon.classList.add('fa-chevron-right');   // 统一使用向右箭头类
-            }
-        }
-    }
-}
-
-// 导出显示文章的全局函数
-window.showArticle = async (pageId) => {
-    logger.info('🔄 调用全局 showArticle 函数:', pageId);
-    return articleManager.showArticle(pageId);
-};
-
-// 设置一个标志来跟踪初始化是否已完成
-let pageInitialized = false;
-
-
-
-// 如果 articleManager 有一个 displayArticleContent 方法
-// 我们需要覆盖它以处理图片
-if (typeof articleManager.displayArticleContent === 'function') {
-    const originalDisplayContent = articleManager.displayArticleContent;
-    articleManager.displayArticleContent = function(article) {
-        if (article && article.content) {
-            logger.info('🔄 准备处理文章内容中的图片...');
-            // 处理 HTML 内容中的图片
-            article.content = imageLazyLoader.processHTMLContent(article.content);
-        }
-        
-        // 调用原始方法
-        const result = originalDisplayContent.call(this, article);
-        
-        // 在内容显示后处理图片懒加载和代码块懒加载
-        setTimeout(() => {
-            const articleBody = document.querySelector('.article-body');
-            if (articleBody) {
-                logger.info('🖼️ 开始处理新加载的文章图片...');
-                imageLazyLoader.processImages(articleBody);
-                
-                logger.info('🔄 初始化代码块和表格懒加载...');
-                initializeLazyLoading(articleBody);
-            }
-        }, 100);
-        
-        return result;
-    };
-}
-
-/**
- * 应用图片样式
- * 确保文章中的图片样式正确
- */
-function applyImageStyles() {
-    logger.info('正在应用文章图片样式...');
-    const images = document.querySelectorAll('.article-body img');
-    logger.info(`找到 ${images.length} 张文章图片`);
-    
-    images.forEach(img => {
-        img.style.maxWidth = '50%';
-        img.style.height = 'auto';
-        img.style.margin = '1.5rem auto';
-        img.style.display = 'block';
-        
-        // 在移动设备上调整
-        if (window.innerWidth <= 768) {
-            img.style.maxWidth = '80%';
-        }
-        
-        // 添加点击放大功能
-        img.onclick = function() {
-            logger.info('图片被点击');
-            // 这里可以添加点击放大功能
-        };
-    });
-    
-    logger.info('图片样式已应用');
-}
-
-// 扩展文章管理器，在显示文章后应用图片样式
-const originalDisplayArticle = articleManager.displayArticle;
-articleManager.displayArticle = function(articleId) {
-    originalDisplayArticle.call(this, articleId);
-    
-    // 在文章加载后应用样式，添加延迟确保内容已加载
-    setTimeout(() => {
-        applyImageStyles();
-    }, 500);
-};
 
 /**
  * 初始化可调整宽度的左侧栏
@@ -775,63 +636,6 @@ function initializeResizableLeftColumn() {
     });
 }
 
-// 当DOM加载完成时，确保拖动手柄正确初始化
-document.addEventListener('DOMContentLoaded', () => {
-    // 稍微延迟以确保所有样式已加载
-    setTimeout(() => {
-        const leftColumn = document.querySelector('.left-column');
-        const resizeHandle = document.querySelector('.resize-handle');
-        const separatorLine = document.querySelector('.separator-line');
-        
-        if (leftColumn && resizeHandle) {
-            // 确保拖动手柄是可见的 - 直接设置内联样式以确保优先级最高
-            resizeHandle.style.visibility = 'visible';
-            resizeHandle.style.cursor = 'col-resize';
-            
-            if (separatorLine) {
-                separatorLine.style.width = '3px';
-                separatorLine.style.backgroundColor = '#77a0ff';
-            }
-            
-            logger.info('✅ 拖动手柄初始化完成，设置为低可见度状态');
-        } else {
-            logger.warn('⚠️ 未找到拖动手柄或左侧栏元素，无法初始化');
-        }
-    }, 100);
-});
-
-/**
- * 设置调试模式快捷键
- */
-function setupDebugShortcut() {
-    // 这个函数在实际代码中应该会被实现
-    logger.info('setupDebugShortcut: 未实现的函数');
-}
-
-/**
- * 初始化帮助弹窗
- */
-function initializeHelpPopup() {
-    // 这个函数在实际代码中应该会被实现
-    logger.info('initializeHelpPopup: 未实现的函数');
-}
-
-/**
- * 初始化文章搜索功能
- */
-function initializeArticleSearch() {
-    // 这个函数在实际代码中应该会被实现
-    logger.info('initializeArticleSearch: 未实现的函数');
-}
-
-/**
- * 初始化文章列表
- */
-function initializeArticleList() {
-    // 这个函数在实际代码中应该会被实现
-    logger.info('initializeArticleList: 未实现的函数');
-}
-
 /**
  * 初始化返回顶部按钮
  */
@@ -932,3 +736,150 @@ function determineInitialViewState() {
         }
     }
 } 
+
+/**
+ * 修复FontAwesome图标显示问题
+ * 确保树状列表中的图标正确使用FontAwesome而非Unicode，并添加平滑旋转动画
+ */
+function fixFontAwesomeIcons() {
+    // 监听DOM变化，确保在图标创建后应用正确样式
+    const observer = new MutationObserver(mutations => {
+        mutations.forEach(mutation => {
+            if (mutation.addedNodes.length) {
+                // 查找新添加的树形图标
+                mutation.addedNodes.forEach(node => {
+                    if (node.nodeType === 1) { // 元素节点
+                        const icons = node.querySelectorAll ? 
+                            node.querySelectorAll('.tree-toggle i') : [];
+                        
+                        if (icons.length > 0) {
+                            icons.forEach(applyFontAwesomeStyle);
+                        } else if (node.classList && node.classList.contains('fas')) {
+                            applyFontAwesomeStyle(node);
+                        }
+                    }
+                });
+            }
+        });
+    });
+    
+    // 监视整个文档，特别是树形容器区域
+    observer.observe(document.body, { 
+        childList: true, 
+        subtree: true 
+    });
+    
+    // 立即处理已有的图标
+    setTimeout(() => {
+        document.querySelectorAll('.tree-toggle i').forEach(applyFontAwesomeStyle);
+        logger.info('✅ 已应用FontAwesome样式到现有图标');
+    }, 100);
+    
+    // 处理单个图标元素
+    function applyFontAwesomeStyle(icon) {
+        if (!icon) return;
+        
+        // 确保使用FontAwesome字体
+        icon.style.fontFamily = '"Font Awesome 6 Free", FontAwesome, sans-serif';
+        icon.style.fontWeight = '900';
+        icon.style.display = 'inline-block';
+        
+        // 确保内容为空，让FontAwesome的默认图标机制生效
+        if (icon.innerHTML === '▶' || icon.innerHTML === '▼') {
+            icon.innerHTML = '';
+        }
+        
+        // 确保有正确的基础类名
+        if (icon.parentNode && icon.parentNode.classList.contains('tree-toggle')) {
+            if (!icon.classList.contains('fas')) {
+                icon.classList.add('fas');
+            }
+            
+            // 统一使用fa-chevron-right，方向通过CSS旋转控制
+            if (!icon.classList.contains('fa-chevron-right')) {
+                icon.classList.remove('fa-chevron-down'); // 移除任何向下箭头类
+                icon.classList.add('fa-chevron-right');   // 统一使用向右箭头类
+            }
+        }
+    }
+}
+
+// 导出显示文章的全局函数
+window.showArticle = async (pageId) => {
+    logger.info('🔄 调用全局 showArticle 函数:', pageId);
+    return articleManager.showArticle(pageId);
+};
+
+// 设置一个标志来跟踪初始化是否已完成
+let pageInitialized = false;
+
+// 如果 articleManager 有一个 displayArticleContent 方法
+// 我们需要覆盖它以处理图片
+if (typeof articleManager.displayArticleContent === 'function') {
+    const originalDisplayContent = articleManager.displayArticleContent;
+    articleManager.displayArticleContent = function(article) {
+        if (article && article.content) {
+            logger.info('🔄 准备处理文章内容中的图片...');
+            // 处理 HTML 内容中的图片
+            article.content = imageLazyLoader.processHTMLContent(article.content);
+        }
+        
+        // 调用原始方法
+        const result = originalDisplayContent.call(this, article);
+        
+        // 在内容显示后处理图片懒加载和代码块懒加载
+        setTimeout(() => {
+            const articleBody = document.querySelector('.article-body');
+            if (articleBody) {
+                logger.info('🖼️ 开始处理新加载的文章图片...');
+                imageLazyLoader.processImages(articleBody);
+                
+                logger.info('🔄 初始化代码块和表格懒加载...');
+                initializeLazyLoading(articleBody);
+            }
+        }, 100);
+        
+        return result;
+    };
+}
+
+/**
+ * 应用图片样式
+ * 确保文章中的图片样式正确
+ */
+function applyImageStyles() {
+    logger.info('正在应用文章图片样式...');
+    const images = document.querySelectorAll('.article-body img');
+    logger.info(`找到 ${images.length} 张文章图片`);
+    
+    images.forEach(img => {
+        img.style.maxWidth = '50%';
+        img.style.height = 'auto';
+        img.style.margin = '1.5rem auto';
+        img.style.display = 'block';
+        
+        // 在移动设备上调整
+        if (window.innerWidth <= 768) {
+            img.style.maxWidth = '80%';
+        }
+        
+        // 添加点击放大功能
+        img.onclick = function() {
+            logger.info('图片被点击');
+            // 这里可以添加点击放大功能
+        };
+    });
+    
+    logger.info('图片样式已应用');
+}
+
+// 扩展文章管理器，在显示文章后应用图片样式
+const originalDisplayArticle = articleManager.displayArticle;
+articleManager.displayArticle = function(articleId) {
+    originalDisplayArticle.call(this, articleId);
+    
+    // 在文章加载后应用样式，添加延迟确保内容已加载
+    setTimeout(() => {
+        applyImageStyles();
+    }, 500);
+};

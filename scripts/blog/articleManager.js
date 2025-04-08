@@ -66,7 +66,7 @@ class ArticleManager {
         this.currentDatabaseId = databaseId;
         
         try {
-            // 先初始化分类管理器，因为下面加载
+            // 先初始化分类管理器，因为下面加载文章列表需要使用
             categoryManager.initialize();
             
             // 加载文章列表
