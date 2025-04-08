@@ -19,23 +19,120 @@
  */
 
 // 技术博客页面主逻辑
-import { initDebugPanel } from '../components/debugPanel.js';
 // 保留原始服务导入，以便在apiService不可用时使用
 import { getDatabaseInfo, testApiConnection, getDatabases } from '../services/notionService.js';
-import { showStatus, showError } from '../utils/common-utils.js';
-import { categoryManager } from './categoryManager.js';
-import { articleManager } from './articleManager.js';
-import { imageLazyLoader } from '../blog/imageLazyLoader.js';
-import { initializeLazyLoading } from './articleRenderer.js';
-// 导入资源加载器
 import { resourceManager } from '../resource/resourceManager.js';
-import { scrollToTop } from '../components/scrollbar.js';
-import logger from '../utils/logger.js';
+import { articleManager } from './articleManager.js';
+import { categoryManager } from './categoryManager.js';
 import { welcomePageManager } from './welcomePageManager.js';
 import { contentViewManager, ViewMode } from './contentViewManager.js';
-import { welcomePageSkeleton } from '../utils/skeleton-loader.js';
+import { initializeLazyLoading } from './articleRenderer.js';
+import { imageLazyLoader } from './imageLazyLoader.js';
+import { scrollToTop } from '../components/scrollbar.js';
+import { initDebugPanel } from '../components/debugPanel.js';
+
+// 导入工具函数
+import { showStatus, showError } from '../utils/common-utils.js';
+import logger from '../utils/logger.js';
 
 logger.info('🚀 tech-blog.js 开始加载...');
+
+// 在页面DOM加载完成后预加载关键资源
+document.addEventListener('DOMContentLoaded', () => {
+    logger.info('DOM内容已加载，准备预加载关键资源');
+    preloadCriticalResources();
+});
+
+// 页面加载完成后初始化
+window.addEventListener('load', () => {
+    logger.info('📃 页面加载完成，开始初始化...');
+    
+    // 避免重复初始化
+    if (pageInitialized) {
+        logger.info('页面已经初始化，跳过重复初始化');
+        return;
+    }
+    
+    // 显示加载状态提示
+    showStatus('正在初始化页面...', false);
+    
+    // 监听资源加载器的内容解锁事件
+    document.addEventListener('content-unblocked', () => {
+        logger.info('🎉 内容已解锁，开始初始化页面');
+        // 初始化页面
+        initializePage().catch(error => {
+            logger.error('❌ 初始化失败:', error);
+            showStatus('页面初始化失败，请刷新重试', true, 'error');
+        }).finally(() => {
+            // 初始化完成，设置标志
+            pageInitialized = true;
+            
+            // 清除加载状态消息
+            showStatus('', false);
+        });
+    }, { once: true });
+    
+    // 检查是否使用资源加载器解锁了内容
+    if (window.contentUnblocked) {
+        logger.info('内容已经被解锁，立即初始化页面');
+        // 触发内容解锁事件
+        document.dispatchEvent(new Event('content-unblocked'));
+    } else {
+        logger.info('等待内容解锁事件...');
+        // 增加超时保护，防止事件未触发
+        setTimeout(() => {
+            if (!pageInitialized) {
+                logger.warn('⚠️ 内容解锁事件在10秒内未触发，强制初始化页面');
+                document.dispatchEvent(new Event('content-unblocked'));
+            }
+        }, 10000);
+    }
+    
+    // 添加返回顶部按钮
+    initializeBackToTop();
+});
+
+// 在预加载关键资源函数中添加欢迎页面骨架屏相关资源
+function preloadCriticalResources() {
+    try {
+        // 检查资源加载器是否可用
+        if (!resourceManager) {
+            logger.warn('⚠️ 资源加载器不可用，跳过预加载');
+            // 设置全局标志，指示内容已解锁
+            window.contentUnblocked = true;
+            document.dispatchEvent(new Event('content-unblocked'));
+            return;
+        }
+
+        logger.info('🔍 使用非阻塞方式加载关键资源...');
+        
+        // 检查方法是否存在
+        if (typeof resourceManager.loadNonBlockingCoreContent !== 'function') {
+            throw new Error('资源加载器中缺少loadNonBlockingCoreContent方法');
+        }
+        
+        // 调用资源加载器的非阻塞核心内容加载
+        resourceManager.loadNonBlockingCoreContent()
+            .then(() => {
+                logger.info('✅ 非阻塞核心内容加载已完成');
+                
+                // 预加载欢迎页面数据
+                welcomePageManager.preloadWelcomePageData();
+            })
+            .catch(error => {
+                logger.error('❌ 非阻塞资源加载失败:', error.message);
+                // 确保内容已解锁，以便初始化可以继续
+                window.contentUnblocked = true;
+                document.dispatchEvent(new Event('content-unblocked'));
+            });
+    } catch (error) {
+        // 捕获同步错误
+        logger.error('❌ 非阻塞资源加载初始化失败:', error.message);
+        // 设置全局标志，指示内容已解锁，以便初始化可以继续
+        window.contentUnblocked = true;
+        document.dispatchEvent(new Event('content-unblocked'));
+    }
+}
 
 /**
  * 初始化页面
@@ -385,54 +482,7 @@ window.showArticle = async (pageId) => {
 // 设置一个标志来跟踪初始化是否已完成
 let pageInitialized = false;
 
-// 页面加载完成后初始化
-window.addEventListener('load', () => {
-    logger.info('📃 页面加载完成，开始初始化...');
-    
-    // 避免重复初始化
-    if (pageInitialized) {
-        logger.info('页面已经初始化，跳过重复初始化');
-        return;
-    }
-    
-    // 显示加载状态提示
-    showStatus('正在初始化页面...', false);
-    
-    // 监听资源加载器的内容解锁事件
-    document.addEventListener('content-unblocked', () => {
-        logger.info('🎉 内容已解锁，开始初始化页面');
-        // 初始化页面
-        initializePage().catch(error => {
-            logger.error('❌ 初始化失败:', error);
-            showStatus('页面初始化失败，请刷新重试', true, 'error');
-        }).finally(() => {
-            // 初始化完成，设置标志
-            pageInitialized = true;
-            
-            // 清除加载状态消息
-            showStatus('', false);
-        });
-    }, { once: true });
-    
-    // 检查是否使用资源加载器解锁了内容
-    if (window.contentUnblocked) {
-        logger.info('内容已经被解锁，立即初始化页面');
-        // 触发内容解锁事件
-        document.dispatchEvent(new Event('content-unblocked'));
-    } else {
-        logger.info('等待内容解锁事件...');
-        // 增加超时保护，防止事件未触发
-        setTimeout(() => {
-            if (!pageInitialized) {
-                logger.warn('⚠️ 内容解锁事件在10秒内未触发，强制初始化页面');
-                document.dispatchEvent(new Event('content-unblocked'));
-            }
-        }, 10000);
-    }
-    
-    // 添加返回顶部按钮
-    initializeBackToTop();
-});
+
 
 // 如果 articleManager 有一个 displayArticleContent 方法
 // 我们需要覆盖它以处理图片
@@ -810,7 +860,7 @@ function initializeBackToTop() {
         return;
     }
     
-    logger.info('✅ 返回顶部按钮创建成功');
+    logger.debug('✅ 返回顶部按钮创建成功');
     
     // 点击按钮回到顶部，使用scrollToTop函数
     backToTopBtn.addEventListener('click', () => {
@@ -842,7 +892,7 @@ function initializeBackToTop() {
         }
     });
     
-    logger.info('✅ 返回顶部按钮初始化完成');
+    logger.debug('✅ 返回顶部按钮初始化完成');
     
     // 注意：按钮的显示/隐藏现在由scrollbar.js中的滚动事件处理
 }
@@ -860,74 +910,6 @@ function handleLoadingMask(action = 'fade') {
         determineInitialViewState();
     }
 }
-
-// 在预加载关键资源函数中添加欢迎页面骨架屏相关资源
-function preloadCriticalResources() {
-    try {
-        // 检查资源加载器是否可用
-        if (!resourceManager) {
-            logger.warn('⚠️ 资源加载器不可用，跳过预加载');
-            // 设置全局标志，指示内容已解锁
-            window.contentUnblocked = true;
-            document.dispatchEvent(new Event('content-unblocked'));
-            return;
-        }
-
-        logger.info('🔍 使用非阻塞方式加载关键资源...');
-        
-        // 检查方法是否存在
-        if (typeof resourceManager.loadNonBlockingCoreContent !== 'function') {
-            throw new Error('资源加载器中缺少loadNonBlockingCoreContent方法');
-        }
-        
-        // 调用资源加载器的非阻塞核心内容加载
-        resourceManager.loadNonBlockingCoreContent()
-            .then(() => {
-                logger.info('✅ 非阻塞核心内容加载已完成');
-                
-                // 预加载欢迎页面数据
-                preloadWelcomePageData();
-            })
-            .catch(error => {
-                logger.error('❌ 非阻塞资源加载失败:', error.message);
-                // 确保内容已解锁，以便初始化可以继续
-                window.contentUnblocked = true;
-                document.dispatchEvent(new Event('content-unblocked'));
-            });
-    } catch (error) {
-        // 捕获同步错误
-        logger.error('❌ 非阻塞资源加载初始化失败:', error.message);
-        // 设置全局标志，指示内容已解锁，以便初始化可以继续
-        window.contentUnblocked = true;
-        document.dispatchEvent(new Event('content-unblocked'));
-    }
-}
-
-// 修改 preloadWelcomePageData 函数，在这里就显示骨架屏
-function preloadWelcomePageData() {
-    try {
-        const container = document.getElementById('article-container');
-        if (container) {
-            // 立即显示欢迎页面骨架屏
-            logger.info('预加载欢迎页面前先显示骨架屏');
-            welcomePageSkeleton.show(container);
-        }
-        
-        // 其他预加载逻辑
-        if (welcomePageManager) {
-            welcomePageManager.loadFromCache();
-            setTimeout(() => welcomePageManager.refreshDataInBackground(), 2000);
-        }
-    } catch (error) {
-        logger.error('预加载欢迎页面数据时出错:', error);
-    }
-}
-
-// 在页面DOM加载完成后预加载关键资源
-document.addEventListener('DOMContentLoaded', () => {
-    logger.info('DOM内容已加载，准备预加载关键资源');
-    preloadCriticalResources();
-});
 
 // 在初始化流程中添加
 function determineInitialViewState() {

@@ -57,6 +57,14 @@ class WelcomePageManager {
         this.loadFromCache();
     }
 
+    preloadWelcomePageData() {
+        // 立即显示欢迎页面骨架屏
+        logger.info('预加载欢迎页面骨架屏和欢迎页面的缓存数据');
+        this.showWelcomePageSkeleton();
+        this.loadFromCache();
+        setTimeout(() => this.refreshDataInBackground(), 2000);
+    }
+
     /**
      * 显示欢迎页面 - 增强的缓存版本
      * @param {Array} [articles] 可选的文章数据，如不提供则从getArticles获取

@@ -34,7 +34,6 @@ class ScriptResourceLoader {
      * @param {Object} options - 配置选项
      */
     loadScript(url, options = {}) {
-        logger.debug(`loadScript, 加载脚本: ${url}`);
         // 确保loadedResources存在
         const loadedResources = this.loadedResources || new Set();
         

@@ -39,7 +39,7 @@ const RESOURCE_STRATEGIES = resourceStrategies.mapping;
 
 class ResourceManager {
     constructor() {
-        logger.debug('ResourceManager, 构造函数');
+        logger.info('ResourceManager构造函数（日志级别尚未更新，早期日志使用info级别）');
         this.loadedResources = new Set();
         this.failedResources = new Set();
         this.resourceConfig = resourceConfig;
@@ -60,24 +60,24 @@ class ResourceManager {
         // 添加防御性检查，确保依赖模块可用
         if (resourceTimeout && typeof resourceTimeout.updateConfig === 'function') {
             // 配置资源超时管理器，使用内联函数而不是绑定方法
-        resourceTimeout.updateConfig({
-                timeoutCallback: (resourceType, url, priority) => {
-                    logger.warn(`⏱️ 资源加载超时: ${url} (${resourceType}, 优先级: ${priority})`);
-                    // 如果有必要，可以在这里添加更多的处理逻辑
-                }
-        });
+            resourceTimeout.updateConfig({
+                    timeoutCallback: (resourceType, url, priority) => {
+                        logger.warn(`⏱️ 资源加载超时: ${url} (${resourceType}, 优先级: ${priority})`);
+                        // 如果有必要，可以在这里添加更多的处理逻辑
+                    }
+            });
         } else {
             logger.warn('⚠️ 资源超时管理器未初始化，跳过超时配置');
         }
         
         // 添加防御性检查，确保依赖模块可用
         if (styleResourceLoader && typeof styleResourceLoader.setDependencies === 'function') {
-        // 设置resourceStyles的依赖
-        styleResourceLoader.setDependencies({
-            handleResourceError: this.handleResourceError.bind(this),
-            setResourceTimeout: this.setResourceTimeout.bind(this),
-            clearResourceTimeout: this.clearResourceTimeout.bind(this)
-        });
+            // 设置resourceStyles的依赖
+            styleResourceLoader.setDependencies({
+                handleResourceError: this.handleResourceError.bind(this),
+                setResourceTimeout: this.setResourceTimeout.bind(this),
+                clearResourceTimeout: this.clearResourceTimeout.bind(this)
+            });
         } else {
             logger.warn('⚠️ 资源样式处理器未初始化，跳过依赖设置');
         }
@@ -495,13 +495,13 @@ class ResourceManager {
         // 加载关键样式资源
         const stylesPromises = [];
         
-        // 加载自定义字体和图标，不阻塞页面渲染
+        // 加载关键样式资源（字体和图标），不阻塞页面渲染
         stylesPromises.push(
             styleResourceLoader.loadCssNonBlocking('/assets/libs/bootstrap-icons/bootstrap-icons.css'),
             styleResourceLoader.loadCssNonBlocking('/assets/libs/prism/themes/prism-tomorrow.min.css')
         );
         
-        // 加载关键脚本
+        // 加载关键脚本资源
         const scriptsPromises = [
             scriptResourceLoader.loadScript('/assets/libs/prism/prism.min.js', { async: true })
         ];
@@ -932,7 +932,6 @@ class ResourceManager {
             logger.debug('本地Font Awesome已存在，不重复加载');
             return;
         }
-        
         logger.info('🔄 加载本地Font Awesome资源');
         
         // 移除任何可能存在的其他Font Awesome链接

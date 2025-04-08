@@ -7,8 +7,6 @@
  */
 
 import logger from '../utils/logger.js';
-import { welcomePageSkeleton } from '../utils/skeleton-loader.js';
-import { getArticlePlaceholder } from '../utils/placeholder-templates.js';
 
 // 视图模式常量
 export const ViewMode = {
@@ -82,29 +80,6 @@ class ContentViewManager {
         
         // 更新当前模式
         this.currentMode = mode;
-        
-        // 特殊处理LOADING模式
-        if (mode === ViewMode.LOADING) {
-            // 检查是否有文章ID参数
-            const urlParams = new URLSearchParams(window.location.search);
-            const articleId = urlParams.get('article');
-            
-            // 检查容器中是否已有骨架屏
-            const hasSkeletonAlready = 
-                this.container.querySelector('.welcome-page-skeleton') || 
-                this.container.querySelector('.article-skeleton');
-            
-            // 只有在没有骨架屏的情况下才添加
-            if (!hasSkeletonAlready) {
-                if (!articleId) {
-                    // 欢迎页面骨架屏
-                    welcomePageSkeleton.show(this.container);
-                } else {
-                    // 文章页面占位图
-                    this.container.innerHTML = getArticlePlaceholder();
-                }
-            }
-        }
         
         // 触发自定义事件
         const event = new CustomEvent('viewModeChanged', {

@@ -1,5 +1,4 @@
 /**
-/**
  * @file articleManager.js
  * @description 文章管理器，负责文章数据的获取、缓存和渲染
  * @author 陆凯
@@ -18,7 +17,7 @@
  */
 import { getArticles, getArticleContent } from '../services/notionService.js';
 import { categoryManager } from './categoryManager.js';
-import { articlePaginationManager } from '../blog/articlePaginationManager.js';
+import { articlePaginationManager } from './articlePaginationManager.js';
 import { articleCacheManager } from './articleCacheManager.js';
 import { articleSearchManager } from './articleSearchManager.js';
 import { welcomePageManager } from './welcomePageManager.js';
@@ -27,25 +26,12 @@ import { renderNotionBlocks, initializeLazyLoading } from './articleRenderer.js'
 import tableOfContents from './tableOfContents.js';
 
 // 导入工具函数
-import { displayArticleContent, showArticleError, processArticleListData } from '../utils/article-utils.js';
-import { articleRouteUtils } from '../utils/article-router.js';
 import { categoryConfig } from '../config/categories.js';
+import { articleRouteUtils } from '../utils/article-router.js';
+import { displayArticleContent, showArticleError, processArticleListData } from '../utils/article-utils.js';
 import { getArticlePlaceholder } from '../utils/placeholder-templates.js';
-import { articleTreeSkeleton } from '../utils/skeleton-loader.js';
 import { showStatus, showError } from '../utils/common-utils.js';
 import logger from '../utils/logger.js';
-
-// 显示文章树加载状态
-function showTreeLoading(message = '加载中...') {
-    const treeChildren = document.querySelector('#article-tree .root-item > .tree-children');
-    if (!treeChildren) {
-        logger.warn('文章列表元素未找到');
-        return;
-    }
-    
-    // 使用骨架屏替代简单的加载提示
-    articleTreeSkeleton.show(treeChildren);
-}
 
 class ArticleManager {
     constructor() {
@@ -57,9 +43,6 @@ class ArticleManager {
         this.abortController = null;
         this.fetchDelay = 1000; // 防抖延迟，单位毫秒
         this.fetchDelayTimer = null;
-        // 添加加载锁，防止重复加载
-        this.loadingLock = false;
-        
         // 添加加载锁，防止重复加载
         this.loadingLock = false;
         
@@ -77,6 +60,83 @@ class ArticleManager {
         this.requestIdentifier = 0; // 添加请求标识符
     }
 
+    // 初始化
+    async initialize(databaseId) {
+        logger.info('初始化文章管理器，数据库ID:', databaseId);
+        this.currentDatabaseId = databaseId;
+        
+        try {
+            // 先初始化分类管理器，因为下面加载
+            categoryManager.initialize();
+            
+            // 加载文章列表
+            const articles = await this.loadArticles();
+            
+            // 初始化搜索管理器
+            articleSearchManager.initialize({
+                onSearchResults: (searchResults, searchTerm) => {
+                    logger.info(`搜索结果: ${searchResults.length} 个匹配项`);
+                },
+                onResetSearch: () => {
+                    logger.info('重置搜索状态');
+                    this.filterAndRenderArticles();
+                },
+                // 添加获取文章数据的回调函数
+                getArticles: () => {
+                    return this.articles;
+                }
+            });
+            
+            // 监听文章选择事件
+            document.addEventListener('articleSelected', (e) => {
+                if (e.detail && e.detail.articleId) {
+                    logger.info('从搜索结果中选择文章');
+                    this.showArticle(e.detail.articleId);
+                }
+            });
+            
+            // 更新分类列表
+            if (articles && articles.length > 0) {
+                logger.info('更新分类列表...');
+                categoryManager.updateCategories(articles);
+                
+                // 设置分类变更和文章选择回调
+                categoryManager.setOnCategoryChange((category) => {
+                    logger.info('分类变更:', category);
+                    
+                    // 如果在搜索状态，清除搜索
+                    if (articleSearchManager.isInSearchMode()) {
+                        articleSearchManager.clearSearch();
+                    }
+                    
+                    this.filterAndRenderArticles();
+                });
+                
+                categoryManager.setOnArticleSelect((articleId) => {
+                    logger.info('文章选择');
+                    this.showArticle(articleId);
+                });
+                
+                // 从URL初始化状态
+                await this.initializeFromUrl();
+                
+                // 如果URL中没有指定文章，则显示欢迎页面
+                if (!this.currentPageId) {
+                    logger.info('显示欢迎页面...');
+                    this.showWelcomePage();
+                }
+            } else {
+                logger.info('没有文章，不更新分类');
+            }
+            
+            return articles;
+        } catch (error) {
+            logger.error('初始化失败:', error);
+            showError('初始化失败: ' + error.message);
+            throw error;
+        }
+    }
+    
     // 加载文章列表
     async loadArticles(options = {}) {
         try {
@@ -96,8 +156,9 @@ class ArticleManager {
             this.abortController = new AbortController();
             const signal = this.abortController.signal;
             
-            // 显示加载状态
-            showTreeLoading('正在加载文章列表...');
+            // 显示加载状态 - 改为调用categoryManager的方法
+            logger.debug('显示文章树加载状态');
+            categoryManager.showTreeSkeleton();
             
             logger.info(`开始加载文章，数据库ID: ${this.currentDatabaseId}`);
             
@@ -172,6 +233,15 @@ class ArticleManager {
                 showStatus('没有找到文章', false, 'info');
             }
             
+            // 数据加载完成后更新分类列表
+            if (articles && articles.length > 0) {
+                categoryManager.updateCategories(articles);
+                // categoryManager负责隐藏自己的骨架屏
+            } else {
+                // 即使没有文章也应该隐藏骨架屏
+                categoryManager.hideTreeSkeleton();
+            }
+            
             return this.articles;
         } catch (error) {
             logger.error('加载文章列表失败:', error);
@@ -199,6 +269,9 @@ class ArticleManager {
                 return this.articles;
             }
             
+            // 错误处理
+            categoryManager.hideTreeSkeleton();
+            
             return this.articles || [];
         } finally {
             // 清除 AbortController
@@ -206,6 +279,56 @@ class ArticleManager {
             // 无论成功失败都释放加载锁
             this.loadingLock = false;
         }
+    }
+    
+    // 取消当前加载
+    cancelCurrentLoading() {
+        if (this.abortController) {
+            logger.info('取消当前加载请求');
+            this.abortController.abort();
+            this.abortController = null;
+        }
+        this.currentLoadingId = null;
+    }
+
+    // 从URL初始化状态
+    async initializeFromUrl() {
+        try {
+            // 使用新的路由工具从URL初始化
+            return await articleRouteUtils.initializeFromUrl(
+                // 文章显示回调
+                async (articleId) => {
+                    this.currentPageId = articleId;
+                    await this.showArticle(articleId);
+                },
+                // 分类选择回调
+                (category) => {
+                    categoryManager.selectCategory(category);
+                }
+            );
+        } catch (error) {
+            logger.error('从URL初始化失败:', error);
+            return false;
+        }
+    }
+
+    // 显示欢迎页面
+    showWelcomePage() {
+        logger.info('显示欢迎页面 (委托给welcomePageManager)');
+        
+        // 首先切换到加载模式
+        contentViewManager.setMode(ViewMode.LOADING);
+        
+        // 确保有文章数据
+        if (!this.articles || this.articles.length === 0) {
+            logger.info('欢迎页面需要文章数据，但当前没有数据...');
+            // 委托给welcomePageManager处理
+            welcomePageManager.ensureArticleDataAndShowWelcome(() => this.loadArticles());
+            return;
+        }
+        
+        // 如果已有文章数据，直接显示欢迎页面
+        welcomePageManager.showWelcomePage(this.articles);
     }
 
     // 过滤并渲染文章列表
@@ -233,183 +356,7 @@ class ArticleManager {
             // 在点击分类时被调用，并且会处理UI更新
         }
     }
-
-    // 渲染文章列表（覆盖原方法）
-    renderArticleList() {
-        this.filterAndRenderArticles();
-    }
-
-    // 取消当前加载
-    cancelCurrentLoading() {
-        if (this.abortController) {
-            logger.info('取消当前加载请求');
-            this.abortController.abort();
-            this.abortController = null;
-        }
-        this.currentLoadingId = null;
-    }
-
-    // 加载和显示文章内容
-    async loadAndDisplayArticle(pageId) {
-        const requestId = this.requestIdentifier;
-        logger.info('开始加载文章:', pageId);
-        
-        try {
-            // 检查ID有效性
-            if (!pageId || pageId === 'undefined' || pageId === 'null') {
-                logger.error('无效的文章ID:', pageId);
-                throw new Error('无效的文章ID');
-            }
-            
-            // 初始化加载状态
-            this.isLoading = true;
-            this.hasMore = false;
-            this.nextCursor = null;
-            this.loadedBlocks = [];
-            
-            // 创建新的 AbortController
-            this.abortController = new AbortController();
-            this.currentLoadingId = pageId;
-            
-            // 先尝试从缓存获取，使用缓存管理器
-            const cachedData = articleCacheManager.getArticleFromCache(pageId);
-            
-            // 使用缓存数据或从API获取
-            if (cachedData) {
-                logger.info('📦 从缓存加载文章:', pageId);
-                
-                // 保存缓存中的分页状态
-                if (cachedData.hasMore === true && cachedData.nextCursor) {
-                    articlePaginationManager.updateState({
-                        hasMore: cachedData.hasMore,
-                        nextCursor: cachedData.nextCursor
-                    });
-                    logger.info('从缓存恢复分页状态');
-                } else {
-                    // 如果缓存数据中没有有效的分页信息，强制重置
-                    logger.info('缓存中没有有效的分页信息，保持重置状态');
-                    articlePaginationManager.updateState({
-                        hasMore: false,
-                        nextCursor: null
-                    });
-                }
-                
-                // 如果文章已完全加载，则不需要显示加载更多
-                if (cachedData.isFullyLoaded === true) {
-                    logger.info('文章已完全加载，无需分页请求');
-                    articlePaginationManager.updateState({
-                        hasMore: false,
-                        nextCursor: null
-                    });
-                }
-                
-                this.isLoading = false;
-                return cachedData;
-            }
-
-            logger.info('🌐 从网络加载文章:', pageId);
-            
-            // 设置超时控制
-            const timeoutId = setTimeout(() => {
-                if (this.abortController) {
-                    logger.warn('⚠️ 加载文章内容超时（12秒），中断请求');
-                    this.abortController.abort();
-                    showStatus('加载文章超时，请尝试刷新页面', true, 'warning');
-                }
-            }, 12000); // 12秒超时
-            
-            // 从API获取文章
-            const articleData = await getArticleContent(pageId);
-            
-            // 清除超时
-            clearTimeout(timeoutId);
-            
-            // 检查article结构是否有效
-            if (!articleData || !articleData.blocks) {
-                throw new Error('无效的文章内容');
-            }
-            
-            // 双重检查：1. 检查当前文章ID是否匹配  2. 检查请求ID是否匹配
-            if (this.currentPageId !== pageId || this.requestIdentifier !== requestId) {
-                logger.info('文章已切换或有更新请求，取消加载');
-                return false;
-            }
-            
-            // 缓存文章内容，使用缓存管理器
-            articleCacheManager.setArticleCache(pageId, {
-                ...articleData,
-                isFullyLoaded: !articleData.hasMore // 只有当没有更多内容时才标记为完全加载
-            });
-            
-            this.isLoading = false;
-            return articleData;
-        } catch (error) {
-            logger.error('加载文章失败:', error);
-            this.isLoading = false;
-            throw error;
-        } finally {
-            if (this.currentLoadingId === pageId) {
-                this.abortController = null;
-            }
-        }
-    }
     
-    // 验证文章ID
-    validateArticleId(pageId) {
-            if (!pageId || pageId === 'undefined' || pageId === 'null') {
-            logger.error('无效的文章ID:', pageId);
-                return false;
-            }
-        return true;
-    }
-
-    // 准备加载文章
-    prepareArticleLoading(pageId) {
-        logger.info('准备加载文章:', pageId);
-        
-        // 增加请求标识符，用于防止内容混合
-        this.requestIdentifier = Date.now();
-        
-        // 获取文章容器
-        const articleContainer = document.getElementById('article-container');
-        if (!articleContainer) {
-            logger.error('找不到文章容器');
-            return false;
-        }
-        
-        // 重置文章容器内容 - 使用导入的占位图模板
-        articleContainer.innerHTML = getArticlePlaceholder();
-        
-        // 重置状态
-        this.isLoading = true;
-        this.currentPageId = pageId;
-        
-        // 重置分页管理器的状态
-        articlePaginationManager.reset();
-        articlePaginationManager.updateState({
-            currentPageId: pageId,
-            requestIdentifier: this.requestIdentifier
-        });
-        
-        // 重置右侧滚动容器的位置
-        const rightColumn = document.querySelector('.blog-content .right-column');
-        if (rightColumn) {
-            rightColumn.scrollTop = 0;
-        }
-        
-        // 重置主窗口滚动位置到顶部，解决切换文章时滚动位置保留的问题
-        window.scrollTo({
-            top: 0,
-            behavior: 'auto'
-        });
-        
-        // 更新URL参数 - 使用路由工具
-        articleRouteUtils.updateArticleParam(pageId);
-        
-        logger.info('文章加载准备完成');
-        return true;
-    }
-
     // 显示文章内容
     async showArticle(pageId) {
         try {
@@ -532,6 +479,164 @@ class ArticleManager {
             return false;
         }
     }
+    // 验证文章ID
+    validateArticleId(pageId) {
+        if (!pageId || pageId === 'undefined' || pageId === 'null') {
+        logger.error('无效的文章ID:', pageId);
+            return false;
+        }
+        return true;
+    }
+    // 准备加载文章
+    prepareArticleLoading(pageId) {
+        logger.info('准备加载文章:', pageId);
+        
+        // 增加请求标识符，用于防止内容混合
+        this.requestIdentifier = Date.now();
+        
+        // 获取文章容器
+        const articleContainer = document.getElementById('article-container');
+        if (!articleContainer) {
+            logger.error('找不到文章容器');
+            return false;
+        }
+        
+        // 重置文章容器内容 - 使用导入的占位图模板
+        articleContainer.innerHTML = getArticlePlaceholder();
+        
+        // 重置状态
+        this.isLoading = true;
+        this.currentPageId = pageId;
+        
+        // 重置分页管理器的状态
+        articlePaginationManager.reset();
+        articlePaginationManager.updateState({
+            currentPageId: pageId,
+            requestIdentifier: this.requestIdentifier
+        });
+        
+        // 重置右侧滚动容器的位置
+        const rightColumn = document.querySelector('.blog-content .right-column');
+        if (rightColumn) {
+            rightColumn.scrollTop = 0;
+        }
+        
+        // 重置主窗口滚动位置到顶部，解决切换文章时滚动位置保留的问题
+        window.scrollTo({
+            top: 0,
+            behavior: 'auto'
+        });
+        
+        // 更新URL参数 - 使用路由工具
+        articleRouteUtils.updateArticleParam(pageId);
+        
+        logger.info('文章加载准备完成');
+        return true;
+    }
+    // 加载和显示文章内容
+    async loadAndDisplayArticle(pageId) {
+        const requestId = this.requestIdentifier;
+        logger.info('开始加载文章:', pageId);
+        
+        try {
+            // 检查ID有效性
+            if (!pageId || pageId === 'undefined' || pageId === 'null') {
+                logger.error('无效的文章ID:', pageId);
+                throw new Error('无效的文章ID');
+            }
+            
+            // 初始化加载状态
+            this.isLoading = true;
+            this.hasMore = false;
+            this.nextCursor = null;
+            this.loadedBlocks = [];
+            
+            // 创建新的 AbortController
+            this.abortController = new AbortController();
+            this.currentLoadingId = pageId;
+            
+            // 先尝试从缓存获取，使用缓存管理器
+            const cachedData = articleCacheManager.getArticleFromCache(pageId);
+            
+            // 使用缓存数据或从API获取
+            if (cachedData) {
+                logger.info('📦 从缓存加载文章:', pageId);
+                
+                // 保存缓存中的分页状态
+                if (cachedData.hasMore === true && cachedData.nextCursor) {
+                    articlePaginationManager.updateState({
+                        hasMore: cachedData.hasMore,
+                        nextCursor: cachedData.nextCursor
+                    });
+                    logger.info('从缓存恢复分页状态');
+                } else {
+                    // 如果缓存数据中没有有效的分页信息，强制重置
+                    logger.info('缓存中没有有效的分页信息，保持重置状态');
+                    articlePaginationManager.updateState({
+                        hasMore: false,
+                        nextCursor: null
+                    });
+                }
+                
+                // 如果文章已完全加载，则不需要显示加载更多
+                if (cachedData.isFullyLoaded === true) {
+                    logger.info('文章已完全加载，无需分页请求');
+                    articlePaginationManager.updateState({
+                        hasMore: false,
+                        nextCursor: null
+                    });
+                }
+                
+                this.isLoading = false;
+                return cachedData;
+            }
+
+            logger.info('🌐 从网络加载文章:', pageId);
+            
+            // 设置超时控制
+            const timeoutId = setTimeout(() => {
+                if (this.abortController) {
+                    logger.warn('⚠️ 加载文章内容超时（12秒），中断请求');
+                    this.abortController.abort();
+                    showStatus('加载文章超时，请尝试刷新页面', true, 'warning');
+                }
+            }, 12000); // 12秒超时
+            
+            // 从API获取文章
+            const articleData = await getArticleContent(pageId);
+            
+            // 清除超时
+            clearTimeout(timeoutId);
+            
+            // 检查article结构是否有效
+            if (!articleData || !articleData.blocks) {
+                throw new Error('无效的文章内容');
+            }
+            
+            // 双重检查：1. 检查当前文章ID是否匹配  2. 检查请求ID是否匹配
+            if (this.currentPageId !== pageId || this.requestIdentifier !== requestId) {
+                logger.info('文章已切换或有更新请求，取消加载');
+                return false;
+            }
+            
+            // 缓存文章内容，使用缓存管理器
+            articleCacheManager.setArticleCache(pageId, {
+                ...articleData,
+                isFullyLoaded: !articleData.hasMore // 只有当没有更多内容时才标记为完全加载
+            });
+            
+            this.isLoading = false;
+            return articleData;
+        } catch (error) {
+            logger.error('加载文章失败:', error);
+            this.isLoading = false;
+            throw error;
+        } finally {
+            if (this.currentLoadingId === pageId) {
+                this.abortController = null;
+            }
+        }
+    }
 
     // 修改为使用缓存管理器的updateArticleCache
     async loadMoreContent() {
@@ -548,125 +653,6 @@ class ArticleManager {
     updateDatabaseId(newDatabaseId) {
         this.currentDatabaseId = newDatabaseId;
         this.loadArticles();
-    }
-
-    // 初始化
-    async initialize(databaseId) {
-        logger.info('初始化文章管理器，数据库ID:', databaseId);
-        this.currentDatabaseId = databaseId;
-        
-        try {
-            // 加载文章列表
-            const articles = await this.loadArticles();
-            
-            // 初始化搜索管理器
-            articleSearchManager.initialize({
-                onSearchResults: (searchResults, searchTerm) => {
-                    logger.info(`搜索结果: ${searchResults.length} 个匹配项`);
-                },
-                onResetSearch: () => {
-                    logger.info('重置搜索状态');
-                    this.filterAndRenderArticles();
-                },
-                // 添加获取文章数据的回调函数
-                getArticles: () => {
-                    return this.articles;
-                }
-            });
-            
-            // 监听文章选择事件
-            document.addEventListener('articleSelected', (e) => {
-                if (e.detail && e.detail.articleId) {
-                    logger.info('从搜索结果中选择文章');
-                    this.showArticle(e.detail.articleId);
-                }
-            });
-            
-            // 更新分类列表
-            if (articles && articles.length > 0) {
-                logger.info('更新分类列表...');
-                categoryManager.updateCategories(articles);
-                
-                // 设置分类变更和文章选择回调
-                categoryManager.setOnCategoryChange((category) => {
-                    logger.info('分类变更:', category);
-                    
-                    // 如果在搜索状态，清除搜索
-                    if (articleSearchManager.isInSearchMode()) {
-                        articleSearchManager.clearSearch();
-                    }
-                    
-                    this.filterAndRenderArticles();
-                });
-                
-                categoryManager.setOnArticleSelect((articleId) => {
-                    logger.info('文章选择');
-                    this.showArticle(articleId);
-                });
-                
-                // 从URL初始化状态
-                await this.initializeFromUrl();
-                
-                // 如果URL中没有指定文章，则显示欢迎页面
-                if (!this.currentPageId) {
-                    logger.info('显示欢迎页面...');
-                    this.showWelcomePage();
-                }
-            } else {
-                logger.info('没有文章，不更新分类');
-            }
-            
-            return articles;
-        } catch (error) {
-            logger.error('初始化失败:', error);
-            showError('初始化失败: ' + error.message);
-            throw error;
-        }
-    }
-    
-    // 从URL初始化状态
-    async initializeFromUrl() {
-        try {
-            // 使用新的路由工具从URL初始化
-            return await articleRouteUtils.initializeFromUrl(
-                // 文章显示回调
-                async (articleId) => {
-                    this.currentPageId = articleId;
-                    await this.showArticle(articleId);
-                },
-                // 分类选择回调
-                (category) => {
-                    categoryManager.selectCategory(category);
-                }
-            );
-        } catch (error) {
-            logger.error('从URL初始化失败:', error);
-            return false;
-        }
-    }
-
-    // 获取分类的显示名称
-    getCategoryDisplayName(category) {
-        return this.categoryNameMap[category] || category;
-    }
-
-    // 显示欢迎页面
-    showWelcomePage() {
-        logger.info('显示欢迎页面 (委托给welcomePageManager)');
-        
-        // 首先切换到加载模式
-        contentViewManager.setMode(ViewMode.LOADING);
-        
-        // 确保有文章数据
-        if (!this.articles || this.articles.length === 0) {
-            logger.info('欢迎页面需要文章数据，但当前没有数据...');
-            // 委托给welcomePageManager处理
-            welcomePageManager.ensureArticleDataAndShowWelcome(() => this.loadArticles());
-            return;
-        }
-        
-        // 如果已有文章数据，直接显示欢迎页面
-        welcomePageManager.showWelcomePage(this.articles);
     }
 
     // 添加一个新方法，用于强制重置加载状态 - 可在页面中暴露使用
@@ -702,42 +688,6 @@ class ArticleManager {
         return this.articles;
     }
 
-    // 文章内容渲染后处理
-    _afterRenderArticle(container) {
-        // 重要：遍历所有图片，标记为已处理
-        const images = container.querySelectorAll('img');
-        images.forEach(img => {
-            // 添加标记，避免重复处理
-            img.setAttribute('data-lazy-processed', 'true');
-        });
-        
-        // 或者修改为仅处理表格
-        if (typeof window.tableLazyLoader !== 'undefined' && typeof window.tableLazyLoader.processTables === 'function') {
-            window.tableLazyLoader.processTables(container);
-        }
-        
-        // 处理代码块
-        this.processCodeBlocks(container);
-        
-        // ...其他处理...
-    }
-
-    // 修改加载状态方法，使用视图管理器
-    showArticleLoadingState() {
-        // 现有代码...
-        
-        // 设置加载中模式
-        contentViewManager.setMode(ViewMode.LOADING);
-    }
-
-    // 修改错误显示方法
-    showArticleError(message) {
-        // 现有代码...
-        
-        // 设置错误模式
-        contentViewManager.markContent(document.getElementById('article-container'), 'error');
-        contentViewManager.setMode(ViewMode.ERROR);
-    }
 }
 
 export const articleManager = new ArticleManager(); 

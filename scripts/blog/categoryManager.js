@@ -5,25 +5,16 @@
  * @version 1.0.0
  * @created 2024-03-09
  * 
- * 该模块负责管理网站的文章分类功能：
+ * 该模块负责文章分类功能管理：
  * - 加载和解析分类数据
  * - 渲染分类导航菜单
  * - 处理分类的选择和切换
  * - 与articleManager协作实现按分类筛选文章
  * - 管理分类的状态和UI交互
- * 
- * 主要方法：
- * - loadCategories: 加载分类数据
- * - renderCategoryTree: 渲染分类树
- * - selectCategory: 选择分类
- * - expandCategory: 展开分类
- * - collapseCategory: 折叠分类
  */
 
 import { articleManager } from './articleManager.js';
 import { categoryConfig } from '../config/categories.js';
-import { showStatus } from '../utils/common-utils.js';
-import { PageTypes } from '../components/scrollbar.js';
 import { articleTreeSkeleton } from '../utils/skeleton-loader.js';
 import logger from '../utils/logger.js';
 import { articleRouteUtils } from '../utils/article-router.js';
@@ -82,29 +73,29 @@ class CategoryManager {
     }
 
     /**
-     * 显示文章树骨架屏
+     * 显示分类树骨架屏
      */
     showTreeSkeleton() {
-        if (this.articleTree) {
-            // 使用文章树骨架屏对象显示骨架屏
-            const treeChildren = this.articleTree.querySelector('.root-item > .tree-children');
-            if (treeChildren) {
-                articleTreeSkeleton.show(treeChildren);
-            }
+        const treeContainer = document.querySelector('#article-tree .root-item > .tree-children');
+        if (!treeContainer) {
+            logger.warn('分类树容器未找到');
+            return;
         }
+        
+        // 使用骨架屏
+        articleTreeSkeleton.show(treeContainer);
+        logger.info('显示分类树骨架屏');
     }
     
     /**
-     * 隐藏文章树骨架屏
+     * 隐藏分类树骨架屏
      */
     hideTreeSkeleton() {
-        if (this.articleTree) {
-            // 使用文章树骨架屏对象隐藏骨架屏
-            const treeChildren = this.articleTree.querySelector('.root-item > .tree-children');
-            if (treeChildren) {
-                articleTreeSkeleton.hide(treeChildren);
-            }
-        }
+        const treeContainer = document.querySelector('#article-tree .root-item > .tree-children');
+        if (!treeContainer) return;
+        
+        articleTreeSkeleton.hide(treeContainer);
+        logger.info('隐藏分类树骨架屏');
     }
 
     /**
@@ -112,31 +103,40 @@ class CategoryManager {
      */
     loadCategories() {
         try {
-            if (!categoryConfig || !categoryConfig.data) {
-                logger.error('无法加载分类数据');
+            // 检查必要的分类配置是否存在
+            if (!categoryConfig) {
+                logger.error('分类配置不存在');
                 this.hideTreeSkeleton();
                 return;
             }
             
             this.categoryMap = {};
             
+            // 从categoryConfig的nameMap和order创建分类数据结构
+            // 适配当前的配置格式，而不是期望一个data属性
+            const categories = Object.keys(categoryConfig.nameMap || {}).filter(key => key !== 'all');
+            
             // 构建分类映射
-            for (const category of categoryConfig.data) {
-                this.categoryMap[category.id] = category;
+            categories.forEach(categoryId => {
+                const displayName = categoryConfig.nameMap[categoryId];
+                const order = categoryConfig.order[categoryId] || 50;
+                const colors = categoryConfig.colors[categoryId] || categoryConfig.colors.default;
                 
-                if (category.children && category.children.length > 0) {
-                    for (const child of category.children) {
-                        this.categoryMap[child.id] = child;
-                    }
-                }
-            }
+                // 创建分类对象
+                this.categoryMap[categoryId] = {
+                    id: categoryId,
+                    name: displayName,
+                    order: order,
+                    colors: colors
+                };
+            });
             
             // 渲染分类树
             this.renderCategoryTree();
             
             logger.info('分类数据加载完成，共', Object.keys(this.categoryMap).length, '个分类');
         } catch (error) {
-            logger.error('加载分类数据时出错:', error);
+            logger.error('加载分类数据时出错:', error.message);
             this.hideTreeSkeleton();
         }
     }
@@ -184,6 +184,9 @@ class CategoryManager {
         });
 
         this.renderArticleTree();
+        
+        // 最后确保隐藏骨架屏
+        this.hideTreeSkeleton();
     }
 
     // 渲染文章树形列表
@@ -519,46 +522,6 @@ class CategoryManager {
         }
     }
 
-    // 展开到指定文章
-    expandToArticle(articleId) {
-        if (!articleId) return;
-        
-        // 查找文章所属的分类
-        const article = this.articles.find(a => a.id === articleId);
-        if (!article) return;
-        
-        let category = 'Uncategorized';
-        if (article.category) {
-            category = article.category;
-        } else if (article.properties && article.properties.Category) {
-            const categoryProp = article.properties.Category;
-            if (categoryProp.select && categoryProp.select.name) {
-                category = categoryProp.select.name;
-            } else if (categoryProp.multi_select && categoryProp.multi_select.length > 0) {
-                category = categoryProp.multi_select[0].name;
-            }
-        }
-        
-        // 展开根节点
-        const rootItem = document.querySelector('#article-tree .root-item');
-        if (rootItem) {
-            rootItem.classList.add('expanded');
-        }
-        
-        // 展开分类节点
-        const categoryNode = document.querySelector(`#article-tree .category-tree-item[data-category="${category}"]`);
-        if (categoryNode) {
-            categoryNode.classList.add('expanded');
-            this.expandedCategories.add(category);
-            
-            // 加载分类下的文章
-            this.loadArticlesForCategory(category, categoryNode);
-            
-            // 更新激活状态
-            this.updateActiveState(null, articleId);
-        }
-    }
-
     // 获取当前选中的分类
     getCurrentCategory() {
         return this.selectedCategory;
@@ -594,6 +557,196 @@ class CategoryManager {
                 // 确保加载该分类下的文章
                 this.loadArticlesForCategory(category, categoryNode);
             }
+        }
+    }
+
+    /**
+     * 渲染分类树
+     */
+    renderCategoryTree() {
+        if (!this.articleTree) {
+            logger.warn('文章树元素不存在，无法渲染分类树');
+            this.hideTreeSkeleton();
+            return;
+        }
+        
+        try {
+            // 获取根容器
+            const rootItem = this.articleTree.querySelector('.root-item');
+            if (!rootItem) {
+                logger.warn('未找到分类树根容器');
+                this.hideTreeSkeleton();
+                return;
+            }
+            
+            const treeChildren = rootItem.querySelector('.tree-children');
+            if (!treeChildren) {
+                logger.warn('未找到分类树子容器');
+                this.hideTreeSkeleton();
+                return;
+            }
+            
+            // 清空现有内容
+            treeChildren.innerHTML = '';
+            
+            // 获取所有分类并按顺序排序
+            const sortedCategories = Object.values(this.categoryMap)
+                .sort((a, b) => (a.order || 999) - (b.order || 999));
+            
+            // 如果没有分类，显示提示信息
+            if (sortedCategories.length === 0) {
+                treeChildren.innerHTML = '<li class="no-categories">暂无分类</li>';
+                this.hideTreeSkeleton();
+                return;
+            }
+            
+            // 创建"全部文章"节点
+            const allArticlesNode = document.createElement('li');
+            allArticlesNode.className = 'tree-item category-tree-item active';
+            allArticlesNode.dataset.category = 'all';
+            allArticlesNode.innerHTML = `
+                <div class="tree-item-content">
+                    <span class="expand-icon"><i class="fas fa-list"></i></span>
+                    <span class="category-name">全部文章</span>
+                    <span class="article-count">${this.articles.length || 0}</span>
+                </div>
+            `;
+            
+            // 添加全部文章点击事件
+            allArticlesNode.addEventListener('click', () => {
+                this.selectCategory('all');
+            });
+            
+            treeChildren.appendChild(allArticlesNode);
+            
+            // 渲染其他分类
+            for (const category of sortedCategories) {
+                const categoryNode = document.createElement('li');
+                categoryNode.className = 'tree-item category-tree-item';
+                categoryNode.dataset.category = category.id;
+                
+                // 计算该分类下的文章数量
+                const articleCount = this.articles.filter(article => 
+                    article.category === category.id
+                ).length;
+                
+                // 分类节点内容
+                categoryNode.innerHTML = `
+                    <div class="tree-item-content">
+                        <span class="expand-icon"><i class="fas fa-chevron-right"></i></span>
+                        <span class="category-name">${category.name}</span>
+                        <span class="article-count">${articleCount}</span>
+                    </div>
+                    <ul class="tree-children"></ul>
+                `;
+                
+                // 添加点击事件
+                categoryNode.querySelector('.tree-item-content').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    
+                    // 切换展开状态
+                    categoryNode.classList.toggle('expanded');
+                    
+                    // 记录展开状态
+                    if (categoryNode.classList.contains('expanded')) {
+                        this.expandedCategories.add(category.id);
+                        
+                        // 加载该分类下的文章
+                        this.loadArticlesForCategory(category.id, categoryNode);
+                    } else {
+                        this.expandedCategories.delete(category.id);
+                    }
+                    
+                    // 选择该分类
+                    this.selectCategory(category.id);
+                });
+                
+                treeChildren.appendChild(categoryNode);
+            }
+            
+            // 隐藏骨架屏
+            this.hideTreeSkeleton();
+            
+        } catch (error) {
+            logger.error('渲染分类树时出错:', error.message || error);
+            logger.debug('错误详情:', error.stack || '无堆栈信息');
+            this.hideTreeSkeleton();
+        }
+    }
+
+    /**
+     * 为分类加载文章
+     * @param {string} categoryId 分类ID
+     * @param {HTMLElement} categoryNode 分类节点
+     */
+    loadArticlesForCategory(categoryId, categoryNode) {
+        if (!categoryId || !categoryNode) return;
+        
+        try {
+            // 获取分类下的文章容器
+            const articleContainer = categoryNode.querySelector('.tree-children');
+            if (!articleContainer) return;
+            
+            // 如果已经加载过，不重复加载
+            if (articleContainer.childElementCount > 0) return;
+            
+            // 获取该分类下的文章
+            const articles = this.articles.filter(article => article.category === categoryId);
+            
+            // 如果没有文章，显示提示
+            if (articles.length === 0) {
+                articleContainer.innerHTML = '<li class="no-articles">暂无文章</li>';
+                return;
+            }
+            
+            // 清空容器
+            articleContainer.innerHTML = '';
+            
+            // 按照时间排序文章（最新的在前面）
+            const sortedArticles = [...articles].sort((a, b) => {
+                const dateA = a.publish_date || a.created_time || '0';
+                const dateB = b.publish_date || b.created_time || '0';
+                return new Date(dateB) - new Date(dateA);
+            });
+            
+            // 渲染文章列表
+            for (const article of sortedArticles) {
+                const articleNode = document.createElement('li');
+                articleNode.className = 'tree-item article-tree-item';
+                articleNode.dataset.articleId = article.id;
+                
+                // 如果当前正在查看这篇文章，标记为激活状态
+                if (this.currentArticleId === article.id) {
+                    articleNode.classList.add('active');
+                }
+                
+                // 提取文章标题
+                const title = article.title || 'Untitled';
+                
+                // 添加文档图标和标题
+                articleNode.innerHTML = `
+                    <div class="tree-item-content">
+                        <span class="article-icon"><i class="fas fa-file-alt"></i></span>
+                        <span class="item-name">${title}</span>
+                    </div>
+                `;
+                
+                // 添加文章点击事件
+                articleNode.querySelector('.tree-item-content').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.currentArticleId = article.id;
+                    this.updateActiveState(null, article.id);
+                    
+                    // 触发文章选择回调
+                    if (this.onArticleSelect) {
+                        this.onArticleSelect(article.id);
+                    }
+                });
+                
+                articleContainer.appendChild(articleNode);
+            }
+        } catch (error) {
+            logger.error(`加载分类"${categoryId}"下的文章时出错:`, error.message || error);
         }
     }
 }

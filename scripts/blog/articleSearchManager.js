@@ -279,8 +279,7 @@ class ArticleSearchManager {
      * @returns {string} 显示用的分类名称
      */
     getCategoryDisplayName(category) {
-        // 使用导入的分类映射，后续可以从外部注入
-        return category;
+        return categoryManager.getCategoryDisplayName(category);
     }
 
     /**

@@ -805,9 +805,3 @@ class TableLazyLoader {
 
 // 创建单例
 export const tableLazyLoader = new TableLazyLoader();
-
-// 将实例添加到全局对象，确保可以在全局范围内访问
-if (typeof window !== 'undefined') {
-    window.tableLazyLoader = tableLazyLoader;
-    logger.info('表格懒加载器已注册为全局对象');
-}

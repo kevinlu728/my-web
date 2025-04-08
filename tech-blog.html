@@ -64,7 +64,7 @@
     <script type="module">
         // 导入logger, 确保它最先加载
         import logger from './scripts/utils/logger.js';
-        console.log('✅ Logger模块已预加载');
+        console.log('✅ 日志模块已预加载');
     </script>
     
     <!-- 再加载API服务 -->
@@ -77,7 +77,7 @@
         import { styleResourceLoader } from './scripts/resource/styleResourceLoader.js';
         // 在全局作用域中暴露资源加载器
         window.resourceManager = resourceManager;
-        console.log('✅ 资源加载器已预加载');
+        console.log('✅ 资源管理器已预加载');
         
         // 优先使用本地Font Awesome资源
         const localFA = document.getElementById('local-font-awesome');
@@ -378,15 +378,7 @@
         if (articleContainer && !articleContainer.hasAttribute('data-resource-group')) {
             articleContainer.setAttribute('data-resource-group', 'core');
         }
-        
-        // 将模块导出到全局作用域，方便调试
-        window.imageLazyLoader = imageLazyLoader;
-        window.articleManager = articleManager;
-        window.categoryManager = categoryManager;
-        window.config = config;
-        window.tableLazyLoader = tableLazyLoader;
-        window.codeLazyLoader = codeLazyLoader;
-        
+          
         // 将showArticle方法挂载到window对象上，使其可以在全局调用
         window.showArticle = function(articleId) {
             return articleManager.showArticle(articleId);
@@ -394,13 +386,18 @@
         
         // 页面加载完成后初始化
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('初始化技术博客页面组件...');
+            console.log('导入配置并检查环境');
             
             // 导入配置并检查环境
             const isProduction = config && config.getEnvironment && config.getEnvironment() === 'production';
             
             // 仅在非生产环境加载调试面板
             if (!isProduction) {
+                // 将模块导出到全局作用域，方便调试
+                window.imageLazyLoader = imageLazyLoader;
+                window.articleManager = articleManager;
+                window.categoryManager = categoryManager;
+                window.config = config;
                 // 加载调试面板组件
                 loadDebugPanel({
                     databaseId: config.notion.databaseId || config.debug.defaultDatabaseId
@@ -409,39 +406,10 @@
                 });
             }
             
-            // 初始化页面
-            initializePage().catch(err => {
-                console.error('初始化页面时出错:', err);
-            });
-            
             // 初始化导航
             initNavigation();
         });
     </script>
 
-    <!-- 在现有脚本导入之后添加 -->
-    <script type="module">
-        // 导入骨架屏加载器
-        import { articleTreeSkeleton } from './scripts/utils/skeleton-loader.js?v=1.0.0';
-        
-        // 将骨架屏加载器添加到全局作用域以便调试
-        window.articleTreeSkeleton = articleTreeSkeleton;
-        
-        // DOM加载完成后添加配置UI
-        document.addEventListener('DOMContentLoaded', () => {
-            // 如果在URL参数中有debug=true，显示骨架屏配置
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.has('debug') && urlParams.get('debug') === 'true') {
-                // 创建配置容器
-                const configContainer = document.createElement('div');
-                configContainer.id = 'skeleton-config-container';
-                configContainer.className = 'skeleton-config visible';
-                document.body.appendChild(configContainer);
-                
-                // 添加配置UI
-                articleTreeSkeleton.addConfigUI('skeleton-config-container');
-            }
-        });
-    </script>
 </body>
 </html>

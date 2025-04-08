@@ -225,9 +225,6 @@ class StyleResourceLoader {
             return;
         }
         
-        logger.info('🔄 加载本地Font Awesome资源');
-        
-        // 始终从外部文件加载基本图标样式，无论Font Awesome是否加载成功
         const link = document.createElement('link');
         link.id = 'basic-icon-styles';
         link.rel = 'stylesheet';
@@ -238,7 +235,7 @@ class StyleResourceLoader {
         link.setAttribute('data-is-fallback', 'true');
         
         document.head.appendChild(link);
-        logger.debug('已加载基本图标回退样式');
+        logger.info('✅ 已加载基本图标回退样式');
     }
     
     /**
@@ -252,7 +249,7 @@ class StyleResourceLoader {
         }
         
         // 确保已经加载了图标样式文件（它们在同一个文件中）
-        if (!document.getElementById('basic-icon-styles')) {
+        if (!document.getElementById('basic-icon-styles')) { 
             this.injectBasicIconStyles();
             // 由于我们已经加载了包含所有回退样式的文件，可以直接返回
             return;

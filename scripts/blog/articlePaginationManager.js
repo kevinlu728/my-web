@@ -11,8 +11,8 @@
  * - 管理加载状态和UI反馈
  */
 
-import { articleCacheManager } from '../blog/articleCacheManager.js';   
-import { imageLazyLoader } from '../blog/imageLazyLoader.js';
+import { articleCacheManager } from './articleCacheManager.js';   
+import { imageLazyLoader } from './imageLazyLoader.js';
 import { initializeLazyLoading } from './articleRenderer.js';
 import tableOfContents from './tableOfContents.js';
 import config from '../config/config.js';
@@ -90,20 +90,6 @@ class ArticlePaginationManager {
         const scrollPercentage = (scrollBottom / totalHeight) * 100;
         const isNearPageBottom = scrollPercentage > 85;
         
-        // 调试日志
-        if (config.debug && (isAtBottom || isNearPageBottom || isContainerNearOrInView)) {
-            logger.info('增强滚动检测:', {
-                '滚动百分比': scrollPercentage.toFixed(2) + '%',
-                '到达底部': isAtBottom,
-                '容器可见或接近': isContainerNearOrInView,
-                '接近底部': isNearPageBottom,
-                '容器位置': `顶部${containerRect.top.toFixed(0)}px, 底部${containerRect.bottom.toFixed(0)}px`,
-                '视口高度': viewportHeight,
-                '内容总高度': totalHeight,
-                '当前滚动位置': scrollBottom
-            });
-        }
-        
         // 综合多个条件判断是否应该触发加载
         return isAtBottom || (isNearPageBottom && isContainerNearOrInView);
     }
@@ -156,12 +142,6 @@ class ArticlePaginationManager {
         this.scrollHandler = throttle(() => {
             // 基本状态检查保持不变
             if (this.isLoading || !this.hasMore || !this.nextCursor) {
-                if (config.debug) {
-                    logger.info('跳过加载：', 
-                        this.isLoading ? '正在加载中' : 
-                        !this.hasMore ? '没有更多内容' : 
-                        !this.nextCursor ? 'nextCursor无效' : '未知原因');
-                }
                 return;
             }
 
@@ -370,35 +350,6 @@ class ArticlePaginationManager {
                 this.scrollHandler = null;
             }
         }
-    }
-
-    /**
-     * 清理加载更多状态
-     */
-    clearLoadMoreState() {
-        this.hasMore = false;
-        this.nextCursor = null;
-        this.isLoadingMore = false;
-        
-        // 更新加载更多容器的内容，但不移除它
-        const loadMoreContainer = document.querySelector('.load-more-container');
-        if (loadMoreContainer) {
-            loadMoreContainer.innerHTML = '<div class="no-more">没有更多内容</div>';
-        }
-        
-        // 确保移除滚动监听器
-        if (this.scrollHandler) {
-            if (this.scrollContainer) {
-                this.scrollContainer.removeEventListener('scroll', this.scrollHandler);
-            } else {
-                window.removeEventListener('scroll', this.scrollHandler);
-            }
-            this.scrollHandler = null;
-        }
-        
-        // 不要重置滚动容器引用，因为可能还需要在同一页面中使用
-        
-        logger.info('已更新加载更多状态：没有更多内容');
     }
 
     /**

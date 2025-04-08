@@ -188,7 +188,7 @@ export const articleTreeSkeleton = {
      */
     initialize() {
         this.loadConfig();
-        logger.info('骨架屏加载器已初始化', this.config.enabled ? '已启用' : '已禁用');
+        logger.info('文章列表骨架屏加载器已初始化', this.config.enabled ? '已启用' : '已禁用');
         return this;
     }
 };
@@ -223,9 +223,6 @@ export const welcomePageSkeleton = {
                 logger.warn('欢迎页面骨架屏容器不存在');
                 return;
             }
-            
-            // 添加更详细的调试
-            logger.info('欢迎页面骨架屏显示前，容器内容:', containerElement.innerHTML.substring(0, 100) + '...');
             
             // 防止重复添加骨架屏
             if (containerElement.querySelector('.welcome-page-skeleton')) {
