@@ -21,7 +21,7 @@ import { articlePaginationManager } from './articlePaginationManager.js';
 import { articleCacheManager } from './articleCacheManager.js';
 import { articleSearchManager } from './articleSearchManager.js';
 import { welcomePageManager } from './welcomePageManager.js';
-import { contentViewManager, ViewMode } from './contentViewManager.js';
+import { contentViewManager, ViewMode, ViewEvents } from './contentViewManager.js';
 import { renderNotionBlocks, initializeLazyLoading } from './articleRenderer.js';
 import tableOfContents from './tableOfContents.js';
 
@@ -316,6 +316,9 @@ class ArticleManager {
     showWelcomePage() {
         logger.info('显示欢迎页面 (委托给welcomePageManager)');
         
+        // 通知视图管理器准备显示欢迎页面 - 添加的事件通信
+        contentViewManager.dispatchViewEvent(ViewEvents.BEFORE_WELCOME); 
+        
         // 首先切换到加载模式
         contentViewManager.setMode(ViewMode.LOADING);
         
@@ -329,6 +332,9 @@ class ArticleManager {
         
         // 如果已有文章数据，直接显示欢迎页面
         welcomePageManager.showWelcomePage(this.articles);
+        
+        // 通知视图管理器欢迎页面显示完成 - 添加的事件通信
+        contentViewManager.dispatchViewEvent(ViewEvents.AFTER_WELCOME);
     }
 
     // 过滤并渲染文章列表
@@ -358,14 +364,26 @@ class ArticleManager {
     }
     
     // 显示文章内容
-    async showArticle(pageId) {
+    async showArticle(articleId) {
+        // 避免重复加载相同的文章
+        if (this.currentArticleId === articleId && document.querySelector('.article-body')) {
+            logger.info(`文章 ${articleId} 已经显示，跳过重复加载`);
+            return;
+        }
+        
+        this.currentArticleId = articleId;
+        
         try {
-            logger.info('开始加载文章:', pageId);
+            logger.info('开始加载文章:', articleId);
+            
+            // 通知视图管理器开始文章加载 - 添加的事件通信
+            contentViewManager.dispatchViewEvent(ViewEvents.LOADING_START, { loadingType: 'article', articleId: articleId });
+            
             const articleContainer = document.getElementById('article-container');
             if (!articleContainer) return false;
 
             // 验证文章ID
-            if (!this.validateArticleId(pageId)) {
+            if (!this.validateArticleId(articleId)) {
                 showError('无效的文章ID');
                 return false;
             }
@@ -374,7 +392,7 @@ class ArticleManager {
             articlePaginationManager.reset();
             
             // 准备加载
-            if (!this.prepareArticleLoading(pageId)) {
+            if (!this.prepareArticleLoading(articleId)) {
                 return false;
             }
 
@@ -382,18 +400,21 @@ class ArticleManager {
             contentViewManager.setMode(ViewMode.LOADING);
             
             try {
+                // 通知文章将要显示 - 添加的事件通信
+                contentViewManager.dispatchViewEvent(ViewEvents.BEFORE_ARTICLE, { articleId: articleId });
+                
                 // 更新URL参数 - 使用路由工具
-                articleRouteUtils.updateArticleParam(pageId);
+                articleRouteUtils.updateArticleParam(articleId);
                 
                 // 加载文章数据
-                const articleData = await this.loadAndDisplayArticle(pageId);
+                const articleData = await this.loadAndDisplayArticle(articleId);
                 if (!articleData) {
                     logger.info('文章加载已取消');
                     return false;
                 }
                 
                 // 设置当前页面ID和分页状态
-                this.currentPageId = pageId;
+                this.currentPageId = articleId;
                 
                 // 更新分页管理器的状态
                 articlePaginationManager.updateState({
@@ -460,15 +481,28 @@ class ArticleManager {
                 contentViewManager.markContent(articleContainer, 'article');
                 contentViewManager.setMode(ViewMode.ARTICLE);
                 
+                // 通知文章已显示 - 添加的事件通信
+                contentViewManager.dispatchViewEvent(ViewEvents.AFTER_ARTICLE, { articleId: articleId });
+                
+                // 通知加载完成 - 添加的事件通信
+                contentViewManager.dispatchViewEvent(ViewEvents.LOADING_END, { loadingType: 'article', articleId: articleId });
+                
                 return true;
             } catch (error) {
                 logger.error('渲染文章失败:', error);
                 
                 // 使用showArticleError显示错误信息
-                showArticleError(error.message, 'article-container', pageId);
+                showArticleError(error.message, 'article-container', articleId);
                 
                 // 设置错误模式
                 contentViewManager.setMode(ViewMode.ERROR);
+                
+                // 通知错误 - 添加的事件通信
+                contentViewManager.dispatchViewEvent('articleError', { 
+                    articleId: articleId, 
+                    error: error.message 
+                });
+                
                 return false;
             } finally {
                 // 重置加载状态
@@ -653,31 +687,6 @@ class ArticleManager {
     updateDatabaseId(newDatabaseId) {
         this.currentDatabaseId = newDatabaseId;
         this.loadArticles();
-    }
-
-    // 添加一个新方法，用于强制重置加载状态 - 可在页面中暴露使用
-    resetLoadingState() {
-        logger.info('强制重置加载状态');
-        this.isLoading = false;
-        this.isLoadingMore = false;
-        
-        // 移除加载中指示器
-        const loadingIndicator = document.querySelector('.loading-indicator');
-        if (loadingIndicator) {
-            loadingIndicator.remove();
-        }
-        
-        // 如果页面卡在加载中状态，尝试恢复UI
-        const articleContainer = document.getElementById('article-container');
-        const loadingElement = articleContainer?.querySelector('.placeholder-content');
-        if (loadingElement && articleContainer) {
-            // 如果内容区只有加载占位符，显示一个错误提示
-            articleContainer.innerHTML = `
-                <div class="error-message">
-                    <p>加载内容超时，请<a href="javascript:void(0)" onclick="window.articleManager.resetLoadingState()">刷新</a>重试</p>
-                </div>
-            `;
-        }
     }
     
     /**

@@ -578,6 +578,47 @@ class ImageLazyLoader {
             imgElement.src = imgElement.dataset.src || imgElement.getAttribute('data-original-src');
         };
     }
+
+    /**
+     * 为文章中的图片应用统一样式
+     * @param {HTMLElement} container - 包含图片的容器元素（通常是文章体）
+     */
+    applyArticleImageStyles(container = document) {
+        if (!container) {
+            logger.warn('没有找到图片容器，无法应用文章图片样式');
+            return 0;
+        }
+        
+        logger.info('正在应用文章图片样式...');
+        const images = container.querySelectorAll('img');
+        logger.info(`找到 ${images.length} 张文章图片`);
+        
+        images.forEach(img => {
+            // 设置基本样式
+            img.style.maxWidth = '50%';
+            img.style.height = 'auto';
+            img.style.margin = '1.5rem auto';
+            img.style.display = 'block';
+            
+            // 在移动设备上调整
+            if (window.innerWidth <= 768) {
+                img.style.maxWidth = '80%';
+            }
+            
+            // 添加点击放大功能（如果尚未添加）
+            if (!img.hasClickHandler) {
+                img.style.cursor = 'zoom-in';
+                img.onclick = () => {
+                    const originalSrc = img.getAttribute('data-original-src') || img.src;
+                    this.openModal(originalSrc);
+                };
+                img.hasClickHandler = true;
+            }
+        });
+        
+        logger.info('图片样式已应用');
+        return images.length; // 返回处理的图片数量
+    }
 }
 
 // 导出实例

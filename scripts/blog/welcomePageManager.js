@@ -14,7 +14,7 @@
  */
 
 import { renderWelcomePage } from './welcomePageRenderer.js';
-import { contentViewManager, ViewMode } from './contentViewManager.js';
+import { contentViewManager, ViewMode, ViewEvents } from './contentViewManager.js';
 import { categoryConfig } from '../config/categories.js';
 import { welcomePageSkeleton } from '../utils/skeleton-loader.js';
 import logger from '../utils/logger.js';
@@ -119,21 +119,35 @@ class WelcomePageManager {
      */
     showWelcomePageSkeleton() {
         const container = document.getElementById('article-container');
-        if (!container) {
-            logger.warn('文章容器不存在，无法显示欢迎页面骨架屏');
-            return;
+        if (container) {
+            logger.info('显示欢迎页面骨架屏');
+            welcomePageSkeleton.show(container);
+            
+            // 发送欢迎页骨架屏显示事件
+            const event = new CustomEvent('welcomeSkeletonShown', {
+                detail: { container }
+            });
+            document.dispatchEvent(event);
+        }
+    }
+    
+    /**
+     * 刷新欢迎页面
+     * @param {boolean} showPlaceholder 是否显示占位内容
+     */
+    refreshWelcomePage(showPlaceholder = true) {
+        // 发送欢迎页面刷新开始事件
+        contentViewManager.dispatchViewEvent(ViewEvents.BEFORE_WELCOME, { showPlaceholder });
+        
+        if (showPlaceholder) {
+            this.showWelcomePageSkeleton();
         }
         
-        // 确保内容视图处于加载状态
-        contentViewManager.setMode(ViewMode.LOADING);
+        // 开始数据加载
+        this.refreshDataInBackground();
         
-        // 使用骨架屏加载器显示骨架屏
-        welcomePageSkeleton.show(container);
-        
-        // 只在骨架屏显示后再标记内容
-        setTimeout(() => {
-            contentViewManager.markContent(container, 'welcome');
-        }, 10);
+        // 发送欢迎页面刷新结束事件
+        contentViewManager.dispatchViewEvent(ViewEvents.AFTER_WELCOME);
     }
     
     /**

@@ -1,41 +1,49 @@
 /**
  * @file tech-blog.js
- * @description 技术博客页面脚本，处理技术博客页面的特定功能
+ * @description 技术博客页面主控制器，负责整体页面生命周期和状态管理
  * @author 陆凯
- * @version 1.0.0
+ * @version 1.2.0
  * @created 2024-03-09
+ * @updated 2024-05-15
  * 
- * 该模块负责技术博客页面的特定功能：
- * - 初始化文章列表和分类
- * - 处理文章的加载和显示
- * - 实现文章的搜索和筛选
- * - 处理分页和"加载更多"功能
- * - 管理页面的状态和UI交互
+ * 该模块是博客应用的核心控制器，负责以下功能：
+ * 1. 页面生命周期管理：初始化、加载和状态转换
+ * 2. 组件协调：协调文章管理器、分类管理器和视图管理器
+ * 3. 状态管理：通过统一的 pageState 对象管理应用状态
+ * 4. 资源加载：预加载核心资源，确保页面性能
+ * 5. 事件处理：初始化和处理视图事件
+ * 6. 视图控制：管理不同视图状态间的转换
+ * 7. 辅助功能：提供UI增强和修复
  * 
- * 该页面脚本协调articleManager和categoryManager，
- * 实现技术博客页面的完整功能。
+ * 该模块不直接处理文章内容和分类列表，这些由专门的管理器负责。
+ * 而是通过事件通信和API调用来协调这些模块的工作。
  * 
- * 该模块在tech-blog.html页面中被引入和执行。
  */
 
-// 技术博客页面主逻辑
-// 保留原始服务导入，以便在apiService不可用时使用
 import { getDatabaseInfo, testApiConnection, getDatabases } from '../services/notionService.js';
 import { resourceManager } from '../resource/resourceManager.js';
 import { articleManager } from './articleManager.js';
 import { categoryManager } from './categoryManager.js';
 import { welcomePageManager } from './welcomePageManager.js';
-import { contentViewManager, ViewMode } from './contentViewManager.js';
-import { initializeLazyLoading } from './articleRenderer.js';
+import { contentViewManager, ViewMode, ViewEvents } from './contentViewManager.js';
 import { imageLazyLoader } from './imageLazyLoader.js';
 import { scrollToTop } from '../components/scrollbar.js';
 import { initDebugPanel } from '../components/debugPanel.js';
 
-// 导入工具函数
 import { showStatus, showError } from '../utils/common-utils.js';
 import logger from '../utils/logger.js';
 
 logger.info('🚀 tech-blog.js 开始加载...');
+
+/**
+ * 创建全局页面状态对象，统一管理页面状态
+ */
+window.pageState = {
+    initialized: false,  // 页面是否已初始化
+    initializing: false, // 页面是否正在初始化
+    loading: false,      // 页面是否正在加载内容
+    error: null          // 出错信息
+};
 
 /**
  * 当DOM结构加载完成时执行的初始化操作
@@ -75,8 +83,8 @@ document.addEventListener('DOMContentLoaded', () => {
 window.addEventListener('load', () => {
     logger.info('📃 页面加载完成，开始初始化...');
     
-    // 避免重复初始化
-    if (pageInitialized) {
+    // 避免重复初始化 - 使用统一的状态变量
+    if (window.pageState.initialized) {
         logger.info('页面已经初始化，跳过重复初始化');
         return;
     }
@@ -90,9 +98,11 @@ window.addEventListener('load', () => {
         initializePage().catch(error => {
             logger.error('❌ 初始化失败:', error);
             showStatus('页面初始化失败，请刷新重试', true, 'error');
+            window.pageState.error = error;
         }).finally(() => {
-            // 初始化完成，设置标志
-            pageInitialized = true;
+            // 初始化完成，设置统一状态标志
+            window.pageState.initialized = true;
+            window.pageState.initializing = false;
             
             showStatus('', false);
         });
@@ -107,7 +117,7 @@ window.addEventListener('load', () => {
         logger.info('等待内容解锁事件...');
         // 增加超时保护，防止事件未触发
         setTimeout(() => {
-            if (!pageInitialized) {
+            if (!window.pageState.initialized) {
                 logger.warn('⚠️ 内容解锁事件在10秒内未触发，强制初始化页面');
                 document.dispatchEvent(new Event('content-unblocked'));
             }
@@ -151,269 +161,313 @@ function unlockContent() {
 }
 
 /**
- * 初始化页面
- * @param {boolean} forceApiTest - 是否强制检查API可用性
+ * 初始化技术博客页面
+ * @param {boolean} forceApiTest 是否强制进行API测试
  * @returns {Promise<void>}
  */
 export async function initializePage(forceApiTest = false) {
+    // ===== 锁检查和初始状态设置 =====
+    // 防止重复初始化 - 使用统一的状态锁
+    if (window.pageState.initializing) {
+        logger.info('页面正在初始化中，跳过重复初始化');
+        return;
+    }
+    
+    // 设置初始化锁
+    window.pageState.initializing = true;
+    
     try {
-        // 防止重复初始化 - 添加初始化锁
-        if (window._pageInitializing === true) {
-            logger.info('页面正在初始化中，跳过重复初始化');
-            return;
-        }
-        
-        // 设置初始化锁
-        window._pageInitializing = true;
-        
-        // 检查是否已经初始化
-        if (window.blogPageInitialized && !forceApiTest) {
+        // 检查是否已经初始化 - 使用统一的状态变量
+        if (window.pageState.initialized && !forceApiTest) {
             logger.info('页面已初始化，跳过初始化过程');
-            window._pageInitializing = false; // 释放锁
+            window.pageState.initializing = false; // 释放锁
             return;
         }
 
-        // 设置状态
-        window.blogPageInitialized = true;
-        window.blogPageLoading = true;
+        // 设置状态 - 使用统一的状态变量
+        window.pageState.loading = true;
 
-        try {
-            logger.info('初始化技术博客页面...');
-            
-            // 添加环境类名到body元素
-            const config = window.config || {};
-            if (config.getEnvironment) {
-                const env = config.getEnvironment();
-                document.body.classList.add(env);
-                logger.info(`当前环境: ${env}`);
-            }
-            
-            // 检查依赖项
-            logger.info('检查依赖项：');
-            logger.info('- articleManager:', !!articleManager);
-            logger.info('- categoryManager:', !!categoryManager);
-            logger.info('- imageLazyLoader:', !!imageLazyLoader);
-            logger.info('- apiService:', !!window.apiService);
-            
-            const currentDatabaseId = config.notion.databaseId || config.debug.defaultDatabaseId;
-            logger.info('当前数据库ID:', currentDatabaseId);
+        // ===== 1. 环境准备和基础设置 =====
+        logger.info('初始化技术博客页面...');
+        
+        // 添加环境类名到body元素
+        const config = window.config || {};
+        if (config.getEnvironment) {
+            const env = config.getEnvironment();
+            document.body.classList.add(env);
+            logger.info(`当前环境: ${env}`);
+        }
+        
+        // 检查依赖项
+        logger.info('检查依赖项：');
+        logger.info('- articleManager:', !!articleManager);
+        logger.info('- categoryManager:', !!categoryManager);
+        logger.info('- imageLazyLoader:', !!imageLazyLoader);
+        logger.info('- apiService:', !!window.apiService);
+        
+        const currentDatabaseId = config.notion.databaseId || config.debug.defaultDatabaseId;
+        logger.info('当前数据库ID:', currentDatabaseId);
 
-            // 直接处理加载遮罩
-            handleLoadingMask('fade');
-            
-            // 检查API服务可用性
-            if (window.apiService) {
-                logger.info('✅ 检测到apiService，将使用API服务自动选择功能');
-                try {
-                    const apiStatus = await window.apiService.testConnection();
-                    if (apiStatus.success) {
-                        logger.info('✅ API服务连接成功，使用实现:', apiStatus.implementation);
-                    } else {
-                        logger.warn('⚠️ API服务连接测试失败，将回退到直接服务调用');
-                    }
-                } catch (error) {
-                    logger.error('❌ API服务测试出错:', error);
-                }
-            } else {
-                logger.info('⚠️ 未检测到apiService，将使用直接服务调用');
-            }
 
-            // 重写 showWelcomePage 方法，使用新的占位图样式
-            if (articleManager && articleManager.showWelcomePage) {
-                const originalShowWelcomePage = articleManager.showWelcomePage;
-                articleManager.showWelcomePage = function() {
-                    logger.info('显示欢迎页面 (使用视图管理器和欢迎页管理器)');
-                    
-                    const container = document.getElementById('article-container');
-                    if (container) {
-                        // 检查是否已有内容(不是占位图)
-                        if (container.querySelector('.welcome-page') || 
-                            container.querySelector('.article-body')) {
-                            // 如果已经有欢迎页或文章内容，直接返回，避免重复渲染
-                            logger.info('已有页面内容，跳过欢迎页重新渲染');
-                            return;
-                        }
-                        
-                        // 检查是否已存在占位图
-                        let placeholder = container.querySelector('.placeholder-content');
-                        
-                        // 如果不存在占位图，才创建新的占位图
-                        if (!placeholder) {
-                            container.innerHTML = `
-                                <div class="placeholder-content">
-                                    <div class="placeholder-image"></div>
-                                    <div class="placeholder-text">正在准备内容</div>
-                                    <div class="placeholder-hint">欢迎页面加载中，请稍候片刻...</div>
-                                </div>
-                            `;
-                            placeholder = container.querySelector('.placeholder-content');
-                        }
-                        
-                        // 直接调用原始方法显示欢迎页内容，仅保留很短的延迟
-                        setTimeout(() => {
-                            originalShowWelcomePage.call(this);
-                        }, 100);
-                    }
-                };
-                logger.info('✅ articleManager.showWelcomePage 方法扩展完成');
-            }
+        // 初始化内容视图管理器，下面需要使用
+        contentViewManager.initialize('article-container');
 
-            // 初始化文章管理器
-            logger.info('初始化文章管理器...');
-            await articleManager.initialize(currentDatabaseId);
-
-            // 初始化欢迎页面管理器
-            logger.info('初始化欢迎页面管理器...');
-            welcomePageManager.initialize({
-                getArticles: () => articleManager.getArticles(),
-                onCategorySelect: (category) => {
-                    categoryManager.selectCategory(category);
-                },
-                onArticleSelect: (articleId) => {
-                    articleManager.showArticle(articleId);
-                }
-            });
-
-            // 设置分类变更回调
-            categoryManager.setOnCategoryChange((category) => {
-                logger.info('分类变更为:', category);
-                articleManager.filterAndRenderArticles();
-            });
-
-            // 创建API服务包装函数，优先使用apiService，失败时回退到原始服务
-            const wrappedGetDatabaseInfo = async (databaseId) => {
-                try {
-                    // 如果apiService可用且提供了getDatabaseInfo方法
-                    if (window.apiService && typeof window.apiService.getDatabaseInfo === 'function') {
-                        logger.info('通过apiService获取数据库信息');
-                        return await window.apiService.getDatabaseInfo(databaseId);
-                    }
-                    // 回退到原始实现
-                    logger.info('通过原始服务获取数据库信息');
-                    return await getDatabaseInfo(databaseId);
-                } catch (error) {
-                    logger.error('获取数据库信息失败:', error);
-                    // 确保返回一个合理的结果
-                    return { success: false, error: error.message };
-                }
-            };
-
-            const wrappedTestApiConnection = async () => {
-                try {
-                    // 如果apiService可用
-                    if (window.apiService) {
-                        logger.info('通过apiService测试API连接');
-                        return await window.apiService.testConnection();
-                    }
-                    // 回退到原始实现
-                    logger.info('通过原始服务测试API连接');
-                    return await testApiConnection();
-                } catch (error) {
-                    logger.error('API连接测试失败:', error);
-                    return { success: false, error: error.message };
-                }
-            };
-
-            const wrappedGetDatabases = async () => {
-                try {
-                    // 如果apiService可用且提供了getDatabases方法
-                    if (window.apiService && typeof window.apiService.getDatabases === 'function') {
-                        logger.info('通过apiService获取数据库列表');
-                        return await window.apiService.getDatabases();
-                    }
-                    // 回退到原始实现
-                    logger.info('通过原始服务获取数据库列表');
-                    return await getDatabases();
-                } catch (error) {
-                    logger.error('获取数据库列表失败:', error);
-                    return { success: false, error: error.message, results: [] };
-                }
-            };
-
-            // 初始化调试面板
-            initDebugPanel(currentDatabaseId, {
-                onConfigUpdate: (newDatabaseId) => articleManager.updateDatabaseId(newDatabaseId),
-                onRefresh: () => articleManager.loadArticles(),
-                showStatus,
-                // 使用包装后的API函数
-                getDatabaseInfo: wrappedGetDatabaseInfo,
-                testApiConnection: wrappedTestApiConnection,
-                getDatabases: wrappedGetDatabases
-            });
-
-            // 检查URL中是否有指定文章参数
+        // 更新视图状态
+        updateViewState('loading');
+        
+        // ===== 2. API服务检查和包装 =====
+        // 检查API服务可用性
+        if (window.apiService) {
+            logger.info('✅ 检测到apiService，将使用API服务自动选择功能');
             try {
-                const urlParams = new URLSearchParams(window.location.search);
-                const articleIdFromUrl = urlParams.get('article');
-                
-                if (articleIdFromUrl) {
-                    // 仅当URL中指定了文章ID时才加载文章
-                    logger.info(`从URL参数加载文章: ${articleIdFromUrl}`);
-                    await articleManager.showArticle(articleIdFromUrl);
+                const apiStatus = await window.apiService.testConnection();
+                if (apiStatus.success) {
+                    logger.info('✅ API服务连接成功，使用实现:', apiStatus.implementation);
                 } else {
-                    // 视图管理器会自动处理视图模式
-                    determineInitialViewState();
-                    // 委托给欢迎页管理器处理
-                    welcomePageManager.ensureArticleDataAndShowWelcome(() => articleManager.loadArticles());
+                    logger.warn('⚠️ API服务连接测试失败，将回退到直接服务调用');
                 }
             } catch (error) {
-                logger.error('页面初始化过程中出错:', error);
-                // 即使出错，也尝试加载文章数据再显示欢迎页面
-                if (!articleManager.articles || articleManager.articles.length === 0) {
-                    try {
-                        await articleManager.loadArticles();
-                    } catch (loadError) {
-                        logger.error('加载文章数据出错:', loadError);
-                    }
-                }
-                articleManager.showWelcomePage();
+                logger.error('❌ API服务测试出错:', error);
             }
-
-            logger.info('✅ 页面初始化完成！');
-            
-            // 初始化左栏宽度调整功能
-            initializeResizableLeftColumn();
-            
-            // 初始化返回顶部按钮
-            initializeBackToTop();
-
-            // 为页面图片应用样式（如果有的话）
-            applyImageStyles();
-            
-            // 修复FontAwesome图标显示 - 移至此处执行，确保DOM已加载完毕
-            fixFontAwesomeIcons();
-            
-            // 彻底移除加载遮罩
-            handleLoadingMask('remove');
-            
-            // 清除"正在初始化页面..."的状态消息
-            showStatus('', false);
-
-            // 初始化内容视图管理器
-            logger.info('初始化内容视图管理器...');
-            contentViewManager.initialize('article-container');
-
-            // 监听视图模式变化
-            document.getElementById('article-container')?.addEventListener('viewModeChanged', (event) => {
-                logger.info(`内容视图模式已变更: ${event.detail.previousMode} -> ${event.detail.mode}`);
-            });
-
-            // 在contentViewManager初始化后调用
-            determineInitialViewState();
-        } catch (error) {
-            logger.error('初始化页面时出错:', error);
-            window.blogPageLoading = false;
-            throw error;
-        } finally {
-            // 释放初始化锁
-            window._pageInitializing = false;
+        } else {
+            logger.info('⚠️ 未检测到apiService，将使用直接服务调用');
         }
+
+        // 创建API服务包装函数，优先使用apiService，失败时回退到原始服务
+        const wrappedGetDatabaseInfo = async (databaseId) => {
+            try {
+                // 如果apiService可用且提供了getDatabaseInfo方法
+                if (window.apiService && typeof window.apiService.getDatabaseInfo === 'function') {
+                    logger.info('通过apiService获取数据库信息');
+                    return await window.apiService.getDatabaseInfo(databaseId);
+                }
+                // 回退到原始实现
+                logger.info('通过原始服务获取数据库信息');
+                return await getDatabaseInfo(databaseId);
+            } catch (error) {
+                logger.error('获取数据库信息失败:', error);
+                // 确保返回一个合理的结果
+                return { success: false, error: error.message };
+            }
+        };
+
+        const wrappedTestApiConnection = async () => {
+            try {
+                // 如果apiService可用
+                if (window.apiService) {
+                    logger.info('通过apiService测试API连接');
+                    return await window.apiService.testConnection();
+                }
+                // 回退到原始实现
+                logger.info('通过原始服务测试API连接');
+                return await testApiConnection();
+            } catch (error) {
+                logger.error('API连接测试失败:', error);
+                return { success: false, error: error.message };
+            }
+        };
+
+        const wrappedGetDatabases = async () => {
+            try {
+                // 如果apiService可用且提供了getDatabases方法
+                if (window.apiService && typeof window.apiService.getDatabases === 'function') {
+                    logger.info('通过apiService获取数据库列表');
+                    return await window.apiService.getDatabases();
+                }
+                // 回退到原始实现
+                logger.info('通过原始服务获取数据库列表');
+                return await getDatabases();
+            } catch (error) {
+                logger.error('获取数据库列表失败:', error);
+                return { success: false, error: error.message, results: [] };
+            }
+        };
+        
+        // ===== 3. 核心组件初始化 =====
+        // 初始化文章管理器
+        logger.info('初始化文章管理器...');
+        await articleManager.initialize(currentDatabaseId);
+
+        // 初始化欢迎页面管理器
+        logger.info('初始化欢迎页面管理器...');
+        welcomePageManager.initialize({
+            getArticles: () => articleManager.getArticles(),
+            onCategorySelect: (category) => {
+                categoryManager.selectCategory(category);
+            },
+            onArticleSelect: (articleId) => {
+                articleManager.showArticle(articleId);
+            }
+        });
+
+        // 设置分类变更回调
+        categoryManager.setOnCategoryChange((category) => {
+            logger.info('分类变更为:', category);
+            articleManager.filterAndRenderArticles();
+        });
+        
+        // 初始化调试面板
+        initDebugPanel(currentDatabaseId, {
+            onConfigUpdate: (newDatabaseId) => articleManager.updateDatabaseId(newDatabaseId),
+            onRefresh: () => articleManager.loadArticles(),
+            showStatus,
+            // 使用包装后的API函数
+            getDatabaseInfo: wrappedGetDatabaseInfo,
+            testApiConnection: wrappedTestApiConnection,
+            getDatabases: wrappedGetDatabases
+        });
+        
+        // ===== 4. 内容显示处理 =====
+        // 检查URL中是否有指定文章参数
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const articleIdFromUrl = urlParams.get('article');
+            
+            if (articleIdFromUrl) {
+                // 仅当URL中指定了文章ID时才加载文章
+                logger.info(`从URL参数加载文章: ${articleIdFromUrl}`);
+                await articleManager.showArticle(articleIdFromUrl);
+            } else {
+                // 更新视图状态
+                updateViewState('auto');
+                // 委托给欢迎页管理器处理
+                welcomePageManager.ensureArticleDataAndShowWelcome(() => articleManager.loadArticles());
+            }
+        } catch (error) {
+            logger.error('页面初始化过程中出错:', error);
+            // 即使出错，也尝试加载文章数据再显示欢迎页面
+            if (!articleManager.articles || articleManager.articles.length === 0) {
+                try {
+                    await articleManager.loadArticles();
+                } catch (loadError) {
+                    logger.error('加载文章数据出错:', loadError);
+                }
+            }
+            articleManager.showWelcomePage();
+        }
+        
+        // ===== 5. 辅助功能初始化 =====
+        logger.info('✅ 页面初始化完成！开始初始化辅助功能...');
+        
+        // 初始化视图事件
+        initializeViewEvents();
+
+        // 初始化左栏宽度调整功能
+        initializeResizableLeftColumn();
+        
+        // 初始化返回顶部按钮
+        initializeBackToTop();
+        
+        // 修复FontAwesome图标显示 - 移至此处执行，确保DOM已加载完毕
+        fixFontAwesomeIcons();
+        
+        // ===== 6. 收尾工作 =====
+        // 更新视图状态
+        updateViewState('auto');
+        
+        // 清除"正在初始化页面..."的状态消息
+        showStatus('', false);
+
+        // 监听视图模式变化
+        document.getElementById('article-container')?.addEventListener('viewModeChanged', (event) => {
+            logger.info(`内容视图模式已变更: ${event.detail.previousMode} -> ${event.detail.mode}`);
+        });
+
     } catch (error) {
-        logger.error('页面初始化过程中发生严重错误:', error);
-        showError('页面初始化失败，请稍后重试');
-        window._pageInitializing = false; // 确保锁总是释放
-        throw error;
+        // 统一错误处理
+        logger.error('页面初始化过程中发生错误:', error.message);
+ 
+        // 重置状态标志 - 使用统一的状态变量
+        window.pageState.loading = false;
+        window.pageState.error = error;
+        
+        // 错误分类处理（可选）
+        if (error.name === 'NetworkError') {
+            logger.error('网络连接错误，请检查网络连接');
+            showStatus('网络连接失败，请检查您的网络设置', true, 'error');
+        } else if (error.name === 'DataError') {
+            logger.error('数据加载错误:', error.message);
+            showStatus('加载数据时出错，请稍后再试', true, 'error');
+        } else {
+            logger.error('其它类型错误:', error.message);
+            showError('页面初始化失败，请稍后重试');
+        }
+        
+        // 此处不再抛出错误，让调用者通过Promise.catch捕获
+    } finally {
+        // 确保在所有情况下都释放锁 - 使用统一的状态变量
+        window.pageState.initializing = false;
     }
+}
+
+function initializeViewEvents() {
+    logger.info('初始化视图事件监听...');
+    
+    // 注册视图事件处理程序
+    contentViewManager.on(ViewEvents.BEFORE_WELCOME, (e) => {
+        const container = document.getElementById('article-container');
+        if (!container) return;
+        
+        // 检查是否已有内容(不是占位图)
+        if (container.querySelector('.welcome-page') || 
+            container.querySelector('.article-body')) {
+            logger.info('已有页面内容，跳过欢迎页重新渲染');
+            return;
+        }
+        
+        // 如果需要加载欢迎页，准备视图状态
+        logger.info('准备显示欢迎页面...');
+    });
+    
+    contentViewManager.on(ViewEvents.LOADING_START, (e) => {
+        // 显示加载状态
+        showStatus('正在加载内容...', false);
+    });
+    
+    contentViewManager.on(ViewEvents.LOADING_END, (e) => {
+        // 隐藏加载状态
+        showStatus('', false);
+    });
+    
+    // 监听文章内容显示前事件
+    contentViewManager.on(ViewEvents.BEFORE_ARTICLE, (e) => {
+        const articleId = e.detail.articleId;
+        logger.info(`准备显示文章: ${articleId}`);
+        
+        // 移除此处的URL更新，因为articleManager.js中已经处理了
+        // updateBrowserHistory(articleId);
+    });
+    
+    // 监听视图模式变更
+    contentViewManager.on(ViewEvents.MODE_CHANGED, (e) => {
+        logger.info(`视图模式已变更: ${e.detail.previousMode} -> ${e.detail.mode}`);
+    });
+
+    // 修改文章内容显示后的事件处理，添加标记防止循环
+    contentViewManager.on(ViewEvents.AFTER_ARTICLE, (e) => {
+        // 使用一个标记来防止重复处理
+        const articleId = e.detail.articleId;
+        const processingKey = `article_processed_${articleId}`;
+        
+        // 检查是否已经处理过这篇文章
+        if (window[processingKey]) {
+            logger.debug(`文章 ${articleId} 已处理过样式，跳过`);
+            return;
+        }
+        
+        logger.info('文章内容已显示，应用图片样式');
+        const articleBody = document.querySelector('.article-body');
+        if (articleBody) {
+            imageLazyLoader.applyArticleImageStyles(articleBody);
+            // 设置标记，表示已处理
+            window[processingKey] = true;
+            
+            // 清理标记（可选，防止内存泄漏）
+            setTimeout(() => {
+                delete window[processingKey];
+            }, 5000); // 5秒后清理
+        }
+    });
 }
 
 /**
@@ -702,40 +756,59 @@ function initializeBackToTop() {
 }
 
 /**
- * 处理加载遮罩
- * @param {string} action - 'fade' 淡出遮罩，'remove' 彻底移除遮罩
+ * 更新视图状态 - 添加状态检查防止循环
  */
-function handleLoadingMask(action = 'fade') {
-    // 使用视图管理器控制加载状态
-    if (action === 'fade') {
-        contentViewManager.setMode(ViewMode.LOADING);
-    } else if (action === 'remove') {
-        // 根据当前状态设置适当的模式
-        determineInitialViewState();
-    }
-}
-
-// 在初始化流程中添加
-function determineInitialViewState() {
+function updateViewState(state = 'auto') {
     try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const articleId = urlParams.get('article');
+        logger.debug(`准备更新视图状态: ${state}`);
         
-        if (articleId) {
-            contentViewManager.setMode(ViewMode.ARTICLE);
+        // 获取当前状态以避免无意义的重复设置
+        const currentMode = contentViewManager.getCurrentMode();
+        
+        // 处理'loading'状态
+        if (state === 'loading') {
+            // 避免重复设置加载状态
+            if (currentMode === ViewMode.LOADING) {
+                logger.debug('已经是加载状态，跳过重复设置');
+                return;
+            }
+            contentViewManager.setMode(ViewMode.LOADING);
+            return;
+        }
+        
+        // 处理'auto'状态
+        if (state === 'auto') {
+            const urlParams = new URLSearchParams(window.location.search);
+            const articleId = urlParams.get('article');
+            
+            // 如果有文章ID且当前不是文章模式，设置为文章模式
+            if (articleId && currentMode !== ViewMode.ARTICLE) {
+                contentViewManager.setMode(ViewMode.ARTICLE);
+            } 
+            // 如果没有文章ID且当前不是欢迎模式，设置为欢迎模式
+            else if (!articleId && currentMode !== ViewMode.WELCOME) {
+                contentViewManager.setMode(ViewMode.WELCOME);
+            } else {
+                logger.debug(`当前已是正确模式(${currentMode})，跳过状态更新`);
+            }
+            return;
+        }
+        
+        // 处理特定的ViewMode值
+        if (Object.values(ViewMode).includes(state)) {
+            // 避免重复设置相同状态
+            if (currentMode === state) {
+                logger.debug(`已经是${state}状态，跳过重复设置`);
+                return;
+            }
+            contentViewManager.setMode(state);
         } else {
-            contentViewManager.setMode(ViewMode.WELCOME);
+            logger.warn(`未知的视图状态: ${state}，保持当前状态`);
         }
     } catch (error) {
-        logger.error('确定初始视图状态时出错:', error);
-        // 出错时默认设置为欢迎页模式
-        try {
-            contentViewManager.setMode('welcome');
-        } catch (e) {
-            // 忽略二次错误
-        }
+        logger.error('更新视图状态时出错:', error);
     }
-} 
+}
 
 /**
  * 修复FontAwesome图标显示问题
@@ -803,83 +876,3 @@ function fixFontAwesomeIcons() {
         }
     }
 }
-
-// 导出显示文章的全局函数
-window.showArticle = async (pageId) => {
-    logger.info('🔄 调用全局 showArticle 函数:', pageId);
-    return articleManager.showArticle(pageId);
-};
-
-// 设置一个标志来跟踪初始化是否已完成
-let pageInitialized = false;
-
-// 如果 articleManager 有一个 displayArticleContent 方法
-// 我们需要覆盖它以处理图片
-if (typeof articleManager.displayArticleContent === 'function') {
-    const originalDisplayContent = articleManager.displayArticleContent;
-    articleManager.displayArticleContent = function(article) {
-        if (article && article.content) {
-            logger.info('🔄 准备处理文章内容中的图片...');
-            // 处理 HTML 内容中的图片
-            article.content = imageLazyLoader.processHTMLContent(article.content);
-        }
-        
-        // 调用原始方法
-        const result = originalDisplayContent.call(this, article);
-        
-        // 在内容显示后处理图片懒加载和代码块懒加载
-        setTimeout(() => {
-            const articleBody = document.querySelector('.article-body');
-            if (articleBody) {
-                logger.info('🖼️ 开始处理新加载的文章图片...');
-                imageLazyLoader.processImages(articleBody);
-                
-                logger.info('🔄 初始化代码块和表格懒加载...');
-                initializeLazyLoading(articleBody);
-            }
-        }, 100);
-        
-        return result;
-    };
-}
-
-/**
- * 应用图片样式
- * 确保文章中的图片样式正确
- */
-function applyImageStyles() {
-    logger.info('正在应用文章图片样式...');
-    const images = document.querySelectorAll('.article-body img');
-    logger.info(`找到 ${images.length} 张文章图片`);
-    
-    images.forEach(img => {
-        img.style.maxWidth = '50%';
-        img.style.height = 'auto';
-        img.style.margin = '1.5rem auto';
-        img.style.display = 'block';
-        
-        // 在移动设备上调整
-        if (window.innerWidth <= 768) {
-            img.style.maxWidth = '80%';
-        }
-        
-        // 添加点击放大功能
-        img.onclick = function() {
-            logger.info('图片被点击');
-            // 这里可以添加点击放大功能
-        };
-    });
-    
-    logger.info('图片样式已应用');
-}
-
-// 扩展文章管理器，在显示文章后应用图片样式
-const originalDisplayArticle = articleManager.displayArticle;
-articleManager.displayArticle = function(articleId) {
-    originalDisplayArticle.call(this, articleId);
-    
-    // 在文章加载后应用样式，添加延迟确保内容已加载
-    setTimeout(() => {
-        applyImageStyles();
-    }, 500);
-};

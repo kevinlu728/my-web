@@ -16,12 +16,24 @@ export const ViewMode = {
     ERROR: 'error'
 };
 
+// 视图状态事件
+export const ViewEvents = {
+    MODE_CHANGED: 'viewModeChanged',
+    BEFORE_WELCOME: 'beforeWelcomeShow',
+    AFTER_WELCOME: 'afterWelcomeShow',
+    BEFORE_ARTICLE: 'beforeArticleShow',
+    AFTER_ARTICLE: 'afterArticleShow',
+    LOADING_START: 'contentLoadingStart',
+    LOADING_END: 'contentLoadingEnd'
+};
+
 class ContentViewManager {
     constructor() {
         this.currentMode = null;
         this.container = null;
         this.initialized = false;
-        this.pendingModeChanges = []; // 添加待处理队列
+        this.pendingModeChanges = [];
+        this.eventHandlers = {}; // 添加事件处理程序存储
     }
     
     /**
@@ -113,6 +125,84 @@ class ContentViewManager {
         
         // 添加指定的内容类型
         element.classList.add(`${contentType}-content`);
+    }
+    
+    /**
+     * 发送视图事件
+     * @param {string} eventName 事件名称
+     * @param {Object} detail 事件详情
+     */
+    dispatchViewEvent(eventName, detail = {}) {
+        if (!this.container) return;
+        
+        logger.debug(`发送视图事件: ${eventName}`, detail);
+        const event = new CustomEvent(eventName, { detail });
+        this.container.dispatchEvent(event);
+    }
+    
+    /**
+     * 注册视图事件处理程序
+     * @param {string} eventName 事件名称
+     * @param {Function} handler 处理函数
+     */
+    on(eventName, handler) {
+        if (!this.container) {
+            logger.warn('视图容器未初始化，无法注册事件');
+            return;
+        }
+        
+        // 存储处理程序以便于清理
+        this.eventHandlers[eventName] = this.eventHandlers[eventName] || [];
+        this.eventHandlers[eventName].push(handler);
+        
+        // 注册事件监听器
+        this.container.addEventListener(eventName, handler);
+    }
+    
+    /**
+     * 显示欢迎页面
+     */
+    showWelcomePage() {
+        // 先触发前置事件
+        this.dispatchViewEvent(ViewEvents.BEFORE_WELCOME);
+        
+        // 切换视图模式
+        this.setMode(ViewMode.WELCOME);
+        
+        // 触发后置事件
+        this.dispatchViewEvent(ViewEvents.AFTER_WELCOME);
+    }
+    
+    /**
+     * 显示文章页面
+     * @param {string} articleId 文章ID
+     */
+    showArticlePage(articleId) {
+        // 先触发前置事件
+        this.dispatchViewEvent(ViewEvents.BEFORE_ARTICLE, { articleId });
+        
+        // 切换视图模式
+        this.setMode(ViewMode.ARTICLE);
+        
+        // 触发后置事件
+        this.dispatchViewEvent(ViewEvents.AFTER_ARTICLE, { articleId });
+    }
+    
+    /**
+     * 开始加载
+     * @param {string} loadingType 加载类型
+     */
+    startLoading(loadingType = 'general') {
+        this.setMode(ViewMode.LOADING);
+        this.dispatchViewEvent(ViewEvents.LOADING_START, { loadingType });
+    }
+    
+    /**
+     * 结束加载
+     * @param {string} loadingType 加载类型
+     */
+    endLoading(loadingType = 'general') {
+        this.dispatchViewEvent(ViewEvents.LOADING_END, { loadingType });
     }
 }
 
