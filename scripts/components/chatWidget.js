@@ -21,6 +21,8 @@
  */
 
 import logger from '../utils/logger.js';
+// 引入AI服务
+import aiService from '../services/aiService.js';
 
 export function initChatWidget() {
     // 尝试通过ID选择器获取元素，如果失败则尝试类选择器
@@ -55,6 +57,9 @@ export function initChatWidget() {
     // 初始是否已经显示了欢迎消息
     let welcomeShown = false;
     
+    // 是否正在等待AI回复
+    let isWaitingForResponse = false;
+    
     // 打开/关闭聊天窗口
     chatToggle.addEventListener('click', () => {
         logger.info('聊天图标被点击');
@@ -67,7 +72,7 @@ export function initChatWidget() {
             // 添加欢迎消息
             const welcomeMessages = [
                 '你好！我是Kevin的AI小助手，很高兴为你服务 👋',
-                '我可以帮您：\n1. 了解Kevin的经历\n2. 查看项目介绍\n3. 获取联系方式\n请问您想了解什么？ 😊'
+                '我可以帮您：\n1. 了解Kevin的工作经历\n2. 了解Kevin的兴趣爱好\n3. 获取技术知识\n请问您想了解什么？ 😊'
             ];
 
             // 依次显示欢迎消息
@@ -212,20 +217,105 @@ export function initChatWidget() {
         }
     }
 
-    // 发送消息
-    function sendMessage() {
+    // 发送消息 - 修改为使用AI服务
+    async function sendMessage() {
         const message = chatInput.value.trim();
-        if (message) {
+        if (message && !isWaitingForResponse) {
             // 添加用户消息
             addMessage(message, 'user');
             chatInput.value = '';
             chatInput.style.height = 'auto';
             
-            // 模拟AI回复
+            // 设置等待状态
+            isWaitingForResponse = true;
+            
+            // 显示AI正在思考的提示
+            const thinkingId = showThinkingAnimation();
+            
+            // 调用AI服务获取回复（使用流式API实现打字机效果）
+            let currentResponse = '';
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message bot-message typing';
+
+            // 准备DOM元素，但暂不添加到聊天框
+            const time = new Date().toLocaleTimeString('zh-CN', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            messageElement.innerHTML = `
+                <div class="message-content">
+                    <p></p>
+                </div>
+                <div class="message-time">${time}</div>
+            `;
+            
+            // 移除思考动画，添加消息元素
             setTimeout(() => {
-                addMessage('这是一个模拟的AI回复 😊', 'ai');
-            }, 1000);
+                if (thinkingId) {
+                    clearThinkingAnimation(thinkingId);
+                }
+                chatMessages.appendChild(messageElement);
+                
+                // 开始流式接收回复
+                aiService.sendMessageStream(
+                    message,
+                    // 每收到一个数据块的回调
+                    (partialResponse) => {
+                        currentResponse = partialResponse;
+                        // 更新消息内容，处理换行
+                        const safeText = String(currentResponse)
+                            .replace(/&/g, '&amp;')
+                            .replace(/</g, '&lt;')
+                            .replace(/>/g, '&gt;')
+                            .replace(/\n/g, '<br>');
+                        
+                        messageElement.querySelector('p').innerHTML = safeText;
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                    },
+                    // 完成回调
+                    (finalResponse) => {
+                        // 完成打字效果，移除typing类
+                        messageElement.classList.remove('typing');
+                        isWaitingForResponse = false;
+                    }
+                );
+            }, 500);
         }
+    }
+
+    // 显示AI思考中的动画
+    function showThinkingAnimation() {
+        const thinkingDiv = document.createElement('div');
+        thinkingDiv.className = 'message bot-message thinking';
+        thinkingDiv.innerHTML = `
+            <div class="message-content">
+                <div class="thinking-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        `;
+        chatMessages.appendChild(thinkingDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+        return setTimeout(() => {
+            if (chatMessages.contains(thinkingDiv)) {
+                chatMessages.removeChild(thinkingDiv);
+            }
+        }, 15000); // 最多显示15秒
+    }
+
+    // 清除思考动画
+    function clearThinkingAnimation(timeoutId) {
+        clearTimeout(timeoutId);
+        const thinkingElements = chatMessages.querySelectorAll('.thinking');
+        thinkingElements.forEach(el => {
+            if (chatMessages.contains(el)) {
+                chatMessages.removeChild(el);
+            }
+        });
     }
 
     // 添加消息到聊天框
@@ -273,31 +363,65 @@ export function initChatWidget() {
         chatInput.style.height = chatInput.scrollHeight + 'px';
     });
 
-    // 快捷回复按钮
+    // 快捷回复按钮 - 修改为使用AI服务
     const quickReplyBtns = document.querySelectorAll('.quick-reply-btn');
     quickReplyBtns.forEach(btn => {
         btn.addEventListener('click', () => {
+            if (isWaitingForResponse) return;
+            
             const message = btn.textContent;
             addMessage(message, 'user');
             
-            // 根据不同的快捷回复给出不同的AI回应
+            // 设置等待状态
+            isWaitingForResponse = true;
+            
+            // 显示AI正在思考的提示
+            const thinkingId = showThinkingAnimation();
+            
+            // 调用AI服务获取回复
             setTimeout(() => {
-                let aiResponse;
-                switch (message) {
-                    case '了解更多':
-                        aiResponse = '我可以为您介绍Kevin的职业经历、技术专长和个人兴趣。您想了解哪个方面呢？ 😊';
-                        break;
-                    case '查看项目':
-                        aiResponse = '好的，我可以为您介绍Kevin参与过的一些重要项目，包括华为HiAI、京东端智能和美团终端PaaS等。您对哪个项目感兴趣？ 🚀';
-                        break;
-                    case '联系方式':
-                        aiResponse = '您可以通过以下方式联系Kevin：\n1. 微信\n2. 邮箱：kevinlu728@gmail.com\n3. LinkedIn主页\n需要我为您展示具体的联系方式吗？ 📱';
-                        break;
-                    default:
-                        aiResponse = '抱歉，我没有理解您的问题。请您换个方式提问，或者选择快捷回复按钮。 🤔';
+                if (thinkingId) {
+                    clearThinkingAnimation(thinkingId);
                 }
-                addMessage(aiResponse, 'ai');
-            }, 1000);
+                
+                let currentResponse = '';
+                const messageElement = document.createElement('div');
+                messageElement.className = 'message bot-message typing';
+
+                const time = new Date().toLocaleTimeString('zh-CN', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                messageElement.innerHTML = `
+                    <div class="message-content">
+                        <p></p>
+                    </div>
+                    <div class="message-time">${time}</div>
+                `;
+                
+                chatMessages.appendChild(messageElement);
+                
+                // 开始流式接收回复
+                aiService.sendMessageStream(
+                    message,
+                    (partialResponse) => {
+                        currentResponse = partialResponse;
+                        const safeText = String(currentResponse)
+                            .replace(/&/g, '&amp;')
+                            .replace(/</g, '&lt;')
+                            .replace(/>/g, '&gt;')
+                            .replace(/\n/g, '<br>');
+                        
+                        messageElement.querySelector('p').innerHTML = safeText;
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                    },
+                    (finalResponse) => {
+                        messageElement.classList.remove('typing');
+                        isWaitingForResponse = false;
+                    }
+                );
+            }, 500);
         });
     });
 
