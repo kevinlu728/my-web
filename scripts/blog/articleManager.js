@@ -156,11 +156,6 @@ class ArticleManager {
                 // 从URL初始化状态
                 await this.initializeFromUrl();
                 
-                // 如果URL中没有指定文章，则显示欢迎页面
-                if (!this.currentPageId) {
-                    logger.info('显示欢迎页面...');
-                    this.showWelcomePage();
-                }
             } else {
                 logger.info('没有文章，不更新分类');
             }
@@ -213,20 +208,6 @@ class ArticleManager {
                     }
                 }
             }, 8000); // 8秒超时
-            
-            // 测试 API 连接
-            try {
-                logger.info('测试 API 连接...');
-                const testResponse = await fetch('/api/hello');
-                if (testResponse.ok) {
-                    logger.info('API 测试成功');
-                } else {
-                    logger.error('API 测试失败:', testResponse.status, testResponse.statusText);
-                    showError(`API连接测试失败: ${testResponse.status} ${testResponse.statusText}`);
-                }
-            } catch (testError) {
-                logger.error('API 测试异常:', testError);
-            }
             
             // 早期添加人为延迟是为了确保加载提示可见。但这个延迟会导致articleManager初始化和welcomePageManager初始化的
             // 间隔长达约5秒（即使有缓存），导致页面加载很慢。因此现在移除这个延迟（设为0），但暂时保留这行代码，观察一段时间。

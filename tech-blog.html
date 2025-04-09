@@ -367,9 +367,6 @@
         // 立即将配置对象设置为全局可访问
         window.config = config;
         
-        // 记录配置状态，帮助调试
-        console.log('配置已加载:', config);
-        
         // 然后导入其他模块
         import { resourceManager } from './scripts/resource/resourceManager.js';
         import { articleManager } from './scripts/blog/articleManager.js';

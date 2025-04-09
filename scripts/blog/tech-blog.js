@@ -51,7 +51,9 @@ window.pageState = {
 document.addEventListener('DOMContentLoaded', () => {
     logger.info('DOM内容已加载，开始初始化...');
     
-    // 1. 预加载关键资源
+    // 1. 设置事件监听器和预加载关键资源
+    // 这里提前设置监听器，不再依赖window.load事件
+    setupContentUnblockedListener();
     preloadCriticalResources();
     
     // 2. 初始化拖动手柄。稍微延迟以确保所有样式已加载
@@ -81,53 +83,29 @@ document.addEventListener('DOMContentLoaded', () => {
  * 当页面完全加载后执行的操作
  */
 window.addEventListener('load', () => {
-    logger.info('📃 页面加载完成，开始初始化...');
-    
+    logger.info('📃 页面加载完成');
+ 
     // 避免重复初始化 - 使用统一的状态变量
     if (window.pageState.initialized) {
         logger.info('页面已经初始化，跳过重复初始化');
         return;
     }
     
-    showStatus('正在初始化页面...', false);
-    
-    // 监听资源加载器的内容解锁事件
-    document.addEventListener('content-unblocked', () => {
-        logger.info('🎉 内容已解锁，开始初始化页面');
-        // 初始化页面
-        initializePage().catch(error => {
-            logger.error('❌ 初始化失败:', error);
-            showStatus('页面初始化失败，请刷新重试', true, 'error');
-            window.pageState.error = error;
-        }).finally(() => {
-            // 初始化完成，设置统一状态标志
-            window.pageState.initialized = true;
-            window.pageState.initializing = false;
-            
-            showStatus('', false);
-        });
-    }, { once: true });
-    
-    // 检查是否使用资源加载器解锁了内容
-    if (window.contentUnblocked) {
-        logger.info('内容已经被解锁，立即初始化页面');
+    // 作为备份机制，检查是否需要触发内容解锁事件
+    if (window.contentUnblocked && !window.pageState.initializing) {
+        logger.info('检测到内容已解锁但页面未初始化，触发事件');
+        // 确保监听器已设置
+        setupContentUnblockedListener();
         // 触发内容解锁事件
         document.dispatchEvent(new Event('content-unblocked'));
-    } else {
-        logger.info('等待内容解锁事件...');
-        // 增加超时保护，防止事件未触发
-        setTimeout(() => {
-            if (!window.pageState.initialized) {
-                logger.warn('⚠️ 内容解锁事件在10秒内未触发，强制初始化页面');
-                document.dispatchEvent(new Event('content-unblocked'));
-            }
-        }, 10000);
+    } else if (!window.contentUnblocked) {
+        logger.warn('⚠️ 页面加载完成但内容未解锁，强制解锁');
+        unlockContent();
     }
 });
 
 /**
- * 预加载核心资源并解锁内容
- * 通过资源管理器加载关键CSS和JS资源，然后初始化欢迎页面
+ * 预加载关键资源并解锁内容
  */
 function preloadCriticalResources() {
     // 如果资源管理器不可用，立即解锁内容并返回
@@ -149,6 +127,38 @@ function preloadCriticalResources() {
             logger.error('❌ 核心资源加载失败:', error.message);
             unlockContent();
         });
+    
+    // 添加安全超时，确保即使资源加载出现问题，页面也能正常初始化
+    setTimeout(() => {
+        if (!window.contentUnblocked) {
+            logger.warn('⚠️ 资源加载超时，强制解锁内容');
+            unlockContent();
+        }
+    }, 5000); // 5秒安全超时
+}
+
+/**
+ * 设置内容解锁事件监听器，确保在早期阶段就准备好
+ */
+function setupContentUnblockedListener() {
+    // 避免重复添加监听器
+    if (window._contentUnblockedListenerSet) return;
+    window._contentUnblockedListenerSet = true;
+    
+    document.addEventListener('content-unblocked', () => {
+        logger.info('🎉 内容已解锁，开始初始化页面');
+        // 初始化页面
+        initializePage().catch(error => {
+            logger.error('❌ 初始化失败:', error);
+            showStatus('页面初始化失败，请刷新重试', true, 'error');
+            window.pageState.error = error;
+        }).finally(() => {
+            // 初始化完成，设置统一状态标志
+            window.pageState.initialized = true;
+            window.pageState.initializing = false;
+            showStatus('', false);
+        });
+    }, { once: true });
 }
 
 /**
@@ -199,11 +209,11 @@ export async function initializePage(forceApiTest = false) {
         }
         
         // 检查依赖项
-        logger.info('检查依赖项：');
-        logger.info('- articleManager:', !!articleManager);
-        logger.info('- categoryManager:', !!categoryManager);
-        logger.info('- imageLazyLoader:', !!imageLazyLoader);
-        logger.info('- apiService:', !!window.apiService);
+        // logger.info('检查依赖项：');
+        // logger.info('- articleManager:', !!articleManager);
+        // logger.info('- categoryManager:', !!categoryManager);
+        // logger.info('- imageLazyLoader:', !!imageLazyLoader);
+        // logger.info('- apiService:', !!window.apiService);
         
         const currentDatabaseId = config.notion.databaseId || config.debug.defaultDatabaseId;
         logger.info('当前数据库ID:', currentDatabaseId);

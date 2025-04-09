@@ -133,15 +133,15 @@ class ResourceTimeout {
      */
     handleTimeout(url, resourceType, priority) {
         // 计算实际使用的超时时间
-        let timeout = 8000;
+        let timeout = 3000;
         if (priority === 'critical') {
-            timeout = 10000;
-        } else if (priority === 'high') {
-            timeout = 8000;
-        } else if (priority === 'medium') {
-            timeout = 6000;
-        } else if (priority === 'low') {
             timeout = 5000;
+        } else if (priority === 'high') {
+            timeout = 4000;
+        } else if (priority === 'medium') {
+            timeout = 3000;
+        } else if (priority === 'low') {
+            timeout = 2000;
         }
         
         logger.warn(`⏱️ 资源加载超时 (${timeout}ms): ${url}`);

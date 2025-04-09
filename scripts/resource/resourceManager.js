@@ -508,7 +508,7 @@ class ResourceManager {
         
         // 合并所有Promise
         return Promise.all([...stylesPromises, ...scriptsPromises]).then(() => {
-            logger.info('✅ 非阻塞核心内容资源加载完成');
+            logger.info('✅ 核心内容资源非阻塞加载完成');
             // 设置全局标志，指示内容已解锁
             window.contentUnblocked = true;
             
@@ -517,7 +517,7 @@ class ResourceManager {
             
             return true;
         }).catch(error => {
-            logger.error('❌ 核心内容资源加载失败:', error);
+            logger.error('❌ 核心内容资源非阻塞加载失败:', error);
             
             // 即使加载失败，也设置全局标志，以便初始化可以继续
             window.contentUnblocked = true;
