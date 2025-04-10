@@ -154,80 +154,43 @@ class ResourceManager {
     }
     
     /**
-     * 初始化页面资源加载策略
-     * 按照优先级逐步加载资源
+     * 加载博客页面所需的资源
+     * 先加载关键的回退样式，然后解除内容阻塞，最后加载高优先级资源
      */
-    initResourceLoadingStrategy() {
-        if (this.isInitialized) {
-            logger.debug('🔍 资源加载策略已初始化，跳过');
-            return;
-        }
+    loadBlogPageResources() {
+        logger.debug('🚀 加载博客页面所需资源...');
         
-        logger.debug('🚀 初始化资源加载策略...');
-        this.isInitialized = true;
-        
-        // 1. 首先优先处理内容渲染，无论资源是否加载完成
-        this.prioritizeContentRendering();
-        
-        // 2. 在DOM加载后（但不阻塞内容显示）继续加载资源
-        document.addEventListener('DOMContentLoaded', () => {
-            logger.debug('📃 DOM已加载，继续优化资源加载');
-            
-            // 确保所有关键元素都有资源组标记
-            this.ensureResourceGroupMarkers();
-            
-            // 检查加载失败的资源
-            setTimeout(() => {
-                this.checkForFailedResources();
-            }, 2000);
-        });
-        
-        // 3. 监听页面完全加载事件
-        window.addEventListener('load', () => {
-            logger.debug('🏁 页面完全加载，设置基于可见性的后续资源加载');
-            
-            // 如果浏览器支持Intersection Observer，为可见性加载做准备
-            if ('IntersectionObserver' in window) {
-                this.setupVisibilityBasedLoading();
-            }
-        });
-    }
-    /**
-     * 优先加载基本样式并解除内容阻塞
-     * 这个方法确保基本样式尽快加载，而页面内容不被阻塞
-     */
-    prioritizeContentRendering() {
-        logger.debug('🚀 优先处理内容渲染...');
-        
-        // 加载关键的回退样式
+        // 立即注入关键内联样式
         styleResourceLoader.injectCriticalInlineStyles();
-        
+
         // 立即解除内容阻塞
         setTimeout(() => {
-            this.unblockContentLoading();
-            // 设置全局标志，通知其他组件内容已解锁
-            window.contentUnblocked = true;
+            document.dispatchEvent(new Event('content-unblocked'));
         }, 50);
         
-        // 加载高优先级资源，但不阻塞渲染
-        setTimeout(() => {
-            this.loadResourcesByPriority('high')
-                .catch(error => logger.warn('加载高优先级资源时出错:', error));
+        // // 加载高优先级资源，但不阻塞渲染
+        // setTimeout(() => {
+        //     this.loadResourcesByPriority('high')
+        //         .catch(error => logger.warn('加载高优先级资源时出错:', error));
             
-            // 然后加载中优先级资源
-            setTimeout(() => {
-                this.loadResourcesByPriority('medium')
-                    .catch(error => logger.warn('加载中优先级资源时出错:', error));
-            }, 1000);
-        }, 300);
+        //     // 然后加载中优先级资源
+        //     setTimeout(() => {
+        //         this.loadResourcesByPriority('medium')
+        //             .catch(error => logger.warn('加载中优先级资源时出错:', error));
+        //     }, 1000);
+
+        //     // 延迟加载低优先级资源
+        //     setTimeout(() => {
+        //         this.lazyLoadLowPriorityResources();
+        //     }, 2000);
+        // }, 300);
         
-        // 延迟加载低优先级资源
+        // 检查加载失败的资源
         setTimeout(() => {
-            this.lazyLoadLowPriorityResources();
+            this.checkForFailedResources();
         }, 2000);
-        
-        return true;
     }
+
     /**
      * 解除内容加载阻塞
      * 移除阻塞内容显示的CSS和其他限制
@@ -245,9 +208,8 @@ class ResourceManager {
                 if (el.parentNode) el.parentNode.removeChild(el);
             }, 550);
         });
-        
         // 添加自定义事件通知页面内容可以显示了
-        document.dispatchEvent(new CustomEvent('content-unblocked'));
+        document.dispatchEvent(new Event('content-unblocked'));
         
         logger.debug('🎉 内容加载阻塞已解除，页面内容可以显示');
     }
@@ -282,13 +244,14 @@ class ResourceManager {
             
             // 对于样式资源
             if (type === 'styles') {
-                return styleResourceLoader.loadCssNonBlocking(
+                return styleResourceLoader.loadCss(
                     resource.primary,
                     {
                         resourceType: name,
                         fallbacks: resource.fallbacks || [],
                         attributes: resource.attributes || {}
-                    }
+                    },
+                    true  // 非阻塞模式
                 );
             }
             
@@ -296,13 +259,10 @@ class ResourceManager {
             if (type === 'scripts') {
                 return scriptResourceLoader.loadScript(
                     resource.primary,
+                    resource,  // 传递完整的资源对象
                     {
                         async: true,
-                        defer: true,
-                        attributes: resource.attributes || {
-                            'data-resource-type': name,
-                            'data-resource-priority': priority
-                        }
+                        defer: true
                     }
                 );
             }
@@ -340,9 +300,6 @@ class ResourceManager {
      */
     ensureResourceGroupMarkers() {
         logger.debug('🔍 确保页面元素有正确的资源组标记...');
-        
-        // 确保this上下文可用
-        const self = this;
         
         // 为代码块添加标记
         document.querySelectorAll('pre code, .code-block, code[class*="language-"]').forEach(el => {
@@ -459,8 +416,9 @@ class ResourceManager {
                 return Promise.resolve(true);
             
             case 'code':
-                    // 加载代码高亮相关资源
-                    loadPromise = prismLoader.loadCodeHighlightResources();
+                // 加载代码高亮相关资源
+                logger.debug(`加载"code"资源组`);
+                loadPromise = prismLoader.loadCodeHighlightResources();
                 break;
             
             case 'math':
@@ -481,49 +439,6 @@ class ResourceManager {
                 this._loadedResourceGroups.add(groupName);
             }
             return result;
-        });
-    }
-
-    /**
-     * 非阻塞方式加载核心内容所需的资源
-     * 这个方法不会阻止页面继续加载，该方法会被 tech-blog.js 调用
-     * @returns {Promise} 加载完成的Promise
-     */
-    loadNonBlockingCoreContent() {
-        logger.debug('🔍 初始化非阻塞核心内容加载...');
-        
-        // 加载关键样式资源
-        const stylesPromises = [];
-        
-        // 加载关键样式资源（字体和图标），不阻塞页面渲染
-        stylesPromises.push(
-            styleResourceLoader.loadCssNonBlocking('/assets/libs/bootstrap-icons/bootstrap-icons.css'),
-            styleResourceLoader.loadCssNonBlocking('/assets/libs/prism/themes/prism-tomorrow.min.css')
-        );
-        
-        // 加载关键脚本资源
-        const scriptsPromises = [
-            scriptResourceLoader.loadScript('/assets/libs/prism/prism.min.js', { async: true })
-        ];
-        
-        // 合并所有Promise
-        return Promise.all([...stylesPromises, ...scriptsPromises]).then(() => {
-            logger.info('✅ 核心内容资源非阻塞加载完成');
-            // 设置全局标志，指示内容已解锁
-            window.contentUnblocked = true;
-            
-            // 触发内容解锁事件
-            document.dispatchEvent(new Event('content-unblocked'));
-            
-            return true;
-        }).catch(error => {
-            logger.error('❌ 核心内容资源非阻塞加载失败:', error);
-            
-            // 即使加载失败，也设置全局标志，以便初始化可以继续
-            window.contentUnblocked = true;
-            document.dispatchEvent(new Event('content-unblocked'));
-            
-            throw error; // 重新抛出错误以便调用者处理
         });
     }
 
@@ -580,7 +495,6 @@ class ResourceManager {
         
         // 获取资源策略
         const strategy = this.getResourceStrategy(resourceType);
-        
         // 根据策略和资源类型处理错误
         this.handleResourceByStrategy(element, url, resourceType, resourceId, strategy, localFallback);
     }   
@@ -708,12 +622,13 @@ class ResourceManager {
      * @param {string} localFallback - 本地回退URL
      */
     tryLoadFromLocal(element, resourceType, resourceId, localFallback) {
-        logger.debug(`🔄 tryLoadFromLocal, 尝试从本地加载资源: ${resourceType}-${resourceId}`);
+        logger.debug(`🔄 tryLoadFromLocal, 尝试从本地加载资源: ${resourceId}`);
         // 优先使用指定的本地回退路径
         let localUrl = localFallback;
         
         // 如果没有提供本地回退路径，尝试从预定义映射中获取
         if (!localUrl) {
+            logger.info(`没有提供本地回退路径，尝试从预定义映射中获取`);
             // 预定义的资源映射
             const localResourceMap = {
                 'font-awesome': '/assets/libs/font-awesome/all.min.css',
@@ -723,7 +638,7 @@ class ResourceManager {
                 'katex': '/assets/libs/katex/katex.min.css'
             };
             
-            localUrl = localResourceMap[resourceType];
+            localUrl = localResourceMap[resourceId];
         }
         
         if (!localUrl) {
@@ -740,7 +655,7 @@ class ResourceManager {
         // 添加一个成功加载的事件监听器
         if (newElement) {
             newElement.addEventListener('load', () => {
-                // 这里应该有成功加载的日志记录
+                // window.prismThemeLoaded = true
                 logger.info(`✅ 成功从本地加载资源: ${localUrl}`);
             });
         }

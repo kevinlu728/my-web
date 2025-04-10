@@ -1,7 +1,7 @@
 /**
  * @file prismLoader.js
  * @description Prism代码高亮加载器 - 从resourceManager中提取的专门处理Prism加载的模块
- * @version 1.0.0
+ * @version 1.0.2
  */
 
 // 导入必要的依赖
@@ -15,7 +15,7 @@ import { scriptResourceLoader } from './scriptResourceLoader.js';
  */
 class PrismLoader {
     constructor() {
-        this.resourceConfig = resourceConfig;   
+        this.resourceConfig = resourceConfig;
     }
     
     /**
@@ -43,7 +43,7 @@ class PrismLoader {
         // 检查是否已加载，与其他资源加载函数保持一致的风格
         if (window.prismLoaded && window.Prism) {
             logger.debug('✓ Prism已加载，仅确保样式加载完成');
-            return this.loadPrismTheme(prismThemeConfig)
+            return this._loadPrismTheme(prismThemeConfig)
                 .then(() => {
                     this.applyPrismHighlight();
                     return true;
@@ -85,11 +85,11 @@ class PrismLoader {
                     logger.debug(`✓ 从配置获取语言组件列表: ${languages.join(', ')}`);
                 }
                 
-                logger.debug('✓ Prism核心库加载成功，加载语言组件');
+                logger.debug('Prism核心库已加载成功，开始加载语言组件');
                 // 并行加载语言组件和主题
                 return Promise.all([
-                    this.loadPrismLanguageComponents(languages, prismConfig),
-                    this.loadPrismTheme(prismThemeConfig)
+                    this._loadPrismLanguageComponents(languages, prismConfig),
+                    this._loadPrismTheme(prismThemeConfig)
                 ]);
             })
             .then(results => {
@@ -104,7 +104,7 @@ class PrismLoader {
                 return true;
             })
             .catch(error => {
-                logger.error('❌ 代码高亮资源加载失败', error);
+                logger.error('❌ 代码高亮资源加载失败', error.message);
                 window.prismLoaded = false;
                 window.prismLoading = false;
                 return false;
@@ -122,12 +122,10 @@ class PrismLoader {
             const checkInterval = setInterval(() => {
                 if (window.prismLoaded && window.Prism) {
                     clearInterval(checkInterval);
-                    this.loadPrismTheme(themeConfig)
-                        .then(() => {
-                            this.applyPrismHighlight();
-                            resolve(true);
-                        })
-                        .catch(() => {
+                    
+                    // 使用 finally 替代重复的 then/catch 处理
+                    this._loadPrismTheme(themeConfig)
+                        .finally(() => {
                             this.applyPrismHighlight();
                             resolve(true);
                         });
@@ -154,189 +152,149 @@ class PrismLoader {
     _loadPrismCore(config) {
         return new Promise(resolve => {
             try {
-                // 如果有配置，从配置获取URL，否则使用默认URL
-                let primaryUrl, fallbackUrls = [], localUrl;
                 const version = this.resourceConfig?.versions?.prism || '1.29.0';
                 
-                // 第1步：首先尝试从配置获取主URL
-                if (config && config.source) {
-                    try {
-                        const urlResult = this.resourceConfig.getResourceUrl('scripts', 'prism');
-                        
-                        if (typeof urlResult === 'string') {
-                            primaryUrl = urlResult;
-                        } else if (urlResult && typeof urlResult.primary === 'string') {
-                            primaryUrl = urlResult.primary;
-                        } else {
-                            logger.warn('⚠️ 无法从配置获取有效的Prism URL');
-                            primaryUrl = null;
+                // 从配置或默认值获取URL
+                let urls = this._getResourceUrls('scripts', 'prism', config);
+                if (!urls || !urls.primaryUrl) {
+                    urls = this._getDefaultPrismCoreUrls(version);
+                    logger.warn('⚠️ 未找到有效的Prism URL，使用默认值');
+                }
+                
+                // 构建加载选项
+                const options = {
+                    fallbacks: urls.fallbackUrls || [],
+                    localFallback: urls.localUrl,
+                    attributes: {
+                        'data-resource-group': 'code',
+                        'data-resource-id': 'prism',
+                        'data-resource-type': 'prism',
+                        'data-name': 'prism',
+                        'data-local-fallback': urls.localUrl
+                    },
+                    attachToWindow: true,
+                    onResourceLoaded: (url, success) => {
+                        if (success && window.Prism) {
+                            logger.info(`✅ Prism核心库成功加载: ${url}`);
+                            resolve(true);
                         }
-                        
-                        // 第2步：尝试获取不同于主URL的备用URL
-                        if (config.source.fallbacks && Array.isArray(config.source.fallbacks)) {
-                            for (let i = 0; i < config.source.fallbacks.length; i++) {
-                                const fbConfig = config.source.fallbacks[i];
-                                try {
-                                    if (!fbConfig || typeof fbConfig !== 'object') {
-                                        continue;
-                                    }
-                                    
-                                    let fallbackUrl;
-                                    
-                                    // 尝试获取fallback URL
-                                    if (typeof this.resourceConfig.getResourceUrl === 'function' && fbConfig.provider) {
-                                        fallbackUrl = this.resourceConfig.getResourceUrl(
-                                            'scripts', 'prism', fbConfig.provider
-                                        );
-                                    } else if (typeof this.resourceConfig.buildUrlFromConfig === 'function') {
-                                        fallbackUrl = this.resourceConfig.buildUrlFromConfig(
-                                            fbConfig, 'scripts', 'prism'
-                                        );
-                                    }
-                                    
-                                    // 只添加有效的且与主URL不同的备用URL
-                                    if (typeof fallbackUrl === 'string' && fallbackUrl && fallbackUrl !== primaryUrl) {
-                                        fallbackUrls.push(fallbackUrl);
-                                    }
-                                } catch (e) {
-                                    logger.warn(`构建Prism fallback URL #${i}失败`, e);
-                                }
-                            }
-                        }
-                    } catch (e) {
-                        logger.warn('构建Prism URL失败，使用默认值', e);
-                        primaryUrl = null;
-                        fallbackUrls = [];
                     }
-                }
-                
-                // 第3步：如果未能获取主URL或本地URL，使用默认值
-                if (!primaryUrl) {
-                    primaryUrl = `https://cdn.jsdelivr.net/npm/prismjs@${version}/prism.min.js`;
-                }
-                
-                // 确保有备用URL
-                if (!fallbackUrls.length) {
-                    fallbackUrls.push(`https://cdnjs.cloudflare.com/ajax/libs/prism/${version}/prism.min.js`);
-                }
-                
-                // 始终设置本地URL作为最终回退
-                localUrl = '/assets/libs/prism/prism.min.js';
-                
-                // 创建和添加脚本元素
-                const prismScript = document.createElement('script');
-                prismScript.src = primaryUrl;
-                
-                // 设置一个标志用于跟踪Prism是否加载成功
-                window.prismCoreInitialized = false;
-                
-                // 检查函数 - 确认Prism是否正确初始化
-                const checkPrismInitialized = () => {
-                    if (window.Prism && typeof window.Prism.highlightAll === 'function') {
-                        window.prismCoreInitialized = true;
-                        return true;
-                    }
-                    return false;
                 };
+
+                logger.debug(`prism核心URL: ${urls.primaryUrl} ，本地回退URL: ${urls.localUrl}`);
+                if (urls.fallbackUrls && urls.fallbackUrls.length > 0) {
+                    logger.debug(`prism备用URLs（包括备用CDN和本地回退）: ${urls.fallbackUrls.join(', ')}`);
+                }
                 
-                prismScript.onload = () => {
-                    // 确认Prism是否真正加载并初始化
-                    if (checkPrismInitialized()) {
-                        logger.debug(`✓ Prism核心库加载成功 (从 ${prismScript.src})`);
+                // 加载脚本
+                scriptResourceLoader.loadScript(
+                    urls.primaryUrl,
+                    {  // 资源对象
+                        attributes: options.attributes,
+                        priority: 'medium'
+                    },
+                    {  // 加载选项
+                        async: options.async || false,
+                        defer: options.defer || false,
+                        attachToWindow: options.attachToWindow,
+                        onResourceLoaded: options.onResourceLoaded
+                    }
+                )
+                .catch(error => {
+                    // 只有在所有回退都失败时才解析为失败
+                    // 检查Prism是否已在window上，因为回退加载可能成功了
+                    if (!window.Prism) {
+                        logger.error('❌ Prism核心库加载失败 (所有来源)', error.message);
+                        resolve(false);
+                    }
+                });
+                
+                // 添加安全超时
+                setTimeout(() => {
+                    if (window.Prism) {
+                        logger.debug('✅ 检测到Prism已全局可用');
                         resolve(true);
                     } else {
-                        // 虽然脚本加载了，但Prism对象未正确初始化
-                        logger.warn(`⚠️ Prism脚本加载但未正确初始化 (从 ${prismScript.src})`);
-                        
-                        // 尝试本地资源作为可靠回退
-                        prismScript.src = localUrl;
-                        
-                        prismScript.onload = () => {
-                            if (checkPrismInitialized()) {
-                                logger.debug(`✓ Prism核心库从本地加载成功`);
-                                resolve(true);
-                            } else {
-                                logger.error('❌ Prism本地资源未能初始化核心功能');
-                                resolve(false);
-                            }
-                        };
-                        
-                        prismScript.onerror = () => {
-                            logger.error('❌ Prism本地资源加载失败');
-                            resolve(false);
-                        };
+                        logger.warn('⏱️ Prism核心库加载超时');
+                        resolve(false);
                     }
-                };
-                
-                // 处理错误 - 尝试备用URL
-                prismScript.onerror = () => {
-                    logger.warn(`⚠️ Prism核心库加载失败，尝试备用源`);
-                    
-                    // 如果有备用URL，尝试加载
-                    if (fallbackUrls.length > 0) {
-                        const nextUrl = fallbackUrls.shift();
-                        prismScript.src = nextUrl;
-                        
-                        prismScript.onerror = () => {
-                            logger.warn(`⚠️ Prism备用源加载失败，尝试本地资源`);
-                            prismScript.src = localUrl;
-                            
-                            prismScript.onerror = () => {
-                                logger.error('❌ Prism所有加载尝试均失败');
-                                resolve(false);
-                            };
-                        };
-                    } else {
-                        // 如果没有备用URL，直接尝试本地资源
-                        logger.warn('⚠️ 无Prism备用URL, 尝试本地资源');
-                        prismScript.src = localUrl;
-                        
-                        prismScript.onerror = () => {
-                            logger.error('❌ Prism所有加载尝试均失败');
-                            resolve(false);
-                        };
-                    }
-                };
-                
-                document.head.appendChild(prismScript);
-                
-                // 添加超时保护
-                setTimeout(() => {
-                    if (!window.prismCoreInitialized) {
-                        logger.warn('⏱️ Prism核心加载超时，尝试本地资源');
-                        
-                        // 移除之前的脚本元素
-                        if (prismScript.parentNode) {
-                            prismScript.parentNode.removeChild(prismScript);
-                        }
-                        
-                        // 创建新的脚本元素，直接使用本地资源
-                        const localScript = document.createElement('script');
-                        localScript.src = localUrl;
-                        
-                        localScript.onload = () => {
-                            if (checkPrismInitialized()) {
-                                logger.debug(`✓ Prism核心库从本地超时回退加载成功`);
-                                resolve(true);
-                            } else {
-                                logger.error('❌ Prism本地资源加载成功但初始化失败');
-                                resolve(false);
-                            }
-                        };
-                        
-                        localScript.onerror = () => {
-                            logger.error('❌ Prism本地资源加载失败');
-                            resolve(false);
-                        };
-                        
-                        document.head.appendChild(localScript);
-                    }
-                }, 5000);
+                }, 3000);
             } catch (error) {
-                logger.error('❌ 加载Prism时出错', error);
+                logger.error('❌ 加载Prism核心库时出现意外错误', error.message);
                 resolve(false);
             }
         });
+    }
+
+    /**
+     * 加载Prism主题 (内部辅助方法)
+     * @private
+     * @param {Object} config - Prism主题配置
+     * @returns {Promise<boolean>} - 加载完成的Promise
+     */
+    _loadPrismTheme(config) {
+        // 如果已经加载，不再重复加载
+        if (window.prismThemeLoaded) {
+            logger.debug('Prism主题已加载，跳过');
+            return Promise.resolve(true);
+        }
+        
+        // 如果已经在加载中，避免重复加载
+        if (window.prismThemeLoading) {
+            logger.debug('Prism主题正在加载中，跳过');
+            return Promise.resolve(true);
+        }
+        
+        // 标记为正在加载
+        window.prismThemeLoading = true;
+        
+        try {
+            const version = this.resourceConfig?.versions?.prism || '1.29.0';
+            
+            // 从配置或默认值获取URL
+            let urls = this._getResourceUrls('styles', 'prism-theme', config);
+            if (!urls || !urls.primaryUrl) {
+                urls = this._getDefaultPrismThemeUrls(version);
+                logger.debug('⚠️ 未找到有效的Prism主题URL，使用默认值');
+            }
+            
+            // 构建选项对象
+            const options = {
+                fallbacks: urls.fallbackUrls || [],
+                localFallback: urls.localUrl,
+                attributes: {
+                    'data-resource-group': 'code',
+                    'data-resource-id': 'prism-theme',
+                    'data-resource-type': 'prism',
+                    'data-name': 'prism-theme',
+                    'data-local-fallback': urls.localUrl
+                }
+            };
+
+            logger.debug(`prism-theme核心URL: ${urls.primaryUrl} ，本地回退URL: ${urls.localUrl}`);
+            if (urls.fallbackUrls && urls.fallbackUrls.length > 0) {
+                logger.debug(`prism-theme备用URLs（包括备用CDN和本地回退）: ${urls.fallbackUrls.join(', ')}`);
+            }
+            
+            // 直接返回loadCss的Promise结果
+            return styleResourceLoader.loadCss(urls.primaryUrl, options, true)
+                .then(result => {
+                    window.prismThemeLoaded = true;
+                    window.prismThemeLoading = false;
+                    return result;
+                })
+                .catch(error => {
+                    logger.error('❌ Prism主题加载失败', error.message);
+                    window.prismThemeLoaded = false;
+                    window.prismThemeLoading = false;
+                    return false;
+                });
+        } catch (error) {
+            logger.error('❌ 加载Prism主题配置时出错', error.message);
+            window.prismThemeLoaded = false;
+            window.prismThemeLoading = false;
+            return Promise.resolve(false);
+        }
     }
 
     /**
@@ -345,7 +303,7 @@ class PrismLoader {
      * @param {Object} config - 配置对象
      * @returns {Promise} - 加载完成的Promise
      */
-    loadPrismLanguageComponents(languages, config) {
+    _loadPrismLanguageComponents(languages, config) {
         // 确保languages是有效数组
         if (!languages || !Array.isArray(languages) || languages.length === 0) {
             // 默认加载几种常见语言
@@ -576,133 +534,74 @@ class PrismLoader {
                 return totalSuccessCount > 0;
             })
             .catch(err => {
-                logger.error('加载Prism语言组件时出错', err);
+                logger.error('加载Prism语言组件时出错', err.message);
                 return false;
             });
     }
 
     /**
-     * 加载Prism语法高亮主题
-     * @param {Object} themeConfig - 主题配置
-     * @returns {Promise} - 加载完成的Promise
+     * 从配置中获取资源URL信息
+     * @private
+     * @param {string} resourceType - 资源类型 ('scripts' 或 'styles')
+     * @param {string} resourceName - 资源名称
+     * @param {Object} config - 资源配置
+     * @returns {Object} - 包含主URL、回退URL和本地URL的对象
      */
-    loadPrismTheme(themeConfig) {
-        // 添加主题加载状态跟踪，避免重复加载
-        if (window.prismThemeLoaded === true) {
-            logger.debug('Prism主题已加载，跳过');
-            return Promise.resolve(true);
-        }
-
-        // 标记正在加载中
-        if (window.prismThemeLoading !== true) {
-            window.prismThemeLoading = true;
-        } else {
-            logger.debug('Prism主题正在加载中，等待完成');
-            return new Promise(resolve => {
-                const checkInterval = setInterval(() => {
-                    if (window.prismThemeLoaded === true) {
-                        clearInterval(checkInterval);
-                        resolve(true);
-                    }
-                }, 100);
-                
-                setTimeout(() => {
-                    clearInterval(checkInterval);
-                    resolve(false);
-                }, 5000);
-            });
-        }
-
+    _getResourceUrls(resourceType, resourceName, config) {
         try {
-            let themeUrl, fallbackUrls = [], localUrl;
+            // 直接使用resourceConfig的getResourceUrl方法获取资源信息
+            const urlInfo = this.resourceConfig.getResourceUrl(resourceType, resourceName);
             
-            // 如果有主题配置，从配置获取URL
-            if (themeConfig && themeConfig.source) {
-                try {
-                    // 从配置获取主URL
-                    const urlResult = this.resourceConfig.getResourceUrl('styles', 'prism-theme');
-                    
-                    // 确保URL是字符串
-                    if (typeof urlResult === 'string') {
-                        themeUrl = urlResult;
-                    } else if (urlResult && typeof urlResult.primary === 'string') {
-                        themeUrl = urlResult.primary;
-                        
-                        if (Array.isArray(urlResult.fallbacks)) {
-                            fallbackUrls = urlResult.fallbacks.filter(url => typeof url === 'string');
-                        }
-                    } else {
-                        logger.warn('⚠️ 无法从配置获取有效的Prism主题URL');
-                        themeUrl = null;
-                    }
-                    
-                    // 获取本地URL
-                    if (themeConfig.attributes && themeConfig.attributes['data-local-fallback']) {
-                        localUrl = themeConfig.attributes['data-local-fallback'];
-                    }
-                    
-                    if (themeUrl) {
-                        logger.debug(`使用配置的Prism主题: ${themeUrl}`);
-                    }
-                } catch (e) {
-                    logger.warn('从配置构建Prism主题URL失败，使用默认值', e);
-                    themeUrl = null;
-                }
+            // 从获得的结果中提取我们需要的数据
+            const result = {
+                primaryUrl: (typeof urlInfo === 'string') ? urlInfo : urlInfo.primary,
+                fallbackUrls: (urlInfo && Array.isArray(urlInfo.fallbacks)) ? urlInfo.fallbacks : [],
+                localUrl: null
+            };
+            
+            // 从配置中获取本地回退路径
+            if (config?.attributes?.['data-local-fallback']) {
+                result.localUrl = config.attributes['data-local-fallback'];
             }
             
-            // 如果无法从配置获取URL，使用默认值
-            if (!themeUrl) {
-                const version = this.resourceConfig.versions?.prism || '1.29.0';
-                themeUrl = `https://cdn.jsdelivr.net/npm/prismjs@${version}/themes/prism-tomorrow.min.css`;
-                fallbackUrls = [
-                    `https://cdnjs.cloudflare.com/ajax/libs/prism/${version}/themes/prism-tomorrow.min.css`
-                ];
-                localUrl = `/assets/libs/prism/themes/prism-tomorrow.min.css`;
-                logger.debug(`使用默认Prism主题URL: ${themeUrl}`);
-            }
-            
-            // 构建选项对象
-            const options = {};
-            if (fallbackUrls && fallbackUrls.length > 0) {
-                options.fallbacks = fallbackUrls;
-            }
-            if (localUrl) {
-                options.localFallback = localUrl;
-            }
-            
-            // 关键修复：确保返回Promise
-            const loadPromise = styleResourceLoader.loadCssNonBlocking(themeUrl, options);
-            
-            // 如果loadCssNonBlocking没有返回Promise，创建一个新的Promise
-            if (!loadPromise || typeof loadPromise.then !== 'function') {
-                logger.debug('loadCssNonBlocking未返回Promise，创建新Promise');
-                
-                // 设置状态标记
-                window.prismThemeLoaded = true;
-                window.prismThemeLoading = false;
-                
-                return Promise.resolve(true);
-            }
-            
-            // 正常处理Promise
-            return loadPromise
-                .then(result => {
-                    window.prismThemeLoaded = true;
-                    window.prismThemeLoading = false;
-                    return result;
-                })
-                .catch(error => {
-                    logger.error('❌ Prism主题加载失败', error);
-                    window.prismThemeLoaded = false;
-                    window.prismThemeLoading = false;
-                    return false;
-                });
+            return result;
         } catch (error) {
-            logger.error('❌ 加载Prism主题时发生错误:', error);
-            window.prismThemeLoaded = false;
-            window.prismThemeLoading = false;
-            return Promise.resolve(false);
+            logger.warn(`获取${resourceName}资源URL时出错`, error);
+            return { primaryUrl: null, fallbackUrls: [], localUrl: null };
         }
+    }
+    
+    /**
+     * 获取默认的Prism核心URL
+     * @private
+     * @param {string} version - Prism版本
+     * @returns {Object} - 包含主URL和回退URL的对象
+     */
+    _getDefaultPrismCoreUrls(version) {
+        return {
+            primaryUrl: `https://cdn.jsdelivr.net/npm/prismjs@${version}/prism.min.js`,
+            fallbackUrls: [
+                `https://cdnjs.cloudflare.com/ajax/libs/prism/${version}/prism.min.js`,
+                `https://unpkg.com/prismjs@${version}/prism.min.js`
+            ],
+            localUrl: `/assets/libs/prism/prism.min.js`
+        };
+    }
+    
+    /**
+     * 获取默认的Prism主题URL
+     * @private
+     * @param {string} version - Prism版本
+     * @returns {Object} - 包含主URL和回退URL的对象
+     */
+    _getDefaultPrismThemeUrls(version) {
+        return {
+            primaryUrl: `https://cdn.jsdelivr.net/npm/prismjs@${version}/themes/prism-tomorrow.min.css`,
+            fallbackUrls: [
+                `https://cdnjs.cloudflare.com/ajax/libs/prism/${version}/themes/prism-tomorrow.min.css`
+            ],
+            localUrl: `/assets/libs/prism/themes/prism-tomorrow.min.css`
+        };
     }
 
     /**

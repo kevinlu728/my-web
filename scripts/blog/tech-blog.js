@@ -20,6 +20,9 @@
  * 
  */
 
+import logger from '../utils/logger.js';
+import config from '../config/config.js';
+
 import { getDatabaseInfo, testApiConnection, getDatabases } from '../services/notionService.js';
 import { resourceManager } from '../resource/resourceManager.js';
 import { articleManager } from './articleManager.js';
@@ -27,11 +30,11 @@ import { categoryManager } from './categoryManager.js';
 import { welcomePageManager } from './welcomePageManager.js';
 import { contentViewManager, ViewMode, ViewEvents } from './contentViewManager.js';
 import { imageLazyLoader } from './imageLazyLoader.js';
-import { scrollToTop } from '../components/scrollbar.js';
-import { initDebugPanel } from '../components/debugPanel.js';
+import { initNavigation } from '../components/navigation.js';
+import { initScrollbar } from '../components/scrollbar.js';
+import { loadDebugPanel } from '../components/debugPanelLoader.js';
 
 import { showStatus, showError } from '../utils/common-utils.js';
-import logger from '../utils/logger.js';
 
 logger.info('🚀 tech-blog.js 开始加载...');
 
@@ -49,102 +52,59 @@ window.pageState = {
  * 当DOM结构加载完成时执行的初始化操作
  */
 document.addEventListener('DOMContentLoaded', () => {
-    logger.info('DOM内容已加载，开始初始化...');
-    
-    // 1. 设置事件监听器和预加载关键资源
-    // 这里提前设置监听器，不再依赖window.load事件
+    logger.info('DOM内容已加载，开始资源管理阶段...');
+
+    // 提前设置content-unblocked事件监听器，不再依赖window.load事件
     setupContentUnblockedListener();
-    preloadCriticalResources();
+
+    // 如果资源管理器不可用，立即解锁内容并返回
+    if (!resourceManager) {
+        logger.warn('⚠️ 资源管理器不可用，跳过资源管理阶段（页面显示效果可能受影响）');
+        document.dispatchEvent(new Event('content-unblocked'));
+        return;
+    }
+
+    // 确保所有关键元素都有资源组标记
+    resourceManager.ensureResourceGroupMarkers();
+
+    // 初始化资源加载策略。注意这里最终会触发资源加载，和下面preloadCriticalResources存在冲突，需要梳理。
+    // initResourceLoadingStrategy->prioritizeContentRendering->loadResourcesByPriority
+    resourceManager.loadBlogPageResources();
     
-    // 2. 初始化拖动手柄。稍微延迟以确保所有样式已加载
-    setTimeout(() => {
-        const leftColumn = document.querySelector('.left-column');
-        const resizeHandle = document.querySelector('.resize-handle');
-        const separatorLine = document.querySelector('.separator-line');
-        
-        if (leftColumn && resizeHandle) {
-            // 确保拖动手柄是可见的 - 直接设置内联样式以确保优先级最高
-            resizeHandle.style.visibility = 'visible';
-            resizeHandle.style.cursor = 'col-resize';
-            
-            if (separatorLine) {
-                separatorLine.style.width = '3px';
-                separatorLine.style.backgroundColor = '#77a0ff';
-            }
-            
-            logger.info('✅ 拖动手柄初始化完成，设置为低可见度状态');
-        } else {
-            logger.warn('⚠️ 未找到拖动手柄或左侧栏元素，无法初始化');
-        }
-    }, 100);
+    // 仅在非生产环境加载调试面板
+    const isProduction = config && config.getEnvironment && config.getEnvironment() === 'production';
+    if (!isProduction) {
+        // 将模块导出到全局作用域，方便调试
+        window.articleManager = articleManager;
+        window.categoryManager = categoryManager;
+        window.imageLazyLoader = imageLazyLoader;
+        window.config = config;
+        // 加载调试面板组件
+        loadDebugPanel({
+            databaseId: config.notion.databaseId || config.debug.defaultDatabaseId
+        }).catch(err => {
+            console.error('加载调试面板时出错:', err);
+        });
+    } 
 });
 
 /**
  * 当页面完全加载后执行的操作
  */
 window.addEventListener('load', () => {
-    logger.info('📃 页面加载完成');
- 
-    // 避免重复初始化 - 使用统一的状态变量
-    if (window.pageState.initialized) {
-        logger.info('页面已经初始化，跳过重复初始化');
-        return;
-    }
-    
-    // 作为备份机制，检查是否需要触发内容解锁事件
-    if (window.contentUnblocked && !window.pageState.initializing) {
-        logger.info('检测到内容已解锁但页面未初始化，触发事件');
-        // 确保监听器已设置
-        setupContentUnblockedListener();
-        // 触发内容解锁事件
-        document.dispatchEvent(new Event('content-unblocked'));
-    } else if (!window.contentUnblocked) {
-        logger.warn('⚠️ 页面加载完成但内容未解锁，强制解锁');
-        unlockContent();
+    logger.info('📃 页面已加载，设置基于可见性的后续资源加载');
+            
+    // 如果浏览器支持Intersection Observer，为可见性加载做准备
+    if ('IntersectionObserver' in window) {
+        resourceManager.setupVisibilityBasedLoading();
     }
 });
-
-/**
- * 预加载关键资源并解锁内容
- */
-function preloadCriticalResources() {
-    // 如果资源管理器不可用，立即解锁内容并返回
-    if (!resourceManager || typeof resourceManager.loadNonBlockingCoreContent !== 'function') {
-        logger.warn('⚠️ 资源管理器不可用或缺少必要方法，跳过预加载');
-        unlockContent();
-        return;
-    }
-
-    logger.info('🔍 开始非阻塞方式加载关键资源...');
-    
-    // 使用资源管理器加载核心内容
-    resourceManager.loadNonBlockingCoreContent()
-        .then(() => {
-            logger.info('✅ 核心资源加载完成，预加载欢迎页面数据');
-            welcomePageManager.preloadWelcomePageData();
-        })
-        .catch(error => {
-            logger.error('❌ 核心资源加载失败:', error.message);
-            unlockContent();
-        });
-    
-    // 添加安全超时，确保即使资源加载出现问题，页面也能正常初始化
-    setTimeout(() => {
-        if (!window.contentUnblocked) {
-            logger.warn('⚠️ 资源加载超时，强制解锁内容');
-            unlockContent();
-        }
-    }, 5000); // 5秒安全超时
-}
 
 /**
  * 设置内容解锁事件监听器，确保在早期阶段就准备好
  */
 function setupContentUnblockedListener() {
-    // 避免重复添加监听器
-    if (window._contentUnblockedListenerSet) return;
-    window._contentUnblockedListenerSet = true;
-    
+    logger.info('设置内容解锁事件监听器...');
     document.addEventListener('content-unblocked', () => {
         logger.info('🎉 内容已解锁，开始初始化页面');
         // 初始化页面
@@ -162,12 +122,24 @@ function setupContentUnblockedListener() {
 }
 
 /**
- * 解锁内容并触发内容解锁事件
- * 在资源加载失败或不可用时使用此函数
+ * 解除内容加载阻塞
+ * 移除阻塞内容显示的CSS和其他限制
  */
-function unlockContent() {
-    window.contentUnblocked = true;
-    document.dispatchEvent(new Event('content-unblocked'));
+function unblockContentLoading() {
+    // 移除可能阻塞内容显示的元素或使其淡出
+    const placeholders = document.querySelectorAll('.placeholder-content');
+    placeholders.forEach(el => {
+        // 平滑过渡
+        el.style.transition = 'opacity 0.5s ease';
+        el.style.opacity = '0';
+        
+        // 延迟后移除元素
+        setTimeout(() => {
+            if (el.parentNode) el.parentNode.removeChild(el);
+        }, 550);
+    });
+  
+    logger.debug('🎉 内容加载阻塞已解除，页面内容可以显示');
 }
 
 /**
@@ -200,32 +172,17 @@ export async function initializePage(forceApiTest = false) {
         // ===== 1. 环境准备和基础设置 =====
         logger.info('初始化技术博客页面...');
         
-        // 添加环境类名到body元素
-        const config = window.config || {};
-        if (config.getEnvironment) {
-            const env = config.getEnvironment();
-            document.body.classList.add(env);
-            logger.info(`当前环境: ${env}`);
-        }
-        
-        // 检查依赖项
-        // logger.info('检查依赖项：');
-        // logger.info('- articleManager:', !!articleManager);
-        // logger.info('- categoryManager:', !!categoryManager);
-        // logger.info('- imageLazyLoader:', !!imageLazyLoader);
-        // logger.info('- apiService:', !!window.apiService);
-        
         const currentDatabaseId = config.notion.databaseId || config.debug.defaultDatabaseId;
         logger.info('当前数据库ID:', currentDatabaseId);
 
-
         // 初始化内容视图管理器，下面需要使用
         contentViewManager.initialize('article-container');
-
+        // 初始化视图事件
+        initializeViewEvents();
         // 更新视图状态
         updateViewState('loading');
         
-        // ===== 2. API服务检查和包装 =====
+        // ===== 2. API服务检查 =====
         // 检查API服务可用性
         if (window.apiService) {
             logger.info('✅ 检测到apiService，将使用API服务自动选择功能');
@@ -242,56 +199,6 @@ export async function initializePage(forceApiTest = false) {
         } else {
             logger.info('⚠️ 未检测到apiService，将使用直接服务调用');
         }
-
-        // 创建API服务包装函数，优先使用apiService，失败时回退到原始服务
-        const wrappedGetDatabaseInfo = async (databaseId) => {
-            try {
-                // 如果apiService可用且提供了getDatabaseInfo方法
-                if (window.apiService && typeof window.apiService.getDatabaseInfo === 'function') {
-                    logger.info('通过apiService获取数据库信息');
-                    return await window.apiService.getDatabaseInfo(databaseId);
-                }
-                // 回退到原始实现
-                logger.info('通过原始服务获取数据库信息');
-                return await getDatabaseInfo(databaseId);
-            } catch (error) {
-                logger.error('获取数据库信息失败:', error);
-                // 确保返回一个合理的结果
-                return { success: false, error: error.message };
-            }
-        };
-
-        const wrappedTestApiConnection = async () => {
-            try {
-                // 如果apiService可用
-                if (window.apiService) {
-                    logger.info('通过apiService测试API连接');
-                    return await window.apiService.testConnection();
-                }
-                // 回退到原始实现
-                logger.info('通过原始服务测试API连接');
-                return await testApiConnection();
-            } catch (error) {
-                logger.error('API连接测试失败:', error);
-                return { success: false, error: error.message };
-            }
-        };
-
-        const wrappedGetDatabases = async () => {
-            try {
-                // 如果apiService可用且提供了getDatabases方法
-                if (window.apiService && typeof window.apiService.getDatabases === 'function') {
-                    logger.info('通过apiService获取数据库列表');
-                    return await window.apiService.getDatabases();
-                }
-                // 回退到原始实现
-                logger.info('通过原始服务获取数据库列表');
-                return await getDatabases();
-            } catch (error) {
-                logger.error('获取数据库列表失败:', error);
-                return { success: false, error: error.message, results: [] };
-            }
-        };
         
         // ===== 3. 核心组件初始化 =====
         // 初始化文章管理器
@@ -314,17 +221,6 @@ export async function initializePage(forceApiTest = false) {
         categoryManager.setOnCategoryChange((category) => {
             logger.info('分类变更为:', category);
             articleManager.filterAndRenderArticles();
-        });
-        
-        // 初始化调试面板
-        initDebugPanel(currentDatabaseId, {
-            onConfigUpdate: (newDatabaseId) => articleManager.updateDatabaseId(newDatabaseId),
-            onRefresh: () => articleManager.loadArticles(),
-            showStatus,
-            // 使用包装后的API函数
-            getDatabaseInfo: wrappedGetDatabaseInfo,
-            testApiConnection: wrappedTestApiConnection,
-            getDatabases: wrappedGetDatabases
         });
         
         // ===== 4. 内容显示处理 =====
@@ -358,15 +254,18 @@ export async function initializePage(forceApiTest = false) {
         
         // ===== 5. 辅助功能初始化 =====
         logger.info('✅ 页面初始化完成！开始初始化辅助功能...');
-        
-        // 初始化视图事件
-        initializeViewEvents();
+
+        // 初始化导航
+        initNavigation();
 
         // 初始化左栏宽度调整功能
         initializeResizableLeftColumn();
         
-        // 初始化返回顶部按钮
-        initializeBackToTop();
+        // 初始化拖动手柄
+        initializeResizeHandle();
+
+        // 初始化滚动行为
+        initScrollbar();
         
         // 修复FontAwesome图标显示 - 移至此处执行，确保DOM已加载完毕
         fixFontAwesomeIcons();
@@ -700,69 +599,28 @@ function initializeResizableLeftColumn() {
     });
 }
 
-/**
- * 初始化返回顶部按钮
- */
-function initializeBackToTop() {
-    logger.info('初始化返回顶部按钮...');
-    
-    // 检查是否已存在返回顶部按钮，避免重复创建
-    if (document.querySelector('.back-to-top')) {
-        logger.info('返回顶部按钮已存在，跳过创建');
-        return;
-    }
-    
-    // 创建按钮元素
-    const backToTopBtn = document.createElement('div');
-    backToTopBtn.className = 'back-to-top';
-    backToTopBtn.innerHTML = `
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path d="M7.41 15.41L12 10.83L16.59 15.41L18 14L12 8L6 14L7.41 15.41Z"/>
-        </svg>
-    `;
-    document.body.appendChild(backToTopBtn);
-    
-    // 检查按钮是否添加成功
-    if (!document.querySelector('.back-to-top')) {
-        logger.error('返回顶部按钮创建失败');
-        return;
-    }
-    
-    logger.debug('✅ 返回顶部按钮创建成功');
-    
-    // 点击按钮回到顶部，使用scrollToTop函数
-    backToTopBtn.addEventListener('click', () => {
-        logger.info('点击返回顶部');
+function initializeResizeHandle() {
+    logger.info('初始化拖动手柄。稍微延迟以确保所有样式已加载'); 
+    setTimeout(() => {
+        const leftColumn = document.querySelector('.left-column');
+        const resizeHandle = document.querySelector('.resize-handle');
+        const separatorLine = document.querySelector('.separator-line');
         
-        // 使用scrollToTop处理滚动行为
-        if (typeof scrollToTop === 'function') {
-            scrollToTop(true); // 使用平滑滚动
+        if (leftColumn && resizeHandle) {
+            // 确保拖动手柄是可见的 - 直接设置内联样式以确保优先级最高
+            resizeHandle.style.visibility = 'visible';
+            resizeHandle.style.cursor = 'col-resize';
+            
+            if (separatorLine) {
+                separatorLine.style.width = '3px';
+                separatorLine.style.backgroundColor = '#77a0ff';
+            }
+            
+            logger.info('✅ 拖动手柄初始化完成，设置为低可见度状态');
         } else {
-            // 回退方案：使用默认滚动
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
+            logger.warn('⚠️ 未找到拖动手柄或左侧栏元素，无法初始化');
         }
-        
-        // 聚焦到页面顶部的元素（可选）
-        const firstFocusableElement = document.querySelector('h1, h2, p, .article-title');
-        if (firstFocusableElement) {
-            setTimeout(() => {
-                firstFocusableElement.setAttribute('tabindex', '-1');
-                firstFocusableElement.focus();
-                
-                // 移除tabindex，保持DOM干净
-                setTimeout(() => {
-                    firstFocusableElement.removeAttribute('tabindex');
-                }, 100);
-            }, 500);
-        }
-    });
-    
-    logger.debug('✅ 返回顶部按钮初始化完成');
-    
-    // 注意：按钮的显示/隐藏现在由scrollbar.js中的滚动事件处理
+    }, 100);
 }
 
 /**

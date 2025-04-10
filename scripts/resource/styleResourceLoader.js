@@ -35,9 +35,10 @@ class StyleResourceLoader {
      * 加载CSS资源
      * @param {string} url - CSS文件URL
      * @param {object} resource - 资源对象
+     * @param {boolean} [nonBlocking=false] - 是否使用非阻塞方式加载
      * @returns {Promise} 加载完成的Promise
      */
-    loadCss(url, resource) {
+    loadCss(url, resource, nonBlocking = false) {
         return new Promise((resolve, reject) => {
             // 检查URL是否有效
             if (!url || typeof url !== 'string') {
@@ -50,7 +51,7 @@ class StyleResourceLoader {
             
             // 跳过已加载的资源
             if (loadedResources.has(url)) {
-                return resolve();
+                return resolve(true);
             }
             
             // 获取资源优先级
@@ -69,6 +70,11 @@ class StyleResourceLoader {
             link.rel = 'stylesheet';
             link.href = url;
             
+            // 如果是非阻塞加载，设置media属性
+            if (nonBlocking) {
+                link.media = 'print'; // 初始不应用，不阻塞
+            }
+            
             // 添加自定义属性
             if (resource && resource.attributes) {
                 Object.entries(resource.attributes).forEach(([key, value]) => {
@@ -83,12 +89,21 @@ class StyleResourceLoader {
                     this.clearResourceTimeout(url);
                 }
                 
+                // 如果是非阻塞加载，加载完成后应用样式
+                if (nonBlocking) {
+                    link.media = 'all';
+                }
+                
                 // 确保loadedResources存在
                 if (this.loadedResources) {
                     this.loadedResources.add(url);
                 }
-                logger.debug(`✅ CSS加载完成: ${url}`);
-                resolve();
+                
+                const mode = nonBlocking ? '非阻塞' : '阻塞式';
+                logger.debug(`✅ ${mode}加载CSS完成: ${url}`);
+                
+                // 解析Promise
+                resolve(true);
             };
             
             link.onerror = (err) => {
@@ -100,11 +115,19 @@ class StyleResourceLoader {
                 // 记录错误但不阻塞
                 if (typeof this.handleResourceError === 'function') {
                     this.handleResourceError(link, url);
+                } else {
+                    const mode = nonBlocking ? '非阻塞' : '阻塞式';
+                    logger.warn(`❌ ${mode}CSS加载失败: ${url}`);
                 }
-                logger.warn(`❌ CSS加载失败: ${url}`);
                 
-                // 虽然加载失败，但仍然解析Promise，以免影响整体流程
-                resolve();
+                // 决定是否拒绝Promise
+                if (nonBlocking) {
+                    // 非阻塞方式下拒绝Promise
+                    reject(new Error(`CSS加载失败: ${url}`));
+                } else {
+                    // 阻塞方式下解析Promise，以免影响整体流程
+                    resolve(false);
+                }
             };
             
             // 添加到文档
@@ -113,83 +136,13 @@ class StyleResourceLoader {
     }
     
     /**
-     * 非阻塞方式加载CSS
+     * 非阻塞方式加载CSS (保持向后兼容)
      * @param {string} url - CSS文件URL
      * @param {object} resource - 资源对象
+     * @returns {Promise} - 加载完成的Promise
      */
     loadCssNonBlocking(url, resource) {
-        // 检查URL是否有效
-        if (!url || typeof url !== 'string') {
-            logger.warn('⚠️ 尝试加载无效的CSS URL:', url);
-            return;
-        }
-        
-        // 确保loadedResources存在
-        const loadedResources = this.loadedResources || new Set();
-        
-        // 跳过已加载的资源
-        if (loadedResources.has(url)) {
-            return;
-        }
-        
-        // 获取资源优先级
-        let priority = 'medium';
-        if (resource && resource.priority) {
-            priority = resource.priority;
-        }
-        
-        // 设置加载超时
-        if (typeof this.setResourceTimeout === 'function') {
-            this.setResourceTimeout('styles', url, priority);
-        }
-        
-        // 创建<link>元素但使用media="print"和onload切换技术
-        // 这样CSS不会阻塞渲染
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = url;
-        link.media = 'print'; // 初始不应用，不阻塞
-        
-        // 添加自定义属性
-        if (resource && resource.attributes) {
-            Object.entries(resource.attributes).forEach(([key, value]) => {
-                link.setAttribute(key, value);
-            });
-        }
-        
-        // 设置onload事件，当CSS加载完成时应用样式
-        link.onload = () => {
-            // 清除超时处理器
-            if (typeof this.clearResourceTimeout === 'function') {
-                this.clearResourceTimeout(url);
-            }
-            
-            // 样式已加载，现在应用它
-            link.media = 'all';
-            
-            // 确保loadedResources存在
-            if (this.loadedResources) {
-                this.loadedResources.add(url);
-            }
-            logger.debug(`✅ 非阻塞加载CSS完成: ${url}`);
-        };
-        
-        link.onerror = () => {
-            // 清除超时处理器
-            if (typeof this.clearResourceTimeout === 'function') {
-                this.clearResourceTimeout(url);
-            }
-            
-            // 记录错误但不阻塞
-            if (typeof this.handleResourceError === 'function') {
-                this.handleResourceError(link, url);
-            } else {
-                logger.warn(`❌ 非阻塞CSS加载失败: ${url}`);
-            }
-        };
-        
-        // 添加到文档
-        document.head.appendChild(link);
+        return this.loadCss(url, resource, true);
     }
 
     /**
@@ -213,7 +166,7 @@ class StyleResourceLoader {
             return;
         }
         
-        logger.debug('✅ 已加载最小必要的关键内联样式');
+        logger.debug('✅ 已注入最小必要的关键内联样式');
     }
 
     /**
@@ -235,7 +188,7 @@ class StyleResourceLoader {
         link.setAttribute('data-is-fallback', 'true');
         
         document.head.appendChild(link);
-        logger.info('✅ 已加载基本图标回退样式');
+        logger.info('✅ 已注入基本图标回退样式');
     }
     
     /**
@@ -255,7 +208,7 @@ class StyleResourceLoader {
             return;
         }
         
-        logger.debug('已加载基本KaTeX回退样式');
+        logger.debug('已注入基本KaTeX回退样式');
     }
 
     /**

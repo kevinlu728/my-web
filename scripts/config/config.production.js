@@ -17,6 +17,9 @@
  * 该模块导出配置对象，被config.js模块导入使用。
  */
 
+// 导入默认AI配置
+import defaultAIConfig from './aiConfig.js';
+
 export default {
     notion: {
         // 在生产环境中，我们不直接在前端使用API密钥，而是通过后端API调用
@@ -35,5 +38,29 @@ export default {
         useColors: false,
         showTimestamp: true,
         showCaller: false
+    },
+    // AI服务配置 - 生产环境
+    ai: {
+        ...defaultAIConfig,  // 使用默认配置作为基础
+        // 生产环境中API密钥应该从环境变量中读取，或通过安全的后端API获取
+        apiKeys: {
+            // 生产环境下不直接暴露API密钥
+            // 实际项目中这里应该为空，使用环境变量或安全存储
+            deepseek: 'sk-694fc5828b714a7199f025fb8ab539e2',
+            openai: '',
+            claude: ''
+        },
+        // 生产环境中禁用调试功能
+        debug: {
+            logMessages: false,
+            mockResponses: false,
+            responsesDelay: 0
+        },
+        // 生产环境优化
+        performance: {
+            cacheResponses: true,     // 缓存常见问题的回复
+            cacheLifetime: 86400000,  // 缓存有效期24小时
+            useCompression: true      // 使用压缩
+        }
     }
 }; 

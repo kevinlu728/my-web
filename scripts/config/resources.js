@@ -187,7 +187,7 @@ export const resources = {
                 ]
             },
             attributes: {
-                'data-resource-type': 'prism-theme',
+                'data-resource-type': 'prism',
                 'data-local-fallback': '/assets/libs/prism/themes/prism-tomorrow.min.css'
             }
         },
@@ -251,7 +251,8 @@ export const resources = {
                 ]
             },
             attributes: {
-                'data-resource-type': 'code-highlight'
+                'data-resource-type': 'prism',
+                'data-local-fallback': '/assets/libs/prism/prism.min.js'
             }
         },
         'prism-components': {
@@ -288,11 +289,13 @@ export const resources = {
                     { name: 'python', path: 'components/prism-python.min.js' }
                 ],
                 attributes: {
-                    'data-resource-type': 'code-highlight-extensions'
+                    'data-resource-type': 'prism',
+                    'data-local-fallback': '/assets/libs/prism/components/'
                 }
             },
             attributes: {
-                'data-resource-type': 'code-highlight-extensions'
+                'data-resource-type': 'prism',
+                'data-local-fallback': '/assets/libs/prism/components/'
             }
         },
         'particles': {

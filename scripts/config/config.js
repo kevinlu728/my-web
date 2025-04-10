@@ -16,6 +16,7 @@
  * - 功能开关（enableDebug, enableCache等）
  * - 性能参数（cacheTimeout, maxRetries等）
  * - UI配置（theme, animations等）
+ * - AI服务配置（模型, API密钥, 系统提示等）
  * 
  * 该模块导出单个配置对象，可被其他模块导入使用。
  */
@@ -67,6 +68,7 @@ const configManager = {
     get api() { return config?.api || prodConfig.api; }, 
     get debug() { return config?.debug || prodConfig.debug; },
     get logging() { return config?.logging || prodConfig.logging; },
+    get ai() { return config?.ai || prodConfig.ai; }, // 新增AI配置访问
     
     // 获取当前环境
     getEnvironment() {
@@ -81,6 +83,21 @@ const configManager = {
     // 获取API配置
     getNotionConfig() {
         return this.notion;
+    },
+    
+    // 获取AI服务配置
+    getAIConfig() {
+        return this.ai;
+    },
+    
+    // 获取AI服务API密钥
+    getAIApiKey(provider = 'deepseek') {
+        return this.ai?.apiKeys?.[provider] || '';
+    },
+    
+    // 获取AI系统提示
+    getAISystemPrompt() {
+        return this.ai?.systemPrompt || '';
     }
 };
 

@@ -60,8 +60,6 @@ export async function loadDebugPanel(options = {}) {
             return;
         }
         
-        logger.info('正在加载调试面板组件...');
-        
         // 获取组件HTML
         const response = await fetch('./components/debug-panel.html');
         if (!response.ok) {

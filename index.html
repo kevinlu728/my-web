@@ -116,7 +116,8 @@
 
     <div id="chat-widget-container"></div>
 
-    <!-- 确保componentManager最后加载 -->
+    <!-- 确保配置在所有组件之前加载 -->
+    <script src="scripts/config/config.js" type="module"></script>
     <script src="scripts/components/componentManager.js" type="module"></script>
 </body>
 </html>

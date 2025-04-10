@@ -42,6 +42,52 @@ const ScrollTargets = {
 };
 
 /**
+ * 初始化滚动条
+ * 与其他组件保持一致的初始化函数
+ */
+function initScrollbar() {
+    logger.debug('初始化滚动条...');
+    
+    try {
+        // 检测页面类型
+        const pageType = detectPageType();
+        logger.debug(`检测到页面类型: ${pageType}`);
+        
+        // 根据页面类型应用不同的滚动行为
+        if (pageType === PageTypes.BLOG) {
+            initializeBlogPageScrollbars();
+        } else {
+            initializeHomePageScrollbars();
+        }
+        
+        // 只为博客页面添加全局滚动事件监听器
+        if (pageType === PageTypes.BLOG) {
+            initializeScrollListeners();
+            // 由scrollbar来负责初始化返回顶部按钮，之前是由tech-blog.js负责的。
+            initializeBackToTop();
+        }
+        
+        logger.debug('✅ 滚动条初始化完成');
+    } catch (error) {
+        logger.error('❌ 滚动条初始化失败:', error);
+    }
+}
+
+// 窗口加载完成后再次检查，以防动态内容改变了页面高度
+window.addEventListener('load', () => {
+    logger.info('页面完全加载，再次检查滚动位置...');
+    checkInitialScrollPosition();
+    
+    // 定期检查返回顶部按钮是否存在并正确显示
+    setTimeout(() => {
+        if (!document.querySelector('.back-to-top.visible') && shouldShowBackToTop()) {
+            logger.info('页面已滚动但返回顶部按钮未显示，强制显示按钮');
+            toggleBackToTopButton(true);
+        }
+    }, 1000);
+});
+
+/**
  * 检测当前页面类型
  * @returns {string} 页面类型
  */
@@ -55,27 +101,6 @@ function detectPageType() {
     }
     // 默认返回首页类型
     return PageTypes.HOME;
-}
-
-/**
- * 为目标元素应用滚动条样式
- * @param {string} selector - 目标元素选择器
- * @param {string} styleClass - 样式类名
- */
-function applyScrollbarStyle(selector, styleClass) {
-    const elements = document.querySelectorAll(selector);
-    if (elements.length === 0) {
-        logger.warn(`⚠️ 找不到元素: ${selector}`);
-        return;
-    }
-    
-    elements.forEach(element => {
-        if (!element.classList.contains(styleClass)) {
-            element.classList.add(styleClass);
-        }
-    });
-    
-    logger.debug(`✅ 已为 ${elements.length} 个 ${selector} 元素应用 ${styleClass} 样式`);
 }
 
 /**
@@ -104,6 +129,59 @@ function initializeBlogPageScrollbars() {
     
     // 在博客页面禁用窗口滚动并使用右侧栏滚动
     enableCustomScrolling();
+}
+
+/**
+ * 为目标元素应用滚动条样式
+ * @param {string} selector - 目标元素选择器
+ * @param {string} styleClass - 样式类名
+ */
+function applyScrollbarStyle(selector, styleClass) {
+    const elements = document.querySelectorAll(selector);
+    if (elements.length === 0) {
+        logger.warn(`⚠️ 找不到元素: ${selector}`);
+        return;
+    }
+    
+    elements.forEach(element => {
+        if (!element.classList.contains(styleClass)) {
+            element.classList.add(styleClass);
+        }
+    });
+    
+    // logger.debug(`✅ 已为 ${elements.length} 个 ${selector} 元素应用 ${styleClass} 样式`);
+}
+
+/**
+ * 启用自定义滚动行为
+ * 在博客页面禁用窗口滚动，使用自定义滚动区域
+ */
+function enableCustomScrolling() {
+    if (detectPageType() === PageTypes.BLOG) {
+        // 禁用Body滚动
+        document.body.style.overflow = 'hidden';
+        
+        // 启用右侧栏滚动
+        const rightColumn = document.querySelector(ScrollTargets.BLOG_RIGHT_COLUMN);
+        if (rightColumn) {
+            rightColumn.style.overflowY = 'auto';
+            rightColumn.style.overflowX = 'hidden';
+        }
+        
+        // 小屏幕模式下启用博客主内容区滚动
+        if (window.innerWidth <= 768) {
+            const blogContent = document.querySelector(ScrollTargets.BLOG_CONTENT);
+            if (blogContent) {
+                blogContent.style.overflowY = 'auto';
+                blogContent.style.overflowX = 'hidden';
+                
+                // 小屏幕模式下禁用右侧栏独立滚动
+                if (rightColumn) {
+                    rightColumn.style.overflowY = 'visible';
+                }
+            }
+        }
+    }
 }
 
 /**
@@ -149,38 +227,6 @@ function initializeScrollListeners() {
 }
 
 /**
- * 启用自定义滚动行为
- * 在博客页面禁用窗口滚动，使用自定义滚动区域
- */
-function enableCustomScrolling() {
-    if (detectPageType() === PageTypes.BLOG) {
-        // 禁用Body滚动
-        document.body.style.overflow = 'hidden';
-        
-        // 启用右侧栏滚动
-        const rightColumn = document.querySelector(ScrollTargets.BLOG_RIGHT_COLUMN);
-        if (rightColumn) {
-            rightColumn.style.overflowY = 'auto';
-            rightColumn.style.overflowX = 'hidden';
-        }
-        
-        // 小屏幕模式下启用博客主内容区滚动
-        if (window.innerWidth <= 768) {
-            const blogContent = document.querySelector(ScrollTargets.BLOG_CONTENT);
-            if (blogContent) {
-                blogContent.style.overflowY = 'auto';
-                blogContent.style.overflowX = 'hidden';
-                
-                // 小屏幕模式下禁用右侧栏独立滚动
-                if (rightColumn) {
-                    rightColumn.style.overflowY = 'visible';
-                }
-            }
-        }
-    }
-}
-
-/**
  * 处理右侧栏滚动事件
  * @param {Event} event - 滚动事件
  */
@@ -215,6 +261,101 @@ function handleWindowResize() {
     if (detectPageType() === PageTypes.BLOG) {
         enableCustomScrolling();
     }
+}
+
+/**
+ * 初始化返回顶部按钮
+ */
+function initializeBackToTop() {
+    logger.debug('初始化返回顶部按钮...');
+    
+    // 检查是否已存在返回顶部按钮，避免重复创建
+    if (document.querySelector('.back-to-top')) {
+        logger.info('返回顶部按钮已存在，跳过创建');
+        return;
+    }
+    
+    // 创建按钮元素
+    const backToTopBtn = document.createElement('div');
+    backToTopBtn.className = 'back-to-top';
+    backToTopBtn.innerHTML = `
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M7.41 15.41L12 10.83L16.59 15.41L18 14L12 8L6 14L7.41 15.41Z"/>
+        </svg>
+    `;
+    document.body.appendChild(backToTopBtn);
+    
+    // 检查按钮是否添加成功
+    if (!document.querySelector('.back-to-top')) {
+        logger.error('返回顶部按钮创建失败');
+        return;
+    }
+    
+    logger.debug('✅ 返回顶部按钮创建成功');
+    
+    // 点击按钮回到顶部，使用scrollToTop函数
+    backToTopBtn.addEventListener('click', () => {
+        logger.info('点击返回顶部');
+        
+        // 使用scrollToTop处理滚动行为
+        if (typeof scrollToTop === 'function') {
+            scrollToTop(true); // 使用平滑滚动
+        } else {
+            // 回退方案：使用默认滚动
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+        
+        // 聚焦到页面顶部的元素（可选）
+        const firstFocusableElement = document.querySelector('h1, h2, p, .article-title');
+        if (firstFocusableElement) {
+            setTimeout(() => {
+                firstFocusableElement.setAttribute('tabindex', '-1');
+                firstFocusableElement.focus();
+                
+                // 移除tabindex，保持DOM干净
+                setTimeout(() => {
+                    firstFocusableElement.removeAttribute('tabindex');
+                }, 100);
+            }, 500);
+        }
+    });
+    
+    logger.debug('✅ 返回顶部按钮初始化完成');
+    
+    // 注意：按钮的显示/隐藏现在由scrollbar.js中的滚动事件处理
+}
+
+/**
+ * 检查初始滚动位置，并相应地显示/隐藏返回顶部按钮
+ */
+function checkInitialScrollPosition() {
+    // 检查页面类型
+    const pageType = detectPageType();
+    let shouldShow = false;
+    
+    if (pageType === PageTypes.BLOG) {
+        // 博客页面，检查右侧栏或主内容区的滚动位置
+        if (window.innerWidth <= 768) {
+            const blogContent = document.querySelector(ScrollTargets.BLOG_CONTENT);
+            if (blogContent) {
+                shouldShow = blogContent.scrollTop > 300;
+            }
+        } else {
+            const rightColumn = document.querySelector(ScrollTargets.BLOG_RIGHT_COLUMN);
+            if (rightColumn) {
+                shouldShow = rightColumn.scrollTop > 300;
+            }
+        }
+    } else {
+        // 其他页面，检查窗口滚动位置
+        shouldShow = window.scrollY > 300;
+    }
+    
+    logger.debug(`初始滚动检查: ${shouldShow ? '应显示' : '应隐藏'}返回顶部按钮`);
+    toggleBackToTopButton(shouldShow);
 }
 
 /**
@@ -404,90 +545,6 @@ function disableCustomScrolling() {
 }
 
 /**
- * 初始化滚动条
- * 与其他组件保持一致的初始化函数
- */
-function initScrollbar() {
-    logger.debug('初始化滚动条...');
-    
-    try {
-        // 检测页面类型
-        const pageType = detectPageType();
-        logger.debug(`检测到页面类型: ${pageType}`);
-        
-        // 根据页面类型应用不同的滚动行为
-        if (pageType === PageTypes.BLOG) {
-            initializeBlogPageScrollbars();
-        } else {
-            initializeHomePageScrollbars();
-        }
-        
-        // 只为博客页面添加全局滚动事件监听器
-        if (pageType === PageTypes.BLOG) {
-            initializeScrollListeners();
-        }
-        
-        logger.debug('✅ 滚动条初始化完成');
-    } catch (error) {
-        logger.error('❌ 滚动条初始化失败:', error);
-    }
-}
-
-// 页面加载后初始化
-document.addEventListener('DOMContentLoaded', () => {
-    logger.info('滚动组件加载完成，初始化滚动事件监听...');
-    // 初始化滚动行为
-    initScrollbar();
-    
-    // 检查当前页面滚动位置，决定是否显示返回顶部按钮
-    checkInitialScrollPosition();
-});
-
-// 窗口加载完成后再次检查，以防动态内容改变了页面高度
-window.addEventListener('load', () => {
-    logger.info('页面完全加载，再次检查滚动位置...');
-    checkInitialScrollPosition();
-    
-    // 定期检查返回顶部按钮是否存在并正确显示
-    setTimeout(() => {
-        if (!document.querySelector('.back-to-top.visible') && shouldShowBackToTop()) {
-            logger.info('页面已滚动但返回顶部按钮未显示，强制显示按钮');
-            toggleBackToTopButton(true);
-        }
-    }, 1000);
-});
-
-/**
- * 检查初始滚动位置，并相应地显示/隐藏返回顶部按钮
- */
-function checkInitialScrollPosition() {
-    // 检查页面类型
-    const pageType = detectPageType();
-    let shouldShow = false;
-    
-    if (pageType === PageTypes.BLOG) {
-        // 博客页面，检查右侧栏或主内容区的滚动位置
-        if (window.innerWidth <= 768) {
-            const blogContent = document.querySelector(ScrollTargets.BLOG_CONTENT);
-            if (blogContent) {
-                shouldShow = blogContent.scrollTop > 300;
-            }
-        } else {
-            const rightColumn = document.querySelector(ScrollTargets.BLOG_RIGHT_COLUMN);
-            if (rightColumn) {
-                shouldShow = rightColumn.scrollTop > 300;
-            }
-        }
-    } else {
-        // 其他页面，检查窗口滚动位置
-        shouldShow = window.scrollY > 300;
-    }
-    
-    logger.debug(`初始滚动检查: ${shouldShow ? '应显示' : '应隐藏'}返回顶部按钮`);
-    toggleBackToTopButton(shouldShow);
-}
-
-/**
  * 判断是否应该显示返回顶部按钮
  * @returns {boolean} 是否应显示
  */
@@ -510,12 +567,13 @@ function shouldShowBackToTop() {
 }
 
 // 导出函数供外部使用
-export { 
+export {
+    initScrollbar,
+    checkInitialScrollPosition,
     enableCustomScrolling, 
     disableCustomScrolling,
-    scrollToElement,
     scrollToTop,
-    initScrollbar,
+    scrollToElement,
     PageTypes,
     ScrollTargets
 }; 

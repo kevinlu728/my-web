@@ -97,12 +97,12 @@
         }
     </style>
     
-    <!-- 先加载资源加载器但不用于首页核心资源 -->
+    <!-- 先加载日志模块、配置模块 -->
     <script type="module">
-        import { resourceManager } from './scripts/resource/resourceManager.js';
-        // 在全局作用域中暴露资源加载器
-        window.resourceManager = resourceManager;
-        console.log('✅ 资源加载器已预加载');
+        // 导入logger, 确保它最先加载
+        import logger from './scripts/utils/logger.js';
+        import config from './scripts/config/config.js';
+        console.log('✅ 日志模块、配置模块已预加载');
     </script>
     
     <!-- 结构化数据 -->
