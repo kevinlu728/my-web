@@ -26,15 +26,15 @@ class KatexLoader {
         logger.info('📝 加载KaTeX数学公式资源');
         
         // 尝试从资源配置中获取KaTeX资源信息
-        let katexConfig;
+        let katexCoreConfig;
         let katexThemeConfig;
         
         try {
-            katexConfig = this.resourceConfig.resources.scripts['katex-core'];
+            katexCoreConfig = this.resourceConfig.resources.scripts['katex-core'];
             katexThemeConfig = this.resourceConfig.resources.styles['katex-theme'];
             
-            if (!katexConfig) {
-                logger.warn('⚠️ 未在资源配置中找到katex配置，将使用默认值');
+            if (!katexCoreConfig) {
+                logger.warn('⚠️ 未在资源配置中找到katex-core配置，将使用默认值');
             }
             if (!katexThemeConfig) {
                 logger.warn('⚠️ 未在资源配置中找到katex-theme配置，将使用默认值');
@@ -65,7 +65,7 @@ class KatexLoader {
                 
                 // 并行加载JS和CSS
                 return Promise.all([
-                    this._loadKatexCore(katexConfig),
+                    this._loadKatexCore(katexCoreConfig),
                     this._loadKatexTheme(katexThemeConfig)
                 ]);
             })
@@ -122,24 +122,19 @@ class KatexLoader {
     /**
      * 加载KaTeX核心库
      * @private
-     * @param {Object} katexConfig - KaTeX配置
+     * @param {Object} coreConfig - KaTeX核心配置
      * @returns {Promise} - 加载完成的Promise
      */
-    _loadKatexCore(katexConfig) {
+    _loadKatexCore(coreConfig) {
         return new Promise(resolve => {
             try {
                 const version = this.resourceConfig?.versions?.katex || '0.16.9';
                 
                 // 从配置或默认值获取URL
-                let urls = this._getResourceUrls('scripts', 'katex-core', katexConfig);
+                let urls = this._getResourceUrls('scripts', 'katex-core', coreConfig);
                 if (!urls || !urls.primaryUrl) {
-                    urls = this._getDefaultKatexUrls(version);
+                    urls = this._getDefaultKatexCoreUrls(version);
                     logger.debug('⚠️ 未找到有效的KaTeX URL，使用默认值');
-                }
-                
-                logger.debug(`KaTeX核心URL: ${urls.primaryUrl}`);
-                if (urls.fallbackUrls && urls.fallbackUrls.length > 0) {
-                    logger.debug(`KaTeX备用CDN URLs: ${urls.fallbackUrls.join(', ')}`);
                 }
                 
                 // 构建加载选项
@@ -152,6 +147,11 @@ class KatexLoader {
                     },
                     fallbacks: urls.fallbackUrls.filter(url => !url.includes('/assets/libs/katex/')) || []
                 };
+
+                logger.debug(`KaTeX核心URL: ${urls.primaryUrl}`);
+                if (urls.fallbackUrls && urls.fallbackUrls.length > 0) {
+                    logger.debug(`KaTeX核心备用CDN URLs: ${urls.fallbackUrls.join(', ')}, 禁用本地回退`);
+                }
                 
                 // 从选项中明确移除本地回退
                 // 因为我们没有本地KaTeX资源，避免无效的回退尝试
@@ -182,18 +182,18 @@ class KatexLoader {
     /**
      * 加载KaTeX CSS样式
      * @private
-     * @param {Object} katexThemeConfig - KaTeX CSS配置
+     * @param {Object} themeConfig - KaTeX CSS配置
      * @returns {Promise} - 加载完成的Promise
      */
-    _loadKatexTheme(katexThemeConfig) {
+    _loadKatexTheme(themeConfig) {
         return new Promise(resolve => {
             try {
                 const version = this.resourceConfig?.versions?.katex || '0.16.9';
                 
                 // 从配置或默认值获取URL
-                let urls = this._getResourceUrls('styles', 'katex-theme', katexThemeConfig);
+                let urls = this._getResourceUrls('styles', 'katex-theme', themeConfig);
                 if (!urls || !urls.primaryUrl) {
-                    urls = this._getDefaultKatexCssUrls(version);
+                    urls = this._getDefaultKatexThemeUrls(version);
                     logger.debug('⚠️ 未找到有效的KaTeX CSS URL，使用默认值');
                 }
                 
@@ -210,6 +210,11 @@ class KatexLoader {
                         'data-resource-type': 'katex'
                     }
                 };
+
+                logger.debug(`KaTeX主题URL: ${urls.primaryUrl}`);
+                if (urls.fallbackUrls && urls.fallbackUrls.length > 0) {
+                    logger.debug(`KaTeX主题备用CDN URLs: ${urls.fallbackUrls.join(', ')}, 禁用本地回退`);
+                }
                 
                 // 加载CSS (非阻塞)
                 styleResourceLoader.loadCss(urls.primaryUrl, options, true)
@@ -321,12 +326,12 @@ class KatexLoader {
     }
     
     /**
-     * 获取默认的KaTeX URL
+     * 获取默认的KaTeX核心库URL
      * @private
      * @param {string} version - KaTeX版本
      * @returns {Object} - 包含主URL和回退URL的对象
      */
-    _getDefaultKatexUrls(version) {
+    _getDefaultKatexCoreUrls(version) {
         return {
             primaryUrl: `https://cdn.jsdelivr.net/npm/katex@${version}/dist/katex.min.js`,
             fallbackUrls: [
@@ -337,12 +342,12 @@ class KatexLoader {
     }
     
     /**
-     * 获取默认的KaTeX CSS URL
+     * 获取默认的KaTeX主题样式URL
      * @private
      * @param {string} version - KaTeX版本
      * @returns {Object} - 包含主URL和回退URL的对象
      */
-    _getDefaultKatexCssUrls(version) {
+    _getDefaultKatexThemeUrls(version) {
         return {
             primaryUrl: `https://cdn.jsdelivr.net/npm/katex@${version}/dist/katex.min.css`,
             fallbackUrls: [

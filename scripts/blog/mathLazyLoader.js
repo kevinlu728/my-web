@@ -154,6 +154,9 @@ class MathLazyLoader {
             
             // 使用KaTeX渲染
             if (window.katex && typeof window.katex.renderToString === 'function') {
+                // 清空现有内容，解决重复显示问题
+                equationBlock.innerHTML = '';
+                
                 const renderedHtml = window.katex.renderToString(formula, {
                     displayMode: displayMode,
                     throwOnError: false,
@@ -176,7 +179,7 @@ class MathLazyLoader {
 
     // 处理页面中的所有公式块
     processAllEquations(container = document) {
-        const equationBlocks = container.querySelectorAll('.equation-block');
+        const equationBlocks = container.querySelectorAll('.equation-block:not(.katex-processed)');
         if (equationBlocks.length === 0) return;
         
         logger.info(`找到 ${equationBlocks.length} 个公式块，准备懒加载...`);
@@ -195,6 +198,9 @@ class MathLazyLoader {
         
         // 处理公式块
         equationBlocks.forEach(equationBlock => {
+            // 标记为已处理，防止重复处理
+            equationBlock.classList.add('katex-processed');
+            
             // 检查公式块是否已经渲染
             if (equationBlock.querySelector('.katex')) return;
             

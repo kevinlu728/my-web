@@ -153,16 +153,16 @@ class PrismLoader {
     /**
      * 加载Prism核心库 (内部辅助方法)
      * @private
-     * @param {Object} prismCoreConfig - Prism核心配置
+     * @param {Object} coreConfig - Prism核心配置
      * @returns {Promise} - 加载完成的Promise
      */
-    _loadPrismCore(prismCoreConfig) {
+    _loadPrismCore(coreConfig) {
         return new Promise(resolve => {
             try {
                 const version = this.resourceConfig?.versions?.prism || '1.29.0';
                 
                 // 从配置或默认值获取URL
-                let urls = this._getResourceUrls('scripts', 'prism-core', prismCoreConfig);
+                let urls = this._getResourceUrls('scripts', 'prism-core', coreConfig);
                 if (!urls || !urls.primaryUrl) {
                     urls = this._getDefaultPrismCoreUrls(version);
                     logger.warn('⚠️ 未找到有效的Prism URL，使用默认值');
@@ -188,9 +188,9 @@ class PrismLoader {
                     }
                 };
 
-                logger.debug(`prism核心URL: ${urls.primaryUrl} ，本地回退URL: ${urls.localUrl}`);
+                logger.debug(`Prism核心URL: ${urls.primaryUrl} ，本地回退URL: ${urls.localUrl}`);
                 if (urls.fallbackUrls && urls.fallbackUrls.length > 0) {
-                    logger.debug(`prism备用URLs（包括备用CDN和本地回退）: ${urls.fallbackUrls.join(', ')}`);
+                    logger.debug(`Prism核心备用URLs（包括备用CDN和本地回退）: ${urls.fallbackUrls.join(', ')}`);
                 }
                 
                 // 加载脚本
@@ -236,10 +236,10 @@ class PrismLoader {
     /**
      * 加载Prism主题 (内部辅助方法)
      * @private
-     * @param {Object} prismThemeConfig - Prism主题配置
+     * @param {Object} themeConfig - Prism主题配置
      * @returns {Promise<boolean>} - 加载完成的Promise
      */
-    _loadPrismTheme(prismThemeConfig) {
+    _loadPrismTheme(themeConfig) {
         // 如果已经加载，不再重复加载
         if (window.prismThemeLoaded) {
             logger.debug('Prism主题已加载，跳过');
@@ -259,7 +259,7 @@ class PrismLoader {
             const version = this.resourceConfig?.versions?.prism || '1.29.0';
             
             // 使用传入的主题配置获取URL
-            let urls = this._getResourceUrls('styles', 'prism-theme', prismThemeConfig);
+            let urls = this._getResourceUrls('styles', 'prism-theme', themeConfig);
             if (!urls || !urls.primaryUrl) {
                 urls = this._getDefaultPrismThemeUrls(version);
                 logger.debug('⚠️ 未找到有效的Prism主题URL，使用默认值');
@@ -278,9 +278,9 @@ class PrismLoader {
                 }
             };
 
-            logger.debug(`prism-theme核心URL: ${urls.primaryUrl} ，本地回退URL: ${urls.localUrl}`);
+            logger.debug(`Prism主题URL: ${urls.primaryUrl} ，本地回退URL: ${urls.localUrl}`);
             if (urls.fallbackUrls && urls.fallbackUrls.length > 0) {
-                logger.debug(`prism-theme备用URLs（包括备用CDN和本地回退）: ${urls.fallbackUrls.join(', ')}`);
+                logger.debug(`Prism主题备用URLs（包括备用CDN和本地回退）: ${urls.fallbackUrls.join(', ')}`);
             }
             
             // 直接返回loadCss的Promise结果

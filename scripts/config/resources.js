@@ -19,11 +19,11 @@ import logger from '../utils/logger.js';
  * 所有外部库的版本都在这里统一管理
  */
 export const versions = {
-    // CSS框架和样式
+    // 基本图标样式
+    fontAwesome: '6.5.1',
     bootstrap: '5.3.2',
     bootstrapIcons: '1.10.5',
-    fontAwesome: '6.5.1',
-    
+
     // 代码高亮
     prism: '1.29.0',
     
@@ -31,6 +31,9 @@ export const versions = {
     katex: '0.16.9',
     mathjax: '3.2.2',
     
+    // 表格库
+    gridjs: '6.0.6', // Grid.js最新稳定版本
+
     // 图表和可视化
     chartjs: '4.4.0',
     mermaid: '10.6.1',
@@ -67,6 +70,13 @@ export const cdnProviders = {
         template: '/assets/libs/{library}/{path}'
     }
 };
+
+/**
+ * 注意: 不同CDN提供商对文件路径的组织方式有所不同
+ * - jsdelivr/unpkg 通常保留完整的npm包结构，包括dist/目录
+ * - cdnjs 通常将主要文件放在根目录，省略dist/前缀
+ * 因此，同一资源在不同CDN提供商的路径可能会有所不同，这是预期行为，不是配置错误。
+ */
 
 /**
  * 资源加载策略配置
@@ -200,21 +210,51 @@ export const resources = {
                     provider: 'jsdelivr',
                     library: 'katex',
                     version: versions.katex,
-                    path: 'dist/katex.min.css'
+                    path: 'dist/katex.min.css' // jsdelivr保留完整的dist目录结构
                 },
                 fallbacks: [
                     {
                         provider: 'cdnjs',
                         library: 'KaTeX',
                         version: versions.katex,
-                        path: 'katex.min.css'
+                        path: 'katex.min.css' // cdnjs通常将文件放在根目录，省略dist前缀
                     }
                 ]
             },
             attributes: {
                 'data-resource-type': 'katex'
             }
-        }
+        },
+        'gridjs-theme': {
+            type: 'css',
+            priority: 'medium',
+            group: 'table',
+            source: {
+                primary: {
+                    provider: 'jsdelivr',
+                    library: 'gridjs',
+                    version: versions.gridjs,
+                    path: 'dist/theme/mermaid.min.css' // jsdelivr保留完整的dist/theme目录结构
+                },
+                fallbacks: [
+                    {
+                        provider: 'cdnjs',
+                        library: 'gridjs',
+                        version: versions.gridjs,
+                        path: 'mermaid.min.css' // cdnjs通常将主题文件放在根目录
+                    },
+                    {
+                        provider: 'local',
+                        library: 'gridjs',
+                        path: 'theme/mermaid.min.css'
+                    }
+                ]
+            },
+            attributes: {
+                'data-resource-type': 'table',
+                'data-local-fallback': '/assets/libs/gridjs/theme/mermaid.min.css'
+            }
+        },
     },
     
     // 脚本资源
@@ -275,45 +315,30 @@ export const resources = {
                 ],
                 components: [
                     { name: 'markup', path: 'components/prism-markup.min.js' },
-                    { name: 'css', path: 'components/prism-css.min.js' },
-                    { name: 'javascript', path: 'components/prism-javascript.min.js' },
                     { name: 'c', path: 'components/prism-c.min.js' },
                     { name: 'cpp', path: 'components/prism-cpp.min.js' },
                     { name: 'java', path: 'components/prism-java.min.js' },
+                    { name: 'javascript', path: 'components/prism-javascript.min.js' },
+                    { name: 'css', path: 'components/prism-css.min.js' },
                     { name: 'python', path: 'components/prism-python.min.js' }
                 ],
                 languageDependencies: {
+                    'markup': [],  // HTML
+                    'c': [],
+                    'cpp': ['c'],
+                    'java': [],
                     'javascript': [],
                     'typescript': ['javascript'],
                     'jsx': ['markup', 'javascript'],
                     'tsx': ['jsx', 'typescript'],
-                    'c': [],
-                    'cpp': ['c'],
-                    'csharp': ['c'],
-                    'java': [],
-                    'kotlin': [],
-                    'scala': ['java'],
-                    'go': [],
-                    'rust': [],
-                    'python': [],
-                    'ruby': [],
-                    'php': ['markup'],
-                    'sql': [],
-                    'bash': [],
-                    'powershell': [],
-                    'markup': [],
                     'css': [],
-                    'scss': ['css'],
-                    'less': ['css'],
-                    'graphql': [],
-                    'yaml': [],
-                    'json': [],
-                    'toml': [],
-                    'markdown': ['markup'],
-                    'wasm': [],
+                    'kotlin': [],
                     'dart': [],
                     'swift': [],
-                    'r': []
+                    'python': [],
+                    'sql': [],
+                    'json': [],
+                    'markdown': ['markup'],
                 },
                 defaultLanguages: ['c', 'cpp', 'java', 'javascript', 'python'],
                 attributes: {
@@ -335,14 +360,14 @@ export const resources = {
                     provider: 'jsdelivr',
                     library: 'katex',
                     version: versions.katex,
-                    path: 'dist/katex.min.js'
+                    path: 'dist/katex.min.js' // jsdelivr保留完整的dist目录结构
                 },
                 fallbacks: [
                     {
                         provider: 'cdnjs',
                         library: 'KaTeX',
                         version: versions.katex,
-                        path: 'katex.min.js'
+                        path: 'katex.min.js' // cdnjs通常将文件放在根目录，省略dist前缀
                     }
                 ]
             },
@@ -359,14 +384,14 @@ export const resources = {
                     provider: 'jsdelivr',
                     library: 'katex',
                     version: versions.katex,
-                    path: 'dist/contrib/auto-render.min.js'
+                    path: 'dist/contrib/auto-render.min.js' // jsdelivr保留完整的dist目录结构
                 },
                 fallbacks: [
                     {
                         provider: 'cdnjs',
                         library: 'KaTeX',
                         version: versions.katex,
-                        path: 'contrib/auto-render.min.js'
+                        path: 'contrib/auto-render.min.js' // cdnjs省略dist前缀但保留contrib子目录
                     }
                 ]
             },
@@ -395,6 +420,36 @@ export const resources = {
             },
             attributes: {
                 'data-resource-type': 'animation'
+            }
+        },
+        'gridjs-core': {
+            type: 'js',
+            priority: 'medium',
+            group: 'table',
+            source: {
+                primary: {
+                    provider: 'jsdelivr',
+                    library: 'gridjs',
+                    version: versions.gridjs,
+                    path: 'dist/gridjs.umd.js' // jsdelivr保留完整的dist目录结构
+                },
+                fallbacks: [
+                    {
+                        provider: 'cdnjs',
+                        library: 'gridjs',
+                        version: versions.gridjs,
+                        path: 'gridjs.umd.js' // cdnjs通常将文件放在根目录，省略dist前缀
+                    },
+                    {
+                        provider: 'local',
+                        library: 'gridjs',
+                        path: 'gridjs.umd.js'
+                    }
+                ]
+            },
+            attributes: {
+                'data-resource-type': 'table',
+                'data-local-fallback': '/assets/libs/gridjs/gridjs.umd.js'
             }
         },
     }

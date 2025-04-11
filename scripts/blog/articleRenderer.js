@@ -34,48 +34,7 @@ export function renderNotionBlocks(blocks) {
         return '<p>没有内容</p>';
     }
     
-    // 添加表格样式
-    const tableStyle = `
-        <style>
-            .table-container {
-                overflow-x: auto;
-                margin: 1rem 0;
-            }
-            .notion-table {
-                border-collapse: collapse;
-                width: 100%;
-                font-size: 14px;
-                margin: 0;
-            }
-            .notion-table th,
-            .notion-table td {
-                border: 1px solid #e0e0e0;
-                padding: 8px 12px;
-                text-align: left;
-            }
-            .notion-table th {
-                background-color: #f5f5f5;
-                font-weight: 600;
-            }
-            .notion-table tr:nth-child(even) {
-                background-color: #fafafa;
-            }
-            .notion-table tr:hover {
-                background-color: #f0f0f0;
-            }
-            @media (max-width: 768px) {
-                .notion-table {
-                    font-size: 12px;
-                }
-                .notion-table th,
-                .notion-table td {
-                    padding: 6px 8px;
-                }
-            }
-        </style>
-    `;
-    
-    return tableStyle + blocks.map(block => renderBlock(block)).join('');
+    return blocks.map(block => renderBlock(block)).join('');
 }
 
 // 渲染段落
@@ -367,7 +326,7 @@ function renderTableBlock(block) {
 
 // 渲染单个块
 function renderBlock(block) {
-    // logger.info('渲染块:', block.type, block.id);  先注释掉，否则日志太多
+    logger.info('渲染块:', block.type, block.id);  //先注释掉，否则日志太多
     
     if (!block || !block.type) {
         logger.warn('无效的块:', block);
@@ -416,129 +375,50 @@ function renderBlock(block) {
                 } else if (block.children && block.children.length > 0) {
                     logger.info('表格行数据来自block.children');
                     
-                    // 首先分析表格结构，找出有效的行和列
-                    const validRows = [];
-                    
                     // 处理每一行
                     block.children.forEach((row, rowIndex) => {
+                        if (row.type !== 'table_row') return;
+                        
+                        const cells = [];
                         if (row.table_row && Array.isArray(row.table_row.cells)) {
-                            // 处理每个单元格，确保格式正确
-                            const processedCells = [];
-                            
-                            // 处理每个单元格
-                            row.table_row.cells.forEach((cell, cellIndex) => {
-                                // 特殊处理：如果是第一行第一个单元格，且表格有列头，保留空数组
-                                if (rowIndex === 0 && cellIndex === 0 && tableData.hasColumnHeader) {
-                                    // 如果单元格为空或内容为空，返回空数组
-                                    if (!cell || (Array.isArray(cell) && cell.length === 0)) {
-                                        processedCells.push([]);
-                                        return;
-                                    }
-                                }
-                                
-                                // 如果单元格是数组（富文本），确保每个元素格式正确
-                                if (Array.isArray(cell)) {
-                                    // 如果数组为空，添加空数组
-                                    if (cell.length === 0) {
-                                        processedCells.push([]);
-                                        return;
-                                    }
-                                    
-                                    // 过滤掉无效的元素
-                                    processedCells.push(cell.filter(item => item !== null && item !== undefined)
-                                        .map(item => {
-                                            // 如果元素是字符串，转换为简单文本对象
-                                            if (typeof item === 'string') {
-                                                return {
-                                                    type: 'text',
-                                                    text: { content: item },
-                                                    plain_text: item
-                                                };
-                                            }
-                                            // 如果元素是对象，确保有必要的属性
-                                            if (typeof item === 'object' && item !== null) {
-                                                // 确保有 plain_text 属性
-                                                if (!item.plain_text && item.text && item.text.content) {
-                                                    item.plain_text = item.text.content;
-                                                }
-                                                return item;
-                                            }
-                                            // 默认返回空文本对象
-                                            return {
-                                                type: 'text',
-                                                text: { content: '' },
-                                                plain_text: ''
-                                            };
-                                        }));
-                                    return;
-                                }
-                                
-                                // 如果单元格是字符串，转换为富文本数组
-                                if (typeof cell === 'string') {
-                                    processedCells.push([{
-                                        type: 'text',
-                                        text: { content: cell },
-                                        plain_text: cell
-                                    }]);
-                                    return;
-                                }
-                                
-                                // 如果单元格是对象，包装为数组
-                                if (typeof cell === 'object' && cell !== null) {
-                                    processedCells.push([cell]);
-                                    return;
-                                }
-                                
-                                // 默认添加空数组
-                                processedCells.push([]);
+                            row.table_row.cells.forEach(cell => {
+                                cells.push(cell);
                             });
-                            
-                            // 添加处理后的行
-                            validRows.push(processedCells);
-                        } else {
-                            // 如果行数据无效，添加一个空行
-                            validRows.push([]);
+                        }
+                        
+                        if (cells.length > 0) {
+                            tableData.rows.push(cells);
                         }
                     });
-                    
-                    // 设置处理后的行数据
-                    tableData.rows = validRows;
                 } else {
-                    // 表格数据为空，显示一个加载中的状态
                     logger.info('没有找到表格行数据，显示加载状态');
                 }
                 
-                // 确保每行的列数一致
-                if (tableData.rows.length > 0) {
-                    // 找出最大列数
-                    const maxColumns = Math.max(...tableData.rows.map(row => row.length));
-                    
-                    // 确保每行都有相同数量的列
-                    tableData.rows = tableData.rows.map(row => {
-                        // 如果列数不足，添加空列
-                        const newRow = [...row];
-                        while (newRow.length < maxColumns) {
-                            newRow.push([]);
-                        }
-                        return newRow;
+                // 获取表格最大列数
+                let maxColumnCount = 0;
+                if (block.table && block.table.table_width) {
+                    maxColumnCount = block.table.table_width;
+                } else if (tableData.rows.length > 0) {
+                    tableData.rows.forEach(row => {
+                        maxColumnCount = Math.max(maxColumnCount, row.length);
                     });
                 }
                 
-                // 输出处理后的表格数据，帮助调试
+                // 记录表格信息
+                const columnCounts = tableData.rows.map(row => row.length);
                 logger.info('处理后的表格数据结构:', {
                     rowCount: tableData.rows.length,
                     hasColumnHeader: tableData.hasColumnHeader,
                     hasRowHeader: tableData.hasRowHeader,
-                    columnCounts: tableData.rows.map(row => row.length)
+                    columnCounts: columnCounts
                 });
                 
                 // 将表格数据序列化为JSON字符串
-                const tableDataJson = JSON.stringify(tableData);
-                
-                // 返回表格懒加载占位符
                 return `
-                    <div class="lazy-block table-block" data-block-id="${block.id}" data-table-data="${escapeAttribute(tableDataJson)}" style="width:100%; max-width:100%;">
-                        <div class="table-loading">表格加载中...</div>
+                    <div class="lazy-block table-block" data-block-id="${block.id}" data-table-data='${JSON.stringify(tableData)}'>
+                        <div class="table-loading">
+                            <span>表格加载中...</span>
+                        </div>
                     </div>
                 `;
             case 'divider':
@@ -577,66 +457,37 @@ export function initializeLazyLoading(container) {
     const codeBlocks = container.querySelectorAll('.lazy-block.code-block');
     logger.info(`找到 ${codeBlocks.length} 个代码块待懒加载`);
     
-    if (codeBlocks.length > 0 && window.codeLazyLoader) {
+    if (codeBlocks.length > 0 && typeof codeLazyLoader !== 'undefined') {
         logger.info('处理代码块...');
-        // 确保codeLazyLoader可用
-        if (typeof window.codeLazyLoader.processAllCodeBlocks === 'function') {
-            window.codeLazyLoader.processAllCodeBlocks(container);
-        } else if (typeof codeLazyLoader !== 'undefined' && typeof codeLazyLoader.processAllCodeBlocks === 'function') {
-            codeLazyLoader.processAllCodeBlocks(container);
-        } else {
-            logger.error('codeLazyLoader不可用或processAllCodeBlocks方法不存在');
-        }
+        codeLazyLoader.processAllCodeBlocks(container);
     }
     
     // 初始化公式懒加载
     const equationBlocks = container.querySelectorAll('.equation-block');
     logger.info(`找到 ${equationBlocks.length} 个公式待懒加载`);
     
-    if (equationBlocks.length > 0) {
+    if (equationBlocks.length > 0 && typeof mathLazyLoader !== 'undefined') {
         logger.info('处理数学公式...');
-        // 确保mathLazyLoader可用
-        if (typeof window.mathLazyLoader !== 'undefined' && typeof window.mathLazyLoader.processAllEquations === 'function') {
-            window.mathLazyLoader.processAllEquations(container);
-        } else if (typeof mathLazyLoader !== 'undefined' && typeof mathLazyLoader.processAllEquations === 'function') {
-            mathLazyLoader.processAllEquations(container);
-        } else {
-            logger.error('mathLazyLoader不可用或processAllEquations方法不存在');
-        }
+        mathLazyLoader.processAllEquations(container);
     }
     
-    // 初始化表格懒加载
-    const tableBlocks = container.querySelectorAll('.lazy-block.table-block');
-    logger.info(`找到 ${tableBlocks.length} 个表格待懒加载`);
-    
-    if (tableBlocks.length > 0) {
-        logger.info('处理表格...');
-        // 确保tableLazyLoader可用
-        if (typeof window.tableLazyLoader !== 'undefined' && typeof window.tableLazyLoader.processAllTables === 'function') {
-            window.tableLazyLoader.processAllTables(container);
-        } else if (typeof tableLazyLoader !== 'undefined' && typeof tableLazyLoader.processAllTables === 'function') {
-            tableLazyLoader.processAllTables(container);
-        } else {
-            logger.error('tableLazyLoader不可用或processAllTables方法不存在');
-        }
-    }
+    // 初始化表格懒加载 - 简化的表格处理
+    const tableCount = tableLazyLoader.processAllTables();
+    logger.info(`处理 ${tableCount} 个表格...`);
     
     // 添加强制触发渲染事件
-    // 解决从缓存加载后不显示内容的问题
     setTimeout(() => {
         logger.info('触发强制渲染检查...');
         // 强制触发一次重新布局，解决缓存加载不显示内容的问题
-        // 只对容器应用重排而不是整个body，减少闪烁
         if (container) {
             container.classList.add('force-reflow');
-            // 读取任意布局属性以强制重新计算布局
             const forceReflow = container.offsetHeight;
             container.classList.remove('force-reflow');
         }
         
-        // 针对代码块和表格，强制检查是否所有元素都正确渲染
+        // 强制检查是否所有元素都正确渲染
         forceCheckLazyElements(container);
-    }, 50);  // 短延迟，确保DOM已经初始渲染完成
+    }, 50);
     
     logger.info('懒加载初始化完成');
 }
@@ -647,7 +498,7 @@ function forceCheckLazyElements(container) {
     
     // 处理代码块
     const codeBlocks = container.querySelectorAll('.lazy-block.code-block');
-    if (codeBlocks.length > 0 && window.codeLazyLoader) {
+    if (codeBlocks.length > 0 && typeof codeLazyLoader !== 'undefined') {
         logger.info(`强制检查 ${codeBlocks.length} 个代码块...`);
         codeBlocks.forEach((block) => {
             // 使用更准确的检测条件
@@ -655,9 +506,7 @@ function forceCheckLazyElements(container) {
                 block.innerHTML.trim() === '' || 
                 block.textContent.includes('代码加载中') ||
                 block.querySelector('.placeholder-content')) {
-                if (typeof window.codeLazyLoader.loadCode === 'function') {
-                    window.codeLazyLoader.loadCode(block);
-                } else if (typeof codeLazyLoader !== 'undefined' && typeof codeLazyLoader.loadCode === 'function') {
+                if (typeof codeLazyLoader.loadCode === 'function') {
                     codeLazyLoader.loadCode(block);
                 }
             }
@@ -666,35 +515,30 @@ function forceCheckLazyElements(container) {
     
     // 处理公式块
     const equationBlocks = container.querySelectorAll('.equation-block');
-    if (equationBlocks.length > 0 && window.mathLazyLoader) {
+    if (equationBlocks.length > 0 && typeof mathLazyLoader !== 'undefined') {
         logger.info(`强制检查 ${equationBlocks.length} 个公式块...`);
         equationBlocks.forEach((block) => {
             // 使用更准确的检测条件
             if (!block.querySelector('.katex') || 
                 block.innerHTML.trim() === '' || 
                 block.classList.contains('waiting-for-katex')) {
-                if (typeof window.mathLazyLoader.loadEquation === 'function') {
-                    window.mathLazyLoader.loadEquation(block);
-                } else if (typeof mathLazyLoader !== 'undefined' && typeof mathLazyLoader.loadEquation === 'function') {
+                if (typeof mathLazyLoader.loadEquation === 'function') {
                     mathLazyLoader.loadEquation(block);
                 }
             }
         });
     }
     
-    // 处理表格
+    // 处理表格 - 改进检测逻辑
     const tableBlocks = container.querySelectorAll('.lazy-block.table-block');
     if (tableBlocks.length > 0) {
         logger.info(`强制检查 ${tableBlocks.length} 个表格...`);
         tableBlocks.forEach((block) => {
-            // 使用更准确的检测条件
-            if (!block.querySelector('table') || 
-                block.innerHTML.trim() === '' || 
-                block.textContent.includes('表格加载中') ||
-                block.querySelector('.table-loading')) {
-                if (typeof window.tableLazyLoader !== 'undefined' && typeof window.tableLazyLoader.loadTable === 'function') {
-                    window.tableLazyLoader.loadTable(block);
-                } else if (typeof tableLazyLoader !== 'undefined' && typeof tableLazyLoader.loadTable === 'function') {
+            // 只检查尚未开始加载的表格
+            if (!block.classList.contains('processed') && 
+                !block.querySelector('.table-loading') && 
+                !block.querySelector('.notion-table-gridjs')) {
+                if (typeof tableLazyLoader !== 'undefined' && typeof tableLazyLoader.loadTable === 'function') {
                     tableLazyLoader.loadTable(block);
                 }
             }
