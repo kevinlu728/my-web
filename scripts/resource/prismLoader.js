@@ -26,15 +26,22 @@ class PrismLoader {
         logger.info('📝 加载代码高亮资源');
         
         // 尝试从资源配置中获取Prism资源信息
-        let prismConfig;
+        let prismCoreConfig;
         let prismThemeConfig;
+        let prismComponentsConfig;
         
         try {
-            prismConfig = this.resourceConfig.resources.scripts['prism'];
+            prismCoreConfig = this.resourceConfig.resources.scripts['prism-core'];
             prismThemeConfig = this.resourceConfig.resources.styles['prism-theme'];
-            
-            if (!prismConfig) {
-                logger.warn('⚠️ 未在资源配置中找到prism配置，将使用默认值');
+            prismComponentsConfig = this.resourceConfig.resources.scripts['prism-components'];
+            if (!prismCoreConfig) {
+                logger.warn('⚠️ 未在资源配置中找到prism-core配置，将使用默认值');
+            }
+            if (!prismThemeConfig) {
+                logger.warn('⚠️ 未在资源配置中找到prism-theme配置，将使用默认值');
+            }
+            if (!prismComponentsConfig) {
+                logger.warn('⚠️ 未在资源配置中找到prism-components配置，将使用默认值');
             }
         } catch (error) {
             logger.warn('⚠️ 获取Prism资源配置失败，将使用默认值', error);
@@ -68,7 +75,7 @@ class PrismLoader {
         return Promise.resolve()
             .then(() => {
                 logger.info('📦 加载Prism核心库');
-                return this._loadPrismCore(prismConfig);
+                return this._loadPrismCore(prismCoreConfig);
             })
             .then(coreLoaded => {
                 if (!coreLoaded) {
@@ -80,15 +87,15 @@ class PrismLoader {
                 let languages = ['java', 'javascript', 'cpp', 'python']; // 默认语言
                 
                 // 如果配置中有定义组件，使用配置的组件
-                if (prismConfig && prismConfig.source && prismConfig.source.components) {
-                    languages = prismConfig.source.components.map(comp => comp.name);
+                if (prismComponentsConfig && prismComponentsConfig.source && prismComponentsConfig.source.components) {
+                    languages = prismComponentsConfig.source.components.map(comp => comp.name);
                     logger.debug(`✓ 从配置获取语言组件列表: ${languages.join(', ')}`);
                 }
                 
                 logger.debug('Prism核心库已加载成功，开始加载语言组件');
                 // 并行加载语言组件和主题
                 return Promise.all([
-                    this._loadPrismLanguageComponents(languages, prismConfig),
+                    this._loadPrismLanguageComponents(prismComponentsConfig),
                     this._loadPrismTheme(prismThemeConfig)
                 ]);
             })
@@ -146,16 +153,16 @@ class PrismLoader {
     /**
      * 加载Prism核心库 (内部辅助方法)
      * @private
-     * @param {Object} config - Prism核心配置
+     * @param {Object} prismCoreConfig - Prism核心配置
      * @returns {Promise} - 加载完成的Promise
      */
-    _loadPrismCore(config) {
+    _loadPrismCore(prismCoreConfig) {
         return new Promise(resolve => {
             try {
                 const version = this.resourceConfig?.versions?.prism || '1.29.0';
                 
                 // 从配置或默认值获取URL
-                let urls = this._getResourceUrls('scripts', 'prism', config);
+                let urls = this._getResourceUrls('scripts', 'prism-core', prismCoreConfig);
                 if (!urls || !urls.primaryUrl) {
                     urls = this._getDefaultPrismCoreUrls(version);
                     logger.warn('⚠️ 未找到有效的Prism URL，使用默认值');
@@ -167,9 +174,9 @@ class PrismLoader {
                     localFallback: urls.localUrl,
                     attributes: {
                         'data-resource-group': 'code',
-                        'data-resource-id': 'prism',
+                        'data-resource-id': 'prism-core',
                         'data-resource-type': 'prism',
-                        'data-name': 'prism',
+                        'data-name': 'prism-core',
                         'data-local-fallback': urls.localUrl
                     },
                     attachToWindow: true,
@@ -229,10 +236,10 @@ class PrismLoader {
     /**
      * 加载Prism主题 (内部辅助方法)
      * @private
-     * @param {Object} config - Prism主题配置
+     * @param {Object} prismThemeConfig - Prism主题配置
      * @returns {Promise<boolean>} - 加载完成的Promise
      */
-    _loadPrismTheme(config) {
+    _loadPrismTheme(prismThemeConfig) {
         // 如果已经加载，不再重复加载
         if (window.prismThemeLoaded) {
             logger.debug('Prism主题已加载，跳过');
@@ -251,8 +258,8 @@ class PrismLoader {
         try {
             const version = this.resourceConfig?.versions?.prism || '1.29.0';
             
-            // 从配置或默认值获取URL
-            let urls = this._getResourceUrls('styles', 'prism-theme', config);
+            // 使用传入的主题配置获取URL
+            let urls = this._getResourceUrls('styles', 'prism-theme', prismThemeConfig);
             if (!urls || !urls.primaryUrl) {
                 urls = this._getDefaultPrismThemeUrls(version);
                 logger.debug('⚠️ 未找到有效的Prism主题URL，使用默认值');
@@ -299,20 +306,27 @@ class PrismLoader {
 
     /**
      * 加载Prism语言组件
-     * @param {Array<string>} languages - 要加载的语言列表
-     * @param {Object} config - 配置对象
-     * @returns {Promise} - 加载完成的Promise
+     * @private
+     * @param {Object} prismComponentsConfig - Prism语言组件配置
+     * @returns {Promise<boolean>} - 加载完成的Promise
      */
-    _loadPrismLanguageComponents(languages, config) {
-        // 确保languages是有效数组
-        if (!languages || !Array.isArray(languages) || languages.length === 0) {
-            // 默认加载几种常见语言
-            languages = ['javascript', 'css', 'markup', 'java', 'python'];
-        }
+    _loadPrismLanguageComponents(prismComponentsConfig) {
+        // 使用传入的配置而不是从resourceConfig获取
+        // 提取语言依赖和默认语言列表
+        const source = prismComponentsConfig?.source || {};
+        const dependencyMap = source.languageDependencies || {};
+        const defaultLanguages = source.defaultLanguages || ['c', 'cpp', 'java', 'javascript', 'python'];
         
+        // 从配置参数中获取语言列表
+        let languages = [];
+        if (prismComponentsConfig && prismComponentsConfig.languages && Array.isArray(prismComponentsConfig.languages)) {
+            languages = prismComponentsConfig.languages;
+        } else {
+            // 使用配置中的默认语言
+            languages = defaultLanguages;
+        }       
         // 过滤无效语言
-        const validLanguages = languages.filter(lang => typeof lang === 'string' && lang.trim());
-        
+        const validLanguages = languages.filter(lang => typeof lang === 'string' && lang.trim());       
         // 如果没有有效语言，则直接返回成功
         if (validLanguages.length === 0) {
             return Promise.resolve(true);
@@ -325,41 +339,6 @@ class PrismLoader {
         
         // 记录已处理的组件状态
         const processedComponents = new Map();
-        
-        // 语言依赖关系图谱
-        const dependencyMap = {
-            'javascript': [],
-            'typescript': ['javascript'],
-            'jsx': ['markup', 'javascript'],
-            'tsx': ['jsx', 'typescript'],
-            'c': [],
-            'cpp': ['c'],
-            'csharp': ['c'],
-            'java': [],
-            'kotlin': [],
-            'scala': ['java'],
-            'go': [],
-            'rust': [],
-            'python': [],
-            'ruby': [],
-            'php': ['markup'],
-            'sql': [],
-            'bash': [],
-            'powershell': [],
-            'markup': [],
-            'css': [],
-            'scss': ['css'],
-            'less': ['css'],
-            'graphql': [],
-            'yaml': [],
-            'json': [],
-            'toml': [],
-            'markdown': ['markup'],
-            'wasm': [],
-            'dart': [],
-            'swift': [],
-            'r': []
-        };
         
         // 构建完整的语言列表，包括依赖项
         const allLanguages = [...validLanguages]; // 初始化为用户指定的语言
@@ -447,7 +426,7 @@ class PrismLoader {
                 const script = document.createElement('script');
                 script.type = 'text/javascript';
                 
-                // 使用本地路径
+                // 由于语言组件较多，为了减少网络请求，语言组件目前使用本地资源
                 script.src = `${basePath}prism-${langId}.min.js`;
                 
                 script.onload = () => {

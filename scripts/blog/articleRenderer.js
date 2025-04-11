@@ -7,9 +7,9 @@
  * 
  * 该模块负责将从Notion API获取的文章数据转换为HTML内容，支持多种块类型的渲染：
  * - 段落、标题、列表、待办事项
+ * - 图片（支持懒加载）
  * - 代码块（支持语法高亮）
  * - 表格（支持懒加载）
- * - 图片（支持懒加载）
  * - 公式（支持KaTeX渲染）
  * - 引用、标注等
  * 
@@ -22,8 +22,8 @@
 
 import { tableLazyLoader } from './tableLazyLoader.js';
 import { codeLazyLoader } from './codeLazyLoader.js';
+import { mathLazyLoader } from './mathLazyLoader.js';
 import logger from '../utils/logger.js';
-import { showLoadingSpinner } from '../utils/common-utils.js';
 
 // 主渲染函数
 export function renderNotionBlocks(blocks) {
@@ -158,6 +158,31 @@ function renderToggle(block) {
     `;
 }
 
+// 渲染图片
+function renderImage(block) {
+    if (!block.image) {
+        return `<div class="image-placeholder">图片</div>`;
+    }
+    
+    let url = '';
+    if (block.image.type === 'external') {
+        url = block.image.external.url;
+    } else if (block.image.type === 'file') {
+        url = block.image.file.url;
+    }
+    
+    if (!url) {
+        return `<div class="image-placeholder">图片</div>`;
+    }
+    
+    // 简化图片渲染，移除内联加载器，完全依赖imageLazyLoader
+    return `
+        <div class="article-image-container">
+            <img src="${url}" alt="图片" data-original-src="${url}" style="max-width: 100%;">
+        </div>
+    `;
+}
+
 // 渲染代码块
 function renderCode(block) {
     const code = block.code?.rich_text?.[0]?.plain_text || '';
@@ -194,82 +219,27 @@ function escapeAttribute(str) {
         .replace(/>/g, '&gt;');
 }
 
-// 渲染图片
-function renderImage(block) {
-    if (!block.image) {
-        return `<div class="image-placeholder">图片</div>`;
-    }
-    
-    let url = '';
-    if (block.image.type === 'external') {
-        url = block.image.external.url;
-    } else if (block.image.type === 'file') {
-        url = block.image.file.url;
-    }
-    
-    if (!url) {
-        return `<div class="image-placeholder">图片</div>`;
-    }
-    
-    // 简化图片渲染，移除内联加载器，完全依赖imageLazyLoader
-    return `
-        <div class="article-image-container">
-            <img src="${url}" alt="图片" data-original-src="${url}" style="max-width: 100%;">
-        </div>
-    `;
-}
-
-// 渲染公式块
+// 渲染公式
 function renderEquation(block) {
     if (!block.equation) {
         return '<div class="equation-placeholder">公式</div>';
     }
 
     const formula = block.equation.expression;
-    try {
-        // 使用KaTeX直接渲染公式
-        if (window.katex) {
-            return `
-                <div class="equation-block">
-                    ${window.katex.renderToString(formula, {
-                        displayMode: true,
-                        throwOnError: false,
-                        strict: false
-                    })}
-                </div>
-            `;
-        } else {
-            // 如果KaTeX还未加载，先保存原始公式等待后续渲染
-            return `
-                <div class="equation-block" data-formula="${escapeAttribute(formula)}">
-                    <div class="katex-display">${formula}</div>
-                </div>
-            `;
-        }
-    } catch (error) {
-        logger.error('公式渲染错误:', error);
-        return `<div class="equation-error">公式渲染错误: ${formula}</div>`;
-    }
+    
+    // 使用公式数据创建懒加载块
+    return `
+        <div class="equation-block waiting-for-katex" data-formula="${escapeAttribute(formula)}">
+            <div class="katex-display">${formula}</div>
+        </div>
+    `;
 }
 
-// 处理行内公式
+// 渲染内联公式
 function processInlineEquations(text) {
-    // 匹配行内公式 $formula$，但排除 $$ 的情况
-    return text.replace(/(?<!\$)\$(?!\$)([^\$]+)\$(?!\$)/g, (match, formula) => {
-        try {
-            if (window.katex) {
-                return window.katex.renderToString(formula, {
-                    displayMode: false,
-                    throwOnError: false,
-                    strict: false
-                });
-            } else {
-                return `<span class="katex-inline" data-formula="${escapeAttribute(formula)}">${formula}</span>`;
-            }
-        } catch (error) {
-            logger.error('行内公式渲染错误:', error);
-            return match;
-        }
+    // 匹配 $ ... $ 格式的内联公式
+    return text.replace(/\$([^$]+)\$/g, (match, formula) => {
+        return `<span class="inline-equation waiting-for-katex" data-formula="${escapeAttribute(formula)}">${formula}</span>`;
     });
 }
 
@@ -588,7 +558,10 @@ function renderBlock(block) {
     }
 }
 
-// 初始化懒加载功能
+/**
+ * 初始化懒加载功能
+ * @param {HTMLElement} container - 文章容器元素
+ */
 export function initializeLazyLoading(container) {
     if (!container) {
         logger.warn('无法初始化懒加载：容器不存在');
@@ -613,6 +586,22 @@ export function initializeLazyLoading(container) {
             codeLazyLoader.processAllCodeBlocks(container);
         } else {
             logger.error('codeLazyLoader不可用或processAllCodeBlocks方法不存在');
+        }
+    }
+    
+    // 初始化公式懒加载
+    const equationBlocks = container.querySelectorAll('.equation-block');
+    logger.info(`找到 ${equationBlocks.length} 个公式待懒加载`);
+    
+    if (equationBlocks.length > 0) {
+        logger.info('处理数学公式...');
+        // 确保mathLazyLoader可用
+        if (typeof window.mathLazyLoader !== 'undefined' && typeof window.mathLazyLoader.processAllEquations === 'function') {
+            window.mathLazyLoader.processAllEquations(container);
+        } else if (typeof mathLazyLoader !== 'undefined' && typeof mathLazyLoader.processAllEquations === 'function') {
+            mathLazyLoader.processAllEquations(container);
+        } else {
+            logger.error('mathLazyLoader不可用或processAllEquations方法不存在');
         }
     }
     
@@ -670,6 +659,24 @@ function forceCheckLazyElements(container) {
                     window.codeLazyLoader.loadCode(block);
                 } else if (typeof codeLazyLoader !== 'undefined' && typeof codeLazyLoader.loadCode === 'function') {
                     codeLazyLoader.loadCode(block);
+                }
+            }
+        });
+    }
+    
+    // 处理公式块
+    const equationBlocks = container.querySelectorAll('.equation-block');
+    if (equationBlocks.length > 0 && window.mathLazyLoader) {
+        logger.info(`强制检查 ${equationBlocks.length} 个公式块...`);
+        equationBlocks.forEach((block) => {
+            // 使用更准确的检测条件
+            if (!block.querySelector('.katex') || 
+                block.innerHTML.trim() === '' || 
+                block.classList.contains('waiting-for-katex')) {
+                if (typeof window.mathLazyLoader.loadEquation === 'function') {
+                    window.mathLazyLoader.loadEquation(block);
+                } else if (typeof mathLazyLoader !== 'undefined' && typeof mathLazyLoader.loadEquation === 'function') {
+                    mathLazyLoader.loadEquation(block);
                 }
             }
         });

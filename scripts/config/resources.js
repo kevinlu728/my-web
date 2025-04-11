@@ -107,6 +107,30 @@ export const resourceStrategies = {
 export const resources = {
     // 样式资源
     styles: {
+        'font-awesome': {
+            type: 'css',
+            priority: 'high',
+            group: 'icons',
+            source: {
+                primary: {
+                    provider: 'local',
+                    library: 'font-awesome',
+                    path: 'all.min.css'
+                },
+                fallbacks: []
+            },
+            attributes: {
+                id: 'font-awesome-stylesheet',
+                'data-resource-type': 'icon-font',
+                'data-source': 'local-resource'
+            },
+            handlers: {
+                onLoad: function() {
+                    logger.info('✅ 本地Font Awesome资源已通过资源加载器成功加载');
+                },
+                onError: 'injectFontAwesomeFallbackStyles'
+            }
+        },
         'bootstrap-icons': {
             type: 'css',
             priority: 'high',
@@ -135,30 +159,6 @@ export const resources = {
             attributes: {
                 'data-resource-type': 'bootstrap-icons',
                 'data-local-fallback': '/assets/libs/bootstrap-icons/bootstrap-icons.css'
-            }
-        },
-        'font-awesome': {
-            type: 'css',
-            priority: 'high',
-            group: 'icons',
-            source: {
-                primary: {
-                    provider: 'local',
-                    library: 'font-awesome',
-                    path: 'all.min.css'
-                },
-                fallbacks: []
-            },
-            attributes: {
-                id: 'font-awesome-stylesheet',
-                'data-resource-type': 'icon-font',
-                'data-source': 'local-resource'
-            },
-            handlers: {
-                onLoad: function() {
-                    logger.info('✅ 本地Font Awesome资源已通过资源加载器成功加载');
-                },
-                onError: 'injectFontAwesomeFallbackStyles'
             }
         },
         'prism-theme': {
@@ -191,9 +191,9 @@ export const resources = {
                 'data-local-fallback': '/assets/libs/prism/themes/prism-tomorrow.min.css'
             }
         },
-        'katex': {
+        'katex-theme': {
             type: 'css',
-            priority: 'medium',
+            priority: 'high',
             group: 'math',
             source: {
                 primary: {
@@ -208,24 +208,18 @@ export const resources = {
                         library: 'KaTeX',
                         version: versions.katex,
                         path: 'katex.min.css'
-                    },
-                    {
-                        provider: 'local',
-                        library: 'katex',
-                        path: 'katex.min.css'
                     }
                 ]
             },
             attributes: {
-                'data-resource-type': 'katex',
-                'data-local-fallback': '/assets/libs/katex/katex.min.css'
+                'data-resource-type': 'katex'
             }
         }
     },
     
     // 脚本资源
     scripts: {
-        'prism': {
+        'prism-core': {
             type: 'js',
             priority: 'medium',
             group: 'code',
@@ -288,6 +282,40 @@ export const resources = {
                     { name: 'java', path: 'components/prism-java.min.js' },
                     { name: 'python', path: 'components/prism-python.min.js' }
                 ],
+                languageDependencies: {
+                    'javascript': [],
+                    'typescript': ['javascript'],
+                    'jsx': ['markup', 'javascript'],
+                    'tsx': ['jsx', 'typescript'],
+                    'c': [],
+                    'cpp': ['c'],
+                    'csharp': ['c'],
+                    'java': [],
+                    'kotlin': [],
+                    'scala': ['java'],
+                    'go': [],
+                    'rust': [],
+                    'python': [],
+                    'ruby': [],
+                    'php': ['markup'],
+                    'sql': [],
+                    'bash': [],
+                    'powershell': [],
+                    'markup': [],
+                    'css': [],
+                    'scss': ['css'],
+                    'less': ['css'],
+                    'graphql': [],
+                    'yaml': [],
+                    'json': [],
+                    'toml': [],
+                    'markdown': ['markup'],
+                    'wasm': [],
+                    'dart': [],
+                    'swift': [],
+                    'r': []
+                },
+                defaultLanguages: ['c', 'cpp', 'java', 'javascript', 'python'],
                 attributes: {
                     'data-resource-type': 'prism',
                     'data-local-fallback': '/assets/libs/prism/components/'
@@ -296,6 +324,54 @@ export const resources = {
             attributes: {
                 'data-resource-type': 'prism',
                 'data-local-fallback': '/assets/libs/prism/components/'
+            }
+        },
+        'katex-core': {
+            type: 'js',
+            priority: 'medium',
+            group: 'math',
+            source: {
+                primary: {
+                    provider: 'jsdelivr',
+                    library: 'katex',
+                    version: versions.katex,
+                    path: 'dist/katex.min.js'
+                },
+                fallbacks: [
+                    {
+                        provider: 'cdnjs',
+                        library: 'KaTeX',
+                        version: versions.katex,
+                        path: 'katex.min.js'
+                    }
+                ]
+            },
+            attributes: {
+                'data-resource-type': 'katex'
+            }
+        },
+        'katex-auto-render': {
+            type: 'js',
+            priority: 'low',
+            group: 'math',
+            source: {
+                primary: {
+                    provider: 'jsdelivr',
+                    library: 'katex',
+                    version: versions.katex,
+                    path: 'dist/contrib/auto-render.min.js'
+                },
+                fallbacks: [
+                    {
+                        provider: 'cdnjs',
+                        library: 'KaTeX',
+                        version: versions.katex,
+                        path: 'contrib/auto-render.min.js'
+                    }
+                ]
+            },
+            attributes: {
+                'data-resource-type': 'katex'
             }
         },
         'particles': {
@@ -321,88 +397,6 @@ export const resources = {
                 'data-resource-type': 'animation'
             }
         },
-        'katex-core': {
-            type: 'js',
-            priority: 'medium',
-            group: 'math',
-            source: {
-                primary: {
-                    provider: 'jsdelivr',
-                    library: 'katex',
-                    version: versions.katex,
-                    path: 'dist/katex.min.js'
-                },
-                fallbacks: [
-                    {
-                        provider: 'cdnjs',
-                        library: 'KaTeX',
-                        version: versions.katex,
-                        path: 'katex.min.js'
-                    },
-                    {
-                        provider: 'local',
-                        library: 'katex',
-                        path: 'katex.min.js'
-                    }
-                ]
-            },
-            attributes: {
-                'data-resource-type': 'katex-core'
-            }
-        },
-        'katex-auto-render': {
-            type: 'js',
-            priority: 'low',
-            group: 'math',
-            source: {
-                primary: {
-                    provider: 'jsdelivr',
-                    library: 'katex',
-                    version: versions.katex,
-                    path: 'dist/contrib/auto-render.min.js'
-                },
-                fallbacks: [
-                    {
-                        provider: 'cdnjs',
-                        library: 'KaTeX',
-                        version: versions.katex,
-                        path: 'contrib/auto-render.min.js'
-                    },
-                    {
-                        provider: 'local',
-                        library: 'katex',
-                        path: 'contrib/auto-render.min.js'
-                    }
-                ]
-            },
-            attributes: {
-                'data-resource-type': 'katex-auto-render'
-            }
-        },
-        'mathjax': {
-            type: 'js',
-            priority: 'low',
-            group: 'math',
-            source: {
-                primary: {
-                    provider: 'jsdelivr',
-                    library: 'mathjax',
-                    version: versions.mathjax,
-                    path: 'es5/tex-mml-chtml.js'
-                },
-                fallbacks: [
-                    {
-                        provider: 'cdnjs',
-                        library: 'mathjax',
-                        version: versions.mathjax,
-                        path: 'es5/tex-mml-chtml.js'
-                    }
-                ]
-            },
-            attributes: {
-                'data-resource-type': 'mathjax'
-            }
-        }
     }
 };
 
