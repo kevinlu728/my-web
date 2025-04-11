@@ -183,22 +183,22 @@ export async function initializePage(forceApiTest = false) {
         updateViewState('loading');
         
         // ===== 2. API服务检查 =====
-        // 检查API服务可用性
-        if (window.apiService) {
-            logger.info('✅ 检测到apiService，将使用API服务自动选择功能');
-            try {
-                const apiStatus = await window.apiService.testConnection();
-                if (apiStatus.success) {
-                    logger.info('✅ API服务连接成功，使用实现:', apiStatus.implementation);
-                } else {
-                    logger.warn('⚠️ API服务连接测试失败，将回退到直接服务调用');
-                }
-            } catch (error) {
-                logger.error('❌ API服务测试出错:', error);
-            }
-        } else {
-            logger.info('⚠️ 未检测到apiService，将使用直接服务调用');
-        }
+        // // 检查API服务可用性
+        // if (window.apiService) {
+        //     logger.info('✅ 检测到apiService，将使用API服务自动选择功能');
+        //     try {
+        //         const apiStatus = await window.apiService.testConnection();
+        //         if (apiStatus.success) {
+        //             logger.info('✅ API服务连接成功，使用实现:', apiStatus.implementation);
+        //         } else {
+        //             logger.warn('⚠️ API服务连接测试失败，将回退到直接服务调用');
+        //         }
+        //     } catch (error) {
+        //         logger.error('❌ API服务测试出错:', error);
+        //     }
+        // } else {
+        //     logger.info('⚠️ 未检测到apiService，将使用直接服务调用');
+        // }
         
         // ===== 3. 核心组件初始化 =====
         // 初始化文章管理器
