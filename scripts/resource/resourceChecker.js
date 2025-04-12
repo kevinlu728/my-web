@@ -15,24 +15,7 @@ class ResourceChecker {
      * 初始化资源检查器
      * @param {Object} config - 配置对象
      */
-    constructor(config = {}) {
-        // 非存在资源列表
-        this.nonExistentResources = new Set();
-        
-        // KaTeX本地资源是否确认存在
-        this.katexLocalResourceConfirmed = config.katexLocalResourceConfirmed || false;
-        
-        // 初始化一些已知不存在的资源路径
-        if (!this.katexLocalResourceConfirmed) {
-            this.nonExistentResources.add('/assets/libs/katex/');
-        }
-        
-        // 已知存在的本地资源路径
-        this.knownLocalResources = [
-            'styles/fallback.css',
-            // 可以在这里添加其他已知存在的本地资源
-        ];
-        
+    constructor(config = {}) {  
         // 提前检测FontAwesome
         this.initFastFontAwesomeCheck();
         
@@ -50,6 +33,7 @@ class ResourceChecker {
      * 尽早检测字体可用性
      */
     initFastFontAwesomeCheck() {
+        logger.info('提前检测FontAwesome');
         // 创建FontAwesome预加载检测
         const checkFontInterval = setInterval(() => {
             // 如果文档还未准备好，不执行检测
@@ -67,6 +51,20 @@ class ResourceChecker {
         
         // 确保不会无限检测
         setTimeout(() => clearInterval(checkFontInterval), 3000);
+    }
+
+    /**
+     * 检测FontAwesome是否加载成功
+     * 更彻底的检测，在页面完全加载后执行
+     */
+    checkFontAwesomeAvailability() {
+        // 使用较短的延迟，优化用户体验
+        setTimeout(() => {
+            // 执行检测，但忽略结果，总是使用FontAwesome
+            this.performFontAwesomeCheck();
+            // 强制再次刷新树状图标
+            this.refreshTreeIcons();
+        }, 200); // 缩短延迟时间
     }
     
     /**
@@ -140,161 +138,6 @@ class ResourceChecker {
         } catch (e) {
             logger.warn('刷新树形图标时出错', e);
         }
-    }
-
-    /**
-     * 检测FontAwesome是否加载成功
-     * 更彻底的检测，在页面完全加载后执行
-     */
-    checkFontAwesomeAvailability() {
-        // 使用较短的延迟，优化用户体验
-        setTimeout(() => {
-            // 执行检测，但忽略结果，总是使用FontAwesome
-            this.performFontAwesomeCheck();
-            // 强制再次刷新树状图标
-            this.refreshTreeIcons();
-        }, 200); // 缩短延迟时间
-    }
-
-    /**
-     * 检查本地资源是否存在
-     * @param {string} localPath - 本地资源路径
-     * @returns {boolean} 资源是否存在
-     */
-    checkLocalResourceExists(localPath) {
-        // 此方法在浏览器环境中不能直接检查文件是否存在
-        // 使用启发式方法判断
-        
-        // 检查常见的不存在路径模式
-        if (localPath.includes('/katex/') && !this.katexLocalResourceConfirmed) {
-            // 如果是katex路径且没有确认过本地存在，假设不存在
-            return false;
-        }
-        
-        // 检查是否匹配已知存在的本地资源
-        return this.knownLocalResources.some(path => localPath.endsWith(path));
-    }
-    
-    /**
-     * 检查资源是否为已知不存在的资源
-     * @param {string} resourcePath - 资源路径
-     * @returns {boolean} 是否为已知不存在的资源
-     */
-    isNonExistentResource(resourcePath) {
-        // 检查完整路径
-        if (this.nonExistentResources.has(resourcePath)) {
-            return true;
-        }
-        
-        // 检查路径前缀
-        for (const prefix of this.nonExistentResources) {
-            if (resourcePath.startsWith(prefix)) {
-                return true;
-            }
-        }
-        
-        return false;
-    }
-    
-    /**
-     * 标记资源为不存在
-     * @param {string} resourcePath - 资源路径
-     */
-    markResourceAsNonExistent(resourcePath) {
-        // 从路径中提取目录部分
-        const parts = resourcePath.split('/');
-        parts.pop(); // 移除文件名
-        const directory = parts.join('/') + '/';
-        
-        // 添加到不存在资源集合
-        this.nonExistentResources.add(directory);
-        logger.debug(`🔍 已标记目录为不存在资源: ${directory}`);
-    }
-    
-    /**
-     * 添加已知存在的本地资源
-     * @param {string} resourcePath - 资源路径
-     */
-    addKnownLocalResource(resourcePath) {
-        if (!this.knownLocalResources.includes(resourcePath)) {
-            this.knownLocalResources.push(resourcePath);
-        }
-    }
-    
-    /**
-     * 更新配置
-     * @param {Object} config - 新的配置参数
-     */
-    updateConfig(config) {
-        if (config.katexLocalResourceConfirmed !== undefined) {
-            this.katexLocalResourceConfirmed = config.katexLocalResourceConfirmed;
-            
-            // 如果确认KaTeX本地资源存在，从不存在列表中移除
-            if (this.katexLocalResourceConfirmed) {
-                const toRemove = [];
-                for (const path of this.nonExistentResources) {
-                    if (path.includes('/katex/')) {
-                        toRemove.push(path);
-                    }
-                }
-                
-                toRemove.forEach(path => {
-                    this.nonExistentResources.delete(path);
-                });
-            } else {
-                // 如果确认KaTeX本地资源不存在，添加到不存在列表
-                this.nonExistentResources.add('/assets/libs/katex/');
-            }
-        }
-    }
-    
-    /**
-     * 设置图标状态
-     * 基于树项的状态设置图标文本和可见性
-     * @param {HTMLElement} iconElement - 图标元素
-     * @param {HTMLElement} treeItem - 树项元素
-     * @private
-     */
-    _setIconState(iconElement, treeItem) {
-        if (!treeItem) return;
-        
-        // 最简单直接的方式：检查是否有"expanded"类
-        const isExpanded = treeItem.classList.contains('expanded');
-        
-        // 对于根目录的特殊处理
-        if (treeItem.parentElement && treeItem.parentElement.id === 'article-tree') {
-            // 根目录图标总是可见
-            iconElement.style.visibility = 'visible';
-            // 根目录的三角形
-            iconElement.textContent = isExpanded ? '▼' : '▶';
-            return;
-        }
-        
-        // 对于分类根节点(如AI)的处理
-        const rootItem = treeItem.closest('.root-item');
-        if (rootItem && treeItem === rootItem.querySelector(':scope > .tree-item')) {
-            // 分类根节点图标总是可见
-            iconElement.style.visibility = 'visible';
-            // 根据状态设置图标
-            const isRootCollapsed = rootItem.classList.contains('all-collapsed');
-            iconElement.textContent = (isRootCollapsed || !isExpanded) ? '▶' : '▼';
-            return;
-        }
-        
-        // 对普通节点的处理
-        // 检查是否在折叠的根节点内
-        const isInCollapsedRoot = rootItem && rootItem.classList.contains('all-collapsed');
-        
-        // 如果在折叠的根节点内，图标隐藏
-        if (isInCollapsedRoot) {
-            iconElement.style.visibility = 'hidden';
-            return;
-        }
-        
-        // 普通节点的图标可见
-        iconElement.style.visibility = 'visible';
-        // 根据展开状态设置图标
-        iconElement.textContent = isExpanded ? '▼' : '▶';
     }
     
 }

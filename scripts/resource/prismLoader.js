@@ -1,6 +1,7 @@
 /**
  * @file prismLoader.js
- * @description Prism代码高亮加载器 - 从resourceManager中提取的专门处理Prism加载的模块
+ * @description Prism代码高亮加载器
+ * 负责管理Prism相关资源的加载逻辑，最终通过scriptResourceLoader和styleResourceLoader加载。
  * @version 1.0.2
  */
 

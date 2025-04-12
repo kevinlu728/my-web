@@ -19,13 +19,8 @@
  * 2. 如果主要源加载失败，尝试从备用CDN源(Fallback URLs)加载
  * 3. 如果所有CDN源都失败，最终回退到本地资源(Local URL)
  * 
- * 回退触发条件：
- * - 资源加载超时(通常为5秒)
- * - 资源加载错误(网络错误、404等)
- * - CDN不可用或被屏蔽
  */
 
-// 导入集中式资源配置
 import logger from '../utils/logger.js';
 import resourceConfig, { resourceStrategies } from '../config/resources.js';
 import resourceTimeout from './resourceTimeout.js';
@@ -44,15 +39,9 @@ class ResourceManager {
         this.failedResources = new Set();
         this.resourceConfig = resourceConfig;
         
-        // 配置项：是否启用KaTeX本地资源
-        this.katexLocalResourceConfirmed = false;
-        
         // 添加防御性检查，确保依赖模块可用
         if (resourceChecker && typeof resourceChecker.updateConfig === 'function') {
             // 更新resourceChecker的配置
-            resourceChecker.updateConfig({
-                katexLocalResourceConfirmed: this.katexLocalResourceConfirmed
-            });
         } else {
             logger.warn('⚠️ 资源检查器未初始化，跳过配置更新');
         }
@@ -74,14 +63,25 @@ class ResourceManager {
         if (styleResourceLoader && typeof styleResourceLoader.setDependencies === 'function') {
             // 设置resourceStyles的依赖
             styleResourceLoader.setDependencies({
-                handleResourceError: this.handleResourceError.bind(this),
                 setResourceTimeout: this.setResourceTimeout.bind(this),
-                clearResourceTimeout: this.clearResourceTimeout.bind(this)
+                clearResourceTimeout: this.clearResourceTimeout.bind(this),
+                handleResourceError: this.handleResourceError.bind(this)
             });
         } else {
-            logger.warn('⚠️ 资源样式处理器未初始化，跳过依赖设置');
+            logger.warn('⚠️ 样式资源加载器未初始化，跳过依赖设置');
         }
-        
+
+        if (scriptResourceLoader && typeof scriptResourceLoader.setDependencies === 'function') {
+            // 设置scriptResourceLoader的依赖
+            scriptResourceLoader.setDependencies({
+                setResourceTimeout: this.setResourceTimeout.bind(this),
+                clearResourceTimeout: this.clearResourceTimeout.bind(this),
+                handleResourceError: this.handleResourceError.bind(this)
+            });
+        } else {
+            logger.warn('⚠️ 脚本资源加载器未初始化，跳过依赖设置');
+        }
+
         // 初始化错误处理和资源扫描
         this.initializeErrorHandling();
         
@@ -95,13 +95,6 @@ class ResourceManager {
         // 记录已处理资源的回退状态
         this._resourceFallbackStatus = new Map();
         
-        // 添加自动检查
-        if (document.readyState === 'loading') {
-            this.checkCriticalResources();
-        } else {
-            // 如果DOMContentLoaded已经触发
-            setTimeout(() => this.checkCriticalResources(), 0);
-        }
     }
 
     /**
@@ -465,6 +458,7 @@ class ResourceManager {
      * @param {string} url - 资源URL
      */
     handleResourceError(element, url) {
+        logger.debug(`🔄 处理资源加载错误: ${url}`);
         // 基本验证
         if (!element) {
             logger.error('❌ handleResourceError: 无效的元素');
@@ -556,11 +550,6 @@ class ResourceManager {
         let actualPriority = priority;
         if (!actualPriority) {
             actualPriority = resourceConfig.getResourcePriorityByUrl(resourceName, resourceName);
-        }
-        
-        // 对于已知本地不存在的KaTeX资源，设置为静默处理
-        if (resourceName.includes('katex') && !this.katexLocalResourceConfirmed) {
-            silent = true;
         }
         
         // 对于常见的基础资源，如果所有回退都失败，使用统一的回退样式文件
@@ -734,18 +723,7 @@ class ResourceManager {
         
         return null;
     }
-
-    /**
-     * 检查关键资源
-     * 这是一个统一的检查入口，替代原来分散的检查方法
-     */
-    checkCriticalResources() {
-        logger.debug('🔍 checkCriticalResources, 检查关键资源...');
-        // 检查Font Awesome
-        this.checkFontAwesomeLoading();
-        
-        // 可以根据需要在这里添加其他资源的检查
-    }
+    
     /**
      * 检查加载失败的资源
      * 这是一个额外的安全措施，检查任何可能的资源加载失败
@@ -801,79 +779,6 @@ class ResourceManager {
         });
         
         logger.debug('🔍 资源加载状态检查完成');
-    }
-    /**
-     * 检查Font Awesome是否已加载
-     */
-    checkFontAwesomeLoading() {
-        document.addEventListener('DOMContentLoaded', () => {
-            // 如果已经有no-fontawesome类，说明已经确认失败并启用了备用图标
-            if (document.documentElement.classList.contains('no-fontawesome')) {
-                return;
-            }
-            
-            // 使用延迟检查，确保字体有足够时间加载
-            setTimeout(() => {
-                // 创建测试元素
-                const testIcon = document.createElement('i');
-                testIcon.className = 'fas fa-check fa-fw';
-                testIcon.style.visibility = 'hidden';
-                document.body.appendChild(testIcon);
-                
-                // 获取计算样式
-                const style = window.getComputedStyle(testIcon);
-                const fontFamily = style.getPropertyValue('font-family');
-                const content = style.getPropertyValue('content');
-                
-                // 清理测试元素
-                document.body.removeChild(testIcon);
-                
-                // 如果不是Font Awesome字体或内容为空，说明加载失败
-                if (!fontFamily.includes('Font Awesome') || content === 'none' || content === '') {
-                    logger.info('📢 未检测到有效的Font Awesome，加载本地资源');
-                    this.loadLocalFontAwesome();
-                } else {
-                    logger.info('✅ Font Awesome资源已成功加载');
-                }
-            }, 1000);
-        });
-    }
-    /**
-     * 该函数通常不会执行，只有当关键资源Font Awesome因为某种原因没被加载时，才会调用该函数再次加载Font Awesome。
-     */
-    loadLocalFontAwesome() {
-        // 检查是否已经存在
-        if (document.getElementById('local-font-awesome')) {
-            logger.debug('本地Font Awesome已存在，不重复加载');
-            return;
-        }
-        logger.info('🔄 加载本地Font Awesome资源');
-        
-        // 移除任何可能存在的其他Font Awesome链接
-        const existingLinks = document.querySelectorAll('link[href*="font-awesome"]:not([data-source="local-resource"])');
-        if (existingLinks.length > 0) {
-            logger.debug(`移除${existingLinks.length}个非本地Font Awesome资源`);
-            existingLinks.forEach(link => {
-                if (link.parentNode) link.parentNode.removeChild(link);
-            });
-        }
-        
-        // 创建新的链接元素指向本地资源
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = '/assets/libs/font-awesome/all.min.css';
-        link.id = 'local-font-awesome';
-        link.setAttribute('data-source', 'local-resource');
-        
-        // 添加加载和错误事件处理
-        link.onload = () => logger.info('✅ 本地Font Awesome资源加载成功');
-        link.onerror = () => {
-            logger.error('🚨 本地Font Awesome资源加载失败，应用SVG备用方案');
-            styleResourceLoader.injectFontAwesomeFallbackStyles();
-        };
-        
-        // 添加到文档头部
-        document.head.appendChild(link);
     }
 
 }

@@ -1,6 +1,7 @@
 /**
  * @file gridjsLoader.js
- * @description Grid.js表格渲染器加载器 - 负责管理Grid.js资源加载
+ * @description Gridjs表格渲染器加载器
+ * 负责管理Gridjs相关资源的加载逻辑，最终通过scriptResourceLoader和styleResourceLoader加载。
  * @version 1.0.0
  */
 

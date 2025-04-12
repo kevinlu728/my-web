@@ -1,6 +1,6 @@
 /**
- * 资源样式加载器 - 处理样式资源的加载、注入和管理
- * 从ResourceManager中提取的样式相关功能
+ * 资源样式加载器
+ * 该模块是最底层的资源加载器，所有样式资源加载最终都通过该模块进行。
  */
 
 import logger from '../utils/logger.js';
@@ -20,14 +20,14 @@ class StyleResourceLoader {
         if (dependencies.loadedResources) {
             this.loadedResources = dependencies.loadedResources;
         }
-        if (dependencies.handleResourceError) {
-            this.handleResourceError = dependencies.handleResourceError;
-        }
         if (dependencies.setResourceTimeout) {
             this.setResourceTimeout = dependencies.setResourceTimeout;
         }
         if (dependencies.clearResourceTimeout) {
             this.clearResourceTimeout = dependencies.clearResourceTimeout;
+        }
+        if (dependencies.handleResourceError) {
+            this.handleResourceError = dependencies.handleResourceError;
         }
     }
 

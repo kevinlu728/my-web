@@ -1,6 +1,7 @@
 /**
  * @file katexLoader.js
- * @description KaTeX数学公式渲染器加载器 - 负责管理KaTeX资源加载
+ * @description KaTeX数学公式渲染器加载器
+ * 负责管理KaTeX相关资源的加载逻辑，最终通过scriptResourceLoader和styleResourceLoader加载。
  * @version 1.0.0
  */
 

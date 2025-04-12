@@ -21,10 +21,9 @@ class ResourceTimeout {
         
         // 不同优先级资源的超时设置
         this.resourceTimeouts = {
-            critical: config.criticalTimeout || 5000,   // 关键资源等待5秒
-            high: config.highTimeout || 8000,           // 高优先级资源等待8秒
-            medium: config.mediumTimeout || 12000,      // 中等优先级资源等待12秒
-            low: config.lowTimeout || 20000             // 低优先级资源等待20秒
+            high: config.highTimeout || 5000,    // 高优先级资源等待5秒
+            medium: config.mediumTimeout || 3000, // 中等优先级资源等待3秒
+            low: config.lowTimeout || 2000        // 低优先级资源等待2秒
         };
         
         // 超时回调函数
@@ -39,18 +38,8 @@ class ResourceTimeout {
      * @returns {number} 超时处理器ID
      */
     setResourceTimeout(resourceType, url, priority = 'medium') {
-        // 根据资源优先级设置不同的超时时间
-        let timeout = 8000; // 默认8秒
-        
-        if (priority === 'critical') {
-            timeout = 10000; // 关键资源10秒
-        } else if (priority === 'high') {
-            timeout = 8000; // 高优先级8秒
-        } else if (priority === 'medium') {
-            timeout = 6000; // 中优先级6秒
-        } else if (priority === 'low') {
-            timeout = 5000; // 低优先级5秒
-        }
+        // 根据资源优先级获取超时时间
+        const timeout = this.resourceTimeouts[priority] || this.resourceTimeouts.medium;
         
         // 设置超时处理
         const timeoutId = setTimeout(() => {
@@ -90,12 +79,14 @@ class ResourceTimeout {
      * 更新超时配置
      * @param {Object} config - 新的超时配置
      */
-    updateConfig(config) {
-        if (config.criticalTimeout) this.resourceTimeouts.critical = config.criticalTimeout;
+    updateConfig(config = {}) {
         if (config.highTimeout) this.resourceTimeouts.high = config.highTimeout;
         if (config.mediumTimeout) this.resourceTimeouts.medium = config.mediumTimeout;
         if (config.lowTimeout) this.resourceTimeouts.low = config.lowTimeout;
-        if (config.timeoutCallback) this.timeoutCallback = config.timeoutCallback;
+        
+        if (config.timeoutCallback && typeof config.timeoutCallback === 'function') {
+            this.timeoutCallback = config.timeoutCallback;
+        }
     }
     
     /**
@@ -132,17 +123,8 @@ class ResourceTimeout {
      * @param {string} priority - 资源优先级
      */
     handleTimeout(url, resourceType, priority) {
-        // 计算实际使用的超时时间
-        let timeout = 3000;
-        if (priority === 'critical') {
-            timeout = 5000;
-        } else if (priority === 'high') {
-            timeout = 4000;
-        } else if (priority === 'medium') {
-            timeout = 3000;
-        } else if (priority === 'low') {
-            timeout = 2000;
-        }
+        // 使用一致的超时时间配置
+        const timeout = this.resourceTimeouts[priority] || this.resourceTimeouts.medium;
         
         logger.warn(`⏱️ 资源加载超时 (${timeout}ms): ${url}`);
         
@@ -162,7 +144,46 @@ class ResourceTimeout {
         
         // 执行超时回调
         if (typeof this.timeoutCallback === 'function') {
-            this.timeoutCallback(url, resourceType, priority, timeout);
+            this.timeoutCallback(resourceType, url, priority);
+        }
+        
+        // 主动中断加载过程 - 新增
+        this.abortResourceLoading(url);
+    }
+
+    /**
+     * 主动中断资源加载 - 新方法
+     * @param {string} url - 需要中断的资源URL
+     */
+    abortResourceLoading(url) {
+        // 查找对应的DOM元素
+        const elements = document.querySelectorAll(`link[href="${url}"], script[src="${url}"]`);
+        
+        if (elements.length > 0) {
+            elements.forEach(element => {
+                // 查找已存在的事件处理，避免重复处理
+                if (!element.getAttribute('data-timeout-aborted')) {
+                    element.setAttribute('data-timeout-aborted', 'true');
+                    
+                    // 触发自定义error事件，强制进入错误处理流程
+                    const errorEvent = new ErrorEvent('error', {
+                        message: 'Resource loading aborted due to timeout',
+                        error: new Error('Timeout')
+                    });
+                    
+                    // 将errorEvent绑定到元素
+                    element.dispatchEvent(errorEvent);
+                    
+                    // 异步移除元素以中断加载
+                    setTimeout(() => {
+                        if (element.parentNode) {
+                            element.parentNode.removeChild(element);
+                        }
+                    }, 0);
+                    
+                    logger.debug(`🛑 已主动中断资源加载: ${url}`);
+                }
+            });
         }
     }
 }

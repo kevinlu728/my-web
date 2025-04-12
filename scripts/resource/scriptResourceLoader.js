@@ -1,6 +1,6 @@
 /**
  * 脚本资源加载器
- * 负责管理脚本资源的加载
+ * 该模块是最底层的资源加载器，所有脚本资源加载最终都通过该模块进行。
  */
 class ScriptResourceLoader {
     constructor() {
@@ -17,14 +17,14 @@ class ScriptResourceLoader {
         if (dependencies.loadedResources) {
             this.loadedResources = dependencies.loadedResources;
         }
-        if (dependencies.handleResourceError) {
-            this.handleResourceError = dependencies.handleResourceError;
-        }
         if (dependencies.setResourceTimeout) {
             this.setResourceTimeout = dependencies.setResourceTimeout;
         }
         if (dependencies.clearResourceTimeout) {
             this.clearResourceTimeout = dependencies.clearResourceTimeout;
+        }
+        if (dependencies.handleResourceError) {
+            this.handleResourceError = dependencies.handleResourceError;
         }
     }
 
