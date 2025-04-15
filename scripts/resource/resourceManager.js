@@ -504,10 +504,6 @@ class ResourceManager {
             document.documentElement.classList.add('no-fontawesome');
         } 
         // 可以继续添加其他资源类型的处理...
-        
-        // 通用处理 - 根据优先级处理
-        const priority = element.getAttribute('data-priority') || 'medium';
-        this.handleCriticalResourceFailure(resourceType, priority);
     }   
     
     /**

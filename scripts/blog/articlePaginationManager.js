@@ -136,7 +136,7 @@ class ArticlePaginationManager {
             this.scrollContainer = window;
         }
         
-        logger.info('使用滚动容器:', this.scrollContainer === window ? 'window' : this.scrollContainer.className);
+        logger.debug('使用滚动容器:', this.scrollContainer === window ? 'window' : this.scrollContainer.className);
 
         // 使用throttle函数创建节流处理函数
         this.scrollHandler = throttle(() => {
@@ -154,7 +154,7 @@ class ArticlePaginationManager {
         
         // 添加滚动监听到正确的容器
         this.scrollContainer.addEventListener('scroll', this.scrollHandler);
-        logger.info('滚动监听器已添加到', this.scrollContainer === window ? 'window' : '自定义容器');
+        logger.debug('滚动监听器已添加到', this.scrollContainer === window ? 'window' : '自定义容器');
         
         // 新增：主动触发初始检查，可能页面一开始就需要加载更多
         setTimeout(() => this._checkIfShouldLoadMore(), 1000);
@@ -647,7 +647,7 @@ class ArticlePaginationManager {
         // 只有在博客页面才重新应用滚动行为
         if (this.currentPageId && this.hasMore && this.nextCursor) {
             // 尺寸变化可能导致滚动容器变化，需要重新设置监听器
-            logger.info('窗口尺寸变化，重新设置滚动监听');
+            logger.debug('窗口尺寸变化，重新设置滚动监听');
             this.setupScrollListener();
         }
     }

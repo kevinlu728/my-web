@@ -191,7 +191,7 @@ class ResourceEventManager {
                 try {
                     listener(eventData);
                 } catch (error) {
-                    logger.error(`事件监听器执行出错 (${eventType}):`, error);
+                    logger.error(`事件监听器执行出错 (${eventType}):`, error.message);
                 }
             });
         }
