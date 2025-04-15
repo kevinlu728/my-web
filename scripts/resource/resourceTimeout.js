@@ -5,6 +5,8 @@
  */
 
 import logger from '../utils/logger.js';
+import { resourceEvents, RESOURCE_EVENTS } from './resourceEvents.js';
+import { extractResourceId } from '../config/resources.js';
 
 /**
  * 资源超时管理器类
@@ -41,13 +43,22 @@ class ResourceTimeout {
         // 根据资源优先级获取超时时间
         const timeout = this.resourceTimeouts[priority] || this.resourceTimeouts.medium;
         
+        // 从URL中提取资源ID
+        const resourceId = extractResourceId(url, resourceType);
+        
         // 设置超时处理
         const timeoutId = setTimeout(() => {
-            this.handleTimeout(url, resourceType, priority);
+            this.handleTimeout(url, resourceType, priority, resourceId);
         }, timeout);
         
         // 保存超时处理器ID
-        this.timeoutHandlers.set(url, timeoutId);
+        this.timeoutHandlers.set(url, {
+            id: timeoutId,
+            resourceType,
+            priority,
+            resourceId,
+            timeoutMs: timeout
+        });
         
         return timeoutId;
     }
@@ -59,7 +70,7 @@ class ResourceTimeout {
      */
     clearResourceTimeout(url) {
         if (this.timeoutHandlers.has(url)) {
-            clearTimeout(this.timeoutHandlers.get(url));
+            clearTimeout(this.timeoutHandlers.get(url).id);
             this.timeoutHandlers.delete(url);
             return true;
         }
@@ -76,25 +87,11 @@ class ResourceTimeout {
     }
     
     /**
-     * 更新超时配置
-     * @param {Object} config - 新的超时配置
-     */
-    updateConfig(config = {}) {
-        if (config.highTimeout) this.resourceTimeouts.high = config.highTimeout;
-        if (config.mediumTimeout) this.resourceTimeouts.medium = config.mediumTimeout;
-        if (config.lowTimeout) this.resourceTimeouts.low = config.lowTimeout;
-        
-        if (config.timeoutCallback && typeof config.timeoutCallback === 'function') {
-            this.timeoutCallback = config.timeoutCallback;
-        }
-    }
-    
-    /**
      * 清除所有超时处理器
      */
     clearAllTimeouts() {
         for (const [url, handler] of this.timeoutHandlers.entries()) {
-            clearTimeout(handler);
+            clearTimeout(handler.id);
         }
         this.timeoutHandlers.clear();
     }
@@ -121,24 +118,37 @@ class ResourceTimeout {
      * @param {string} url - 资源URL
      * @param {string} resourceType - 资源类型
      * @param {string} priority - 资源优先级
+     * @param {string} resourceId - 资源ID
      */
-    handleTimeout(url, resourceType, priority) {
-        // 使用一致的超时时间配置
-        const timeout = this.resourceTimeouts[priority] || this.resourceTimeouts.medium;
+    handleTimeout(url, resourceType, priority, resourceId) {
+        // 从超时处理器映射中获取详细信息
+        const timeoutInfo = this.timeoutHandlers.get(url) || {
+            timeoutMs: this.resourceTimeouts[priority] || this.resourceTimeouts.medium,
+            resourceType,
+            priority,
+            resourceId: resourceId || extractResourceId(url, resourceType)
+        };
         
-        logger.warn(`⏱️ 资源加载超时 (${timeout}ms): ${url}`);
+        logger.warn(`⏱️ 资源加载超时 (${timeoutInfo.timeoutMs}ms): ${url}`);
         
         // 移除超时处理器
         this.timeoutHandlers.delete(url);
         
-        // 创建超时事件
+        // 创建超时事件数据
+        const timeoutEventData = {
+            url,
+            resourceType,
+            priority,
+            resourceId: timeoutInfo.resourceId,
+            timeoutMs: timeoutInfo.timeoutMs
+        };
+        
+        // 触发资源超时事件
+        resourceEvents.emit(RESOURCE_EVENTS.LOADING_TIMEOUT, timeoutEventData);
+        
+        // 创建超时事件 (保留原有行为以保证向后兼容)
         const event = new CustomEvent('resource-timeout', {
-            detail: { 
-                url, 
-                resourceType,
-                priority,
-                timeoutMs: timeout
-            }
+            detail: timeoutEventData
         });
         document.dispatchEvent(event);
         
@@ -147,12 +157,12 @@ class ResourceTimeout {
             this.timeoutCallback(resourceType, url, priority);
         }
         
-        // 主动中断加载过程 - 新增
+        // 主动中断加载过程
         this.abortResourceLoading(url);
     }
 
     /**
-     * 主动中断资源加载 - 新方法
+     * 主动中断资源加载
      * @param {string} url - 需要中断的资源URL
      */
     abortResourceLoading(url) {

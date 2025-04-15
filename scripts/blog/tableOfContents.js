@@ -64,7 +64,7 @@ export class TableOfContents {
         // 获取文章内容元素
         this.articleElement = document.querySelector(this.config.articleSelector);
         if (!this.articleElement) {
-            logger.warn('未找到文章内容元素:', this.config.articleSelector);
+            // logger.warn('未找到文章内容元素:', this.config.articleSelector);  //暂时注释掉，避免干扰排查
             return false;
         }
         
@@ -724,7 +724,7 @@ export class TableOfContents {
         // 获取文章内容元素
         this.articleElement = document.querySelector(this.config.articleSelector);
         if (!this.articleElement) {
-            logger.warn('未找到文章内容元素:', this.config.articleSelector);
+            // logger.warn('未找到文章内容元素:', this.config.articleSelector);  //暂时注释掉，避免干扰排查
             return false;
         }
         

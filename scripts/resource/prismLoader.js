@@ -8,6 +8,7 @@
 // 导入必要的依赖
 import logger from '../utils/logger.js';
 import resourceConfig from '../config/resources.js';
+import { resourceEvents, RESOURCE_EVENTS } from '../resource/resourceEvents.js';
 import { styleResourceLoader } from './styleResourceLoader.js';
 import { scriptResourceLoader } from './scriptResourceLoader.js';
 
@@ -20,10 +21,10 @@ class PrismLoader {
     }
     
     /**
-     * 加载代码高亮相关资源
+     * 加载Prism相关资源
      * @returns {Promise} - 加载完成的Promise
      */
-    loadCodeHighlightResources() {
+    loadPrismResources() {
         logger.info('📝 加载代码高亮资源');
         
         // 尝试从资源配置中获取Prism资源信息
@@ -34,90 +35,64 @@ class PrismLoader {
         try {
             prismCoreConfig = this.resourceConfig.resources.scripts['prism-core'];
             prismThemeConfig = this.resourceConfig.resources.styles['prism-theme'];
-            prismComponentsConfig = this.resourceConfig.resources.scripts['prism-components'];
+            prismComponentsConfig = this.resourceConfig.resources.scripts['prism-lan-components'];
             if (!prismCoreConfig) {
-                logger.warn('⚠️ 未在资源配置中找到prism-core配置，将使用默认值');
+                logger.warn('⚠️ 未在资源配置中找到prism-core配置,将使用默认值');
             }
             if (!prismThemeConfig) {
-                logger.warn('⚠️ 未在资源配置中找到prism-theme配置，将使用默认值');
+                logger.warn('⚠️ 未在资源配置中找到prism-theme配置,将使用默认值');
             }
             if (!prismComponentsConfig) {
-                logger.warn('⚠️ 未在资源配置中找到prism-components配置，将使用默认值');
+                logger.warn('⚠️ 未在资源配置中找到prism-components配置,将使用默认值');
             }
         } catch (error) {
-            logger.warn('⚠️ 获取Prism资源配置失败，将使用默认值', error);
+            logger.warn('⚠️ 获取Prism资源配置失败,将使用默认值', error);
         }
         
         // 检查是否已加载，与其他资源加载函数保持一致的风格
         if (window.prismLoaded && window.Prism) {
-            logger.debug('✓ Prism已加载，仅确保样式加载完成');
-            return this._loadPrismTheme(prismThemeConfig)
-                .then(() => {
-                    this.applyPrismHighlight();
-                    return true;
-                })
-                .catch(error => {
-                    logger.warn('⚠️ Prism主题加载失败，但继续进行代码高亮', error);
-                    this.applyPrismHighlight();
-                    return true;
-                });
+            logger.debug('✓ Prism已加载,跳过加载过程');
+            return Promise.resolve(true);
         }
         
         // 如果已经在加载中，避免重复加载
         if (window.prismLoading) {
-            logger.debug('⏳ Prism正在加载中，等待完成...');
+            logger.debug('⏳ Prism正在加载中,等待完成...');
             return this._waitForPrismLoaded(prismThemeConfig);
         }
         
         // 标记为正在加载
         window.prismLoading = true;
         
-        // 按照标准模式加载主要资源
+        // 执行加载
+        // 由于已接入事件系统，且底层加载器已经打印错误日志，所以在then、catch中简化处理，避免过多日志。未来考虑删除这个Promise。
         return Promise.resolve()
             .then(() => {
-                logger.info('📦 加载Prism核心库');
-                return this._loadPrismCore(prismCoreConfig);
+                logger.info('📦 加载Prism核心库和样式');
+                
+                // 并行加载JS和CSS
+                return Promise.all([
+                    this._loadPrismCore(prismCoreConfig),
+                    this._loadPrismTheme(prismThemeConfig),
+                    // this._loadPrismLanguageComponents(prismComponentsConfig)  // 注释掉，因为语言组件的加载已经移到监听器中
+                ]);
             })
-            .then(coreLoaded => {
+            .then(([coreLoaded, cssLoaded, lanComponentsLoaded]) => {
                 if (!coreLoaded) {
-                    logger.error('❌ Prism核心库加载失败');
                     window.prismLoading = false;
                     return false;
                 }
-                // 获取要加载的语言组件列表
-                let languages = ['java', 'javascript', 'cpp', 'python']; // 默认语言
-                
-                // 如果配置中有定义组件，使用配置的组件
-                if (prismComponentsConfig && prismComponentsConfig.source && prismComponentsConfig.source.components) {
-                    languages = prismComponentsConfig.source.components.map(comp => comp.name);
-                    logger.debug(`✓ 从配置获取语言组件列表: ${languages.join(', ')}`);
-                }
-                
-                logger.debug('Prism核心库已加载成功，开始加载语言组件');
-                // 并行加载语言组件和主题
-                return Promise.all([
-                    this._loadPrismLanguageComponents(prismComponentsConfig),
-                    this._loadPrismTheme(prismThemeConfig)
-                ]);
-            })
-            .then(results => {
-                // 标记为加载完成
                 window.prismLoaded = true;
                 window.prismLoading = false;
-                
-                // 应用高亮
-                this.applyPrismHighlight();
-                
-                logger.info('✅ 代码高亮资源加载完成');
                 return true;
             })
             .catch(error => {
-                logger.error('❌ 代码高亮资源加载失败', error.message);
                 window.prismLoaded = false;
                 window.prismLoading = false;
                 return false;
             });
     }
+    
 
     /**
      * 等待Prism加载完成 (内部辅助方法)
@@ -128,25 +103,18 @@ class PrismLoader {
     _waitForPrismLoaded(themeConfig) {
         return new Promise(resolve => {
             const checkInterval = setInterval(() => {
-                if (window.prismLoaded && window.Prism) {
+                if (window.prismLoaded) {
                     clearInterval(checkInterval);
-                    
-                    // 使用 finally 替代重复的 then/catch 处理
-                    this._loadPrismTheme(themeConfig)
-                        .finally(() => {
-                            this.applyPrismHighlight();
-                            resolve(true);
-                        });
+                    clearTimeout(timeout);
+                    resolve(true);
                 }
             }, 100);
             
-            // 防止无限等待
-            setTimeout(() => {
+            // 设置超时，避免无限等待
+            const timeout = setTimeout(() => {
                 clearInterval(checkInterval);
-                if (!window.prismLoaded) {
-                    logger.warn('⏱️ Prism库加载超时');
-                    resolve(false);
-                }
+                logger.warn('等待Prism加载超时');
+                resolve(false);
             }, 5000);
         });
     }
@@ -166,69 +134,46 @@ class PrismLoader {
                 let urls = this._getResourceUrls('scripts', 'prism-core', coreConfig);
                 if (!urls || !urls.primaryUrl) {
                     urls = this._getDefaultPrismCoreUrls(version);
-                    logger.warn('⚠️ 未找到有效的Prism URL，使用默认值');
+                    logger.warn('⚠️ 未找到有效的Prism URL,使用默认值');
                 }
                 
                 // 构建加载选项
                 const options = {
-                    fallbacks: urls.fallbackUrls || [],
-                    localFallback: urls.localUrl,
+                    async: true,  // 异步加载
                     attributes: {
                         'data-resource-group': 'code',
                         'data-resource-id': 'prism-core',
                         'data-resource-type': 'prism',
-                        'data-name': 'prism-core',
                         'data-local-fallback': urls.localUrl
                     },
-                    attachToWindow: true,
-                    onResourceLoaded: (url, success) => {
-                        if (success && window.Prism) {
-                            logger.info(`✅ Prism核心库成功加载: ${url}`);
-                            resolve(true);
-                        }
-                    }
+                    fallbacks: urls.fallbackUrls || [],
+                    localFallback: urls.localUrl
                 };
 
-                logger.debug(`Prism核心URL: ${urls.primaryUrl} ，本地回退URL: ${urls.localUrl}`);
+                logger.debug(`Prism核心库的URL: ${urls.primaryUrl} , 本地回退URL: ${urls.localUrl}`);
                 if (urls.fallbackUrls && urls.fallbackUrls.length > 0) {
-                    logger.debug(`Prism核心备用URLs（包括备用CDN和本地回退）: ${urls.fallbackUrls.join(', ')}`);
+                    logger.debug(`Prism核心库的备用URLs: ${urls.fallbackUrls.join(', ')}`);
                 }
                 
                 // 加载脚本
-                scriptResourceLoader.loadScript(
-                    urls.primaryUrl,
-                    {  // 资源对象
+                // 由于已接入事件系统，且底层加载器已经打印错误日志，所以在then、catch中简化处理，避免过多日志。
+                scriptResourceLoader.loadScript({
+                    url: urls.primaryUrl,
                         attributes: options.attributes,
                         priority: 'medium'
-                    },
-                    {  // 加载选项
-                        async: options.async || false,
-                        defer: options.defer || false,
-                        attachToWindow: options.attachToWindow,
-                        onResourceLoaded: options.onResourceLoaded
-                    }
-                )
-                .catch(error => {
-                    // 只有在所有回退都失败时才解析为失败
-                    // 检查Prism是否已在window上，因为回退加载可能成功了
-                    if (!window.Prism) {
-                        logger.error('❌ Prism核心库加载失败 (所有来源)', error.message);
-                        resolve(false);
-                    }
-                });
-                
-                // 添加安全超时
-                setTimeout(() => {
-                    if (window.Prism) {
-                        logger.debug('✅ 检测到Prism已全局可用');
+                })
+                .then(result => {
+                    // 检查是否成功加载
+                    if (result && (result.status === 'loaded' || result.status === 'cached' || result.status === 'existing')) {
                         resolve(true);
                     } else {
-                        logger.warn('⏱️ Prism核心库加载超时');
-                        resolve(false);
+                        throw new Error('GridJS核心库加载失败');
                     }
-                }, 3000);
+                })
+                .catch(error => {
+                    resolve(false);
+                });
             } catch (error) {
-                logger.error('❌ 加载Prism核心库时出现意外错误', error.message);
                 resolve(false);
             }
         });
@@ -241,68 +186,56 @@ class PrismLoader {
      * @returns {Promise<boolean>} - 加载完成的Promise
      */
     _loadPrismTheme(themeConfig) {
-        // 如果已经加载，不再重复加载
-        if (window.prismThemeLoaded) {
-            logger.debug('Prism主题已加载，跳过');
-            return Promise.resolve(true);
-        }
-        
-        // 如果已经在加载中，避免重复加载
-        if (window.prismThemeLoading) {
-            logger.debug('Prism主题正在加载中，跳过');
-            return Promise.resolve(true);
-        }
-        
-        // 标记为正在加载
-        window.prismThemeLoading = true;
-        
-        try {
-            const version = this.resourceConfig?.versions?.prism || '1.29.0';
-            
-            // 使用传入的主题配置获取URL
-            let urls = this._getResourceUrls('styles', 'prism-theme', themeConfig);
-            if (!urls || !urls.primaryUrl) {
-                urls = this._getDefaultPrismThemeUrls(version);
-                logger.debug('⚠️ 未找到有效的Prism主题URL，使用默认值');
-            }
-            
-            // 构建选项对象
-            const options = {
-                fallbacks: urls.fallbackUrls || [],
-                localFallback: urls.localUrl,
-                attributes: {
-                    'data-resource-group': 'code',
-                    'data-resource-id': 'prism-theme',
-                    'data-resource-type': 'prism',
-                    'data-name': 'prism-theme',
-                    'data-local-fallback': urls.localUrl
+        return new Promise(resolve => {
+            try {
+                const version = this.resourceConfig?.versions?.prism || '1.29.0';
+                
+                // 使用传入的主题配置获取URL
+                let urls = this._getResourceUrls('styles', 'prism-theme', themeConfig);
+                if (!urls || !urls.primaryUrl) {
+                    urls = this._getDefaultPrismThemeUrls(version);
+                        logger.debug('⚠️ 未找到有效的Prism主题URL,使用默认值');
                 }
-            };
+                
+                // 构建选项对象
+                const options = {
+                    attributes: {
+                        'data-resource-group': 'code',
+                        'data-resource-id': 'prism-theme',
+                        'data-resource-type': 'prism',
+                        'data-local-fallback': urls.localUrl
+                        },
+                        fallbacks: urls.fallbackUrls || [],
+                        localFallback: urls.localUrl
+                };
 
-            logger.debug(`Prism主题URL: ${urls.primaryUrl} ，本地回退URL: ${urls.localUrl}`);
-            if (urls.fallbackUrls && urls.fallbackUrls.length > 0) {
-                logger.debug(`Prism主题备用URLs（包括备用CDN和本地回退）: ${urls.fallbackUrls.join(', ')}`);
-            }
-            
-            // 直接返回loadCss的Promise结果
-            return styleResourceLoader.loadCss(urls.primaryUrl, options, true)
-                .then(result => {
-                    window.prismThemeLoaded = true;
-                    window.prismThemeLoading = false;
-                    return result;
+                logger.debug(`Prism主题的URL: ${urls.primaryUrl} , 本地回退URL: ${urls.localUrl}`);
+                if (urls.fallbackUrls && urls.fallbackUrls.length > 0) {
+                        logger.debug(`Prism主题的备用URLs: ${urls.fallbackUrls.join(', ')}`);
+                }
+                
+                // 加载CSS
+                // 由于已接入事件系统，且底层加载器已经打印错误日志，所以在then、catch中简化处理，避免过多日志。
+                styleResourceLoader.loadStylesheet({
+                    url: urls.primaryUrl,
+                    attributes: options.attributes,
+                    priority: 'medium',
+                    nonBlocking: true
+                })
+                .then(success => {
+                    if (success) {
+                        resolve(true);
+                    } else {
+                        resolve(false);
+                    }
                 })
                 .catch(error => {
-                    logger.error('❌ Prism主题加载失败', error.message);
-                    window.prismThemeLoaded = false;
-                    window.prismThemeLoading = false;
-                    return false;
+                    resolve(false);
                 });
-        } catch (error) {
-            logger.error('❌ 加载Prism主题配置时出错', error.message);
-            window.prismThemeLoaded = false;
-            window.prismThemeLoading = false;
-            return Promise.resolve(false);
-        }
+            } catch (error) {
+                    resolve(false);
+            }
+        });
     }
 
     /**
@@ -311,7 +244,48 @@ class PrismLoader {
      * @param {Object} prismComponentsConfig - Prism语言组件配置
      * @returns {Promise<boolean>} - 加载完成的Promise
      */
-    _loadPrismLanguageComponents(prismComponentsConfig) {
+    loadPrismLanguageComponents() {
+        let prismComponentsConfig;
+        try {
+            prismComponentsConfig = this.resourceConfig.resources.scripts['prism-lan-components'];
+        } catch (error) {
+            logger.warn('⚠️ 获取Prism语言组件配置失败', error);
+        }
+
+        // 1. 准备和分析语言列表
+        const { 
+            processedComponents, 
+            originalCount, 
+            baseLangs, 
+            dependentLangs, 
+            normalLangs 
+        } = this._preparePrismLanguages(prismComponentsConfig);
+        
+        if (originalCount === 0) {
+            return Promise.resolve(true);
+        }
+        
+        // 2. 创建加载单个语言的函数
+        const loadLanguage = this._createLanguageLoader(processedComponents);
+        
+        // 3. 按依赖顺序加载所有语言组件
+        return this._executeLanguageLoading(
+            baseLangs, 
+            dependentLangs, 
+            normalLangs, 
+            loadLanguage, 
+            processedComponents, 
+            originalCount
+        );
+    }
+
+    /**
+     * 准备Prism语言列表，处理依赖关系
+     * @private
+     * @param {Object} prismComponentsConfig - Prism语言组件配置
+     * @returns {Object} - 包含处理后的语言列表和状态对象
+     */
+    _preparePrismLanguages(prismComponentsConfig) {
         // 使用传入的配置而不是从resourceConfig获取
         // 提取语言依赖和默认语言列表
         const source = prismComponentsConfig?.source || {};
@@ -328,9 +302,15 @@ class PrismLoader {
         }       
         // 过滤无效语言
         const validLanguages = languages.filter(lang => typeof lang === 'string' && lang.trim());       
-        // 如果没有有效语言，则直接返回成功
+        // 如果没有有效语言，则返回空结果
         if (validLanguages.length === 0) {
-            return Promise.resolve(true);
+            return { 
+                processedComponents: new Map(), 
+                originalCount: 0, 
+                baseLangs: [], 
+                dependentLangs: [], 
+                normalLangs: [] 
+            };
         }
         
         // 追踪原始请求的组件数量
@@ -361,9 +341,6 @@ class PrismLoader {
             }
         });
         
-        // 直接使用本地路径作为基本路径
-        const basePath = '/assets/libs/prism/components/';
-        
         // 将语言按依赖关系分组
         const baseLangs = []; // 作为依赖的基础语言
         const dependentLangs = []; // 依赖其他语言的语言
@@ -388,19 +365,21 @@ class PrismLoader {
                 normalLangs.push(langId);
             }
         });
-        
-        if (baseLangs.length > 0) {
-            logger.debug(`基础语言(${baseLangs.length}个): ${baseLangs.join(', ')}`);
-        }
-        if (dependentLangs.length > 0) {
-            logger.debug(`依赖型语言(${dependentLangs.length}个): ${dependentLangs.join(', ')}`);
-        }
-        if (normalLangs.length > 0) {
-            logger.debug(`普通语言(${normalLangs.length}个): ${normalLangs.join(', ')}`);
-        }
+        return { processedComponents, originalCount, baseLangs, dependentLangs, normalLangs };
+    }
+
+    /**
+     * 创建加载单个语言组件的函数
+     * @private
+     * @param {Map} processedComponents - 记录语言加载状态的Map
+     * @returns {Function} - 加载单个语言的函数
+     */
+    _createLanguageLoader(processedComponents) {
+        // 直接使用本地路径作为基本路径
+        const basePath = '/assets/libs/prism/components/';
         
         // 加载单个语言组件的函数
-        const loadLanguage = (langId) => {
+        return function loadLanguage(langId) {
             return new Promise(resolve => {
                 // 已经加载过这个组件则跳过
                 if (window.Prism && window.Prism.languages && window.Prism.languages[langId]) {
@@ -423,39 +402,60 @@ class PrismLoader {
                     return resolve({ loaded: true, skipped: true, langId });
                 }
                 
-                // 创建脚本元素
-                const script = document.createElement('script');
-                script.type = 'text/javascript';
-                
                 // 由于语言组件较多，为了减少网络请求，语言组件目前使用本地资源
-                script.src = `${basePath}prism-${langId}.min.js`;
+                const scriptUrl = `${basePath}prism-${langId}.min.js`;
                 
-                script.onload = () => {
-                    // 延迟检查，确保组件有时间初始化
-                    setTimeout(() => {
-                        if (window.Prism && window.Prism.languages && window.Prism.languages[langId]) {
-                            logger.info(`✓ Prism ${langId} 语言组件加载成功`);
-                            // 更新状态
-                            if (processedComponents.has(langId)) {
-                                processedComponents.get(langId).loaded = true;
+                // 配置脚本加载选项
+                const scriptOptions = {
+                    url: scriptUrl,
+                    id: `prism-lan-components-${langId}`,
+                    attributes: {
+                        'data-resource-group': 'code',
+                        'data-resource-id': `prism-lan-components-${langId}`,
+                        'data-resource-type': 'prism'
+                    },
+                    priority: 'medium',
+                    async: true
+                };
+                
+                // 使用scriptResourceLoader加载脚本
+                scriptResourceLoader.loadScript(scriptOptions)
+                    .then(() => {
+                        // 延迟检查，确保组件有时间初始化
+                        setTimeout(() => {
+                            if (window.Prism && window.Prism.languages && window.Prism.languages[langId]) {
+                                logger.info(`✓ Prism ${langId} 语言组件加载成功`);
+                                // 更新状态
+                                if (processedComponents.has(langId)) {
+                                    processedComponents.get(langId).loaded = true;
+                                }
+                                resolve({ loaded: true, skipped: false, langId });
+                            } else {
+                                logger.warn(`⚠️ Prism ${langId} 组件已加载但未正确初始化`);
+                                resolve({ loaded: false, skipped: false, langId });
                             }
-                            resolve({ loaded: true, skipped: false, langId });
-                        } else {
-                            logger.warn(`⚠️ Prism ${langId} 组件已加载但未正确初始化`);
-                            resolve({ loaded: false, skipped: false, langId });
-                        }
-                    }, 50); // 短暂延迟确保初始化
-                };
-                
-                script.onerror = () => {
-                    logger.error(`❌ 无法加载Prism ${langId} 语言组件`);
-                    resolve({ loaded: false, skipped: false, langId });
-                };
-                
-                document.head.appendChild(script);
+                        }, 50); // 短暂延迟确保初始化
+                    })
+                    .catch(error => {
+                        logger.error(`❌ 无法加载Prism ${langId} 语言组件: ${error.message}`);
+                        resolve({ loaded: false, skipped: false, langId });
+                    });
             });
         };
-        
+    }
+
+    /**
+     * 执行语言组件加载过程
+     * @private
+     * @param {Array} baseLangs - 基础语言列表
+     * @param {Array} dependentLangs - 依赖型语言列表
+     * @param {Array} normalLangs - 普通语言列表
+     * @param {Function} loadLanguage - 加载单个语言的函数
+     * @param {Map} processedComponents - 记录语言加载状态的Map
+     * @param {number} originalCount - 原始请求的语言数量
+     * @returns {Promise<boolean>} - 加载成功与否的Promise
+     */
+    _executeLanguageLoading(baseLangs, dependentLangs, normalLangs, loadLanguage, processedComponents, originalCount) {
         // 分三步加载
         return Promise.resolve()
             // 步骤1: 加载基础语言
@@ -475,7 +475,7 @@ class PrismLoader {
                         );
                         
                         if (!baseInitialized) {
-                            logger.warn('某些基础语言组件未正确初始化，可能影响依赖型语言');
+                            logger.warn('某些基础语言组件未正确初始化,可能影响依赖型语言');
                         }
                         
                         Promise.all(dependentLangs.map(loadLanguage))
@@ -506,15 +506,29 @@ class PrismLoader {
                 
                 // 输出简明的日志
                 logger.info(`加载了 ${loadedRequestedCount}/${originalCount} 个请求的Prism语言组件` + 
-                          (loadedDependenciesCount > 0 ? `，以及 ${loadedDependenciesCount} 个依赖组件` : ''));
+                          (loadedDependenciesCount > 0 ? `,以及 ${loadedDependenciesCount} 个依赖组件` : ''));
                 
-                // 主动触发高亮
-                this.applyPrismHighlight();
+                // 触发语言组件加载完成事件
+                resourceEvents.emit(RESOURCE_EVENTS.LOADING_SUCCESS, {
+                    resourceId: 'prism-all-lan-components',
+                    resourceType: 'prism-components',
+                    status: 'loaded',
+                    loadedCount: totalSuccessCount,
+                    requestedCount: originalCount,
+                    sender: 'prismLoader'
+                });
+                
+                // this._highlightCode();
+                
+                window.prismLoading = false;
+                window.prismLoaded = true;
                 
                 return totalSuccessCount > 0;
             })
             .catch(err => {
                 logger.error('加载Prism语言组件时出错', err.message);
+                window.prismLoading = false;
+                window.prismLoaded = false;
                 return false;
             });
     }
@@ -582,39 +596,6 @@ class PrismLoader {
             ],
             localUrl: `/assets/libs/prism/themes/prism-tomorrow.min.css`
         };
-    }
-
-    /**
-     * 应用Prism高亮 (内部方法)
-     * @private
-     */
-    applyPrismHighlight() {
-        // 延迟高亮处理，确保DOM已完全加载
-        if (window.Prism) {
-            setTimeout(() => {
-                if (typeof window.Prism.highlightAll === 'function') {
-                    try {
-                        window.Prism.highlightAll();
-                    } catch (e) {
-                        logger.warn('Prism全局高亮处理失败', e);
-                    }
-                }
-                
-                // 处理标记为等待高亮的代码块
-                document.querySelectorAll('.waiting-for-highlight').forEach(block => {
-                    const codeElement = block.querySelector('code');
-                    if (codeElement && typeof window.Prism.highlightElement === 'function') {
-                        try {
-                            window.Prism.highlightElement(codeElement);
-                            block.classList.remove('waiting-for-highlight');
-                            codeElement.classList.remove('no-highlight');
-                        } catch (e) {
-                            logger.warn('代码块高亮处理失败', e);
-                        }
-                    }
-                });
-            }, 200);
-        }
     }
 }
 

@@ -27,7 +27,7 @@ import logger from '../utils/logger.js';
 
 // 主渲染函数
 export function renderNotionBlocks(blocks) {
-    logger.debug('开始渲染块:', blocks); // 添加日志
+    // logger.debug('开始渲染块:', blocks); // 注释掉，但不要删除，调试使用
 
     if (!blocks || !Array.isArray(blocks) || blocks.length === 0) {
         logger.warn('没有块数据可渲染');
@@ -255,73 +255,24 @@ function renderRichText(richText) {
  * @param {Object} block - 表格块数据
  * @returns {string} - 渲染后的 HTML
  */
-function renderTableBlock(block) {
-    logger.info('渲染表格数据:', block); // 添加日志
-
-    if (!block.table) {
-        logger.warn('表格数据不存在');
-        return '';
-    }
+function renderTable(block) {
+    logger.info('渲染表格块:', block);
+    // 创建表格数据对象
+    const tableData = {
+        id: block.id,
+        rows: [],
+        hasColumnHeader: block.table?.has_column_header || false,
+        hasRowHeader: block.table?.has_row_header || false
+    };
     
-    const hasColumnHeader = block.table.has_column_header;
-    const hasRowHeader = block.table.has_row_header;
-    
-    // 获取子块（表格行）
-    const rows = block.children || [];
-    logger.info('表格行数据:', rows); // 添加日志
-    
-    if (rows.length === 0) {
-        logger.warn('表格没有行数据');
-        return '';
-    }
-
-    let tableHtml = '<div class="table-container"><table class="notion-table">';
-    
-    rows.forEach((row, rowIndex) => {
-        if (!row.table_row || !row.table_row.cells) {
-            logger.warn(`第 ${rowIndex + 1} 行数据格式不正确:`, row);
-            return;
-        }
-        
-        const cells = row.table_row.cells;
-        tableHtml += '<tr>';
-        
-        cells.forEach((cell, colIndex) => {
-            // 确定是否是表头单元格
-            const isHeader = (hasColumnHeader && rowIndex === 0) || 
-                           (hasRowHeader && colIndex === 0);
-            const cellTag = isHeader ? 'th' : 'td';
-            
-            // 渲染单元格内容
-            const cellContent = cell.map(textObj => {
-                let content = textObj.plain_text || '';
-                
-                // 应用文本样式
-                if (textObj.annotations) {
-                    if (textObj.annotations.bold) content = `<strong>${content}</strong>`;
-                    if (textObj.annotations.italic) content = `<em>${content}</em>`;
-                    if (textObj.annotations.strikethrough) content = `<del>${content}</del>`;
-                    if (textObj.annotations.underline) content = `<u>${content}</u>`;
-                    if (textObj.annotations.code) content = `<code>${content}</code>`;
-                }
-                
-                // 处理链接
-                if (textObj.href) {
-                    content = `<a href="${textObj.href}" target="_blank">${content}</a>`;
-                }
-                
-                return content;
-            }).join('');
-            
-            tableHtml += `<${cellTag}>${cellContent || '&nbsp;'}</${cellTag}>`;
-        });
-        
-        tableHtml += '</tr>';
-    });
-    
-    tableHtml += '</table></div>';
-    
-    return tableHtml;
+    // 将表格数据序列化为JSON字符串
+    return `
+        <div class="lazy-block table-block" data-block-id="${block.id}" data-table-data='${JSON.stringify(tableData)}'>
+            <div class="table-loading">
+                <span>表格加载中...</span>
+            </div>
+        </div>
+    `;
 }
 
 // 渲染单个块
@@ -358,69 +309,8 @@ function renderBlock(block) {
             case 'equation':
                 return renderEquation(block);
             case 'table':
-                logger.info('发现表格块，使用懒加载:', block.id);
-                
-                // 创建表格数据对象
-                const tableData = {
-                    id: block.id,
-                    rows: [],
-                    hasColumnHeader: block.table?.has_column_header || false,
-                    hasRowHeader: block.table?.has_row_header || false
-                };
-                
-                // 如果有表格行数据，则添加到rows中
-                if (block.table && block.table.rows) {
-                    logger.info('表格行数据来自block.table.rows');
-                    tableData.rows = block.table.rows;
-                } else if (block.children && block.children.length > 0) {
-                    logger.info('表格行数据来自block.children');
-                    
-                    // 处理每一行
-                    block.children.forEach((row, rowIndex) => {
-                        if (row.type !== 'table_row') return;
-                        
-                        const cells = [];
-                        if (row.table_row && Array.isArray(row.table_row.cells)) {
-                            row.table_row.cells.forEach(cell => {
-                                cells.push(cell);
-                            });
-                        }
-                        
-                        if (cells.length > 0) {
-                            tableData.rows.push(cells);
-                        }
-                    });
-                } else {
-                    logger.info('没有找到表格行数据，显示加载状态');
-                }
-                
-                // 获取表格最大列数
-                let maxColumnCount = 0;
-                if (block.table && block.table.table_width) {
-                    maxColumnCount = block.table.table_width;
-                } else if (tableData.rows.length > 0) {
-                    tableData.rows.forEach(row => {
-                        maxColumnCount = Math.max(maxColumnCount, row.length);
-                    });
-                }
-                
-                // 记录表格信息
-                const columnCounts = tableData.rows.map(row => row.length);
-                logger.info('处理后的表格数据结构:', {
-                    rowCount: tableData.rows.length,
-                    hasColumnHeader: tableData.hasColumnHeader,
-                    hasRowHeader: tableData.hasRowHeader,
-                    columnCounts: columnCounts
-                });
-                
-                // 将表格数据序列化为JSON字符串
-                return `
-                    <div class="lazy-block table-block" data-block-id="${block.id}" data-table-data='${JSON.stringify(tableData)}'>
-                        <div class="table-loading">
-                            <span>表格加载中...</span>
-                        </div>
-                    </div>
-                `;
+                return renderTable(block);
+
             case 'divider':
                 return '<hr class="notion-divider">';
             case 'quote':
@@ -456,24 +346,29 @@ export function initializeLazyLoading(container) {
     // 初始化代码块懒加载
     const codeBlocks = container.querySelectorAll('.lazy-block.code-block');
     logger.info(`找到 ${codeBlocks.length} 个代码块待懒加载`);
-    
     if (codeBlocks.length > 0 && typeof codeLazyLoader !== 'undefined') {
         logger.info('处理代码块...');
-        codeLazyLoader.processAllCodeBlocks(container);
+        codeLazyLoader.initialize();
     }
     
     // 初始化公式懒加载
     const equationBlocks = container.querySelectorAll('.equation-block');
-    logger.info(`找到 ${equationBlocks.length} 个公式待懒加载`);
-    
+    const inlineEquations = container.querySelectorAll('.inline-equation');
+    logger.info(`找到 ${equationBlocks.length} 个公式待懒加载 和 ${inlineEquations.length} 个内联公式待懒加载`);
     if (equationBlocks.length > 0 && typeof mathLazyLoader !== 'undefined') {
         logger.info('处理数学公式...');
-        mathLazyLoader.processAllEquations(container);
+        mathLazyLoader.initialize();
     }
-    
-    // 初始化表格懒加载 - 简化的表格处理
-    const tableCount = tableLazyLoader.processAllTables();
-    logger.info(`处理 ${tableCount} 个表格...`);
+    if (inlineEquations.length > 0 && typeof mathLazyLoader !== 'undefined') {
+        mathLazyLoader.loadInlineEquations();
+    }
+
+    // 初始化表格懒加载
+    const tableBlocks = container.querySelectorAll('.table-block');
+    logger.info(`找到 ${tableBlocks.length} 个表格待懒加载`);
+    if (tableBlocks.length > 0 && typeof tableLazyLoader !== 'undefined') {
+        tableLazyLoader.initialize();
+    }
     
     // 添加强制触发渲染事件
     setTimeout(() => {

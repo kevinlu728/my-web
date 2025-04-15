@@ -7,10 +7,23 @@
  * @created 2024-03-25
  * @modified 2024-05-04
  */
+/** 
+ * 资源配置工具函数模块
+ * 本模块包含资源加载相关的配置和工具函数
+ * 
+ * 公共API:
+ * - getResourceUrl: 获取资源的主要URL和备用URL
+ * - getNextCdnUrl: 获取下一个可用的CDN URL (用于回退)
+ * - getResourceStrategy: 获取资源的加载策略
+ * - extractResourceId: 从URL和类型识别资源ID
+ * 
+ * 内部工具:
+ * - _buildUrlFromConfig: 从配置构建URL (内部使用)
+ * - _identifyResourceFromUrl: 识别特定资源 (内部使用)
+ */
 
 // 使用ES模块方式导入logger
 import logger from '../utils/logger.js';
-
 // 备用导入方式（如果ES模块导入失败）
 // const logger = window.loggerModule || console;
 
@@ -85,18 +98,19 @@ export const cdnProviders = {
 export const resourceStrategies = {
     // 定义加载策略类型
     types: {
-        'local-first': '优先使用本地资源，失败后使用CDN，最后使用备用方案',
         'cdn-first': '优先使用CDN资源，失败后使用本地资源，最后使用备用方案',
+        'local-first': '优先使用本地资源，失败后使用CDN，最后使用备用方案',  // 目前没有任何资源采用该策略，考虑删除。为降低系统复杂度，在加载资源时不需要考虑该策略。
         'cdn-only': '只使用CDN资源，失败后使用备用方案，不尝试本地资源',
         'local-only': '只使用本地资源，失败后使用备用方案，不尝试CDN'
     },
     
     // 资源类型到策略的映射
     mapping: {
-        'font-awesome': 'local-first',  // Font Awesome优先使用本地资源
-        'bootstrap-icons': 'cdn-first', // 优先CDN资源
+        'font-awesome': 'local-only',  // 为了确保在一些特殊网络环境下也能显示基本图标和字体，Font Awesome只使用本地资源
+        'bootstrap-icons': 'cdn-first',
         'prism': 'cdn-first',
-        'katex': 'cdn-first',
+        'katex': 'cdn-only',  // 由于Katex本地资源较大，所以只使用CDN资源
+        'gridjs': 'cdn-first',
         'default': 'cdn-first'  // 默认策略
     },
     
@@ -106,6 +120,7 @@ export const resourceStrategies = {
         'bootstrap-icons': 'high',
         'prism': 'medium',
         'katex': 'medium',
+        'gridjs': 'medium',
         'default': 'low'
     }
 };
@@ -188,11 +203,6 @@ export const resources = {
                         library: 'prism',
                         version: versions.prism,
                         path: 'themes/prism-tomorrow.min.css'
-                    },
-                    {
-                        provider: 'local',
-                        library: 'prism',
-                        path: 'themes/prism-tomorrow.min.css'
                     }
                 ]
             },
@@ -203,7 +213,7 @@ export const resources = {
         },
         'katex-theme': {
             type: 'css',
-            priority: 'high',
+            priority: 'medium',
             group: 'math',
             source: {
                 primary: {
@@ -241,12 +251,7 @@ export const resources = {
                         provider: 'cdnjs',
                         library: 'gridjs',
                         version: versions.gridjs,
-                        path: 'mermaid.min.css' // cdnjs通常将主题文件放在根目录
-                    },
-                    {
-                        provider: 'local',
-                        library: 'gridjs',
-                        path: 'theme/mermaid.min.css'
+                        path: 'theme/mermaid.min.css' // cdnjs通常将主题文件放在根目录
                     }
                 ]
             },
@@ -276,11 +281,6 @@ export const resources = {
                         library: 'prism',
                         version: versions.prism,
                         path: 'prism.min.js'
-                    },
-                    {
-                        provider: 'local',
-                        library: 'prism',
-                        path: 'prism.min.js'
                     }
                 ]
             },
@@ -289,7 +289,7 @@ export const resources = {
                 'data-local-fallback': '/assets/libs/prism/prism.min.js'
             }
         },
-        'prism-components': {
+        'prism-lan-components': {
             type: 'js',
             priority: 'medium',
             group: 'code',
@@ -305,11 +305,6 @@ export const resources = {
                         provider: 'cdnjs',
                         library: 'prism',
                         version: versions.prism,
-                        path: 'components/prism-core.js'
-                    },
-                    {
-                        provider: 'local',
-                        library: 'prism',
                         path: 'components/prism-core.js'
                     }
                 ],
@@ -439,11 +434,6 @@ export const resources = {
                         library: 'gridjs',
                         version: versions.gridjs,
                         path: 'gridjs.umd.js' // cdnjs通常将文件放在根目录，省略dist前缀
-                    },
-                    {
-                        provider: 'local',
-                        library: 'gridjs',
-                        path: 'gridjs.umd.js'
                     }
                 ]
             },
@@ -516,7 +506,7 @@ export function getResourceUrl(resourceType, resourceName, preferredProvider) {
     }
     
     // 构建主URL
-    result.primary = buildUrlFromConfig(primaryConfig, resourceType, resourceName);
+    result.primary = _buildUrlFromConfig(primaryConfig, resourceType, resourceName);
     
     // 构建备用URL
     if (resource.source.fallbacks && resource.source.fallbacks.length > 0) {
@@ -526,44 +516,9 @@ export function getResourceUrl(resourceType, resourceName, preferredProvider) {
         
         // 构建每个备用URL
         result.fallbacks = remainingFallbacks
-            .map(config => buildUrlFromConfig(config, resourceType, resourceName))
+            .map(config => _buildUrlFromConfig(config, resourceType, resourceName))
             .filter(url => url); // 过滤掉空URL
     }
-    
-    return result;
-}
-
-/**
- * 获取指定优先级的资源
- * @param {string} priority - 资源优先级 ('critical', 'high', 'medium', 'low')
- * @returns {Array} 资源列表和类型
- */
-export function getResourcesByPriority(priority) {
-    const result = [];
-    
-    // 遍历所有样式资源
-    Object.keys(resources.styles).forEach(name => {
-        const resource = resources.styles[name];
-        if (resource.priority === priority) {
-            result.push({
-                type: 'styles',
-                name: name,
-                resource: getResourceUrl('styles', name)
-            });
-        }
-    });
-    
-    // 遍历所有脚本资源
-    Object.keys(resources.scripts).forEach(name => {
-        const resource = resources.scripts[name];
-        if (resource.priority === priority) {
-            result.push({
-                type: 'scripts',
-                name: name,
-                resource: getResourceUrl('scripts', name)
-            });
-        }
-    });
     
     return result;
 }
@@ -583,8 +538,6 @@ const _resourceFallbackStatus = new Map();
  * @returns {string} 下一个可用的CDN URL，如果没有更多备用URL则返回空字符串
  */
 export function getNextCdnUrl(resourceType, resourceId) {
-    logger.debug(`🔍 尝试获取资源的备用CDN: ${resourceType}.${resourceId}`);
-    
     // 构造资源的唯一标识符
     const resourceKey = `${resourceType}:${resourceId}`;
     
@@ -629,14 +582,14 @@ export function getNextCdnUrl(resourceType, resourceId) {
 }
 
 /**
- * 从配置构建URL
+ * 从配置构建URL (内部函数)
  * @private
  * @param {Object} config - URL配置
  * @param {string} resourceType - 资源类型
  * @param {string} resourceName - 资源名称
  * @returns {string} - 构建的URL
  */
-export function buildUrlFromConfig(config, resourceType, resourceName) {
+function _buildUrlFromConfig(config, resourceType, resourceName) {
     // 防御性检查
     if (!config || !config.provider) {
         logger.warn(`⚠️ 资源 ${resourceType}.${resourceName} URL配置无效`);
@@ -683,26 +636,6 @@ export function buildUrlFromConfig(config, resourceType, resourceName) {
     } catch (error) {
         logger.error(`❌ 构建URL时出错 (${resourceType}.${resourceName}):`, error);
         return '';
-    }
-}
-
-/**
- * 获取资源基本名称
- * @param {string} url - 资源URL
- * @returns {string} - 资源基本名称
- */
-export function getResourceBaseName(url) {
-    try {
-        // 解析URL路径
-        const urlPath = new URL(url).pathname;
-        // 获取文件名
-        const fileName = urlPath.split('/').pop();
-        // 移除扩展名和版本号
-        return fileName.replace(/\.(min|slim)?\.(js|css)(\?.*)?$/, '');
-    } catch (error) {
-        // 如果URL解析失败，使用简单方法提取
-        const parts = url.split('/');
-        return parts[parts.length - 1].split('.')[0];
     }
 }
 
@@ -755,16 +688,102 @@ export function getResourcePriorityByUrl(url, resourceType) {
     return priority;
 }
 
-// 导出资源配置
+/**
+ * 从URL识别资源ID (内部函数)
+ * 首先尝试匹配已知资源类型，如果失败则提取URL中的文件名
+ * @private
+ * @param {string} url - 资源URL
+ * @returns {string} - 识别出的资源ID
+ */
+function _identifyResourceFromUrl(url) {
+    try {
+        // 1. 首先尝试匹配常见的库名模式
+        if (url.includes('gridjs')) return 'gridjs-core';
+        if (url.includes('prism') && url.includes('theme')) return 'prism-theme';
+        if (url.includes('prism')) return 'prism-core';
+        if (url.includes('katex')) return 'katex';
+        if (url.includes('font-awesome')) return 'font-awesome';
+        if (url.includes('bootstrap-icons')) return 'bootstrap-icons';
+        
+        // 2. 如果没有匹配到已知库，提取文件名并处理
+        try {
+            // 解析URL路径
+            const urlPath = new URL(url).pathname;
+            // 获取文件名
+            const fileName = urlPath.split('/').pop();
+            // 移除扩展名和版本号
+            return fileName.replace(/\.(min|slim)?\.(js|css)(\?.*)?$/, '');
+        } catch (parseError) {
+            // 如果URL解析失败，使用简单方法提取
+            const parts = url.split('/');
+            return parts[parts.length - 1].split('.')[0];
+        }
+    } catch (e) {
+        logger.warn('无法从URL识别资源:', url);
+        return 'unknown-resource';
+    }
+}
+
+/**
+ * 根据URL和资源类型识别资源ID
+ * 简化版本，减少调用层级
+ * @param {string} url - 资源URL
+ * @param {string} resourceType - 资源类型（可选）
+ * @returns {string} - 识别出的资源ID
+ */
+export function extractResourceId(url, resourceType) {
+    // 快速路径：如果有明确的resourceType且不是通用类型，直接返回
+    if (resourceType && typeof resourceType === 'string') {
+        // 只有对通用类型，才需要从URL提取更具体的ID
+        if (!['styles', 'scripts', 'fonts', 'images'].includes(resourceType)) {
+            return resourceType;
+        }
+    }
+    
+    // 否则，从URL识别资源ID
+    return _identifyResourceFromUrl(url);
+}
+
+/**
+ * 获取资源的加载策略
+ * @param {string} resourceType - 资源类型
+ * @returns {string} - 加载策略
+ */
+export function getResourceStrategy(resourceType) {
+    // 空值检查
+    if (!resourceType) {
+        return resourceStrategies.mapping.default;
+    }
+    
+    // 1. 尝试直接精确匹配 - 最优先
+    if (resourceStrategies.mapping[resourceType]) {
+        return resourceStrategies.mapping[resourceType];
+    }
+    
+    // 2. 如果没有直接匹配，检查资源类型是否包含某个已知类型
+    // 使用更长的匹配优先，避免匹配到短的通用词
+    const typeMatches = Object.keys(resourceStrategies.mapping)
+        .filter(type => type !== 'default' && resourceType.includes(type))
+        .sort((a, b) => b.length - a.length); // 按长度降序排序，优先选择更具体的匹配
+    
+    if (typeMatches.length > 0) {
+        return resourceStrategies.mapping[typeMatches[0]];
+    }
+    
+    // 3. 如果无法匹配任何已知类型，使用默认策略
+    return resourceStrategies.mapping.default;
+}
+
+// 导出资源配置 - 公共API
 export default {
     versions,
     cdnProviders,
     resources,
     resourceStrategies,
+    // 公共工具函数
     getResourceUrl,
-    getResourcesByPriority,
     getNextCdnUrl,
-    buildUrlFromConfig,
-    getResourceBaseName,
-    getResourcePriorityByUrl
+    getResourcePriorityByUrl,
+    extractResourceId,
+    getResourceStrategy
 }; 

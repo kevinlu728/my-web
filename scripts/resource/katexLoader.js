@@ -1,11 +1,27 @@
 /**
  * @file katexLoader.js
- * @description KaTeX数学公式渲染器加载器
- * 负责管理KaTeX相关资源的加载逻辑，最终通过scriptResourceLoader和styleResourceLoader加载。
- * @version 1.0.0
+ * @description KaTeX数学公式库资源加载管理器
+ * @author 陆凯
+ * @version 1.1.0
+ * @created 2024-03-22
+ * @updated 2025-04-15
+ * 
+ * 该模块负责管理KaTeX数学公式库相关资源的加载：
+ * - 负责加载KaTeX核心库和样式表
+ * - 通过resourceManager系统实现资源加载和回退
+ * - 提供资源加载状态跟踪和事件通知
+ * - 实现资源加载超时和失败处理
+ * - 支持多CDN源加载和本地资源回退
+ * 
+ * 主要方法：
+ * - loadKatexResources: 加载KaTeX相关资源
+ * - _loadKatexCore: 加载KaTeX核心JavaScript库
+ * - _loadKatexTheme: 加载KaTeX样式表
+ * - renderFormula: 使用KaTeX渲染数学公式
+ * 
+ * 内部使用scriptResourceLoader和styleResourceLoader加载实际资源
  */
 
-// 导入必要的依赖
 import logger from '../utils/logger.js';
 import resourceConfig from '../config/resources.js';
 import { styleResourceLoader } from './styleResourceLoader.js';
@@ -35,24 +51,24 @@ class KatexLoader {
             katexThemeConfig = this.resourceConfig.resources.styles['katex-theme'];
             
             if (!katexCoreConfig) {
-                logger.warn('⚠️ 未在资源配置中找到katex-core配置，将使用默认值');
+                logger.warn('⚠️ 未在资源配置中找到katex-core配置,将使用默认值');
             }
             if (!katexThemeConfig) {
-                logger.warn('⚠️ 未在资源配置中找到katex-theme配置，将使用默认值');
+                logger.warn('⚠️ 未在资源配置中找到katex-theme配置,将使用默认值');
             }
         } catch (error) {
-            logger.warn('⚠️ 获取KaTeX资源配置失败，将使用默认值', error);
+            logger.warn('⚠️ 获取KaTeX资源配置失败,将使用默认值', error);
         }
         
         // 检查是否已加载
         if (window.katexLoaded && window.katex) {
-            logger.debug('✓ KaTeX已加载，跳过加载过程');
+            logger.debug('✓ KaTeX已加载,跳过加载过程');
             return Promise.resolve(true);
         }
         
         // 如果已经在加载中，避免重复加载
         if (window.katexLoading) {
-            logger.debug('⏳ KaTeX正在加载中，等待完成...');
+            logger.debug('⏳ KaTeX正在加载中,等待完成...');
             return this._waitForKatexLoaded();
         }
         
@@ -72,24 +88,16 @@ class KatexLoader {
             })
             .then(([coreLoaded, cssLoaded]) => {
                 if (!coreLoaded) {
-                    logger.error('❌ KaTeX核心库加载失败');
                     window.katexLoading = false;
                     return false;
-                }
-                
-                if (!cssLoaded) {
-                    logger.warn('⚠️ KaTeX样式加载失败，公式可能样式不完整');
                 }
                 
                 // 标记为加载完成
                 window.katexLoaded = true;
                 window.katexLoading = false;
-                
-                logger.info('✅ KaTeX资源加载完成');
                 return true;
             })
             .catch(error => {
-                logger.error('❌ KaTeX资源加载失败', error.message);
                 window.katexLoaded = false;
                 window.katexLoading = false;
                 return false;
@@ -135,7 +143,7 @@ class KatexLoader {
                 let urls = this._getResourceUrls('scripts', 'katex-core', coreConfig);
                 if (!urls || !urls.primaryUrl) {
                     urls = this._getDefaultKatexCoreUrls(version);
-                    logger.debug('⚠️ 未找到有效的KaTeX URL，使用默认值');
+                    logger.debug('⚠️ 未找到有效的KaTeX URL,使用默认值');
                 }
                 
                 // 构建加载选项
@@ -146,12 +154,12 @@ class KatexLoader {
                         'data-resource-id': 'katex-core',
                         'data-resource-type': 'katex'
                     },
-                    fallbacks: urls.fallbackUrls.filter(url => !url.includes('/assets/libs/katex/')) || []
+                    fallbacks: urls.fallbackUrls || []
                 };
 
-                logger.debug(`KaTeX核心URL: ${urls.primaryUrl}`);
+                logger.debug(`KaTeX核心库的URL: ${urls.primaryUrl}`);
                 if (urls.fallbackUrls && urls.fallbackUrls.length > 0) {
-                    logger.debug(`KaTeX核心备用CDN URLs: ${urls.fallbackUrls.join(', ')}, 禁用本地回退`);
+                    logger.debug(`KaTeX核心库的备用URLs: ${urls.fallbackUrls.join(', ')}, 禁用本地回退`);
                 }
                 
                 // 从选项中明确移除本地回退
@@ -159,22 +167,24 @@ class KatexLoader {
                 options.localFallback = null;
                 
                 // 加载脚本
-                scriptResourceLoader.loadScript(urls.primaryUrl, options)
-                    .then(success => {
-                        if (success) {
-                            logger.info('✓ KaTeX核心加载成功');
-                            resolve(true);
-                        } else {
-                            logger.error('❌ KaTeX核心无法加载，公式功能将不可用');
-                            resolve(false);
-                        }
-                    })
-                    .catch(error => {
-                        logger.error('❌ KaTeX核心加载出错', error.message);
-                        resolve(false);
-                    });
+                // 由于已接入事件系统，且底层加载器已经打印错误日志，所以在then、catch中简化处理，避免过多日志。未来考虑删除这个Promise。
+                scriptResourceLoader.loadScript({
+                    url: urls.primaryUrl,
+                    attributes: options.attributes,
+                    priority: 'medium'
+                })
+                .then(result => {
+                    // 检查是否成功加载
+                    if (result && (result.status === 'loaded' || result.status === 'cached' || result.status === 'existing')) {
+                        resolve(true);
+                    } else {
+                        throw new Error('KaTeX核心库加载失败');
+                    }
+                })
+                .catch(error => {
+                    resolve(false);
+                });
             } catch (error) {
-                logger.error('❌ 加载KaTeX核心库时出错', error.message);
                 resolve(false);
             }
         });
@@ -195,10 +205,8 @@ class KatexLoader {
                 let urls = this._getResourceUrls('styles', 'katex-theme', themeConfig);
                 if (!urls || !urls.primaryUrl) {
                     urls = this._getDefaultKatexThemeUrls(version);
-                    logger.debug('⚠️ 未找到有效的KaTeX CSS URL，使用默认值');
+                    logger.debug('⚠️ 未找到有效的KaTeX主题URL,使用默认值');
                 }
-                
-                logger.debug(`KaTeX CSS URL: ${urls.primaryUrl}`);
                 
                 // 构建加载选项
                 const options = {
@@ -209,89 +217,37 @@ class KatexLoader {
                         'data-resource-group': 'math',
                         'data-resource-id': 'katex-theme',
                         'data-resource-type': 'katex'
-                    }
+                    },
+                    fallbacks: urls.fallbackUrls || []
                 };
 
-                logger.debug(`KaTeX主题URL: ${urls.primaryUrl}`);
+                logger.debug(`KaTeX主题的URL: ${urls.primaryUrl}`);
                 if (urls.fallbackUrls && urls.fallbackUrls.length > 0) {
-                    logger.debug(`KaTeX主题备用CDN URLs: ${urls.fallbackUrls.join(', ')}, 禁用本地回退`);
+                    logger.debug(`KaTeX主题的备用URLs: ${urls.fallbackUrls.join(', ')}, 禁用本地回退`);
                 }
                 
-                // 加载CSS (非阻塞)
-                styleResourceLoader.loadCss(urls.primaryUrl, options, true)
-                    .then(success => {
-                        if (success) {
-                            logger.info('✓ KaTeX CSS加载成功');
-                            resolve(true);
-                        } else {
-                            logger.warn('⚠️ KaTeX CSS加载失败，公式可能样式不完整');
-                            // 尝试加载内联样式
-                            this._injectBasicKatexStyles();
-                            resolve(false);
-                        }
-                    })
-                    .catch(error => {
-                        logger.error('❌ KaTeX CSS加载出错', error.message);
-                        // 尝试加载内联样式
-                        this._injectBasicKatexStyles();
+                // 加载CSS
+                // 由于已接入事件系统，且底层加载器已经打印错误日志，所以在then、catch中简化处理，避免过多日志。
+                styleResourceLoader.loadStylesheet({
+                    url: urls.primaryUrl,
+                    attributes: options.attributes,
+                    priority: 'medium',
+                    nonBlocking: true
+                })
+                .then(success => {
+                    if (success) {
+                        resolve(true);
+                    } else {
                         resolve(false);
-                    });
+                    }
+                })
+                .catch(error => {
+                    resolve(false);
+                });
             } catch (error) {
-                logger.error('❌ 加载KaTeX CSS时出错', error.message);
-                // 尝试加载内联样式
-                this._injectBasicKatexStyles();
                 resolve(false);
             }
         });
-    }
-    
-    /**
-     * 当KaTeX CSS加载失败时注入基本样式
-     * @private
-     */
-    _injectBasicKatexStyles() {
-        logger.info('注入基本KaTeX样式作为回退');
-        
-        const style = document.createElement('style');
-        style.textContent = `
-            /* 基本KaTeX样式回退 */
-            .katex {
-                font: normal 1.21em KaTeX_Main, Times New Roman, serif;
-                line-height: 1.2;
-                white-space: normal;
-                text-indent: 0;
-            }
-            
-            .katex-display {
-                display: block;
-                margin: 1em 0;
-                text-align: center;
-            }
-            
-            .katex-inline {
-                display: inline;
-                margin: 0;
-            }
-            
-            /* 基本公式样式 */
-            .equation-block .katex-display {
-                overflow-x: auto;
-                overflow-y: hidden;
-                padding: 0.5em;
-            }
-            
-            /* 等待加载样式 */
-            .waiting-for-katex {
-                background-color: #f9f9f9;
-                border-radius: 3px;
-                border: 1px solid #eee;
-            }
-        `;
-        
-        document.head.appendChild(style);
-        
-        // 标记为已注入基本样式
-        window.katexBasicStylesInjected = true;
     }
     
     /**
@@ -367,7 +323,7 @@ class KatexLoader {
     renderFormula(formula, displayMode = true) {
         try {
             if (!window.katex) {
-                logger.warn('KaTeX未加载，无法渲染公式');
+                logger.warn('KaTeX未加载,无法渲染公式');
                 return `<div class="katex-fallback">${formula}</div>`;
             }
             

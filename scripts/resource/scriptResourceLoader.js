@@ -2,10 +2,13 @@
  * 脚本资源加载器
  * 该模块是最底层的资源加载器，所有脚本资源加载最终都通过该模块进行。
  */
+import { resourceEvents, RESOURCE_EVENTS } from './resourceEvents.js';
+import logger from '../utils/logger.js';
+
 class ScriptResourceLoader {
     constructor() {
-        // 移除独立的loadedResources集合
-        // 将通过setDependencies方法注入resourceManager的loadedResources
+        this.dependencies = null;
+        this.loadedScripts = new Set();
     }
 
     /**
@@ -14,148 +17,183 @@ class ScriptResourceLoader {
      * @param {Object} dependencies - 依赖对象
      */
     setDependencies(dependencies) {
-        if (dependencies.loadedResources) {
-            this.loadedResources = dependencies.loadedResources;
-        }
-        if (dependencies.setResourceTimeout) {
-            this.setResourceTimeout = dependencies.setResourceTimeout;
-        }
-        if (dependencies.clearResourceTimeout) {
-            this.clearResourceTimeout = dependencies.clearResourceTimeout;
-        }
-        if (dependencies.handleResourceError) {
-            this.handleResourceError = dependencies.handleResourceError;
-        }
+        this.dependencies = dependencies;
+        logger.info('脚本资源加载器已设置依赖');
     }
 
     /**
      * 加载脚本
-     * @param {string} url - 脚本URL
-     * @param {Object} resource - 资源对象（包含资源属性和元数据）
      * @param {Object} options - 加载选项
-     * @returns {Promise} - 加载完成的Promise
+     * @returns {Promise} 加载结果Promise
      */
-    loadScript(url, resource = {}, options = {}) {
-        // 确保loadedResources存在
-        const loadedResources = this.loadedResources || new Set();
+    loadScript(options) {
+        const { url, id, attributes = {}, timeout = 10000, priority = 'medium', async = true, defer = false } = options;
         
-        // 合并选项
-        const loadOptions = {
-            async: false,
-            defer: false,
-            once: true,
-            ...options
-        };
-        
-        // 如果只加载一次且已加载过，则直接返回成功
-        if (loadOptions.once && loadedResources.has(url)) {
-            logger.debug(`⏭️ 脚本 ${url} 已加载，跳过`);
-            return Promise.resolve(true);
+        if (!url) {
+            logger.error('❌ 加载脚本错误: 未提供URL');
+            return Promise.reject(new Error('未提供URL'));
         }
         
-        return new Promise((resolve) => {
+        // 提取资源ID和类型
+        const resourceType = attributes['data-resource-type'] || this.getResourceTypeFromUrl(url);
+        const resourceId = attributes['data-resource-id'] || 
+                          (this.dependencies?.extractResourceId ? 
+                           this.dependencies.extractResourceId(url, resourceType) : 
+                           this.getResourceIdFromUrl(url));
+        
+        // 触发资源加载开始事件
+        resourceEvents.emit(RESOURCE_EVENTS.LOADING_START, {
+            url,
+            resourceType,
+            resourceId,
+            priority,
+            resourceKind: 'script'
+        });
+        
+        logger.info(`🔄 开始加载脚本资源: ${url}`);
+        
+        return new Promise((resolve, reject) => {
+            // 检查是否已加载
+            if (this.loadedScripts.has(url) || 
+                (this.dependencies?.loadedResources && this.dependencies.loadedResources.has(url))) {
+                logger.info(`✅ 脚本已加载，跳过: ${url}`);
+                
+                // 触发已加载事件
+                resourceEvents.emit(RESOURCE_EVENTS.LOADING_SUCCESS, {
+                    url,
+                    resourceType,
+                    resourceId,
+                    priority,
+                    resourceKind: 'script',
+                    fromCache: true
+                });
+                
+                resolve({ url, status: 'cached' });
+                return;
+            }
+            
+            // 检查是否已存在
+            const existingScript = document.getElementById(id) || 
+                                  document.querySelector(`script[src="${url}"]`);
+            
+            if (existingScript) {
+                logger.info(`✅ 脚本已存在，跳过: ${url}`);
+                
+                // 触发已存在事件
+                resourceEvents.emit(RESOURCE_EVENTS.LOADING_SUCCESS, {
+                    url,
+                    resourceType,
+                    resourceId,
+                    priority,
+                    resourceKind: 'script',
+                    fromCache: true
+                });
+                
+                resolve({ url, element: existingScript, status: 'existing' });
+                return;
+            }
+            
+            // 创建script元素
             const script = document.createElement('script');
             script.src = url;
             
-            // 设置脚本属性
-            if (loadOptions.async) script.async = true;
-            if (loadOptions.defer) script.defer = true;
+            // 设置async和defer
+            script.async = async;
+            script.defer = defer;
             
-            // 获取资源优先级
-            let priority = resource.priority || 'medium';
+            // 设置ID
+            if (id) script.id = id;
             
-            // 设置加载超时
-            if (typeof this.setResourceTimeout === 'function') {
-                this.setResourceTimeout('scripts', url, priority);
-            }
-            
-            // 处理属性
-            let attributes = {};
-            // 优先使用资源对象的attributes
-            if (resource.attributes) {
-                attributes = resource.attributes;
-            } 
-            // 如果选项中也有attributes，合并它们
-            if (options.attributes) {
-                attributes = {...attributes, ...options.attributes};
-            }
-            
-            // 确保Prism文件有data-local-fallback属性
-            if (url.includes('prism') && !attributes['data-local-fallback']) {
-                // 构建本地回退路径
-                let localPath = url;
-                
-                if (url.startsWith('http')) {
-                    const fileName = url.split('/').pop();
-                    if (url.includes('components')) {
-                        localPath = `/assets/libs/prism/components/${fileName}`;
-                    } else {
-                        localPath = `/assets/libs/prism/${fileName}`;
-                    }
-                }
-                
-                attributes['data-local-fallback'] = localPath;
-            }
-            
-            // 设置属性
+            // 设置其他属性
             Object.entries(attributes).forEach(([key, value]) => {
                 script.setAttribute(key, value);
             });
             
-            // 设置加载事件处理
+            // 确保设置了data-resource-type
+            if (!script.hasAttribute('data-resource-type') && resourceType) {
+                script.setAttribute('data-resource-type', resourceType);
+            }
+            
+            // 确保设置了data-resource-id
+            if (!script.hasAttribute('data-resource-id') && resourceId) {
+                script.setAttribute('data-resource-id', resourceId);
+            }
+            
+            // 确保设置了data-priority
+            if (!script.hasAttribute('data-priority')) {
+                script.setAttribute('data-priority', priority);
+            }
+            
+            // 设置加载事件
             script.onload = () => {
-                // 清除超时处理器
-                if (typeof this.clearResourceTimeout === 'function') {
-                    this.clearResourceTimeout(url);
+                logger.info(`✅ script.onload事件触发,脚本加载成功: ${url}`);
+                
+                // 清除超时
+                if (this.dependencies?.clearResourceTimeout) {
+                    this.dependencies.clearResourceTimeout(url);
                 }
                 
-                // 记录已加载资源
-                if (this.loadedResources) {
-                    this.loadedResources.add(url);
+                // 添加到已加载资源
+                this.loadedScripts.add(url);
+                if (this.dependencies?.loadedResources) {
+                    this.dependencies.loadedResources.add(url);
                 }
                 
-                const mode = loadOptions.async ? '异步' : (loadOptions.defer ? '延迟' : '阻塞式');
-                logger.debug(`✅ ${mode}加载脚本完成: ${url}`);
+                // 触发加载成功事件
+                resourceEvents.emit(RESOURCE_EVENTS.LOADING_SUCCESS, {
+                    url,
+                    resourceType,
+                    resourceId,
+                    element: script,
+                    priority,
+                    resourceKind: 'script'
+                });
                 
-                // 执行onResourceLoaded回调（如果有）
-                if (typeof loadOptions.onResourceLoaded === 'function') {
-                    loadOptions.onResourceLoaded(url, true);
-                }
-                
-                resolve(true);
+                resolve({ url, element: script, status: 'loaded' });
             };
             
+            // 设置错误事件
             script.onerror = () => {
-                // 清除超时处理器
-                if (typeof this.clearResourceTimeout === 'function') {
-                    this.clearResourceTimeout(url);
+                logger.error(`❌ script.onerror事件触发,脚本加载失败: ${url}`);
+                
+                // 清除超时
+                if (this.dependencies?.clearResourceTimeout) {
+                    this.dependencies.clearResourceTimeout(url);
                 }
                 
-                // 错误处理
-                if (this.handleResourceError) {
-                    this.handleResourceError(script, url);
-                } else {
-                    const mode = loadOptions.async ? '异步' : (loadOptions.defer ? '延迟' : '阻塞式');
-                    logger.warn(`❌ ${mode}脚本加载失败: ${url}`);
+                // 触发加载失败事件
+                resourceEvents.emit(RESOURCE_EVENTS.LOADING_FAILURE, {
+                    url,
+                    resourceType,
+                    resourceId,
+                    element: script,
+                    reason: 'load-error',
+                    priority,
+                    resourceKind: 'script',
+                    sender: 'scriptResourceLoader'
+                });
+                
+                // 尝试处理错误
+                if (this.dependencies?.handleResourceError) {
+                    this.dependencies.handleResourceError(script, url, resourceId);
                 }
                 
-                // 执行onResourceLoaded回调（如果有）
-                if (typeof loadOptions.onResourceLoaded === 'function') {
-                    loadOptions.onResourceLoaded(url, false);
-                }
-                
-                resolve(false);
+                reject(new Error(`脚本加载失败: ${url}`));
             };
+            
+            // 设置超时
+            if (this.dependencies?.setResourceTimeout) {
+                this.dependencies.setResourceTimeout(resourceType, url, priority);
+            }
             
             // 添加到文档
             document.head.appendChild(script);
+            
+            logger.debug(`🔄 脚本资源已添加到DOM: ${url}`);
         });
     }
 }
 
-// 创建一个单例实例
-const scriptResourceLoader = new ScriptResourceLoader();
-
-// 导出单例和类
-export { scriptResourceLoader, ScriptResourceLoader };
+// 创建单例
+export const scriptResourceLoader = new ScriptResourceLoader();
 export default scriptResourceLoader;

@@ -365,7 +365,7 @@ function checkInitialScrollPosition() {
 function toggleBackToTopButton(show) {
     const backToTopButton = document.querySelector('.back-to-top');
     if (!backToTopButton) {
-        logger.warn('未找到返回顶部按钮元素');
+        // logger.warn('未找到返回顶部按钮元素');  //暂时注释掉，避免干扰问题排查
         return;
     }
     

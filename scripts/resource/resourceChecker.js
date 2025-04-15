@@ -5,6 +5,7 @@
  */
 
 import logger from '../utils/logger.js';
+import { resourceEvents, RESOURCE_EVENTS } from './resourceEvents.js';
 
 /**
  * 资源检查器类
@@ -16,6 +17,9 @@ class ResourceChecker {
      * @param {Object} config - 配置对象
      */
     constructor(config = {}) {  
+        // 记录已检查过的资源，避免重复报告
+        this.checkedResources = new Set();
+        
         // 提前检测FontAwesome
         this.initFastFontAwesomeCheck();
         
@@ -140,6 +144,70 @@ class ResourceChecker {
         }
     }
     
+    /**
+     * 检查加载失败的资源
+     * 这是一个额外的安全措施，检查任何可能的资源加载失败
+     */
+    checkForFailedResources() {
+        logger.debug('🔍 检查资源加载状态...');
+        
+        // 检查样式表
+        const links = document.querySelectorAll('link[rel="stylesheet"]');
+        links.forEach(link => {
+            const href = link.getAttribute('href');
+            if (!href || this.checkedResources.has(href)) return;
+            
+            // 检查样式表是否加载成功
+            let loaded = false;
+            try {
+                // 尝试访问样式表规则，如果加载失败会抛出错误
+                Array.from(document.styleSheets).forEach(sheet => {
+                    if (sheet.href === link.href) {
+                        try {
+                            // 尝试读取规则以确认加载成功
+                            const rules = sheet.cssRules;
+                            loaded = true;
+                        } catch (e) {
+                            // 对于跨域样式表，无法读取规则，但这不意味着加载失败
+                            if (e.name === 'SecurityError') {
+                                loaded = true; // 假设跨域样式表已加载
+                            }
+                        }
+                    }
+                });
+            } catch (e) {
+                logger.warn(`检查样式表加载状态时出错:`, e);
+            }
+            
+            if (!loaded) {
+                logger.warn(`检测到可能失败的样式表: ${href}`);
+                
+                // 标记为已检查
+                this.checkedResources.add(href);
+                
+                // 触发资源加载失败事件
+                resourceEvents.emit(RESOURCE_EVENTS.LOADING_FAILURE, {
+                    url: href,
+                    resourceType: link.getAttribute('data-resource-type') || 'styles',
+                    element: link,
+                    reason: 'stylesheet-rules-unavailable',
+                    priority: link.getAttribute('data-priority') || 'medium'
+                });
+            }
+        });
+        
+        // 检查脚本
+        const scripts = document.querySelectorAll('script[src]');
+        scripts.forEach(script => {
+            const src = script.getAttribute('src');
+            if (!src) return;
+            
+            // 目前没有可靠的方法检查脚本是否真正加载成功
+            // 我们依赖onerror事件处理失败的脚本
+        });
+        
+        logger.debug('🔍 资源加载状态检查完成');
+    }
 }
 
 // 创建单例实例

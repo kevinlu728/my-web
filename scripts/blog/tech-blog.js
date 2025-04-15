@@ -23,7 +23,6 @@
 import logger from '../utils/logger.js';
 import config from '../config/config.js';
 
-import { getDatabaseInfo, testApiConnection, getDatabases } from '../services/notionService.js';
 import { resourceManager } from '../resource/resourceManager.js';
 import { articleManager } from './articleManager.js';
 import { categoryManager } from './categoryManager.js';
@@ -52,24 +51,24 @@ window.pageState = {
  * 当DOM结构加载完成时执行的初始化操作
  */
 document.addEventListener('DOMContentLoaded', () => {
-    logger.info('DOM内容已加载，开始资源管理阶段...');
+    logger.info('DOM内容已加载，开始页面加载前的准备工作...');
 
     // 提前设置content-unblocked事件监听器，不再依赖window.load事件
     setupContentUnblockedListener();
 
-    // 如果资源管理器不可用，立即解锁内容并返回
-    if (!resourceManager) {
-        logger.warn('⚠️ 资源管理器不可用，跳过资源管理阶段（页面显示效果可能受影响）');
+    // 立即解除内容阻塞
+    // document.dispatchEvent(new Event('content-unblocked'));
+    setTimeout(() => {
         document.dispatchEvent(new Event('content-unblocked'));
-        return;
+    }, 50);
+
+    // 如果资源管理器不可用，立即解锁内容并返回
+    if (resourceManager) {
+        // 加载页面所需的关键资源
+        resourceManager.loadCriticalResources();
+    } else {
+        logger.warn('⚠️ 资源管理器不可用，无法提前加载关键资源（页面显示效果可能受影响）');
     }
-
-    // 确保所有关键元素都有资源组标记
-    resourceManager.ensureResourceGroupMarkers();
-
-    // 初始化资源加载策略。注意这里最终会触发资源加载，和下面preloadCriticalResources存在冲突，需要梳理。
-    // initResourceLoadingStrategy->prioritizeContentRendering->loadResourcesByPriority
-    resourceManager.loadBlogPageResources();
     
     // 仅在非生产环境加载调试面板
     const isProduction = config && config.getEnvironment && config.getEnvironment() === 'production';
@@ -86,18 +85,6 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('加载调试面板时出错:', err);
         });
     } 
-});
-
-/**
- * 当页面完全加载后执行的操作
- */
-window.addEventListener('load', () => {
-    logger.info('📃 页面已加载，设置基于可见性的后续资源加载');
-            
-    // 如果浏览器支持Intersection Observer，为可见性加载做准备
-    if ('IntersectionObserver' in window) {
-        resourceManager.setupVisibilityBasedLoading();
-    }
 });
 
 /**
@@ -119,27 +106,6 @@ function setupContentUnblockedListener() {
             showStatus('', false);
         });
     }, { once: true });
-}
-
-/**
- * 解除内容加载阻塞
- * 移除阻塞内容显示的CSS和其他限制
- */
-function unblockContentLoading() {
-    // 移除可能阻塞内容显示的元素或使其淡出
-    const placeholders = document.querySelectorAll('.placeholder-content');
-    placeholders.forEach(el => {
-        // 平滑过渡
-        el.style.transition = 'opacity 0.5s ease';
-        el.style.opacity = '0';
-        
-        // 延迟后移除元素
-        setTimeout(() => {
-            if (el.parentNode) el.parentNode.removeChild(el);
-        }, 550);
-    });
-  
-    logger.debug('🎉 内容加载阻塞已解除，页面内容可以显示');
 }
 
 /**
