@@ -23,7 +23,7 @@
  * - loadMoreContent: 加载更多文章内容（分页）
  * 
  * 依赖关系：
- * - 依赖 notionService.js 获取API数据
+ * - 依赖 notionAPIService.js 获取API数据
  * - 依赖 contentViewManager.js 管理视图状态
  * - 依赖 categoryManager.js 管理文章列表
  * - 依赖 articleSearchManager.js 
@@ -32,7 +32,7 @@
  * - 依赖 articleRenderer.js 渲染内容
  * - 依赖 welcomePageManager.js 管理欢迎页面
  */
-import { getArticles, getArticleContent } from '../services/notionService.js';
+import { getArticles, getArticleContent } from '../services/notionAPIService.js';
 import { contentViewManager, ViewMode, ViewEvents } from './contentViewManager.js';
 import { categoryManager } from './categoryManager.js';
 import { articleSearchManager } from './articleSearchManager.js';

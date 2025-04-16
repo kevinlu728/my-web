@@ -127,33 +127,48 @@ export async function loadDebugPanel(options = {}) {
                 
                 // 初始化调试面板功能
                 initDebugPanel(databaseId, {
-                    onConfigUpdate: callbacks.onConfigUpdate || function(newDbId) {
-                        logger.info('数据库ID已更新:', newDbId);
+                    testApiConnection: callbacks.testApiConnection || async function() {
+                        if (window.notionAPIService && typeof window.notionAPIService.testConnection === 'function') {
+                            return await window.notionAPIService.testConnection();
+                        }
+                        return { success: false, error: 'API服务不可用' };
                     },
-                    onRefresh: callbacks.onRefresh || function() {
-                        logger.info('刷新请求');
-                        location.reload();
-                    },
-                    showStatus: callbacks.showStatus || function(message, isError) {
-                        logger.info(isError ? `错误: ${message}` : message);
-                        
-                        // 简单的状态显示
-                        const statusEl = document.getElementById('status-message');
-                        if (statusEl) {
-                            statusEl.textContent = message;
-                            statusEl.style.color = isError ? 'red' : 'green';
-                            statusEl.style.display = 'block';
-                            
-                            // 3秒后隐藏
-                            setTimeout(() => {
-                                statusEl.style.display = 'none';
-                            }, 3000);
+                    getDatabases: callbacks.getDatabases || async function() {
+                        try {
+                            if (window.notionAPIService && typeof window.notionAPIService.getDatabases === 'function') {
+                                const result = await window.notionAPIService.getDatabases();
+                                
+                                // 格式适配层：统一返回格式
+                                // 不同的API实现可能返回不同格式
+                                if (result.success === true || 
+                                    (result.results && Array.isArray(result.results)) ||
+                                    (Array.isArray(result))) {
+                                    
+                                    return {
+                                        success: true,
+                                        results: result.results || result
+                                    };
+                                } else {
+                                    // 统一错误响应格式
+                                    return {
+                                        success: false,
+                                        error: result.error || '未知错误'
+                                    };
+                                }
+                            }
+                            return { success: false, error: 'API服务不可用' };
+                        } catch (error) {
+                            logger.error('获取数据库列表出错:', error);
+                            return { 
+                                success: false, 
+                                error: error.message || '未知错误' 
+                            };
                         }
                     },
                     getDatabaseInfo: callbacks.getDatabaseInfo || async function(dbId) {
                         try {
-                            if (window.apiService && typeof window.apiService.getDatabaseInfo === 'function') {
-                                const result = await window.apiService.getDatabaseInfo(dbId);
+                            if (window.notionAPIService && typeof window.notionAPIService.getDatabaseInfo === 'function') {
+                                const result = await window.notionAPIService.getDatabaseInfo(dbId);
                                 
                                 // 格式适配层：统一返回格式，提高兼容性
                                 // 检查各种可能的成功响应格式
@@ -183,42 +198,27 @@ export async function loadDebugPanel(options = {}) {
                             };
                         }
                     },
-                    testApiConnection: callbacks.testApiConnection || async function() {
-                        if (window.apiService && typeof window.apiService.testConnection === 'function') {
-                            return await window.apiService.testConnection();
-                        }
-                        return { success: false, error: 'API服务不可用' };
+                    onConfigUpdate: callbacks.onConfigUpdate || function(newDbId) {
+                        logger.info('数据库ID已更新:', newDbId);
                     },
-                    getDatabases: callbacks.getDatabases || async function() {
-                        try {
-                            if (window.apiService && typeof window.apiService.getDatabases === 'function') {
-                                const result = await window.apiService.getDatabases();
-                                
-                                // 格式适配层：统一返回格式
-                                // 不同的API实现可能返回不同格式
-                                if (result.success === true || 
-                                    (result.results && Array.isArray(result.results)) ||
-                                    (Array.isArray(result))) {
-                                    
-                                    return {
-                                        success: true,
-                                        results: result.results || result
-                                    };
-                                } else {
-                                    // 统一错误响应格式
-                                    return {
-                                        success: false,
-                                        error: result.error || '未知错误'
-                                    };
-                                }
-                            }
-                            return { success: false, error: 'API服务不可用' };
-                        } catch (error) {
-                            logger.error('获取数据库列表出错:', error);
-                            return { 
-                                success: false, 
-                                error: error.message || '未知错误' 
-                            };
+                    onRefresh: callbacks.onRefresh || function() {
+                        logger.info('刷新请求');
+                        location.reload();
+                    },
+                    showStatus: callbacks.showStatus || function(message, isError) {
+                        logger.info(isError ? `错误: ${message}` : message);
+                        
+                        // 简单的状态显示
+                        const statusEl = document.getElementById('status-message');
+                        if (statusEl) {
+                            statusEl.textContent = message;
+                            statusEl.style.color = isError ? 'red' : 'green';
+                            statusEl.style.display = 'block';
+                            
+                            // 3秒后隐藏
+                            setTimeout(() => {
+                                statusEl.style.display = 'none';
+                            }, 3000);
                         }
                     }
                 });

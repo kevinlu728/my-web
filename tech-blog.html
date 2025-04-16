@@ -66,11 +66,11 @@
         import logger from './scripts/utils/logger.js';
         import config from './scripts/config/config.js';
         import resourceManager from './scripts/resource/resourceManager.js';
-        console.log('✅ 日志模块、配置模块、资源管理器已预加载');
+        // console.log('✅ 日志模块、配置模块、资源管理器已预加载');
     </script>
     
     <!-- 再加载API服务 -->
-    <script src="./scripts/api-service.js"></script>
+    <script type="module" src="./scripts/services/notionAPIService.js"></script>
     
     <!-- 结构化数据 -->
     <script type="application/ld+json">
