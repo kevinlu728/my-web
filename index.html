@@ -6,7 +6,7 @@
     <title>云栖小栈</title>
     <!-- SEO元标签 -->
     <meta name="description" content="云栖小栈 - 陆凯的个人网站">
-    <meta name="keywords" content="技术博客,终端技术,移动端技术,大前端技术,AI工程化,华为,京东,美团">
+    <meta name="keywords" content="博客,技术,生活,华为,京东,美团,电影,足球,旅行">
     <!-- 预加载策略 - 核心CSS使用preload，非关键资源使用prefetch -->
     <link rel="preload" href="./styles/main.css" as="style">
     <!-- CSS资源 - 使用相对路径 -->
@@ -22,17 +22,17 @@
           data-resource-type="font-awesome">
     <!-- 网站图标 -->
     <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
-    
-    <!-- 先加载资源加载器但不用于首页核心资源 -->
+
+    <!-- 先加载日志模块、配置模块、资源管理器 -->
     <script type="module">
-        import { resourceManager } from './scripts/resource/resourceManager.js';
-        // 在全局作用域中暴露资源加载器
-        window.resourceManager = resourceManager;
-        console.log('✅ 资源加载器已预加载');
+        // 导入logger, 确保它最先加载
+        import logger from './scripts/utils/logger.js';
+        import config from './scripts/config/config.js';
+        import resourceManager from './scripts/resource/resourceManager.js';
+        // console.log('✅ 日志模块、配置模块、资源管理器已预加载');
     </script>
     
-    <!-- API服务，首页暂时不依赖API服务，所以可以放在head的最后加载 -->
-    <script src="./scripts/api-service.js"></script>
+    <!-- 再加载API服务，首页暂时不使用Notion API服务，而AI服务会由聊天组件加载 -->
 
     <!-- 结构化数据 -->
     <script type="application/ld+json">
@@ -116,8 +116,6 @@
 
     <div id="chat-widget-container"></div>
 
-    <!-- 确保配置在所有组件之前加载 -->
-    <script src="scripts/config/config.js" type="module"></script>
     <script src="scripts/components/componentManager.js" type="module"></script>
 </body>
 </html>

@@ -6,7 +6,7 @@
     <title>生活驿站 - 云栖小栈</title>
     <!-- SEO元标签 -->
     <meta name="description" content="云栖小栈 - 陆凯的个人网站">
-    <meta name="keywords" content="生活博客,旅行,阅读,电影,足球,兴趣爱好">
+    <meta name="keywords" content="生活博客,兴趣爱好,电影,足球,旅行">
     <!-- 预加载策略 -->
     <link rel="preload" href="./styles/main.css" as="style">
     <!-- CSS资源 - 使用相对路径 -->
@@ -97,12 +97,13 @@
         }
     </style>
     
-    <!-- 先加载日志模块、配置模块 -->
+    <!-- 先加载日志模块、配置模块、资源管理器 -->
     <script type="module">
         // 导入logger, 确保它最先加载
         import logger from './scripts/utils/logger.js';
         import config from './scripts/config/config.js';
-        console.log('✅ 日志模块、配置模块已预加载');
+        import resourceManager from './scripts/resource/resourceManager.js';
+        // console.log('✅ 日志模块、配置模块、资源管理器已预加载');
     </script>
     
     <!-- 结构化数据 -->

@@ -1,11 +1,35 @@
 /**
  * @file prismLoader.js
- * @description Prism代码高亮加载器
- * 负责管理Prism相关资源的加载逻辑，最终通过scriptResourceLoader和styleResourceLoader加载。
- * @version 1.0.2
+ * @description Prism代码高亮库资源加载器
+ * @author 陆凯
+ * @version 1.2.0
+ * @created 2024-03-09
+ * @updated 2024-07-12
+ * 
+ * 该模块负责Prism.js代码高亮库及其依赖资源的智能加载：
+ * - 加载Prism核心库、主题样式和语言组件
+ * - 处理资源加载顺序和依赖关系
+ * - 实现智能的语言组件按需加载
+ * - 提供多CDN回退和本地资源降级方案
+ * - 发布资源加载事件，便于其他模块（如codeLazyLoader）协同工作
+ * 
+ * 主要方法：
+ * - loadPrismResources: 加载Prism核心库和主题
+ * - loadPrismLanguageComponents: 加载语言组件
+ * - _preparePrismLanguages: 处理语言依赖关系
+ * - _executeLanguageLoading: 按特定顺序加载语言组件
+ * 
+ * 资源加载策略：
+ * 1. 首先加载Prism核心库和主题
+ * 2. 在核心库加载完成后，加载基础语言组件
+ * 3. 最后加载依赖于基础语言的高级语言组件
+ * 4. 全部加载完成后，触发高亮处理
+ * 
+ * 事件集成：
+ * - 发布LOADING_SUCCESS事件通知资源加载成功
+ * - 发布LOADING_FAILURE事件通知资源加载失败
  */
 
-// 导入必要的依赖
 import logger from '../utils/logger.js';
 import resourceConfig from '../config/resources.js';
 import { resourceEvents, RESOURCE_EVENTS } from '../resource/resourceEvents.js';

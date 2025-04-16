@@ -1,24 +1,29 @@
 /**
- * @file code-lazy-loader.js
- * @description 代码块懒加载工具，实现代码块的延迟加载和语法高亮
+ * @file codeLazyLoader.js
+ * @description 代码块懒加载工具，负责代码块的延迟加载、语法高亮和交互功能
  * @author 陆凯
- * @version 1.0.0
+ * @version 1.2.0
  * @created 2024-03-09
+ * @updated 2024-07-12
  * 
  * 该模块实现了代码块的懒加载和语法高亮功能：
- * - 使用IntersectionObserver监测代码块可见性
- * - 代码块进入视口时才加载和渲染
- * - 支持多种编程语言的语法高亮
- * - 支持代码块的复制功能
- * - 支持代码行号显示
+ * - 使用IntersectionObserver监测代码块可见性，实现按需加载
+ * - 代码块进入视口时才执行渲染，提高页面加载性能
+ * - 支持多种编程语言的语法高亮（通过Prism.js）
+ * - 内置代码复制功能，改善用户体验
+ * - 支持自动降级处理，在不支持现代API的浏览器中仍能正常工作
+ * - 与prismLoader模块协同工作，优化资源加载顺序
  * 
  * 主要方法：
- * - loadCode: 加载代码内容并应用语法高亮
- * - highlightCode: 对代码应用语法高亮
- * - processAllCodeBlocks: 处理页面中的所有代码块
- * - addCopyButton: 为代码块添加复制按钮
+ * - initialize: 初始化懒加载和资源加载
+ * - loadCode: 加载并渲染单个代码块
+ * - highlightCode: 使用Prism对代码应用语法高亮
+ * - loadAllCodeBlocks: 立即加载页面中的所有代码块
+ * - addCopyButton: 为代码块添加复制按钮和复制功能
  * 
- * 导出单例codeLazyLoader供其他模块使用。
+ * 依赖关系：
+ * - 需要prismLoader模块加载Prism.js核心和语言组件
+ * - 监听resourceEvents事件来协调资源加载
  */
 
 import logger from '../utils/logger.js';

@@ -30,9 +30,6 @@ import { scriptResourceLoader } from './scriptResourceLoader.js';
 // 添加事件系统引入
 import { resourceEvents, RESOURCE_EVENTS } from './resourceEvents.js';
 
-// 替换为从resources.js导入的策略
-const RESOURCE_STRATEGIES = resourceConfig.resourceStrategies.mapping;
-
 class ResourceManager {
     constructor() {
         this.loadedResources = new Set();
@@ -168,8 +165,7 @@ class ResourceManager {
             setTimeout(() => this.processedErrors.delete(url), CLEANUP_DELAY);
             
             // 提取资源信息
-            const resourceType = event.target.getAttribute('data-resource-type') || 
-                                 this.getResourceTypeFromUrl(url);
+            const resourceType = event.target.getAttribute('data-resource-type');
             const resourceId = event.target.getAttribute('data-resource-id') || 
                               this.resourceConfig.extractResourceId(url, resourceType);
             
@@ -545,7 +541,7 @@ class ResourceManager {
             newElement.setAttribute('data-local-resource', 'true');
         }
             
-            // 替换元素
+        // 替换元素
         if (oldElement.parentNode) {
             oldElement.parentNode.replaceChild(newElement, oldElement);
             return newElement;
