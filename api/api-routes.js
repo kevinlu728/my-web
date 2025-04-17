@@ -421,8 +421,16 @@ async function handleArticlesApi(req, res) {
     console.log('[文章列表API] 请求体:', JSON.stringify(req.body));
     console.log('[文章列表API] 请求头:', JSON.stringify(req.headers, null, 2));
     
-    // 兼容两种参数名称
-    const databaseId = req.body.databaseId || req.body.database_id || NOTION_DATABASE_ID;
+    // 在处理请求参数的地方更新数据库ID获取逻辑
+    let databaseId = req.body.databaseId || req.body.database_id || NOTION_DATABASE_ID;
+
+    // 如果未提供，尝试从环境变量获取博客文章数据库ID
+    if (!databaseId) {
+      // 尝试获取博客文章专用数据库ID
+      const blogArticlesId = process.env.NOTION_DATABASE_BLOGARTICALS_ID;
+      databaseId = blogArticlesId || process.env.NOTION_DATABASE_ID;
+    }
+    
     const filter = req.body.filter;
     const sorts = req.body.sorts;
     const pageSize = req.body.pageSize || req.body.page_size || 100;

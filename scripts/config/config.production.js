@@ -21,23 +21,24 @@
 import defaultAIConfig from './aiConfig.js';
 
 export default {
-    notion: {
-        // 在生产环境中，我们不直接在前端使用API密钥，而是通过后端API调用
-        apiKey: '', // 前端不需要直接使用API密钥
-        databaseId: '1a932af826e680df8bf7f320b51930b9' // 默认数据库ID
-    },
-    api: {
-        baseUrl: '/api' // 使用相对路径，指向Vercel的API函数
-    },
-    debug: {
-        enabled: false,
-        defaultDatabaseId: '1a932af826e680df8bf7f320b51930b9'
-    },
     logging: {
         level: 'INFO',  // 生产环境使用INFO级别
         useColors: false,
         showTimestamp: true,
         showCaller: false
+    },
+    api: {
+        baseUrl: '/api' // 使用相对路径，指向Vercel的API函数
+    },
+    // Notion配置
+    notion: {
+        // 在生产环境中，我们不直接在前端使用API密钥，而是通过后端API调用
+        apiKey: '', // 前端不需要直接使用API密钥
+        databaseId: '1a932af826e680df8bf7f320b51930b9', // 默认数据库ID
+        databaseIds:{
+            blogArticles: '1a932af826e680df8bf7f320b51930b9',
+            lifePhotos: '1d732af826e680a7919fe3b5a88c6a5f'
+        }
     },
     // AI服务配置 - 生产环境
     ai: {
@@ -62,5 +63,9 @@ export default {
             cacheLifetime: 86400000,  // 缓存有效期24小时
             useCompression: true      // 使用压缩
         }
+    },
+    debug: {
+        enabled: false,
+        defaultDatabaseId: '1a932af826e680df8bf7f320b51930b9'
     }
 }; 

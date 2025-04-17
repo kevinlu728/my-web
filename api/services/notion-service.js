@@ -12,7 +12,7 @@ const { notionConfig } = require('../config/notion-config');
 // 基础配置
 const config = {
   apiKey: process.env.NOTION_API_KEY,
-  defaultDatabaseId: process.env.NOTION_DATABASE_ID,
+  defaultDatabaseId: process.env.NOTION_DATABASE_BLOGARTICALS_ID || process.env.NOTION_DATABASE_ID,
   headers: {
     'Authorization': `Bearer ${process.env.NOTION_API_KEY}`,
     'Content-Type': 'application/json',

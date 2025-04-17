@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.config = config;
         // 加载调试面板组件
         loadDebugPanel({
-            databaseId: config.notion.databaseId || config.debug.defaultDatabaseId
+            databaseId: config.notion.databaseIds?.blogArticles || config.notion.databaseId
         }).catch(err => {
             console.error('加载调试面板时出错:', err);
         });
@@ -137,7 +137,7 @@ export async function initializePage() {
         // ===== 1. 环境准备和基础设置 =====
         logger.info('初始化技术博客页面...');
         
-        const currentDatabaseId = config.notion.databaseId || config.debug.defaultDatabaseId;
+        const currentDatabaseId = config.notion.databaseIds?.blogArticles || config.notion.databaseId;
         logger.info('当前数据库ID:', currentDatabaseId);
 
         // 初始化内容视图管理器，下面需要使用

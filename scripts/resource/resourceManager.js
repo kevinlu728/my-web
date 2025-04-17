@@ -1,6 +1,6 @@
 /**
  * @file resource-loader.js
- * @description 资源加载器 - 负责加载和管理各种外部资源并提供统一的回退机制
+ * @description 资源加载管理器 - 负责管理各种外部资源并提供统一的回退机制
  * @author 陆凯
  * @version 1.2.0
  * @created 2024-03-22
