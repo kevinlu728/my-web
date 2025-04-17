@@ -1,6 +1,6 @@
 /**
  * @file tech-blog.js
- * @description 技术博客页面主控制器，负责整体页面生命周期和状态管理
+ * @description 技术博客页面入口js，是博客页面主控制器，负责整体页面生命周期和状态管理
  * @author 陆凯
  * @version 1.2.0
  * @created 2024-03-09
@@ -110,10 +110,9 @@ function setupContentUnblockedListener() {
 
 /**
  * 初始化技术博客页面
- * @param {boolean} forceApiTest 是否强制进行API测试
  * @returns {Promise<void>}
  */
-export async function initializePage(forceApiTest = false) {
+export async function initializePage() {
     // ===== 锁检查和初始状态设置 =====
     // 防止重复初始化 - 使用统一的状态锁
     if (window.pageState.initializing) {
@@ -126,7 +125,7 @@ export async function initializePage(forceApiTest = false) {
     
     try {
         // 检查是否已经初始化 - 使用统一的状态变量
-        if (window.pageState.initialized && !forceApiTest) {
+        if (window.pageState.initialized) {
             logger.info('页面已初始化，跳过初始化过程');
             window.pageState.initializing = false; // 释放锁
             return;
@@ -148,25 +147,7 @@ export async function initializePage(forceApiTest = false) {
         // 更新视图状态
         updateViewState('loading');
         
-        // ===== 2. API服务检查 =====
-        // // 检查API服务可用性
-        // if (window.apiService) {
-        //     logger.info('✅ 检测到apiService，将使用API服务自动选择功能');
-        //     try {
-        //         const apiStatus = await window.apiService.testConnection();
-        //         if (apiStatus.success) {
-        //             logger.info('✅ API服务连接成功，使用实现:', apiStatus.implementation);
-        //         } else {
-        //             logger.warn('⚠️ API服务连接测试失败，将回退到直接服务调用');
-        //         }
-        //     } catch (error) {
-        //         logger.error('❌ API服务测试出错:', error);
-        //     }
-        // } else {
-        //     logger.info('⚠️ 未检测到apiService，将使用直接服务调用');
-        // }
-        
-        // ===== 3. 核心组件初始化 =====
+        // ===== 2. 核心组件初始化 =====
         // 初始化文章管理器
         logger.info('初始化文章管理器...');
         await articleManager.initialize(currentDatabaseId);
@@ -189,7 +170,7 @@ export async function initializePage(forceApiTest = false) {
             articleManager.filterAndRenderArticles();
         });
         
-        // ===== 4. 内容显示处理 =====
+        // ===== 3. 内容显示处理 =====
         // 检查URL中是否有指定文章参数
         try {
             const urlParams = new URLSearchParams(window.location.search);
@@ -218,7 +199,7 @@ export async function initializePage(forceApiTest = false) {
             articleManager.showWelcomePage();
         }
         
-        // ===== 5. 辅助功能初始化 =====
+        // ===== 4. 辅助功能初始化 =====
         logger.info('✅ 页面初始化完成！开始初始化辅助功能...');
 
         // 初始化导航

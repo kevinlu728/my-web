@@ -410,11 +410,6 @@ class ResourceManager {
         // 尝试从元素属性中获取本地备用URL
         let localUrl = element.getAttribute('data-local-fallback');
         
-        // 如果元素没有指定本地备用URL，尝试自动构建
-        if (!localUrl) {
-            localUrl = this.constructLocalUrl(url, resourceType);
-        }
-        
         if (!localUrl) {
             logger.warn(`⚠️ 无法确定本地URL: ${url}`);
             this.applyFinalFallback(element, resourceType);
@@ -484,6 +479,8 @@ class ResourceManager {
                 this.applyFinalFallback(newElement, resourceType);
             });
         }
+
+        return true;
     }
     
     /**

@@ -18,7 +18,7 @@ class ScriptResourceLoader {
      */
     setDependencies(dependencies) {
         this.dependencies = dependencies;
-        logger.info('脚本资源加载器已设置依赖');
+        logger.debug('脚本资源加载器已设置依赖');
     }
 
     /**

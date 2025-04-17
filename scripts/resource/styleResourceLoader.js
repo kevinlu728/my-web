@@ -18,7 +18,7 @@ class StyleResourceLoader {
      */
     setDependencies(dependencies) {
         this.dependencies = dependencies;
-        logger.info('样式资源加载器已设置依赖');
+        logger.debug('样式资源加载器已设置依赖');
     }
 
     /**

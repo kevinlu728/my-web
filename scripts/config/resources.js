@@ -24,8 +24,6 @@
 
 // 使用ES模块方式导入logger
 import logger from '../utils/logger.js';
-// 备用导入方式（如果ES模块导入失败）
-// const logger = window.loggerModule || console;
 
 /**
  * 资源版本配置
@@ -111,6 +109,7 @@ export const resourceStrategies = {
         'prism': 'cdn-first',
         'katex': 'cdn-only',  // 由于Katex本地资源较大，所以只使用CDN资源
         'gridjs': 'cdn-first',
+        'particles': 'cdn-first',
         'default': 'cdn-first'  // 默认策略
     },
     
@@ -121,6 +120,7 @@ export const resourceStrategies = {
         'prism': 'medium',
         'katex': 'medium',
         'gridjs': 'medium',
+        'particles': 'medium',
         'default': 'low'
     }
 };
@@ -182,7 +182,7 @@ export const resources = {
                 ]
             },
             attributes: {
-                'data-resource-type': 'bootstrap-icons',
+                'data-resource-type': 'bootstrap',
                 'data-local-fallback': '/assets/libs/bootstrap-icons/bootstrap-icons.css'
             }
         },
@@ -256,7 +256,7 @@ export const resources = {
                 ]
             },
             attributes: {
-                'data-resource-type': 'table',
+                'data-resource-type': 'gridjs',
                 'data-local-fallback': '/assets/libs/gridjs/theme/mermaid.min.css'
             }
         },
@@ -394,29 +394,6 @@ export const resources = {
                 'data-resource-type': 'katex'
             }
         },
-        'particles': {
-            type: 'js',
-            priority: 'medium',
-            group: 'animation',
-            source: {
-                primary: {
-                    provider: 'cdnjs',
-                    library: 'particles.js',
-                    version: versions.particles,
-                    path: 'particles.min.js'
-                },
-                fallbacks: [
-                    {
-                        provider: 'local',
-                        library: 'particles.js',
-                        path: 'particles.min.js'
-                    }
-                ]
-            },
-            attributes: {
-                'data-resource-type': 'animation'
-            }
-        },
         'gridjs-core': {
             type: 'js',
             priority: 'medium',
@@ -438,8 +415,33 @@ export const resources = {
                 ]
             },
             attributes: {
-                'data-resource-type': 'table',
+                'data-resource-type': 'gridjs',
                 'data-local-fallback': '/assets/libs/gridjs/gridjs.umd.js'
+            }
+        },
+        'particles': {
+            type: 'js',
+            priority: 'medium',
+            group: 'animation',
+            source: {
+                primary: {
+                    provider: 'jsdelivr',
+                    library: 'particles.js',
+                    version: versions.particles,
+                    path: 'particles.min.js'
+                },
+                fallbacks: [
+                    {
+                        provider: 'cdnjs',
+                        library: 'particles.js',
+                        version: versions.particles,
+                        path: 'particles.min.js'
+                    }
+                ]
+            },
+            attributes: {
+                'data-resource-type': 'particles',
+                'data-local-fallback': '/assets/libs/particles/particles.min.js'
             }
         },
     }

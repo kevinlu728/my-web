@@ -49,7 +49,7 @@ export function initChatWidget() {
         return;
     }
 
-    logger.info('聊天组件初始化成功');
+    logger.debug('✅ 聊天组件初始化完成');
 
     // 清空聊天记录，确保没有重复消息
     chatMessages.innerHTML = '';
