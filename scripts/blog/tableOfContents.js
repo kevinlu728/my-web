@@ -18,7 +18,7 @@ import { throttle } from '../utils/common-utils.js';
  * 4. 滚动同步高亮当前位置
  * 5. 点击跳转到对应位置
  */
-export class TableOfContents {
+class TableOfContents {
     /**
      * 构造函数
      * @param {Object} options 配置选项
@@ -911,11 +911,10 @@ export class TableOfContents {
 }
 
 // 创建单例实例
-const tableOfContents = new TableOfContents();
+export const tableOfContents = new TableOfContents();
 
 // 在页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => tableOfContents.initialize(), 100);
 });
 
-export default tableOfContents;

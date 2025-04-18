@@ -14,7 +14,7 @@
 import { ModuleType } from './lifeViewManager.js';
 import logger from '../utils/logger.js';
 import { throttle, showLoadingSpinner } from '../utils/common-utils.js';
-
+import lifecycleManager from '../utils/lifecycleManager.js';
 class PhotoPaginationManager {
     constructor() {
         // 分页状态
@@ -38,6 +38,9 @@ class PhotoPaginationManager {
         
         // 添加窗口尺寸变化监听
         window.addEventListener('resize', this.handleWindowResize);
+
+        // 注册清理函数
+        lifecycleManager.registerCleanup('photoPaginationManager', this.cleanup.bind(this));
     }
 
     /**

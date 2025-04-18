@@ -20,9 +20,11 @@
  * 依赖于tableLazyLoader.js和codeLazyLoader.js实现懒加载功能。
  */
 
+import { imageLazyLoader } from './imageLazyLoader.js';
 import { tableLazyLoader } from './tableLazyLoader.js';
 import { codeLazyLoader } from './codeLazyLoader.js';
 import { mathLazyLoader } from './mathLazyLoader.js';
+import { tableOfContents } from './tableOfContents.js';
 import logger from '../utils/logger.js';
 
 // 主渲染函数
@@ -35,6 +37,83 @@ export function renderNotionBlocks(blocks) {
     }
     
     return blocks.map(block => renderBlock(block)).join('');
+}
+
+/**
+ * 渲染新加载的内容
+ * @param {Array} newBlocks - 新加载的内容块
+ * @returns {boolean} 是否成功渲染
+ */
+export function renderMoreBlocks(newBlocks) {
+    if (!newBlocks || newBlocks.length === 0) return false;
+    
+    logger.debug('渲染更多块');
+    // 保存目录元素引用，确保它不会被销毁
+    const tocElement = document.querySelector('.article-toc');
+    const isTocCollapsed = tocElement ? tocElement.classList.contains('collapsed') : false;
+    const isTocVisible = tocElement ? tocElement.classList.contains('visible') : false;
+    
+    logger.info('保存目录状态:', {
+        存在: !!tocElement,
+        已折叠: isTocCollapsed,
+        移动设备可见: isTocVisible
+    });
+    
+    // 渲染新内容
+    const newContent = renderNotionBlocks(newBlocks);
+    const articleBody = document.querySelector('.article-body');
+    if (articleBody) {
+        // 添加新内容前保存滚动位置
+        const scrollPos = window.scrollY;
+        
+        // 添加新内容
+        articleBody.insertAdjacentHTML('beforeend', newContent);
+        
+        // 处理新加载内容中的图片和其他懒加载内容
+        imageLazyLoader.processImages(articleBody);
+        initializeLazyLoading(articleBody);
+        
+        // 检查新内容中是否有标题元素
+        const hasNewHeadings = newBlocks.some(block => 
+            block.type === 'heading_1' || 
+            block.type === 'heading_2' || 
+            block.type === 'heading_3'
+        );
+        
+        // 如果有新标题，则需要更新目录
+        if (hasNewHeadings) {
+            logger.info('检测到新的标题元素，使用轻量方式更新目录导航');
+            
+            // 使用新的不销毁容器的方法更新目录内容
+            const updateResult = tableOfContents.updateContent();
+            logger.info('目录更新结果:', updateResult);
+            
+            // 确保目录状态正确
+            if (tocElement) {
+                if (isTocCollapsed) {
+                    tocElement.classList.add('collapsed');
+                } else {
+                    tocElement.classList.remove('collapsed');
+                }
+                
+                if (isTocVisible) {
+                    tocElement.classList.add('visible');
+                } else {
+                    tocElement.classList.remove('visible');
+                }
+            }
+        }
+        
+        // 防止页面因新内容导致的滚动位置变化
+        window.scrollTo({
+            top: scrollPos,
+            behavior: 'auto'
+        });
+        
+        return true;
+    }
+    
+    return false;
 }
 
 // 渲染段落
@@ -277,7 +356,7 @@ function renderTable(block) {
 
 // 渲染单个块
 function renderBlock(block) {
-    logger.info('渲染块:', block.type, block.id);  //先注释掉，否则日志太多
+    // logger.debug('渲染块:', block.type, block.id);  //先注释掉，否则日志太多
     
     if (!block || !block.type) {
         logger.warn('无效的块:', block);

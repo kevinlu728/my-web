@@ -12,10 +12,8 @@
  */
 
 
-import { initializeLazyLoading } from './articleRenderer.js';
+import { renderMoreBlocks } from './articleRenderer.js';
 import { articleCacheManager } from './articleCacheManager.js';   
-import { imageLazyLoader } from './imageLazyLoader.js';
-import tableOfContents from './tableOfContents.js';
 import { updateLoadMoreStatus } from '../utils/article-utils.js';
 import { throttle, showLoadingSpinner } from '../utils/common-utils.js';
 import config from '../config/config.js';
@@ -342,13 +340,10 @@ class ArticlePaginationManager {
                 // 再次检查状态，避免延迟期间状态改变
                 if (!this.isLoading && this.hasMore) {
                     logger.info('执行加载更多内容操作');
-                    
-                    // 导入渲染函数，使得加载更多能够直接触发
-                    import('./articleRenderer.js').then(({ renderNotionBlocks }) => {
-                        this.loadMoreContent(renderNotionBlocks, (pageId, newBlocks, hasMore, nextCursor) => {
-                            // 使用缓存管理器
-                            articleCacheManager.updateArticleCache(pageId, newBlocks, hasMore, nextCursor);
-                        });
+
+                    this.loadMoreContent((pageId, newBlocks, hasMore, nextCursor) => {
+                        // 使用缓存管理器
+                        articleCacheManager.updateArticleCache(pageId, newBlocks, hasMore, nextCursor);
                     });
                     
                     // 清除触发状态
@@ -367,11 +362,10 @@ class ArticlePaginationManager {
 
     /**
      * 加载更多内容
-     * @param {Function} renderNotionBlocks - 渲染函数
      * @param {Function} updateCacheCallback - 更新缓存的回调函数
      * @returns {Promise<boolean>} 是否成功加载更多内容
      */
-    async loadMoreContent(renderNotionBlocks, updateCacheCallback) {
+    async loadMoreContent(updateCacheCallback) {
         // 保存当前请求标识符
         const requestId = this.requestIdentifier;
         const currentPageId = this.currentPageId;
@@ -418,7 +412,13 @@ class ArticlePaginationManager {
             }
             
             // 渲染新内容
-            const renderResult = this.renderMoreContent(newBlocks, renderNotionBlocks);
+            // 在渲染前最后一次检查请求标识符
+            const currentArticleBody = document.querySelector(`.article-body[data-article-id="${this.currentPageId}"]`);
+            if (!currentArticleBody) {
+                logger.warn('未找到当前文章的正文容器，取消渲染');
+                return false;
+            }
+            const renderResult = renderMoreBlocks(newBlocks);
 
             // 如果没有更多内容，确保显示提示
             if (!this.hasMore) {
@@ -521,92 +521,6 @@ class ArticlePaginationManager {
     }
 
     /**
-     * 渲染新加载的内容
-     * @param {Array} newBlocks - 新加载的内容块
-     * @param {Function} renderNotionBlocks - 渲染函数
-     * @returns {boolean} 是否成功渲染
-     */
-    renderMoreContent(newBlocks, renderNotionBlocks) {
-        if (!newBlocks || newBlocks.length === 0) return false;
-        
-        // 在渲染前最后一次检查请求标识符
-        const currentArticleBody = document.querySelector(`.article-body[data-article-id="${this.currentPageId}"]`);
-        
-        // 如果找不到当前文章的正文容器，不进行渲染
-        if (!currentArticleBody) {
-            logger.warn('未找到当前文章容器，取消渲染');
-            return false;
-        }
-        
-        // 保存目录元素引用，确保它不会被销毁
-        const tocElement = document.querySelector('.article-toc');
-        const isTocCollapsed = tocElement ? tocElement.classList.contains('collapsed') : false;
-        const isTocVisible = tocElement ? tocElement.classList.contains('visible') : false;
-        
-        logger.info('保存目录状态:', {
-            存在: !!tocElement,
-            已折叠: isTocCollapsed,
-            移动设备可见: isTocVisible
-        });
-        
-        // 渲染新内容
-        const newContent = renderNotionBlocks(newBlocks);
-        const articleBody = document.querySelector('.article-body');
-        if (articleBody) {
-            // 添加新内容前保存滚动位置
-            const scrollPos = window.scrollY;
-            
-            // 添加新内容
-            articleBody.insertAdjacentHTML('beforeend', newContent);
-            
-            // 处理新加载内容中的图片和其他懒加载内容
-            imageLazyLoader.processImages(articleBody);
-            initializeLazyLoading(articleBody);
-            
-            // 检查新内容中是否有标题元素
-            const hasNewHeadings = newBlocks.some(block => 
-                block.type === 'heading_1' || 
-                block.type === 'heading_2' || 
-                block.type === 'heading_3'
-            );
-            
-            // 如果有新标题，则需要更新目录
-            if (hasNewHeadings) {
-                logger.info('检测到新的标题元素，使用轻量方式更新目录导航');
-                
-                // 使用新的不销毁容器的方法更新目录内容
-                const updateResult = tableOfContents.updateContent();
-                logger.info('目录更新结果:', updateResult);
-                
-                // 确保目录状态正确
-                if (tocElement) {
-                    if (isTocCollapsed) {
-                        tocElement.classList.add('collapsed');
-                    } else {
-                        tocElement.classList.remove('collapsed');
-                    }
-                    
-                    if (isTocVisible) {
-                        tocElement.classList.add('visible');
-                    } else {
-                        tocElement.classList.remove('visible');
-                    }
-                }
-            }
-            
-            // 防止页面因新内容导致的滚动位置变化
-            window.scrollTo({
-                top: scrollPos,
-                behavior: 'auto'
-            });
-            
-            return true;
-        }
-        
-        return false;
-    }
-
-    /**
      * 更新内部状态
      * @param {Object} params - 要更新的参数
      */
@@ -651,6 +565,18 @@ class ArticlePaginationManager {
             clearInterval(this._periodicCheckInterval);
             this._periodicCheckInterval = null;
         }
+    }
+    
+    cleanup() {
+        // 移除事件监听
+        if (this.scrollHandler && this.scrollContainer) {
+            this.scrollContainer.removeEventListener('scroll', this.scrollHandler);
+        }
+        
+        window.removeEventListener('resize', this.handleWindowResize);
+        
+        this.reset();
+        logger.info('文章分页管理器已清理');
     }
 }
 

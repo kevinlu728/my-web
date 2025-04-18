@@ -20,7 +20,6 @@
  * - loadArticles: 加载文章列表
  * - showArticle: 显示单篇文章，包含重复加载检测
  * - loadAndDisplayArticle: 加载并显示文章内容
- * - loadMoreContent: 加载更多文章内容（分页）
  * 
  * 依赖关系：
  * - 依赖 notionAPIService.js 获取API数据
@@ -40,7 +39,7 @@ import { articlePaginationManager } from './articlePaginationManager.js';
 import { articleCacheManager } from './articleCacheManager.js';
 import { welcomePageManager } from './welcomePageManager.js';
 import { renderNotionBlocks, initializeLazyLoading } from './articleRenderer.js';
-import tableOfContents from './tableOfContents.js';
+import { tableOfContents } from './tableOfContents.js';
 
 // 导入工具函数
 import { categoryConfig } from '../config/categories.js';
@@ -693,7 +692,6 @@ class ArticleManager {
     // 修改为使用缓存管理器的updateArticleCache
     async loadMoreContent() {
         return await articlePaginationManager.loadMoreContent(
-            renderNotionBlocks,
             // 传递更新缓存的回调函数，使用缓存管理器
             (pageId, newBlocks, hasMore, nextCursor) => {
                 articleCacheManager.updateArticleCache(pageId, newBlocks, hasMore, nextCursor);
