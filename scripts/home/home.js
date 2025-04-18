@@ -23,7 +23,7 @@
 import logger from '../utils/logger.js';
 import { resourceManager } from '../resource/resourceManager.js';
 import { initNavigation } from '../components/navigation.js';
-import { initScrollbar } from '../components/scrollbar.js';
+import { scrollbar } from '../components/scrollbar.js';
 import { initChatWidget } from '../components/chatWidget.js';
 import { initContactModals } from '../components/contactModals.js';
 import { particleBackground } from '../components/particleBackground.js';
@@ -138,7 +138,7 @@ function initJsComponents() {
         initNavigation();
 
         // 初始化滚动条
-        initScrollbar();
+        scrollbar.initialize();
 
         // 初始化聊天组件
         initChatWidget();

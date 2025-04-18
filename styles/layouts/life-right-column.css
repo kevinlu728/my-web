@@ -1,0 +1,122 @@
+/**
+ * @file life-right-column.css
+ * @description 生活页面右侧栏的内部样式
+ * @created 2024-05-24
+ * 
+ * 该文件专注于生活页面右侧栏的内部样式和外观，包括：
+ * - 右侧栏卡片样式
+ * - 照片墙布局
+ * - 无限滚动加载样式
+ */
+
+/* 右侧栏内部样式 */
+.life-content .right-column {
+    background: #ffffff;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+}
+
+/* 右侧栏标题 */
+.right-column-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+/* 照片墙容器 */
+.photo-wall-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 400px;
+}
+
+/* 模块筛选信息 */
+.filter-info {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.filter-text {
+    font-size: 16px;
+    color: #666;
+}
+
+.photos-count {
+    font-size: 14px;
+    color: #888;
+    background-color: #f5f5f5;
+    padding: 5px 10px;
+    border-radius: 20px;
+}
+
+/* 无内容状态 */
+.no-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    color: #888;
+    text-align: center;
+    padding: 20px;
+}
+
+.no-content-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+    color: #ccc;
+}
+
+.no-content-text {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.no-content-hint {
+    font-size: 14px;
+    color: #aaa;
+}
+
+/* 加载更多样式使用通用 */
+
+@keyframes loading-indicator {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .life-content .right-column {
+        padding: 15px;
+    }
+    
+    .photo-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 10px;
+    }
+    
+    .photo-info {
+        padding: 10px;
+    }
+    
+    .photo-title {
+        font-size: 14px;
+    }
+    
+    .photo-date {
+        font-size: 12px;
+    }
+}

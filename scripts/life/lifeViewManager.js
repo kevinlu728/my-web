@@ -1,76 +1,108 @@
 /**
- * @file contentViewManager.js
- * @description 内容视图管理器，管理文章容器的不同显示模式
- * @author 陆凯
- * @version 1.0.0
- * @created 2024-05-30
+ * @file lifeViewManager.js
+ * @description 生活频道视图管理器，负责视图状态和事件管理
+ * @created 2024-05-23
+ * 
+ * 该模块负责:
+ * 1. 视图状态管理
+ * 2. 视图事件处理
+ * 3. 视图模式切换
+ * 4. 提供关键常量和枚举
  */
 
 import logger from '../utils/logger.js';
 
-// 视图模式常量
+// 模块类型枚举
+export const ModuleType = {
+    MOVIE: 'movie',
+    FOOTBALL: 'football',
+    TRAVEL: 'travel',
+    ALL: 'all'
+};
+
+// 视图模式枚举
 export const ViewMode = {
-    WELCOME: 'welcome',
-    ARTICLE: 'article',
     LOADING: 'loading',
+    GRID: 'grid',  // 网格视图模式
+    DETAIL: 'detail', // 详情视图模式
     ERROR: 'error'
 };
 
-// 视图状态事件
+// 视图事件枚举
 export const ViewEvents = {
+    LOADING_START: 'loadingStart',
+    LOADING_END: 'loadingEnd',
+    BEFORE_RENDER: 'beforeRender',
+    AFTER_RENDER: 'afterRender',
     MODE_CHANGED: 'viewModeChanged',
-    BEFORE_WELCOME: 'beforeWelcomeShow',
-    AFTER_WELCOME: 'afterWelcomeShow',
-    BEFORE_ARTICLE: 'beforeArticleShow',
-    AFTER_ARTICLE: 'afterArticleShow',
-    LOADING_START: 'contentLoadingStart',
-    LOADING_END: 'contentLoadingEnd'
+    THEME_CHANGED: 'themeChanged',
+    PHOTO_SELECTED: 'photoSelected'
 };
 
-class ContentViewManager {
+/**
+ * 生活频道视图管理器
+ */
+class LifeViewManager {
     constructor() {
-        this.currentMode = null;
         this.container = null;
+        this.currentMode = null;
         this.initialized = false;
         this.pendingModeChanges = [];
-        this.eventHandlers = {}; // 添加事件处理程序存储
+        this.eventHandlers = {}; // 存储事件处理函数，便于清理
     }
     
     /**
-     * 初始化内容视图管理器
-     * @param {string} containerId 容器ID，默认为'article-container'
+     * 初始化视图管理器
+     * @param {string} containerId 容器元素ID
      */
-    initialize(containerId = 'article-container') {
+    initialize(containerId) {
+        logger.info('初始化视图管理器...');
+        
         this.container = document.getElementById(containerId);
         
         if (!this.container) {
-            logger.warn(`内容容器[${containerId}]不存在`);
+            logger.error(`未找到视图容器: #${containerId}`);
             return false;
         }
         
         this.initialized = true;
-        logger.info('内容视图管理器初始化完成');
         
-        // 处理待处理的视图模式变更
-        if (this.pendingModeChanges.length > 0) {
-            logger.info(`处理${this.pendingModeChanges.length}个待处理的视图模式变更`);
-            // 只处理最后一个待处理的模式变更，忽略中间态
-            const lastChange = this.pendingModeChanges[this.pendingModeChanges.length - 1];
-            this.setMode(lastChange.mode, lastChange.options);
-            this.pendingModeChanges = [];
-        }
+        // 处理待处理的模式变更
+        this.processPendingModeChanges();
+        
+        logger.info('视图管理器初始化完成');
+        
+        // 发布初始化完成事件
+        document.dispatchEvent(new CustomEvent('lifeViewManager:initialized', {
+            detail: { manager: this }
+        }));
         
         return true;
     }
     
     /**
+     * 处理待处理的模式变更
+     */
+    processPendingModeChanges() {
+        if (this.pendingModeChanges.length > 0) {
+            logger.info(`处理${this.pendingModeChanges.length}个待处理的模式变更`);
+            
+            while (this.pendingModeChanges.length > 0) {
+                const { mode, options } = this.pendingModeChanges.shift();
+                this.setMode(mode, options);
+            }
+        }
+    }
+    
+    /**
      * 设置视图模式
      * @param {string} mode 视图模式
-     * @param {Object} options 选项
+     * @param {Object} options 配置选项
+     * @returns {boolean} 是否成功设置模式
      */
     setMode(mode, options = {}) {
         if (!this.initialized) {
-            logger.warn('内容视图管理器未初始化，模式变更将排队');
+            logger.warn('视图管理器未初始化，模式变更将排队');
             this.pendingModeChanges.push({mode, options});
             return false;
         }
@@ -80,7 +112,7 @@ class ContentViewManager {
             return false;
         }
         
-        logger.info(`切换内容视图模式: ${this.currentMode || 'none'} -> ${mode}`);
+        logger.info(`切换视图模式: ${this.currentMode || 'none'} -> ${mode}`);
         
         // 移除之前的模式类
         if (this.currentMode) {
@@ -91,11 +123,12 @@ class ContentViewManager {
         this.container.classList.add(`view-mode-${mode.toLowerCase()}`);
         
         // 更新当前模式
+        const previousMode = this.currentMode;
         this.currentMode = mode;
         
         // 触发自定义事件
-        const event = new CustomEvent('viewModeChanged', {
-            detail: { mode, previousMode: this.currentMode }
+        const event = new CustomEvent(ViewEvents.MODE_CHANGED, {
+            detail: { mode, previousMode }
         });
         this.container.dispatchEvent(event);
         
@@ -109,24 +142,7 @@ class ContentViewManager {
     getCurrentMode() {
         return this.currentMode;
     }
-    
-    /**
-     * 标记内容为给定类型
-     * @param {Element} element 要标记的元素
-     * @param {string} contentType 内容类型
-     */
-    markContent(element, contentType) {
-        if (!element) return;
-        
-        // 移除所有内容类型标记
-        ['welcome-content', 'article-content', 'loading-content', 'error-content'].forEach(cls => {
-            element.classList.remove(cls);
-        });
-        
-        // 添加指定的内容类型
-        element.classList.add(`${contentType}-content`);
-    }
-    
+
     /**
      * 发送视图事件
      * @param {string} eventName 事件名称
@@ -141,9 +157,9 @@ class ContentViewManager {
     }
     
     /**
-     * 注册视图事件处理程序
+     * 注册事件监听器
      * @param {string} eventName 事件名称
-     * @param {Function} handler 处理函数
+     * @param {Function} handler 事件处理函数
      */
     on(eventName, handler) {
         if (!this.container) {
@@ -157,23 +173,6 @@ class ContentViewManager {
         
         // 注册事件监听器
         this.container.addEventListener(eventName, handler);
-    }
-    
-    /**
-     * 开始加载
-     * @param {string} loadingType 加载类型
-     */
-    startLoading(loadingType = 'general') {
-        this.setMode(ViewMode.LOADING);
-        this.dispatchViewEvent(ViewEvents.LOADING_START, { loadingType });
-    }
-    
-    /**
-     * 结束加载
-     * @param {string} loadingType 加载类型
-     */
-    endLoading(loadingType = 'general') {
-        this.dispatchViewEvent(ViewEvents.LOADING_END, { loadingType });
     }
     
     /**
@@ -204,7 +203,7 @@ class ContentViewManager {
      * 销毁视图管理器
      */
     destroy() {
-        logger.info('销毁内容视图管理器...');
+        logger.info('销毁视图管理器...');
         
         // 移除所有事件监听器
         Object.keys(this.eventHandlers).forEach(eventName => {
@@ -215,8 +214,10 @@ class ContentViewManager {
         this.initialized = false;
         this.currentMode = null;
         
-        logger.info('内容视图管理器已销毁');
+        logger.info('视图管理器已销毁');
     }
 }
 
-export const contentViewManager = new ContentViewManager(); 
+// 创建单例实例
+export const lifeViewManager = new LifeViewManager();
+export default LifeViewManager;

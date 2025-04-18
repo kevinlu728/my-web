@@ -30,7 +30,7 @@ import { welcomePageManager } from './welcomePageManager.js';
 import { contentViewManager, ViewMode, ViewEvents } from './contentViewManager.js';
 import { imageLazyLoader } from './imageLazyLoader.js';
 import { initNavigation } from '../components/navigation.js';
-import { initScrollbar } from '../components/scrollbar.js';
+import { scrollbar } from '../components/scrollbar.js';
 import { loadDebugPanel } from '../components/debugPanelLoader.js';
 
 import { showStatus, showError } from '../utils/common-utils.js';
@@ -212,7 +212,7 @@ export async function initializePage() {
         initializeResizeHandle();
 
         // 初始化滚动行为
-        initScrollbar();
+        scrollbar.initialize();
         
         // 修复FontAwesome图标显示 - 移至此处执行，确保DOM已加载完毕
         fixFontAwesomeIcons();
@@ -691,3 +691,93 @@ function fixFontAwesomeIcons() {
         }
     }
 }
+
+/**
+ * 修改分类树初始化函数
+ * @returns {void}
+ */
+function initCategoryTree() {
+    document.querySelectorAll('.tree-toggle').forEach(toggle => {
+        // 创建点击处理函数并保存引用
+        const clickHandler = (e) => {
+            e.preventDefault();
+            const parent = toggle.parentElement;
+            parent.querySelector('.nested').classList.toggle('active');
+            toggle.classList.toggle('tree-toggle-down');
+        };
+        
+        // 保存引用
+        toggle._clickHandler = clickHandler;
+        
+        // 绑定事件
+        toggle.addEventListener('click', clickHandler);
+    });
+}
+
+// 修改文章链接事件绑定
+function bindArticleLinks() {
+    document.querySelectorAll('.article-link').forEach(link => {
+        // 创建点击处理函数并保存引用
+        const clickHandler = (e) => {
+            e.preventDefault();
+            const articleId = link.getAttribute('data-article-id');
+            loadArticle(articleId);
+        };
+        
+        // 保存引用
+        link._clickHandler = clickHandler;
+        
+        // 绑定事件
+        link.addEventListener('click', clickHandler);
+    });
+}
+
+/**
+ * 清理页面资源和事件监听器
+ * 在页面卸载或切换到其他功能区时调用
+ */
+export function cleanupPage() {
+    logger.info('开始清理技术博客页面资源...');
+    
+    try {
+        // 销毁视图管理器，这会清理所有注册的事件监听器
+        contentViewManager.destroy();
+        
+        // 移除窗口事件监听器
+        if (window._resizeHandler) {
+            window.removeEventListener('resize', window._resizeHandler);
+        }
+        
+        if (window._scrollHandler) {
+            window.removeEventListener('scroll', window._scrollHandler);
+        }
+        
+        // 重置页面状态
+        window.pageState.initialized = false;
+        window.pageState.initializing = false;
+        window.pageState.loading = false;
+        
+        logger.info('技术博客页面资源清理完成');
+    } catch (error) {
+        logger.error('清理页面资源时发生错误:', error);
+    }
+}
+
+// 窗口加载完成后再次检查，以防动态内容改变了页面高度
+window.addEventListener('load', () => {
+    logger.info('页面完全加载，再次检查滚动位置...');
+    scrollbar.checkInitialScrollPosition();
+    
+    // 定期检查返回顶部按钮是否存在并正确显示
+    setTimeout(() => {
+        if (!document.querySelector('.back-to-top.visible') && scrollbar.shouldShowBackToTop()) {
+            logger.info('页面已滚动但返回顶部按钮未显示，强制显示按钮');
+            scrollbar.toggleBackToTopButton(true);
+        }
+    }, 1000);
+});
+
+// 在页面卸载时执行清理
+window.addEventListener('unload', () => {
+    cleanupPage();
+});

@@ -3,108 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>生活驿站 - 云栖小栈</title>
+    <title>技术沉淀 - 云栖小栈</title>
     <!-- SEO元标签 -->
     <meta name="description" content="云栖小栈 - 陆凯的个人网站">
-    <meta name="keywords" content="生活博客,兴趣爱好,电影,足球,旅行">
-    <!-- 预加载策略 -->
+    <meta name="keywords" content="生活,电影,足球,旅行">
+    <!-- 预加载策略 - 核心CSS使用preload，非关键资源使用prefetch -->
     <link rel="preload" href="./styles/main.css" as="style">
+    <link rel="preload" href="./styles/layouts/life-layout.css" as="style">
+    <!-- <link rel="preload" href="./scripts/resource/resourceManager.js" as="script" crossorigin="anonymous"> -->
     <!-- CSS资源 - 使用相对路径 -->
     <link rel="stylesheet" href="./styles/main.css">
     <link rel="stylesheet" href="./styles/components/header.css">
     <link rel="stylesheet" href="./styles/components/footer.css">
     <link rel="stylesheet" href="./styles/components/scrollbar.css">
+    <link rel="stylesheet" href="./styles/layouts/life-layout.css">
+    <!-- <link rel="stylesheet" href="./styles/components/debug-panel.css"> -->
+    <link rel="stylesheet" href="./styles/layouts/life-left-column.css">
+    <link rel="stylesheet" href="./styles/layouts/life-right-column.css">
     <!-- 优先使用本地Font Awesome资源 -->
     <link rel="stylesheet" href="/assets/libs/font-awesome/all.min.css" 
-          id="local-font-awesome" 
-          data-source="local-resource"
-          data-resource-type="font-awesome">
+        id="local-font-awesome" 
+        data-source="local-resource"
+        data-resource-type="font-awesome">
     <!-- 网站图标 -->
     <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
     
-    <!-- 简单的维护中页面样式 -->
-    <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            margin: 0;
-        }
-        
-        main {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .maintenance-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 2rem;
-        }
-        
-        .maintenance-icon {
-            font-size: 4rem;
-            color: #3370ff;
-            margin-bottom: 1.5rem;
-            animation: pulse 2s infinite;
-        }
-        
-        .maintenance-title {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-            color: #333;
-        }
-        
-        .maintenance-message {
-            font-size: 1.2rem;
-            max-width: 600px;
-            line-height: 1.6;
-            color: #666;
-            margin-bottom: 2rem;
-        }
-        
-        .return-button {
-            background-color: #3370ff;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            text-decoration: none;
-            display: inline-block;
-        }
-        
-        .return-button:hover {
-            background-color: #2860db;
-        }
-        
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
-        
-        .footer {
-            margin-top: auto;
-            position: relative;
-        }
-    </style>
-    
-    <!-- 先加载日志模块、配置模块、资源管理器 -->
-    <script type="module">
-        // 导入logger, 确保它最先加载
-        import logger from './scripts/utils/logger.js';
-        import config from './scripts/config/config.js';
-        import resourceManager from './scripts/resource/resourceManager.js';
-        // console.log('✅ 日志模块、配置模块、资源管理器已预加载');
-    </script>
+    <!-- 再加载API服务 -->
+    <script src="./scripts/services/notionAPIService.js" type="module"></script>
     
     <!-- 结构化数据 -->
     <script type="application/ld+json">
@@ -115,14 +40,14 @@
             "description": "云栖小栈 - 陆凯的个人网站",
             "url": "https://clouddweller.cn/life.html",
             "author": {
-                "@type": "Person",
-                "name": "陆凯"
+            "@type": "Person",
+            "name": "陆凯"
             }
         }
     </script>
 </head>
-<body>
-    <header class="header">
+<body class="life-page">
+    <header class="header"> 
         <nav class="nav-container">
             <div class="web-title">
                 云 栖 小 栈
@@ -135,39 +60,91 @@
             <ul class="nav-menu">
                 <li><a href="index.html">首页</a></li>
                 <li><a href="tech-blog.html">技术沉淀</a></li>
-                <li><a href="life.html" aria-current="page">生活驿站</a></li>
+                <li><a href="life.html" aria-current="page">生活瞬间</a></li>
                 <li><a href="contact.html">联系方式</a></li>
             </ul>
         </nav>
     </header>
 
-    <main>
-        <div class="maintenance-container">
-            <i class="fas fa-tools maintenance-icon"></i>
-            <h1 class="maintenance-title">页面维护中</h1>
-            <p class="maintenance-message">
-                感谢您的访问！生活驿站频道正在维护中，很快就能与您见面。
-                这里将分享旅行见闻、读书心得、电影感想和其他生活点滴。
-            </p>
-            <a href="index.html" class="return-button">返回首页</a>
+    <main class="life-content">
+        <!-- 左侧栏 -->
+        <div class="left-column">
+            <h2 class="left-column-title">相册</h2>
+            
+            <!-- 垂直模块导航 -->
+            <div class="module-nav">
+                <button class="module-selector active" data-module="all">
+                    <i class="fas fa-th-large"></i> 全部相册
+                </button>
+                <button class="module-selector" data-module="movie">
+                    <i class="fas fa-film"></i> 电影
+                </button>
+                <button class="module-selector" data-module="football">
+                    <i class="fas fa-futbol"></i> 足球
+                </button>
+                <button class="module-selector" data-module="travel">
+                    <i class="fas fa-plane-departure"></i> 旅行
+                </button>
+            </div>
+            
+            <!-- 模块统计信息 -->
+            <div class="module-stats">
+                <h3 class="module-stats-title">内容统计</h3>
+                <ul class="stats-list">
+                    <li class="stats-item">
+                        <span>电影收藏</span>
+                        <span>9</span>
+                    </li>
+                    <li class="stats-item">
+                        <span>足球记忆</span>
+                        <span>9</span>
+                    </li>
+                    <li class="stats-item">
+                        <span>旅行回忆</span>
+                        <span>9</span>
+                    </li>
+                    <li class="stats-item">
+                        <span>总内容</span>
+                        <span>27</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- 右侧栏 -->
+        <div class="right-column">
+            <div class="right-column-header">
+                <h1 class="right-column-title">闲时有趣，发现美好</h1>
+                <p>记录我对电影的思考、足球的热爱与旅行的记忆，这里是我的生活印记。</p>
+            </div>
+            
+            <!-- 筛选信息 -->
+            <div class="filter-info">
+                <div class="filter-text">当前显示: <strong>全部内容</strong></div>
+                <div class="photos-count">共 27 项</div>
+            </div>
+            
+            <!-- 照片墙容器 -->
+            <div id="photo-wall-container" class="photo-wall-container" data-view-mode="loading">
+                <!-- 照片将通过JS动态加载 -->
+                <div class="photo-grid">
+                    <!-- 照片将由JS填充 -->
+                </div>
+                
+                <!-- 无限滚动加载指示器 -->
+                <div class="infinite-scroll-loader">
+                    <div class="loading-indicator">
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
 
-    <footer class="footer">
-        <div id="social-links-container"></div>
-        <div class="copyright">
-            © 2024 陆凯 - All rights reserved
-        </div>
-    </footer>
-
-    <!-- 确保navigation脚本正确加载 -->
-    <script type="module">
-        import { initNavigation } from './scripts/components/navigation.js';
-        
-        document.addEventListener('DOMContentLoaded', () => {
-            // 初始化导航
-            initNavigation();
-        });
-    </script>
+    <!-- 引入JavaScript -->
+    <script type="module" src="scripts/life/life.js"></script>
 </body>
 </html> 

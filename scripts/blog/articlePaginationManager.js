@@ -11,13 +11,14 @@
  * - 管理加载状态和UI反馈
  */
 
+
+import { initializeLazyLoading } from './articleRenderer.js';
 import { articleCacheManager } from './articleCacheManager.js';   
 import { imageLazyLoader } from './imageLazyLoader.js';
-import { initializeLazyLoading } from './articleRenderer.js';
 import tableOfContents from './tableOfContents.js';
-import config from '../config/config.js';
 import { updateLoadMoreStatus } from '../utils/article-utils.js';
 import { throttle, showLoadingSpinner } from '../utils/common-utils.js';
+import config from '../config/config.js';
 import logger from '../utils/logger.js';
 
 class ArticlePaginationManager {
@@ -48,50 +49,80 @@ class ArticlePaginationManager {
     }
 
     /**
-     * 检测滚动位置是否接近底部 - 适应不同滚动容器
-     * @private
-     * @returns {boolean} 是否应该触发加载
+     * 处理加载更多功能的配置
+     * @param {HTMLElement} articleContainer - 文章容器元素
      */
-    _shouldTriggerLoad() {
-        const loadMoreContainer = document.querySelector('.load-more-container');
-        if (!loadMoreContainer) return false;
-
-        // 检查加载容器的可见性和内容
-        if (loadMoreContainer.querySelector('.no-more')) {
-            // 如果显示"没有更多内容"，则不触发加载
-            return false;
-        }
+    configureLoadMoreFeature(articleContainer) {
+        // 添加检查确保我们有有效的nextCursor
+        const hasValidMoreContent = this.hasMore === true && this.nextCursor && typeof this.nextCursor === 'string' && this.nextCursor.trim() !== '';
         
-        // 检查容器是否可见
-        const containerRect = loadMoreContainer.getBoundingClientRect();
+        logger.info('配置加载更多功能，hasMore=', this.hasMore, 'nextCursor=', this.nextCursor, '有效=', hasValidMoreContent);
         
-        // 获取viewport高度和总高度
-        let viewportHeight;
-        let scrollBottom;
-        let totalHeight;
-        
-        if (this.scrollContainer === window) {
-            viewportHeight = window.innerHeight;
-            scrollBottom = window.scrollY + viewportHeight;
-            totalHeight = document.documentElement.scrollHeight;
+        if (hasValidMoreContent) {
+            // 有更多内容，设置滚动监听和平滑加载样式
+            this.setupScrollListener();
+            this.addSmoothLoadingStyles();
+            
+            // 确保加载更多容器存在且显示正确文本
+            const loadMoreContainer = articleContainer.querySelector('.load-more-container');
+            if (loadMoreContainer) {
+                loadMoreContainer.innerHTML = '<div class="loading-text">下拉加载更多</div>';
+            }
         } else {
-            viewportHeight = this.scrollContainer.clientHeight;
-            scrollBottom = this.scrollContainer.scrollTop + viewportHeight;
-            totalHeight = this.scrollContainer.scrollHeight;
+            // 重置状态
+            this.hasMore = false;
+            this.nextCursor = null;
+            
+            logger.info('没有更多内容或nextCursor无效，更新加载指示器显示');
+            const loadMoreContainer = articleContainer.querySelector('.load-more-container');
+            if (loadMoreContainer) {
+                loadMoreContainer.innerHTML = '<div class="no-more">没有更多内容</div>';
+            }
+            
+            // 确保移除滚动监听器
+            if (this.scrollHandler) {
+                if (this.scrollContainer) {
+                    this.scrollContainer.removeEventListener('scroll', this.scrollHandler);
+                } else {
+                    window.removeEventListener('scroll', this.scrollHandler);
+                }
+                this.scrollHandler = null;
+            }
         }
-        
-        // 改进底部检测 - 提高误差容忍度
-        const isAtBottom = totalHeight - scrollBottom < 10; // 10px误差容忍
-        
-        // 容器是否在视图内或接近视图
-        const isContainerNearOrInView = containerRect.top <= viewportHeight + 500; // 增加预加载距离
-        
-        // 是否接近页面底部
-        const scrollPercentage = (scrollBottom / totalHeight) * 100;
-        const isNearPageBottom = scrollPercentage > 85;
-        
-        // 综合多个条件判断是否应该触发加载
-        return isAtBottom || (isNearPageBottom && isContainerNearOrInView);
+    }
+
+    /**
+     * 处理窗口尺寸变化事件
+     */
+    handleWindowResize() {
+        // 只有在博客页面才重新应用滚动行为
+        if (this.currentPageId && this.hasMore && this.nextCursor) {
+            // 尺寸变化可能导致滚动容器变化，需要重新设置监听器
+            logger.debug('窗口尺寸变化，重新设置滚动监听');
+            this.setupScrollListener();
+        }
+    }
+
+    /**
+     * 添加平滑加载的CSS样式
+     */
+    addSmoothLoadingStyles() {
+        if (!document.getElementById('smooth-loader-style')) {
+            const style = document.createElement('style');
+            style.id = 'smooth-loader-style';
+            style.innerHTML = `
+                .load-more-container {
+                    transition: opacity 0.3s ease;
+                }
+                .loading-spinner {
+                    transition: transform 0.3s ease;
+                }
+                .loading-text {
+                    transition: opacity 0.3s ease;
+                }
+            `;
+            document.head.appendChild(style);
+        }
     }
 
     /**
@@ -164,31 +195,50 @@ class ArticlePaginationManager {
     }
 
     /**
-     * 设置定期检查机制，确保即使没有滚动事件也能检测到需要加载的情况
+     * 检测滚动位置是否接近底部 - 适应不同滚动容器
      * @private
+     * @returns {boolean} 是否应该触发加载
      */
-    _setupPeriodicCheck() {
-        // 清除可能存在的旧定时器
-        if (this._periodicCheckInterval) {
-            clearInterval(this._periodicCheckInterval);
+    _shouldTriggerLoad() {
+        const loadMoreContainer = document.querySelector('.load-more-container');
+        if (!loadMoreContainer) return false;
+
+        // 检查加载容器的可见性和内容
+        if (loadMoreContainer.querySelector('.no-more')) {
+            // 如果显示"没有更多内容"，则不触发加载
+            return false;
         }
         
-        // 添加定期检查，每2秒检查一次是否应该加载更多
-        this._periodicCheckInterval = setInterval(() => {
-            this._checkIfShouldLoadMore();
-        }, 2000);
+        // 检查容器是否可见
+        const containerRect = loadMoreContainer.getBoundingClientRect();
         
-        // 确保页面不可见时暂停检查，节省资源
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                clearInterval(this._periodicCheckInterval);
-            } else {
-                // 页面再次可见时，重新开始检查并立即执行一次检查
-                clearInterval(this._periodicCheckInterval);
-                this._checkIfShouldLoadMore();
-                this._setupPeriodicCheck();
-            }
-        });
+        // 获取viewport高度和总高度
+        let viewportHeight;
+        let scrollBottom;
+        let totalHeight;
+        
+        if (this.scrollContainer === window) {
+            viewportHeight = window.innerHeight;
+            scrollBottom = window.scrollY + viewportHeight;
+            totalHeight = document.documentElement.scrollHeight;
+        } else {
+            viewportHeight = this.scrollContainer.clientHeight;
+            scrollBottom = this.scrollContainer.scrollTop + viewportHeight;
+            totalHeight = this.scrollContainer.scrollHeight;
+        }
+        
+        // 改进底部检测 - 提高误差容忍度
+        const isAtBottom = totalHeight - scrollBottom < 10; // 10px误差容忍
+        
+        // 容器是否在视图内或接近视图
+        const isContainerNearOrInView = containerRect.top <= viewportHeight + 500; // 增加预加载距离
+        
+        // 是否接近页面底部
+        const scrollPercentage = (scrollBottom / totalHeight) * 100;
+        const isNearPageBottom = scrollPercentage > 85;
+        
+        // 综合多个条件判断是否应该触发加载
+        return isAtBottom || (isNearPageBottom && isContainerNearOrInView);
     }
 
     /**
@@ -215,6 +265,34 @@ class ArticlePaginationManager {
                 this.triggerLoadMoreContent(loadMoreContainer, 0);
             }
         }
+    }
+
+    /**
+     * 设置定期检查机制，确保即使没有滚动事件也能检测到需要加载的情况
+     * @private
+     */
+    _setupPeriodicCheck() {
+        // 清除可能存在的旧定时器
+        if (this._periodicCheckInterval) {
+            clearInterval(this._periodicCheckInterval);
+        }
+        
+        // 添加定期检查，每2秒检查一次是否应该加载更多
+        this._periodicCheckInterval = setInterval(() => {
+            this._checkIfShouldLoadMore();
+        }, 2000);
+        
+        // 确保页面不可见时暂停检查，节省资源
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                clearInterval(this._periodicCheckInterval);
+            } else {
+                // 页面再次可见时，重新开始检查并立即执行一次检查
+                clearInterval(this._periodicCheckInterval);
+                this._checkIfShouldLoadMore();
+                this._setupPeriodicCheck();
+            }
+        });
     }
 
     /**
@@ -288,94 +366,81 @@ class ArticlePaginationManager {
     }
 
     /**
-     * 添加平滑加载的CSS样式
+     * 加载更多内容
+     * @param {Function} renderNotionBlocks - 渲染函数
+     * @param {Function} updateCacheCallback - 更新缓存的回调函数
+     * @returns {Promise<boolean>} 是否成功加载更多内容
      */
-    addSmoothLoadingStyles() {
-        if (!document.getElementById('smooth-loader-style')) {
-            const style = document.createElement('style');
-            style.id = 'smooth-loader-style';
-            style.innerHTML = `
-                .load-more-container {
-                    transition: opacity 0.3s ease;
-                }
-                .loading-spinner {
-                    transition: transform 0.3s ease;
-                }
-                .loading-text {
-                    transition: opacity 0.3s ease;
-                }
-            `;
-            document.head.appendChild(style);
+    async loadMoreContent(renderNotionBlocks, updateCacheCallback) {
+        // 保存当前请求标识符
+        const requestId = this.requestIdentifier;
+        const currentPageId = this.currentPageId;
+        
+        // 如果正在加载或没有更多内容，则不执行
+        if (this.isLoadingMore || !this.hasMore) {
+            logger.info('跳过加载更多: 已在加载中或没有更多内容');
+            return false;
         }
-    }
+        
+        // 添加超时保护，确保状态不会永久卡住
+        const loadMoreTimeout = setTimeout(() => {
+            if (this.isLoadingMore) {
+                logger.warn('加载更多超时，强制重置状态');
+                this.isLoadingMore = false;
+            }
+        }, 10000); // 10秒超时保护
+        
+        this.isLoadingMore = true;
+        logger.info('开始加载更多内容');
+        
+        try {
+            const moreData = await this.fetchMoreContent();
+            
+            // 双重检查：确保文章ID和请求ID都匹配
+            if (this.currentPageId !== currentPageId || this.requestIdentifier !== requestId) {
+                logger.info('文章已切换或有更新请求，取消加载更多内容');
+                this.isLoadingMore = false;
+                return false;
+            }
+            
+            if (!moreData || !moreData.blocks) {
+                logger.warn('没有获取到更多内容或格式错误');
+                this.isLoadingMore = false;
+                return false;
+            }
+            
+            // 处理数据
+            const newBlocks = this.processMoreContentData(moreData);
+            
+            // 更新缓存
+            if (typeof updateCacheCallback === 'function') {
+                updateCacheCallback(this.currentPageId, newBlocks, this.hasMore, this.nextCursor);
+            }
+            
+            // 渲染新内容
+            const renderResult = this.renderMoreContent(newBlocks, renderNotionBlocks);
 
-    /**
-     * 处理加载更多功能的配置
-     * @param {HTMLElement} articleContainer - 文章容器元素
-     */
-    configureLoadMoreFeature(articleContainer) {
-        // 添加检查确保我们有有效的nextCursor
-        const hasValidMoreContent = this.hasMore === true && this.nextCursor && typeof this.nextCursor === 'string' && this.nextCursor.trim() !== '';
-        
-        logger.info('配置加载更多功能，hasMore=', this.hasMore, 'nextCursor=', this.nextCursor, '有效=', hasValidMoreContent);
-        
-        if (hasValidMoreContent) {
-            // 有更多内容，设置滚动监听和平滑加载样式
-            this.setupScrollListener();
-            this.addSmoothLoadingStyles();
-            
-            // 确保加载更多容器存在且显示正确文本
-            const loadMoreContainer = articleContainer.querySelector('.load-more-container');
-            if (loadMoreContainer) {
-                loadMoreContainer.innerHTML = '<div class="loading-text">下拉加载更多</div>';
+            // 如果没有更多内容，确保显示提示
+            if (!this.hasMore) {
+                logger.info('已加载所有内容，更新状态显示');
+                // 先更新UI状态以显示"没有更多内容"
+                updateLoadMoreStatus(false, false);
+            } else {
+                // 还有更多内容，更新状态
+                updateLoadMoreStatus(false, true);
             }
-        } else {
-            // 重置状态
-            this.hasMore = false;
-            this.nextCursor = null;
-            
-            logger.info('没有更多内容或nextCursor无效，更新加载指示器显示');
-            const loadMoreContainer = articleContainer.querySelector('.load-more-container');
-            if (loadMoreContainer) {
-                loadMoreContainer.innerHTML = '<div class="no-more">没有更多内容</div>';
-            }
-            
-            // 确保移除滚动监听器
-            if (this.scrollHandler) {
-                if (this.scrollContainer) {
-                    this.scrollContainer.removeEventListener('scroll', this.scrollHandler);
-                } else {
-                    window.removeEventListener('scroll', this.scrollHandler);
-                }
-                this.scrollHandler = null;
-            }
-        }
-    }
 
-    /**
-     * 构建加载更多内容的API URL
-     * @returns {string|null} API URL或null
-     */
-    buildLoadMoreApiUrl() {
-        const apiBaseUrl = config.api?.baseUrl || '/api';
-        
-        // 严格验证nextCursor是否有效
-        if (!this.nextCursor || typeof this.nextCursor !== 'string' || this.nextCursor.trim() === '') {
-            logger.warn('构建API URL时nextCursor无效:', this.nextCursor);
-            return null;
+            // 完成后清除超时
+            clearTimeout(loadMoreTimeout);
+            this.isLoadingMore = false;
+            return renderResult;
+        } catch (error) {
+            logger.error('加载更多内容失败:', error);
+            // 确保在错误情况下也重置状态
+            clearTimeout(loadMoreTimeout);
+            this.isLoadingMore = false;
+            return false;
         }
-        
-        // 验证当前文章ID
-        if (!this.currentPageId || typeof this.currentPageId !== 'string' || this.currentPageId.trim() === '') {
-            logger.warn('构建API URL时currentPageId无效:', this.currentPageId);
-            return null;
-        }
-        
-        const cursorParam = `&cursor=${encodeURIComponent(this.nextCursor)}`;
-        const url = `${apiBaseUrl}/content/${this.currentPageId}?type=article&page_size=10${cursorParam}`;
-        
-        logger.info('构建API URL:', url);
-        return url;
     }
 
     /**
@@ -402,6 +467,32 @@ class ArticlePaginationManager {
         logger.debug('加载更多内容响应:', data);
         
         return data;
+    }
+
+    /**
+     * 构建加载更多内容的API URL
+     * @returns {string|null} API URL或null
+     */
+    buildLoadMoreApiUrl() {
+        const apiBaseUrl = config.api?.baseUrl || '/api';
+        
+        // 严格验证nextCursor是否有效
+        if (!this.nextCursor || typeof this.nextCursor !== 'string' || this.nextCursor.trim() === '') {
+            logger.warn('构建API URL时nextCursor无效:', this.nextCursor);
+            return null;
+        }
+        
+        // 验证当前文章ID
+        if (!this.currentPageId || typeof this.currentPageId !== 'string' || this.currentPageId.trim() === '') {
+            logger.warn('构建API URL时currentPageId无效:', this.currentPageId);
+            return null;
+        }
+        
+        const cursorParam = `&cursor=${encodeURIComponent(this.nextCursor)}`;
+        const url = `${apiBaseUrl}/content/${this.currentPageId}?type=article&page_size=10${cursorParam}`;
+        
+        logger.info('构建API URL:', url);
+        return url;
     }
 
     /**
@@ -516,84 +607,6 @@ class ArticlePaginationManager {
     }
 
     /**
-     * 加载更多内容
-     * @param {Function} renderNotionBlocks - 渲染函数
-     * @param {Function} updateCacheCallback - 更新缓存的回调函数
-     * @returns {Promise<boolean>} 是否成功加载更多内容
-     */
-    async loadMoreContent(renderNotionBlocks, updateCacheCallback) {
-        // 保存当前请求标识符
-        const requestId = this.requestIdentifier;
-        const currentPageId = this.currentPageId;
-        
-        // 如果正在加载或没有更多内容，则不执行
-        if (this.isLoadingMore || !this.hasMore) {
-            logger.info('跳过加载更多: 已在加载中或没有更多内容');
-            return false;
-        }
-        
-        // 添加超时保护，确保状态不会永久卡住
-        const loadMoreTimeout = setTimeout(() => {
-            if (this.isLoadingMore) {
-                logger.warn('加载更多超时，强制重置状态');
-                this.isLoadingMore = false;
-            }
-        }, 10000); // 10秒超时保护
-        
-        this.isLoadingMore = true;
-        logger.info('开始加载更多内容');
-        
-        try {
-            const moreData = await this.fetchMoreContent();
-            
-            // 双重检查：确保文章ID和请求ID都匹配
-            if (this.currentPageId !== currentPageId || this.requestIdentifier !== requestId) {
-                logger.info('文章已切换或有更新请求，取消加载更多内容');
-                this.isLoadingMore = false;
-                return false;
-            }
-            
-            if (!moreData || !moreData.blocks) {
-                logger.warn('没有获取到更多内容或格式错误');
-                this.isLoadingMore = false;
-                return false;
-            }
-            
-            // 处理数据
-            const newBlocks = this.processMoreContentData(moreData);
-            
-            // 更新缓存
-            if (typeof updateCacheCallback === 'function') {
-                updateCacheCallback(this.currentPageId, newBlocks, this.hasMore, this.nextCursor);
-            }
-            
-            // 渲染新内容
-            const renderResult = this.renderMoreContent(newBlocks, renderNotionBlocks);
-
-            // 如果没有更多内容，确保显示提示
-            if (!this.hasMore) {
-                logger.info('已加载所有内容，更新状态显示');
-                // 先更新UI状态以显示"没有更多内容"
-                updateLoadMoreStatus(false, false);
-            } else {
-                // 还有更多内容，更新状态
-                updateLoadMoreStatus(false, true);
-            }
-
-            // 完成后清除超时
-            clearTimeout(loadMoreTimeout);
-            this.isLoadingMore = false;
-            return renderResult;
-        } catch (error) {
-            logger.error('加载更多内容失败:', error);
-            // 确保在错误情况下也重置状态
-            clearTimeout(loadMoreTimeout);
-            this.isLoadingMore = false;
-            return false;
-        }
-    }
-
-    /**
      * 更新内部状态
      * @param {Object} params - 要更新的参数
      */
@@ -637,18 +650,6 @@ class ArticlePaginationManager {
         if (this._periodicCheckInterval) {
             clearInterval(this._periodicCheckInterval);
             this._periodicCheckInterval = null;
-        }
-    }
-
-    /**
-     * 处理窗口尺寸变化事件
-     */
-    handleWindowResize() {
-        // 只有在博客页面才重新应用滚动行为
-        if (this.currentPageId && this.hasMore && this.nextCursor) {
-            // 尺寸变化可能导致滚动容器变化，需要重新设置监听器
-            logger.debug('窗口尺寸变化，重新设置滚动监听');
-            this.setupScrollListener();
         }
     }
 }

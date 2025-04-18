@@ -145,6 +145,27 @@ body::-webkit-scrollbar-thumb:hover {
     }
 }
 
+/* 生活页面特定的滚动条样式 */
+.life-page .life-content {
+    /* 博客内容区在大屏幕模式下不滚动 */
+    position: relative;
+    overflow: hidden;
+}
+
+@media (max-width: 768px) {
+    /* 小屏幕下的博客内容区滚动行为 */
+    .life-page .life-content {
+        overflow-y: auto !important;
+        height: 100vh !important;
+    }
+    
+    /* 小屏幕下右栏不独立滚动 */
+    .life-page .right-column {
+        overflow: visible !important;
+        height: auto !important;
+    }
+}
+
 /* "返回顶部"按钮样式 */
 .back-to-top {
     position: fixed;

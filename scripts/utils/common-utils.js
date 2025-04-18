@@ -58,6 +58,27 @@ export function formatDate(date) {
 }
 
 /**
+ * 格式化日期
+ * @param {Date} date 日期对象
+ * @returns {string} 格式化的日期字符串
+ */
+export function formatDateToCN(date) {
+    if (!(date instanceof Date)) {
+        try {
+            date = new Date(date);
+        } catch (e) {
+            return '';
+        }
+    }
+    
+    return date.toLocaleDateString('zh-CN', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+}
+
+/**
  * 检查缓存是否过期
  * @param {number} timestamp 缓存的时间戳
  * @param {number} expirationTime 过期时间（毫秒）
