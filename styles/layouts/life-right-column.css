@@ -12,7 +12,7 @@
 /* 右侧栏内部样式 */
 .life-content .right-column {
     background: #ffffff;
-    padding: 25px;
+    padding: 20px 30px 0 35px; /* 增加底部内边距无法解决照片墙与下方元素的间距问题，所以直接设为0 */
     border-radius: 12px;
     box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
     border: 1px solid rgba(0, 0, 0, 0.05);
@@ -30,11 +30,11 @@
     border-bottom: 1px solid #eee;
 }
 
-/* 照片墙容器 */
-.photo-wall-container {
-    display: flex;
-    flex-direction: column;
-    min-height: 400px;
+/* 滚动加载指示器 */
+.scroll-loader {
+    text-align: center;
+    padding: 20px 0;
+    margin-top: 10px;
 }
 
 /* 模块筛选信息 */
@@ -86,37 +86,98 @@
     color: #aaa;
 }
 
-/* 加载更多样式使用通用 */
-
-@keyframes loading-indicator {
-    0% {
-        transform: rotate(0deg);
-    }
-    100% {
-        transform: rotate(360deg);
-    }
-}
-
 /* 响应式调整 */
 @media (max-width: 768px) {
     .life-content .right-column {
         padding: 15px;
     }
-    
-    .photo-grid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 10px;
-    }
-    
-    .photo-info {
-        padding: 10px;
-    }
-    
-    .photo-title {
-        font-size: 14px;
-    }
-    
-    .photo-date {
-        font-size: 12px;
-    }
+}
+
+/* 照片墙容器 */
+.photo-wall-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-height: 500px;
+    position: relative;
+}
+
+
+/* ================ 分页加载相关样式 ================ */
+/* 
+ * 由于生活页面的加载更多容器是属于右栏的，而不是属于照片墙的，所以相关样式都集中在这里
+ */
+/* 加载更多容器基本样式 */
+.load-more-container {
+    text-align: center;
+}
+  
+/* 右侧栏分页加载容器特定样式 */
+.life-content .right-column .load-more-container {
+    position: fixed;
+    width: 50%; /* 加载更多容器不需要太宽，这里设为父容器（整个页面）的50% */
+    left: 50%;  /* 左边界位于父容器（整个页面）水平方向的中点 */
+    transform: translateX(-50%); /* 向左移动自身宽度的50% */
+    margin-left: 140px; /* 再向右移动一小段距离（左侧栏宽度的一半+一些间隙），约140~150px */
+    margin-top: 10px; /*与上方相邻元素（照片墙）的间距*/
+    margin-bottom: 15px; /*与下方相邻元素的间距*/
+    bottom: 0;  /* 与父容器（整个页面）底部对齐*/
+    padding: 5px;
+    z-index: 50;
+    /* background-color: #c1edf4; /* 为了方便调试，设置背景色，调试完成后注释掉 */
+    border-radius: 0 0 12px 0; /* 匹配右侧栏底部圆角 */
+    transition: transform 0.3s ease, opacity 0.3s ease; /* 添加过渡效果 */
+}
+
+/* 响应式调整 */
+@media (max-width: 992px) {
+.life-content .right-column .load-more-container {
+    width: calc(100% - 40px);
+    margin-left: 0;
+}
+}
+
+/* 确保照片网格的浮动正确清除 */
+.photo-grid::after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+/* 注意：通用loading-spinner样式已移至loading-spinner.css */
+
+/* 右侧栏加载指示器特定样式 */
+.life-content .right-column .loading-spinner {
+    width: 36px;
+    height: 36px;
+    border-width: 4px;
+    margin: 0 auto 10px;
+}
+
+/* 分页加载动画关键帧 */
+@keyframes article-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 加载文本样式 */
+.loading-text {
+    padding: 8px 0; /* 只保留垂直内边距，其他样式使用通用定义 */
+}
+
+/* 加载中状态的文本样式 */
+.loading-spinner + .loading-text {
+    opacity: 0.9;
+}
+
+/* 没有更多内容提示样式 */
+.no-more {
+    padding: 8px 20px;
+    color: #999;
+    font-size: 14px;
+    text-align: center;
+    letter-spacing: 0.5px;
+    border-top: none;
+    font-style: italic;
+    opacity: 0.8;
 }

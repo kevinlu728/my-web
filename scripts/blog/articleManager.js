@@ -495,7 +495,6 @@ class ArticleManager {
                 }
                 
                 // 在渲染成功后才设置文章模式
-                contentViewManager.markContent(articleContainer, 'article');
                 contentViewManager.setMode(ViewMode.ARTICLE);
                 
                 // 通知文章已显示 - 添加的事件通信

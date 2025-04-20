@@ -16,7 +16,7 @@ import { ModuleType } from './lifeViewManager.js';
 import lifecycleManager from '../utils/lifecycleManager.js';
 import { formatDateToCN } from '../utils/common-utils.js';
 import { photoPaginationManager } from './photoPaginationManager.js';
-
+import { generateMockPhotos } from '../utils/mock-utils.js';
 // 照片墙管理器
 class PhotoWallManager {
     constructor() {
@@ -29,6 +29,8 @@ class PhotoWallManager {
         this.currentPage = 1; // 当前页码，用于分页加载
         this.photosPerPage = 9; // 每页显示照片数
         this.isLoading = false; // 用于控制无限滚动加载
+        this.masonryInstance = null; // 添加Masonry实例属性
+        this.scrollListeners = []; // 用于存储滚动监听器
     }
 
     /**
@@ -47,7 +49,8 @@ class PhotoWallManager {
             throw new Error(`未找到容器元素: #${containerId}`);
         }
         
-        const mockPhotos = this.generateMockPhotos();
+        const mockPhotos = generateMockPhotos();
+        logger.debug(`生成了 ${mockPhotos.length} 张模拟照片数据`);
         this.photos = mockPhotos;
         this.filteredPhotos = [...mockPhotos]; // 初始未筛选
         
@@ -61,73 +64,6 @@ class PhotoWallManager {
         lifecycleManager.registerCleanup('photoWallManager', this.cleanup.bind(this));
         
         logger.info(`照片墙管理器初始化完成，共加载 ${this.photos.length} 张照片`);
-    }
-
-    /**
-     * 生成模拟照片数据
-     * @returns {Array} 模拟照片数据数组
-     */
-    generateMockPhotos() {
-        const mockPhotos = [];
-        
-        // 电影模块照片
-        for (let i = 1; i <= 9; i++) {
-            mockPhotos.push({
-                id: `movie-${i}`,
-                title: `电影 ${i}`,
-                type: ModuleType.MOVIE,
-                thumbnailUrl: `https://via.placeholder.com/300x450?text=Movie+${i}`,
-                highResUrl: `https://via.placeholder.com/1200x1800?text=Movie+${i}`,
-                date: new Date(2023, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1),
-                tags: ['电影', '海报'],
-                metadata: {
-                    director: `导演 ${i}`,
-                    year: 2020 + Math.floor(i / 3),
-                    rating: (Math.random() * 2 + 7).toFixed(1),
-                    comment: `这是电影${i}的简短评论，描述电影的特点和感受。`
-                }
-            });
-        }
-        
-        // 足球模块照片
-        for (let i = 1; i <= 9; i++) {
-            mockPhotos.push({
-                id: `football-${i}`,
-                title: `足球赛事 ${i}`,
-                type: ModuleType.FOOTBALL,
-                thumbnailUrl: `https://via.placeholder.com/400x300?text=Football+${i}`,
-                highResUrl: `https://via.placeholder.com/1600x1200?text=Football+${i}`,
-                date: new Date(2023, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1),
-                tags: ['足球', '比赛'],
-                metadata: {
-                    match: `比赛 ${i}`,
-                    location: `场地 ${i}`,
-                    result: `${Math.floor(Math.random() * 5)}:${Math.floor(Math.random() * 3)}`,
-                    description: `这是足球比赛${i}的精彩瞬间，记录了比赛的关键时刻。`
-                },
-                gifUrl: `https://via.placeholder.com/400x300?text=Football+GIF+${i}`
-            });
-        }
-        
-        // 旅游模块照片
-        for (let i = 1; i <= 9; i++) {
-            mockPhotos.push({
-                id: `travel-${i}`,
-                title: `旅行地点 ${i}`,
-                type: ModuleType.TRAVEL,
-                thumbnailUrl: `https://via.placeholder.com/400x300?text=Travel+${i}`,
-                highResUrl: `https://via.placeholder.com/1600x1200?text=Travel+${i}`,
-                date: new Date(2023, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1),
-                tags: ['旅游', '风景'],
-                metadata: {
-                    location: `地点 ${i}`,
-                    country: `国家 ${i}`,
-                    description: `这是旅行地点${i}的美丽风景，记录了旅行的难忘瞬间。`
-                }
-            });
-        }
-        
-        return mockPhotos;
     }
 
     /**
@@ -174,26 +110,30 @@ class PhotoWallManager {
         
         logger.info('设置照片墙容器结构...');
         
-        // 确保容器内有照片网格和标准加载容器
-        if (!this.container.querySelector('.photo-grid')) {
-            this.container.innerHTML = `
-                <div class="photo-grid"></div>
-                <div class="load-more-container">
-                    <!-- 加载指示器将由updateLoaderStatus动态添加 -->
-                </div>
-            `;
-        } else if (!this.container.querySelector('.load-more-container')) {
-            // 如果已有网格但没有加载容器，添加加载容器
-            const loadMoreContainer = document.createElement('div');
-            loadMoreContainer.className = 'load-more-container';
-            this.container.appendChild(loadMoreContainer);
+        // 获取或创建照片网格容器
+        let photoGrid = this.container.querySelector('.photo-grid');
+        
+        if (!photoGrid) {
+            photoGrid = document.createElement('div');
+            photoGrid.className = 'photo-grid';
+            this.container.appendChild(photoGrid);
         }
+        
+        // 添加网格尺寸基准元素（关键优化点）
+        if (!photoGrid.querySelector('.grid-sizer')) {
+            const gridSizer = document.createElement('div');
+            gridSizer.className = 'grid-sizer';
+            photoGrid.appendChild(gridSizer);
+        }
+        
+        // 关键修复：不要在照片墙容器中查找或创建加载更多容器
+        // 而是使用右侧栏中已经存在的加载更多容器
         
         // 初始化照片分页管理器，传入加载更多的回调函数
         const result = photoPaginationManager.initialize(
             this.photos, 
             window.pageState?.currentModule || ModuleType.ALL,
-            this.loadMorePhotos.bind(this)
+            this.onLoadMore.bind(this)
         );
         
         // 确保初始化后有正确的筛选照片引用
@@ -201,6 +141,11 @@ class PhotoWallManager {
         
         // 初始化无限滚动
         this.initInfiniteScroll();
+        
+        // 关键修复：初始化后立即渲染照片
+        setTimeout(() => this.render(), 0);
+        
+        logger.info('照片墙容器结构设置完成');
     }
     
     /**
@@ -215,6 +160,96 @@ class PhotoWallManager {
     }
 
     /**
+     * 初始化Masonry布局 - 标准实现
+     */
+    initMasonryLayout() {
+        const photoGrid = this.container.querySelector('.photo-grid');
+        if (!photoGrid) {
+            logger.error('未找到照片网格容器');
+            return;
+        }
+        
+        try {
+            // 清理之前的实例
+            if (this.masonryInstance) {
+                this.masonryInstance.destroy();
+                this.masonryInstance = null;
+            }
+            
+            // 确保有间隙元素
+            if (!photoGrid.querySelector('.gutter-sizer')) {
+                const gutterSizer = document.createElement('div');
+                gutterSizer.className = 'gutter-sizer';
+                photoGrid.appendChild(gutterSizer);
+            }
+            
+            // 确保有网格尺寸元素
+            if (!photoGrid.querySelector('.grid-sizer')) {
+                const gridSizer = document.createElement('div');
+                gridSizer.className = 'grid-sizer';
+                photoGrid.appendChild(gridSizer);
+            }
+            
+            // 强制设置所有项目的浮动
+            const items = photoGrid.querySelectorAll('.photo-item');
+            items.forEach(item => {
+                item.style.float = 'left';
+            });
+            
+            // 修正后的Masonry配置
+            this.masonryInstance = new Masonry(photoGrid, {
+                itemSelector: '.photo-item',
+                columnWidth: '.grid-sizer',
+                gutter: '.gutter-sizer',
+                percentPosition: true,
+                transitionDuration: 0
+            });
+            
+            // 设置全局引用，用于图片加载回调
+            window.msnry = this.masonryInstance;
+            
+            // 监控图片加载
+            if (typeof imagesLoaded !== 'undefined') {
+                imagesLoaded(photoGrid).on('progress', () => {
+                    this.masonryInstance.layout();
+                }).on('always', () => {
+                    setTimeout(() => this.masonryInstance.layout(), 100);
+                });
+            }
+            
+            // 添加调试信息
+            logger.info(`瀑布流布局初始化成功: ${items.length}个项目，容器宽度${photoGrid.offsetWidth}px`);
+        } catch (error) {
+            logger.error('初始化Masonry失败:', error);
+        }
+    }
+
+    /**
+     * 设置加载更多容器
+     */
+    setupLoadMoreContainer() {
+        // 移除已有的加载更多容器
+        const existingContainer = document.querySelector('.load-more-container');
+        if (existingContainer) {
+            existingContainer.remove();
+        }
+        
+        // 获取右侧栏元素
+        const rightColumn = document.querySelector('.life-content .right-column');
+        if (!rightColumn) return;
+        
+        // 创建加载更多容器，但不放在照片墙容器内，而是直接放在右侧栏底部
+        const loadMoreContainer = document.createElement('div');
+        loadMoreContainer.className = 'load-more-container';
+        
+        // 关键：将加载容器添加为右侧栏的直接子元素，而非照片墙的子元素
+        rightColumn.appendChild(loadMoreContainer);
+        
+        // 初始化加载状态
+        photoPaginationManager.updateLoadMoreContainer(false);
+    }
+
+    /**
      * 渲染照片墙
      */
     async render() {
@@ -226,12 +261,25 @@ class PhotoWallManager {
             return;
         }
         
-        // 清空网格
+        // 清空网格内容（保留grid-sizer元素）
+        const gridSizer = photoGrid.querySelector('.grid-sizer');
         photoGrid.innerHTML = '';
+        
+        // 重新添加grid-sizer - 这是Pinterest风格布局的关键
+        if (gridSizer) {
+            photoGrid.appendChild(gridSizer);
+        } else {
+            const newGridSizer = document.createElement('div');
+            newGridSizer.className = 'grid-sizer';
+            photoGrid.appendChild(newGridSizer);
+        }
         
         // 获取当前页照片
         const photosToShow = photoPaginationManager.getPhotosForCurrentPage();
         
+        logger.debug(`获取到 ${photosToShow ? photosToShow.length : 0} 张照片准备渲染`);
+        
+        // 无照片处理
         if (!photosToShow || photosToShow.length === 0) {
             photoGrid.innerHTML = '<div class="no-photos">暂无照片</div>';
             return;
@@ -240,76 +288,89 @@ class PhotoWallManager {
         // 保存筛选后的照片总数，用于UI显示
         this.filteredPhotos = photoPaginationManager.filteredPhotos;
         
+        // 清理照片网格中可能存在的加载更多容器，然后添加到右侧栏底部
+        // this.setupLoadMoreContainer();
+        
         // 渲染照片
         photosToShow.forEach(photo => {
             const photoElement = this.createPhotoElement(photo);
             photoGrid.appendChild(photoElement);
         });
         
-        // 更新加载状态
-        photoPaginationManager.updateLoaderStatus(false);
-        
-        // 更新懒加载
-        if (this.lazyLoadInstance) {
-            this.lazyLoadInstance.update();
-        }
+        // 确保DOM更新后再初始化Masonry
+        setTimeout(() => {
+            this.initMasonryLayout();
+            
+            // 更新加载状态
+            photoPaginationManager.updateLoadMoreContainer(false);
+            
+            // 更新懒加载
+            if (this.lazyLoadInstance) {
+                setTimeout(() => {
+                    this.lazyLoadInstance.update();
+                }, 100);
+            }
+            
+            // 更新筛选信息
+            this.updateFilterInfo();
+        }, 0);
         
         logger.info(`照片墙渲染完成，已显示 ${photosToShow.length} / ${this.filteredPhotos.length} 张照片`);
-        
-        // 添加：初始渲染后立即检查是否需要加载更多
-        // 这对于内容较少的页面非常有用
-        setTimeout(() => {
-            // 确保没有更多内容时也能正确显示
-            if (photoPaginationManager.shouldLoadMorePhotos()) {
-                photoPaginationManager.loadMorePhotos();
-            }
-        }, 100);
     }
     
     /**
-     * 创建照片元素
-     * @param {Object} photo 照片数据
-     * @returns {HTMLElement} 照片元素
+     * 创建照片元素 - 标准实现
+     * @param {Object} photo 照片数据对象
+     * @returns {HTMLElement} 照片DOM元素
      */
     createPhotoElement(photo) {
-        const photoCard = document.createElement('div');
-        photoCard.className = 'photo-card';
-        photoCard.dataset.id = photo.id;
-        photoCard.dataset.type = photo.type;
+        const photoItem = document.createElement('div');
+        photoItem.className = 'photo-item';
+        photoItem.setAttribute('data-id', photo.id);
+        photoItem.setAttribute('data-type', photo.type);
         
-        // 确定模块样式类
-        const moduleClass = `${photo.type}-card`;
-        photoCard.classList.add(moduleClass);
+        // 获取模块标签
+        let moduleLabel = '未知';
+        let moduleClass = 'unknown';
         
-        // 创建卡片内部结构
-        photoCard.innerHTML = `
-            <div class="photo-card-inner">
-                <div class="photo-img-container">
-                    <img 
-                        class="photo-img lazy" 
-                        data-src="${photo.thumbnailUrl}" 
-                        data-high-res="${photo.highResUrl}"
-                        alt="${photo.title}"
-                    />
-                    <div class="photo-badge ${photo.type}-badge">${this.getModuleLabel(photo.type)}</div>
-                </div>
-                <div class="photo-info">
-                    <h3 class="photo-title">${photo.title}</h3>
-                    <div class="photo-date">${formatDateToCN(photo.date)}</div>
-                    ${this.getModuleSpecificContent(photo)}
-                    <div class="photo-tags">
-                        ${photo.tags.map(tag => `<span class="photo-tag">${tag}</span>`).join('')}
-                    </div>
-                </div>
+        switch(photo.type) {
+            case 'MOVIE':
+                moduleLabel = '电影';
+                moduleClass = 'movie';
+                break;
+            case 'FOOTBALL':
+                moduleLabel = '足球';
+                moduleClass = 'football';
+                break;
+            case 'TRAVEL':
+                moduleLabel = '旅行';
+                moduleClass = 'travel';
+                break;
+        }
+        
+        // 使用mock-utils.js中生成的实际宽高
+        photoItem.innerHTML = `
+            <div class="photo-img-container">
+                <span class="module-tag ${moduleClass}">${moduleLabel}</span>
+                <img 
+                    class="photo-img"
+                    src="${photo.thumbnailUrl}"
+                    alt="${photo.title}"
+                    onload="this.classList.add('loaded'); if(window.msnry) window.msnry.layout();"
+                >
+            </div>
+            <div class="photo-info">
+                <h3 class="photo-title">${photo.title}</h3>
+                <div class="photo-date">${formatDateToCN(photo.date)}</div>
             </div>
         `;
         
-        // 绑定点击事件
-        photoCard.addEventListener('click', () => {
-            this.handlePhotoClick(photo);
+        // 添加点击事件
+        photoItem.addEventListener('click', () => {
+            this.openPhotoDetail(photo);
         });
         
-        return photoCard;
+        return photoItem;
     }
     
     /**
@@ -387,12 +448,7 @@ class PhotoWallManager {
     /**
      * 加载更多照片
      */
-    async loadMorePhotos() {
-        if (!photoPaginationManager.hasMorePhotos() || photoPaginationManager.isLoading) {
-            logger.info('没有更多照片或正在加载，跳过加载更多');
-            return;
-        }
-        
+    async onLoadMore() {
         logger.info('加载更多照片...');
         
         try {
@@ -414,24 +470,24 @@ class PhotoWallManager {
                     this.updateFilterInfo();
                     
                     // 强制更新加载指示器状态
-                    photoPaginationManager.updateLoaderStatus(false);
+                    photoPaginationManager.updateLoadMoreContainer(false);
                     
                     logger.info('完成新照片渲染和UI更新');
                 }, 0);
             } else {
                 logger.warn('未获取到新照片，跳过渲染');
                 // 重置加载状态
-                photoPaginationManager.updateLoaderStatus(false);
+                photoPaginationManager.updateLoadMoreContainer(false);
             }
         } catch (error) {
             logger.error('加载照片出错:', error);
             // 确保错误情况下也重置加载状态
-            photoPaginationManager.updateLoaderStatus(false, true);
+            photoPaginationManager.updateLoadMoreContainer(false, true);
         }
     }
 
     /**
-     * 仅渲染更多照片（追加方式）
+     * 渲染更多照片（追加模式）
      * @param {Array} newPhotos 新照片数组
      */
     renderMorePhotos(newPhotos) {
@@ -449,18 +505,50 @@ class PhotoWallManager {
         
         logger.info(`开始渲染 ${newPhotos.length} 张新照片`);
         
-        // 追加新照片
+        // 创建临时容器，保存所有新元素
+        const fragment = document.createDocumentFragment();
+        const newElements = [];
+        
+        // 追加新照片到文档片段
         newPhotos.forEach(photo => {
             const photoElement = this.createPhotoElement(photo);
-            photoGrid.appendChild(photoElement);
+            // 确保设置浮动
+            photoElement.style.float = 'left';
+            // 添加到临时容器
+            fragment.appendChild(photoElement);
+            // 保存引用以便后续处理
+            newElements.push(photoElement);
         });
+        
+        // 添加到实际DOM
+        photoGrid.appendChild(fragment);
         
         // 更新懒加载
         if (this.lazyLoadInstance) {
             setTimeout(() => {
                 this.lazyLoadInstance.update();
-                logger.info('懒加载实例已更新');
-            }, 100);
+            }, 50);
+        }
+        
+        // 关键修复：使用Masonry的appended方法添加新元素
+        if (this.masonryInstance) {
+            // 告诉Masonry有新元素被添加
+            this.masonryInstance.appended(newElements);
+            
+            // 在图片加载后重新布局
+            if (typeof imagesLoaded !== 'undefined') {
+                imagesLoaded(newElements).on('progress', () => {
+                    this.masonryInstance.layout();
+                }).on('always', () => {
+                    // 所有新图片加载完成后最终布局
+                    this.masonryInstance.layout();
+                });
+            } else {
+                // 如果没有imagesLoaded库，延迟布局以等待图片加载
+                setTimeout(() => {
+                    this.masonryInstance.layout();
+                }, 200);
+            }
         }
         
         logger.info(`成功追加渲染了 ${newPhotos.length} 张新照片`);
@@ -501,12 +589,24 @@ class PhotoWallManager {
     cleanup() {
         logger.info('清理照片墙管理器...');
         
+        // 清理滚动监听器
+        if (this.scrollListeners && this.scrollListeners.length) {
+            this.scrollListeners.forEach(removeListener => removeListener());
+            this.scrollListeners = [];
+        }
+        
         // 清理分页管理器
         photoPaginationManager.cleanup();
         
         // 销毁懒加载实例
         if (this.lazyLoadInstance) {
             this.lazyLoadInstance.destroy();
+        }
+        
+        // 销毁Masonry实例
+        if (this.masonryInstance) {
+            this.masonryInstance.destroy();
+            this.masonryInstance = null;
         }
         
         // 重置状态

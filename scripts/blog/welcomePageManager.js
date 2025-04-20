@@ -172,7 +172,6 @@ class WelcomePageManager {
         // 隐藏骨架屏
         if (container) {
             welcomePageSkeleton.hide(container);
-            contentViewManager.markContent(container, 'welcome');
             contentViewManager.setMode(ViewMode.WELCOME);
         }
     }
@@ -344,7 +343,6 @@ class WelcomePageManager {
         // 隐藏骨架屏
         if (container) {
             welcomePageSkeleton.hide(container);
-            contentViewManager.markContent(container, 'welcome');
             contentViewManager.setMode(ViewMode.WELCOME);
         }
     }

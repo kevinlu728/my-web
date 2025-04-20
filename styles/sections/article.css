@@ -2,15 +2,16 @@
 .article-body {
     /* 基础布局 */
     max-width: 85%; /* 恢复合理的宽度，防止内容过窄 */
-    margin: 0 auto 10px 0; /* 保持左对齐，减少底部边距 */
-    padding: 0 15px 10px 0; /* 减少底部填充 */
+    max-height: none; /* 移除最大高度限制 */
+    height: auto; /* 高度自适应内容 */
+    overflow: visible; /* 确保内容不产生滚动条 */
+    position: relative; /* 确保内容区域有相对定位 */
     
     /* 基础文字样式 */
     font-size: 16px;
     line-height: 1.8;
     color: #333;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    position: relative; /* 确保内容区域有相对定位 */
 }
 
 /* 缓存加载刷新效果 */
@@ -804,23 +805,21 @@
 
 /* ================ 分页加载相关样式 ================ */
 /* 
- * 分页加载相关的所有样式都集中在这里
- * 包括不同上下文(如博客右侧栏)的特定样式
- * 以避免在多个文件中维护相似样式
+ * 由于博客页面的加载更多容器是属于article-body的一部分，所以相关样式都集中在这里
  */
-
 /* 通用分页加载容器样式 */
 .load-more-container {
     text-align: center;
-    margin: 20px 0;
-    padding: 10px;
 }
 
 /* 博客右侧栏分页加载容器特定样式 */
 .blog-content .right-column .load-more-container {
+    width: 100%; /* 这里设为父容器（article-body）的100% */
+    margin-top: 10px;  /*与上方相邻元素（文章里的最后一个块）的间距*/
+    margin-bottom: 5px; /*与下方相邻元素的间距*/
+    padding: 5px;
+    /* background-color: #c1edf4; /* 为了方便调试，设置背景色，调试完成 后注释掉 */
     border-radius: 0 0 12px 0; /* 匹配右侧栏底部圆角 */
-    margin-top: 10px;          /* 减小上边距 */
-    padding-bottom: 5px;       /* 减小底部内边距 */
 }
 
 /* 注意：通用loading-spinner样式已移至loading-spinner.css */

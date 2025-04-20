@@ -20,6 +20,7 @@
     <!-- <link rel="stylesheet" href="./styles/components/debug-panel.css"> -->
     <link rel="stylesheet" href="./styles/layouts/life-left-column.css">
     <link rel="stylesheet" href="./styles/layouts/life-right-column.css">
+    <link rel="stylesheet" href="./styles/layouts/life-photo-wall.css">
     <!-- 优先使用本地Font Awesome资源 -->
     <link rel="stylesheet" href="/assets/libs/font-awesome/all.min.css" 
         id="local-font-awesome" 
@@ -30,6 +31,8 @@
     
     <!-- 再加载API服务 -->
     <script src="./scripts/services/notionAPIService.js" type="module"></script>
+    <script src="https://unpkg.com/imagesloaded@5/imagesloaded.pkgd.min.js"></script>
+<script src="https://unpkg.com/masonry-layout@4/dist/masonry.pkgd.min.js"></script> 
     
     <!-- 结构化数据 -->
     <script type="application/ld+json">
@@ -115,7 +118,7 @@
         <div class="right-column">
             <div class="right-column-header">
                 <h1 class="right-column-title">闲时有趣，发现美好</h1>
-                <p>记录我对电影的思考、足球的热爱与旅行的记忆，这里是我的生活印记。</p>
+                <p>影视剧照、主队瞬间、旅行记忆，这里是我的生活印记。</p>
             </div>
             
             <!-- 筛选信息 -->
@@ -125,22 +128,14 @@
             </div>
             
             <!-- 照片墙容器 -->
-            <div id="photo-wall-container" class="photo-wall-container" data-view-mode="loading">
-                <!-- 照片将通过JS动态加载 -->
-                <div class="photo-grid">
-                    <!-- 照片将由JS填充 -->
-                </div>
-                
-                <!-- 无限滚动加载指示器 -->
-                <div class="infinite-scroll-loader">
-                    <div class="loading-indicator">
-                        <div></div>
-                        <div></div>
-                        <div></div>
-                        <div></div>
-                    </div>
-                </div>
+            <div id="photo-wall-container" class="photo-wall-container">
+                <!-- 照片网格容器 -->
+                <div class="photo-grid"></div>                
+
             </div>
+
+            <!-- 标准加载容器 -->
+            <div class="load-more-container"></div>
         </div>
     </main>
 

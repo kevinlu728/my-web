@@ -33,11 +33,11 @@ class PhotoPaginationManager {
         this.scrollContainer = null;
         
         // 绑定方法的this上下文
-        this.handleScroll = this.handleScroll.bind(this);
-        this.handleWindowResize = this.handleWindowResize.bind(this);
+        this._handleScroll = this._handleScroll.bind(this);
+        this._handleWindowResize = this._handleWindowResize.bind(this);
         
         // 添加窗口尺寸变化监听
-        window.addEventListener('resize', this.handleWindowResize);
+        window.addEventListener('resize', this._handleWindowResize);
 
         // 注册清理函数
         lifecycleManager.registerCleanup('photoPaginationManager', this.cleanup.bind(this));
@@ -59,13 +59,13 @@ class PhotoPaginationManager {
         this.onLoadMore = onLoadMore; // 保存回调函数
         
         // 添加平滑加载过渡效果
-        this.addSmoothLoadingStyles();
+        this._addSmoothLoadingStyles();
         
         // 根据模块类型筛选照片
-        this.filterPhotosByModule();
+        this._filterPhotosByModule();
         
         // 设置滚动监听
-        this.setupScrollListener();
+        this._setupScrollListener();
         
         return {
             hasMore: this.hasMorePhotos(),
@@ -73,19 +73,10 @@ class PhotoPaginationManager {
         };
     }
 
-    /**
-     * 处理窗口尺寸变化事件
-     */
-    handleWindowResize() {
-        // 窗口尺寸变化后重新设置滚动监听
-        // logger.debug('窗口尺寸变化，重新设置滚动监听');  //日志太多，注释掉
-        this.setupScrollListener();
-    }
-
-    /**
+    /** 
      * 添加平滑加载过渡样式
      */
-    addSmoothLoadingStyles() {
+    _addSmoothLoadingStyles() {
         if (!document.getElementById('photo-smooth-loader-style')) {
             const style = document.createElement('style');
             style.id = 'photo-smooth-loader-style';
@@ -107,7 +98,7 @@ class PhotoPaginationManager {
     /**
      * 根据当前模块类型筛选照片
      */
-    filterPhotosByModule() {
+    _filterPhotosByModule() {
         if (this.currentModuleType === ModuleType.ALL) {
             this.filteredPhotos = [...this.allPhotos];
         } else {
@@ -122,7 +113,7 @@ class PhotoPaginationManager {
     /**
      * 设置滚动监听
      */
-    setupScrollListener() {
+    _setupScrollListener() {
         // 移除可能已存在的滚动监听
         if (this.scrollHandler) {
             if (this.scrollContainer) {
@@ -131,9 +122,15 @@ class PhotoPaginationManager {
                 window.removeEventListener('scroll', this.scrollHandler);
             }
         }
-        
-        // 确定滚动容器
-        this.scrollContainer = document.querySelector('.life-content .right-column');
+
+        // 检查是否使用自定义滚动区域
+        if (window.innerWidth <= 768) {
+            // 小屏幕使用主内容区域
+            this.scrollContainer = document.querySelector('.life-content');
+        } else {
+            // 大屏幕使用右侧栏
+            this.scrollContainer = document.querySelector('.life-content .right-column');
+        }
         
         if (!this.scrollContainer) {
             logger.warn('未找到滚动容器，将使用window作为滚动容器');
@@ -141,43 +138,39 @@ class PhotoPaginationManager {
         }
         
         // 简化滚动处理函数，减少节流延迟
-        this.scrollHandler = throttle(this.handleScroll, 100);
+        this.scrollHandler = throttle(this._handleScroll, 100);
         
         // 添加滚动监听
         this.scrollContainer.addEventListener('scroll', this.scrollHandler);
         
-        // 添加调试标记到DOM
-        this.scrollContainer.dataset.hasScrollListener = 'true';
-        
         // 初始检查，确保短内容页面也能加载更多
-        setTimeout(() => this.handleScroll(), 500);
-        
-        // logger.info('照片分页滚动监听已设置, 容器:', this.scrollContainer === window ? 'window' : '.right-column');  //日志太多，注释掉
+        setTimeout(() => this._handleScroll(), 500);
     }
 
     /**
      * 处理滚动事件
      */
-    handleScroll() {
-        if (this.isLoading || !this.hasMorePhotos()) {
-            return;
-        }
-        
-        if (this.shouldLoadMorePhotos()) {
-            logger.info('触发加载更多照片');
-            
-            // 使用回调函数通知外部加载更多照片
-            if (typeof this.onLoadMore === 'function') {
-                this.onLoadMore();
-            }
+    _handleScroll() {  
+        if (this._shouldTriggerLoad()) {
+            const loadMoreContainer = document.querySelector('.load-more-container');
+            this._triggerLoadMore(loadMoreContainer, 0);
         }
     }
 
     /**
-     * 判断是否应该加载更多照片
-     * @returns {boolean} 是否应该加载更多
+     * 处理窗口尺寸变化事件
      */
-    shouldLoadMorePhotos() {
+    _handleWindowResize() {
+        // 窗口尺寸变化后重新设置滚动监听
+        // logger.debug('窗口尺寸变化，重新设置滚动监听');  //日志太多，注释掉
+        this._setupScrollListener();
+    }
+
+    /**
+     * 检测滚动位置是否接近底部 - 适应不同滚动容器
+     * @returns {boolean} 是否应该触发加载
+     */
+    _shouldTriggerLoad() {
         // 如果正在加载或没有更多照片，则不应该加载
         if (this.isLoading || !this.hasMorePhotos()) {
             return false;
@@ -224,23 +217,61 @@ class PhotoPaginationManager {
     }
 
     /**
-     * 检查是否还有更多照片
-     * @returns {boolean} 是否有更多照片
+     * 触发加载更多内容，在真正加载更多内容之前做一些准备工作
+     * @param {HTMLElement} loadMoreContainer - 加载更多容器元素
+     * @param {number} scrollPercentage - 滚动百分比
      */
-    hasMorePhotos() {
-        return this.currentPage * this.photosPerPage < this.filteredPhotos.length;
-    }
-
-    /**
-     * 获取当前页的照片
-     * @returns {Array} 当前页照片数组
-     */
-    getPhotosForCurrentPage() {
-        const startIndex = 0;
-        const endIndex = this.currentPage * this.photosPerPage;
+    _triggerLoadMore(loadMoreContainer, scrollPercentage) {
+        // 记录加载开始时间，用于超时检测
+        this._loadingStartTime = Date.now();
         
-        // 返回从开始到当前页的所有照片（用于初次渲染，显示当前页之前的所有照片）
-        return this.filteredPhotos.slice(startIndex, endIndex);
+        if (!this.hasMorePhotos) {
+            // 更新UI显示没有更多内容
+            if (loadMoreContainer) {
+                loadMoreContainer.innerHTML = '<div class="no-more">没有更多内容</div>';
+            }
+            // 移除滚动监听
+            if (this.scrollHandler) {
+                if (this.scrollContainer) {
+                    this.scrollContainer.removeEventListener('scroll', this.scrollHandler);
+                } else {
+                    window.removeEventListener('scroll', this.scrollHandler);
+                }
+                this.scrollHandler = null;
+            }
+            return;
+        }
+        
+        logger.info('触发加载更多内容 - 滚动位置: ' + scrollPercentage.toFixed(2) + '%');
+        
+        // 防抖处理，避免重复触发
+        if (this.triggerDebounceTimeout) {
+            clearTimeout(this.triggerDebounceTimeout);
+        }
+        
+        if (loadMoreContainer) {
+            // 使用防抖延迟，避免频繁触发
+            this.triggerDebounceTimeout = setTimeout(() => {
+                // 再次检查状态，避免延迟期间状态改变
+                if (!this.isLoading && this.hasMorePhotos()) {
+                    logger.info('执行加载更多照片操作');
+
+                    // 使用回调函数通知外部（照片墙管理器），照片墙管理器会再次调用下面的loadMorePhotos方法，获取新照片。
+                    if (typeof this.onLoadMore === 'function') {
+                        this.onLoadMore();
+                    }
+                    
+                    // 清除触发状态
+                    this.triggerDebounceTimeout = null;
+                } else {
+                    if (this.hasMorePhotos()) {
+                        loadMoreContainer.innerHTML = '<div class="loading-text">下拉加载更多</div>';
+                    } else {
+                        loadMoreContainer.innerHTML = '<div class="no-more">没有更多照片</div>';
+                    }
+                }
+            }, 300); // 300毫秒的防抖延迟
+        }
     }
 
     /**
@@ -254,7 +285,7 @@ class PhotoPaginationManager {
         }
         
         this.isLoading = true;
-        this.updateLoaderStatus(true);
+        this.updateLoadMoreContainer(true);
         
         try {
             // 模拟异步加载延迟
@@ -278,28 +309,65 @@ class PhotoPaginationManager {
                 // 修复：直接修改isLoading状态，但不更新UI，让调用者负责UI更新
                 this.isLoading = false;
                 return newPhotos;
-            } else {
+                } else {
                 logger.warn(`未找到第${nextPage}页照片，保持在第${this.currentPage}页`);
                 this.isLoading = false;
-                this.updateLoaderStatus(false);
+                this.updateLoadMoreContainer(false);
                 return [];
             }
         } catch (error) {
             logger.error('加载更多照片失败:', error);
             this.isLoading = false;
-            this.updateLoaderStatus(false, true);
+            this.updateLoadMoreContainer(false, true);
             return [];
         }
     }
 
+    /**
+     * 检查是否还有更多照片
+     * 目前区别于博客频道，博客页面是根据从网络获取到的数据的hasMore字段来判断是否还有更多数据。后续接入真实数据后，也需要根据从网络获取的数据来判断是否还有更多图片。
+     * @returns {boolean} 是否有更多照片
+     */
+    hasMorePhotos() {
+        return this.currentPage * this.photosPerPage < this.filteredPhotos.length;
+    }
 
     /**
-     * 更新加载状态显示
-     * @param {boolean} isLoading 是否正在加载
-     * @param {boolean} hasError 是否发生错误
+     * 获取当前页的照片
+     * @returns {Array} 当前页照片数组
      */
-    updateLoaderStatus(isLoading, hasError = false) {
-        const loadMoreContainer = document.querySelector('.load-more-container');
+    getPhotosForCurrentPage() {
+        const startIndex = 0;
+        const endIndex = this.currentPage * this.photosPerPage;
+        
+        // 返回从开始到当前页的所有照片（用于初次渲染，显示当前页之前的所有照片）
+        return this.filteredPhotos.slice(startIndex, endIndex);
+    }
+
+    /**
+     * 获取加载更多容器
+     * 关键：直接从右侧栏获取，而非从照片墙容器
+     */
+    getLoadMoreContainer() {
+        // 先尝试获取右侧栏中的加载更多容器
+        const rightColumn = document.querySelector('.life-content .right-column');
+        if (rightColumn) {
+            let container = rightColumn.querySelector('.load-more-container');
+            if (container) {
+                return container;
+            }
+        }
+        
+        // 如果找不到，返回null，由调用者处理
+        return null;
+    }
+
+    /**
+     * 更新加载更多容器状态
+     */
+    updateLoadMoreContainer(isLoading, hasError = false) {
+        // 使用专门的方法获取加载更多容器
+        const loadMoreContainer = this.getLoadMoreContainer();
         if (!loadMoreContainer) return;
         
         // 清除容器内容
@@ -312,7 +380,7 @@ class PhotoPaginationManager {
             });
         } else if (!this.hasMorePhotos()) {
             // 没有更多照片，显示提示信息
-            loadMoreContainer.innerHTML = '<div class="no-more">没有更多内容</div>';
+            loadMoreContainer.innerHTML = '<div class="no-more">没有更多照片</div>';
         } else if (hasError) {
             // 发生错误，显示重试选项
             loadMoreContainer.innerHTML = `
@@ -330,10 +398,11 @@ class PhotoPaginationManager {
                 });
             }
         } else {
+            // 因为照片墙和加载更多容器的位置存在冲突且无法解决，所以尽量减少加载更多容器的显示。
             // 正常状态，有更多内容可加载
-            showLoadingSpinner('向下滚动加载更多', loadMoreContainer, {
-                containerClass: 'loading-container'
-            });
+            // showLoadingSpinner('下拉加载更多', loadMoreContainer, {
+            //     containerClass: 'loading-container'
+            // });
         }
     }
 
@@ -355,7 +424,7 @@ class PhotoPaginationManager {
         this.filterPhotosByModule();
         
         // 更新加载状态
-        this.updateLoaderStatus(false);
+        this.updateLoadMoreContainer(false);
         
         return {
             hasMore: this.hasMorePhotos(),
@@ -374,7 +443,7 @@ class PhotoPaginationManager {
         
         // 移除滚动监听
         if (this.scrollHandler && this.scrollContainer) {
-            this.scrollContainer.removeEventListener('scroll', this.scrollHandler);
+                this.scrollContainer.removeEventListener('scroll', this.scrollHandler);
             this.scrollHandler = null;
         }
         

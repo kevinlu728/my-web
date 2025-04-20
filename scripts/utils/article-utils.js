@@ -61,32 +61,6 @@ export function extractCategoryFromProperties(properties) {
 }
 
 /**
- * 显示加载状态
- * @param {string} containerId 容器ID
- */
-export function showArticleLoadingState(containerId = 'article-container') {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    
-    container.innerHTML = `
-        <div class="article-loading">
-            <div class="loading-content">
-                <div class="loading-skeleton">
-                    <div class="skeleton-title"></div>
-                    <div class="skeleton-meta"></div>
-                    <div class="skeleton-paragraph">
-                        <div class="skeleton-line"></div>
-                        <div class="skeleton-line"></div>
-                        <div class="skeleton-line"></div>
-                        <div class="skeleton-line" style="width: 80%"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-/**
  * 显示文章内容
  * @param {Object} articleData 文章数据
  * @param {Function} renderBlocks 渲染文章块的函数

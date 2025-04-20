@@ -16,7 +16,7 @@
 /* 右侧栏内部样式 - 不包含定位和大小相关属性 */
 .blog-content .right-column {
     background: #ffffff;
-    padding: 25px 35px; /* 右侧栏内边距 */
+    padding: 20px 30px 0 35px; /* 右侧栏内边距 */
     border-radius: 0 12px 12px 0; /* 右侧圆角 */
     box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08); /* 阴影效果 */
     border: 1px solid rgba(0, 0, 0, 0.05); /* 细微边框 */
@@ -28,12 +28,8 @@
 
 /* 右侧栏文章容器 */
 .blog-content .right-column #article-container,
-.blog-content .right-column .article-content,
 .blog-content .right-column .article-body {
-    padding-bottom: 20px; /* 大幅减少底部填充 */
-    overflow: visible !important; /* 确保内容不产生滚动条 */
-    height: auto !important; /* 高度自适应内容 */
-    max-height: none !important; /* 移除最大高度限制 */
+    padding-bottom: 1px; /* 大幅减少底部填充 */ 
 }
 
 /* 注意：所有分页加载相关样式已移至 article.css */
@@ -178,25 +174,6 @@
 .welcome-content {
     padding: 25px;
     border-radius: 8px;
-}
-
-.article-content {
-    padding-top: 10px;
-}
-
-.loading-content {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 300px;
-    /* 可以在这里添加局部背景色，如果需要的话 */
-    /* background-color: #f8f9fa; */
-}
-
-.error-content {
-    padding: 30px;
-    text-align: center;
-    color: #d32f2f;
 }
 
 /* 欢迎页面骨架屏样式 */

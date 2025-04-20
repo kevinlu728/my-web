@@ -111,7 +111,7 @@ class ContentViewManager {
     }
     
     /**
-     * 标记内容为给定类型
+     * 标记内容为给定类型（目前没有使用，待废弃）
      * @param {Element} element 要标记的元素
      * @param {string} contentType 内容类型
      */
@@ -119,9 +119,7 @@ class ContentViewManager {
         if (!element) return;
         
         // 移除所有内容类型标记
-        ['welcome-content', 'article-content', 'loading-content', 'error-content'].forEach(cls => {
-            element.classList.remove(cls);
-        });
+        element.classList.remove('welcome-content');
         
         // 添加指定的内容类型
         element.classList.add(`${contentType}-content`);
