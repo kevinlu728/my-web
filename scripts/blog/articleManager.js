@@ -697,12 +697,6 @@ class ArticleManager {
             }
         );
     }
-
-    // 更新数据库ID
-    updateDatabaseId(newDatabaseId) {
-        this.currentDatabaseId = newDatabaseId;
-        this.loadArticles();
-    }
     
     /**
      * 获取文章列表

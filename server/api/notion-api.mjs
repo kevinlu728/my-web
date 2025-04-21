@@ -14,6 +14,7 @@ import {
   notionService,
   response,
   articleHandlers,
+  photoHandlers,
   databaseHandlers,
   contentHandlers,
   systemHandlers,
@@ -82,6 +83,22 @@ router.all('/articles', async (req, res) => {
     console.error('文章列表API错误:', error);
     return response.formatResponse(res, {
       error: '获取文章列表失败',
+      message: error.message
+    }, 500);
+  }
+});
+
+router.all('/photos', async (req, res) => {
+  try {
+    // 确保请求中包含必要的数据库ID（如果请求中没有，使用环境变量中的）
+    if (!req.body.lifeDatabaseId && explicitConfig.lifeDatabaseId) {
+      req.body.lifeDatabaseId = explicitConfig.lifeDatabaseId;
+    }
+    return await photoHandlers.getPhotos(req, res);
+  } catch (error) {
+    console.error('照片列表API错误:', error);
+    return response.formatResponse(res, {
+      error: '获取照片列表失败',
       message: error.message
     }, 500);
   }

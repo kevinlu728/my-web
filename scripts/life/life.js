@@ -25,7 +25,7 @@ import { scrollbar } from '../components/scrollbar.js';
 import { showStatus, showError } from '../utils/common-utils.js';
 
 // 后续需要实现的模块管理器
-import { photoWallManager } from './photoWallManager.js';
+import { photoManager } from './photoManager.js';
 import { themeModuleManager } from './themeModuleManager.js';
 
 import lifecycleManager from '../utils/lifecycleManager.js';
@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const isProduction = config && config.getEnvironment && config.getEnvironment() === 'production';
     if (!isProduction) {
         // 将模块导出到全局作用域，方便调试
-        window.photoWallManager = photoWallManager;
+        window.photoManager = photoManager;
         window.themeModuleManager = themeModuleManager;
         window.config = config;
     } 
@@ -143,7 +143,7 @@ export async function initializePage() {
         // ===== 2. 核心组件初始化 =====
         // 初始化照片墙管理器
         logger.info('初始化照片墙管理器...');
-        await photoWallManager.initialize(currentDatabaseId, 'photo-wall-container');
+        await photoManager.initialize(currentDatabaseId, 'photo-wall-container');
         
         // 初始化主题模块管理器，并设置模块切换回调
         logger.info('初始化主题模块管理器...');
@@ -151,16 +151,11 @@ export async function initializePage() {
             onModuleChange: (moduleType) => {
                 logger.info(`切换到模块: ${moduleType}`);
                 window.pageState.currentModule = moduleType;
-                photoWallManager.filterByModule(moduleType);
+                photoManager.filterByModule(moduleType);
             }
         });
         
-        // ===== 3. 渲染处理 =====
-        // 渲染照片墙
-        logger.info('渲染照片墙...');
-        await photoWallManager.render();
-        
-        // ===== 4. 辅助功能初始化 =====
+        // ===== 3. 辅助功能初始化 =====
         logger.info('✅ 页面初始化完成！开始初始化辅助功能...');
 
         // 初始化导航

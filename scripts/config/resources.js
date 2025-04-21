@@ -56,6 +56,11 @@ export const versions = {
     
     // 动画库
     animateCss: '4.1.1',
+
+    // 图片处理
+    'vanilla-lazyload': '17.8.5',
+    'masonry': '4.2.2',
+    'imagesLoaded': '5.0.0',
 };
 
 /**
@@ -442,6 +447,81 @@ export const resources = {
             attributes: {
                 'data-resource-type': 'particles',
                 'data-local-fallback': '/assets/libs/particles/particles.min.js'
+            }
+        },
+        'vanilla-lazyload': {
+            type: 'js',
+            priority: 'high',
+            group: 'images',
+            source: {
+                primary: {
+                    provider: 'jsdelivr',
+                    library: 'vanilla-lazyload',
+                    version: versions['vanilla-lazyload'],
+                    path: 'dist/lazyload.min.js'
+                },
+                fallbacks: [
+                    {
+                        provider: 'cdnjs',
+                        library: 'vanilla-lazyload',
+                        version: versions['vanilla-lazyload'],
+                        path: 'lazyload.min.js'
+                    }
+                ]
+            },
+            attributes: {
+                'data-resource-type': 'lazyload',
+                'data-local-fallback': '/assets/libs/vanilla-lazyload/lazyload.min.js'
+            }
+        },
+        'masonry': {
+            type: 'js',
+            priority: 'medium',
+            group: 'layout',
+            source: {
+                primary: {
+                    provider: 'jsdelivr',
+                    library: 'masonry-layout',
+                    version: versions.masonry,
+                    path: 'dist/masonry.pkgd.min.js'
+                },
+                fallbacks: [
+                    {
+                        provider: 'cdnjs',
+                        library: 'masonry',
+                        version: versions.masonry,
+                        path: 'masonry.pkgd.min.js'
+                    }
+                ]
+            },
+            attributes: {
+                'data-resource-type': 'masonry',
+                'data-local-fallback': '/assets/libs/masonry/masonry.pkgd.min.js'
+            }
+        },
+        'imagesLoaded': {
+            type: 'js',
+            priority: 'medium',
+            group: 'layout',
+            source: {
+                primary: {
+                    provider: 'jsdelivr',
+                    library: 'imagesloaded',
+                    version: versions.imagesLoaded,
+                    path: 'imagesloaded.pkgd.min.js'
+                },
+                fallbacks: [
+                    {
+                        provider: 'cdnjs',
+                        library: 'imagesloaded',
+                        version: versions.imagesLoaded,
+                        path: 'imagesloaded.pkgd.min.js'
+                    }
+                ]
+            },
+            attributes: {
+                'data-resource-type': 'imagesloaded',
+                'data-local-fallback': '/assets/libs/imagesloaded/imagesloaded.pkgd.min.js'
             }
         },
     }

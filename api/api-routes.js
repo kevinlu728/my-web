@@ -222,6 +222,9 @@ module.exports = async (req, res) => {
     } else if (path.includes('/articles')) {
       // 文章列表API
       return handleArticlesApi(req, res);
+    } else if (path.includes('/photos')) {
+      // 照片列表API
+      return handlePhotosApi(req, res);
     } else if (path.includes('/database-info') || path.includes('/databases')) {
       // 数据库API
       return handleDatabaseApi(req, res);
@@ -547,6 +550,199 @@ async function handleArticlesApi(req, res) {
   } catch (error) {
     console.error('[文章列表API] 处理错误:', error);
     console.error('[文章列表API] 错误堆栈:', error.stack);
+    return handleError(res, error);
+  }
+}
+
+// 照片列表API处理器
+async function handlePhotosApi(req, res) {
+  try {
+    // 检查环境变量是否有效
+    if (!environmentStatus.isConfigValid) {
+      console.log('[照片列表API] 环境变量未正确配置，返回示例数据');
+      return res.status(200).json({
+        success: true,
+        results: [
+          {
+            id: 'example-1',
+            properties: {
+              Title: {
+                title: [{ plain_text: '示例照片 - 环境变量未配置' }]
+              },
+              Description: {
+                rich_text: [{ plain_text: '这是一个示例照片。请配置正确的NOTION_API_KEY和NOTION_DATABASE_LIFEPHOTOS_ID环境变量。' }]
+              },
+              "Photo Date": {
+                date: { start: new Date().toISOString() }
+              },
+              Category: {
+                select: { name: 'Travel' }
+              },
+              "Thumbnail": {
+                url: "https://img.clouddweller.cn/example.webp"
+              }
+            }
+          }
+        ],
+        photos: [
+          {
+            id: 'example-1',
+            properties: {
+              Title: {
+                title: [{ plain_text: '示例照片 - 环境变量未配置' }]
+              },
+              Description: {
+                rich_text: [{ plain_text: '这是一个示例照片。请配置正确的NOTION_API_KEY和NOTION_DATABASE_LIFEPHOTOS_ID环境变量。' }]
+              },
+              "Photo Date": {
+                date: { start: new Date().toISOString() }
+              },
+              Category: {
+                select: { name: 'Travel' }
+              },
+              "Thumbnail": {
+                url: "https://img.clouddweller.cn/example.webp"
+              }
+            }
+          }
+        ],
+        hasMore: false,
+        has_more: false,
+        nextCursor: null,
+        next_cursor: null,
+        message: '返回示例数据 - 环境变量未正确配置'
+      });
+    }
+    
+    if (req.method !== 'POST') {
+      return res.status(405).json({
+        error: true,
+        message: "照片列表API仅支持POST方法"
+      });
+    }
+    
+    console.log('[照片列表API] 请求体:', JSON.stringify(req.body));
+    console.log('[照片列表API] 请求头:', JSON.stringify(req.headers, null, 2));
+    
+    // 获取数据库ID
+    let databaseId = req.body.lifeDatabaseId || req.body.databaseId || process.env.NOTION_DATABASE_LIFEPHOTOS_ID;
+    
+    const filter = req.body.filter;
+    const sorts = req.body.sorts;
+    const pageSize = req.body.pageSize || req.body.page_size || 100;
+    const startCursor = req.body.startCursor || req.body.start_cursor;
+    const limit = req.body.limit;
+    
+    // 记录解析后的参数
+    console.log('[照片列表API] 解析后的参数:', {
+      databaseId,
+      originalLifeDatabaseId: req.body.lifeDatabaseId,
+      newDatabaseId: req.body.databaseId,
+      defaultId: process.env.NOTION_DATABASE_LIFEPHOTOS_ID,
+      filter: !!filter,
+      sorts: !!sorts,
+      pageSize,
+      startCursor,
+      limit
+    });
+    
+    if (!databaseId) {
+      console.error('[照片列表API] 错误: 缺少databaseId参数');
+      console.error('[照片列表API] 请求体详情:', req.body);
+      console.error('[照片列表API] 环境变量检查:', {
+        NOTION_DATABASE_LIFEPHOTOS_ID_SET: !!process.env.NOTION_DATABASE_LIFEPHOTOS_ID,
+        NOTION_API_KEY_SET: !!NOTION_API_KEY
+      });
+      
+      return res.status(400).json({
+        error: true,
+        message: "缺少必要的数据库ID参数",
+        debug: {
+          body: req.body,
+          defaultDatabaseId: process.env.NOTION_DATABASE_LIFEPHOTOS_ID ? '已设置' : '未设置'
+        }
+      });
+    }
+    
+    console.log('[照片列表API] 使用数据库ID:', databaseId);
+    
+    // 构建查询参数
+    const queryParams = {
+      database_id: databaseId,
+      page_size: Math.min(pageSize, 100) // Notion API限制最大100
+    };
+    
+    if (startCursor) {
+      queryParams.start_cursor = startCursor;
+    }
+    
+    if (filter) {
+      queryParams.filter = filter;
+    }
+    
+    if (sorts) {
+      queryParams.sorts = sorts;
+    }
+    
+    console.log('[照片列表API] 查询参数:', JSON.stringify(queryParams));
+    
+    try {
+      console.log('[照片列表API] 发送请求到Notion API...');
+      console.log('[照片列表API] Notion环境检查:', {
+        API_KEY: NOTION_API_KEY ? '已设置(长度:' + NOTION_API_KEY.length + ')' : '未设置',
+        DATABASE_ID: process.env.NOTION_DATABASE_LIFEPHOTOS_ID ? '已设置(长度:' + process.env.NOTION_DATABASE_LIFEPHOTOS_ID.length + ')' : '未设置',
+        API_VERSION
+      });
+      
+      const start = Date.now();
+      const response = await notion.databases.query(queryParams);
+      const duration = Date.now() - start;
+      console.log(`[照片列表API] Notion响应时间: ${duration}ms`);
+      console.log(`[照片列表API] 响应状态: 成功, 结果数量: ${response.results?.length || 0}`);
+      
+      // 处理结果
+      const results = response.results;
+      
+      console.log(`[照片列表API] 获取到${results.length}张照片`);
+      
+      // 为兼容性增加双重格式响应
+      return res.status(200).json({
+        success: true,
+        results,
+        photos: results, // 为兼容性添加photos字段
+        hasMore: response.has_more,
+        has_more: response.has_more, // 兼容旧版本
+        nextCursor: response.next_cursor,
+        next_cursor: response.next_cursor // 兼容旧版本
+      });
+    } catch (notionError) {
+      console.error('[照片列表API] Notion API错误:', notionError);
+      console.error('[照片列表API] 错误详情:', {
+        message: notionError.message,
+        code: notionError.code,
+        status: notionError.status,
+        stack: notionError.stack,
+        query: queryParams
+      });
+      
+      return res.status(500).json({
+        error: true,
+        message: `Notion API错误: ${notionError.message}`,
+        code: notionError.code,
+        status: notionError.status,
+        details: notionError.details,
+        timestamp: new Date().toISOString(),
+        params: queryParams,
+        debug: {
+          statusText: notionError.statusText || 'Unknown',
+          hasApiKey: !!NOTION_API_KEY,
+          hasDatabaseId: !!process.env.NOTION_DATABASE_LIFEPHOTOS_ID
+        }
+      });
+    }
+  } catch (error) {
+    console.error('[照片列表API] 处理错误:', error);
+    console.error('[照片列表API] 错误堆栈:', error.stack);
     return handleError(res, error);
   }
 }

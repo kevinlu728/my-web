@@ -16,6 +16,12 @@ const notionConfig = {
   
   // 获取默认数据库ID
   getDefaultDatabaseId: () => process.env.NOTION_DATABASE_ID,
+
+  // 获取博客数据库ID
+  getDefaultBlogDatabaseId: () => process.env.NOTION_DATABASE_BLOGARTICALS_ID,
+
+  // 获取生活数据库ID
+  getDefaultLifeDatabaseId: () => process.env.NOTION_DATABASE_LIFEPHOTOS_ID,
   
   // 检查API密钥是否有效
   isApiKeyValid: () => {
@@ -48,7 +54,9 @@ const notionConfig = {
       keyFingerprint: notionConfig.getApiKeyFingerprint(),
       directApiAllowed: notionConfig.directApiAllowed,
       apiBasePath: notionConfig.apiBasePath,
-      databaseId: notionConfig.getDefaultDatabaseId() || null
+      databaseId: notionConfig.getDefaultDatabaseId() || null,
+      blogDatabaseId: notionConfig.getDefaultBlogDatabaseId() || null,
+      lifeDatabaseId: notionConfig.getDefaultLifeDatabaseId() || null
     };
   }
 };

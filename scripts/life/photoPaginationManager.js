@@ -15,6 +15,9 @@ import { ModuleType } from './lifeViewManager.js';
 import logger from '../utils/logger.js';
 import { throttle, showLoadingSpinner } from '../utils/common-utils.js';
 import lifecycleManager from '../utils/lifecycleManager.js';
+import notionAPIService from '../services/notionAPIService.js';
+import { processPhotoListData } from '../utils/photo-utils.js';
+
 class PhotoPaginationManager {
     constructor() {
         // 分页状态
@@ -45,24 +48,25 @@ class PhotoPaginationManager {
 
     /**
      * 初始化照片分页
-     * @param {Array} allPhotos 所有照片数据
-     * @param {string} moduleType 当前模块类型
+     * @param {Array} photos 所有照片数据
+     * @param {number} photosPerPage 每页照片数量
      * @param {Function} onLoadMore 加载更多的回调函数
      */
-    initialize(allPhotos, moduleType = ModuleType.ALL, onLoadMore = null) {
-        logger.info('初始化照片分页, 照片总数:', allPhotos.length, '模块类型:', moduleType);
+    initialize(photos, photosPerPage = 9, onLoadMore = null) {
+        logger.info('初始化照片分页, 照片总数:', photos ? photos.length : 0);
         
-        this.allPhotos = allPhotos || [];
-        this.currentModuleType = moduleType;
+        // 设置基础属性
+        this.allPhotos = photos || [];
+        this.filteredPhotos = [...this.allPhotos]; // 初始时复制所有照片到过滤列表
+        this.photosPerPage = photosPerPage;
         this.currentPage = 1;
         this.isLoading = false;
         this.onLoadMore = onLoadMore; // 保存回调函数
         
+        logger.debug(`照片分页管理器初始化完成: 总照片数=${this.allPhotos.length}, 过滤后照片数=${this.filteredPhotos.length}`);
+        
         // 添加平滑加载过渡效果
         this._addSmoothLoadingStyles();
-        
-        // 根据模块类型筛选照片
-        this._filterPhotosByModule();
         
         // 设置滚动监听
         this._setupScrollListener();
@@ -288,29 +292,72 @@ class PhotoPaginationManager {
         this.updateLoadMoreContainer(true);
         
         try {
-            // 模拟异步加载延迟
-            await new Promise(resolve => setTimeout(resolve, 800));
+            // 检查是否有分页信息
+            const hasApiPagination = this.photoManager && 
+                                    this.photoManager.paginationInfo && 
+                                    this.photoManager.paginationInfo.hasMore;
             
-            // 先获取当前页码对应的照片
-            const nextPage = this.currentPage + 1;
-            const startIndex = (nextPage - 1) * this.photosPerPage;
-            const endIndex = nextPage * this.photosPerPage;
-            const newPhotos = this.filteredPhotos.slice(startIndex, endIndex);
+            let newPhotos = [];
             
-            // 调试输出，帮助排查问题
-            logger.info(`尝试加载第${nextPage}页照片：起始索引=${startIndex}，结束索引=${endIndex}，找到照片=${newPhotos.length}张`);
-            logger.info(`当前筛选照片总数：${this.filteredPhotos.length}`);
+            // 如果有下一页且有游标，则使用API加载
+            if (hasApiPagination && this.photoManager.paginationInfo.nextCursor) {
+                logger.info('使用API加载更多照片，游标:', this.photoManager.paginationInfo.nextCursor);
+                
+                const response = await notionAPIService.getPhotos({
+                    lifeDatabaseId: this.photoManager.currentDatabaseId,
+                    startCursor: this.photoManager.paginationInfo.nextCursor,
+                    pageSize: this.photosPerPage,
+                    sorts: [{ 
+                        property: "Photo Date", 
+                        direction: "descending" 
+                    }]
+                });
+                
+                if (response && response.photos && response.photos.length > 0) {
+                    // 处理API返回的照片数据，使用照片工具中的统一处理函数
+                    const processedPhotos = processPhotoListData(response.photos);
+                    newPhotos = processedPhotos;
+                    
+                    // 更新分页信息
+                    this.photoManager.paginationInfo.hasMore = response.hasMore;
+                    this.photoManager.paginationInfo.nextCursor = response.nextCursor;
+                    
+                    // 添加到总照片集合中
+                    this.photoManager.photos = [...this.photoManager.photos, ...newPhotos];
+                    
+                    // 如果有过滤，也更新过滤后的照片集合
+                    if (this.currentFilter) {
+                        // 应用同样的过滤规则
+                        const filteredNewPhotos = this.applyFilter(newPhotos, this.currentFilter);
+                        this.filteredPhotos = [...this.filteredPhotos, ...filteredNewPhotos];
+                    } else {
+                        this.filteredPhotos = [...this.filteredPhotos, ...newPhotos];
+                    }
+                    
+                    logger.info(`从API加载了${newPhotos.length}张新照片，更新游标:`, response.nextCursor);
+                }
+            } else {
+                // 如果没有API分页信息或游标，回退到原来的本地分页方式
+                logger.info('使用本地分页加载更多照片');
+                
+                // 先获取当前页码对应的照片
+                const nextPage = this.currentPage + 1;
+                const startIndex = (nextPage - 1) * this.photosPerPage;
+                const endIndex = nextPage * this.photosPerPage;
+                newPhotos = this.filteredPhotos.slice(startIndex, endIndex);
+                
+                logger.info(`使用本地分页：第${nextPage}页，起始索引=${startIndex}，结束索引=${endIndex}，照片数=${newPhotos.length}`);
+            }
             
             // 仅在成功获取到照片后才增加页码
             if (newPhotos && newPhotos.length > 0) {
-                this.currentPage = nextPage;
+                this.currentPage++;
                 logger.info(`成功加载第${this.currentPage}页，共${newPhotos.length}张新照片`);
                 
-                // 修复：直接修改isLoading状态，但不更新UI，让调用者负责UI更新
                 this.isLoading = false;
                 return newPhotos;
-                } else {
-                logger.warn(`未找到第${nextPage}页照片，保持在第${this.currentPage}页`);
+            } else {
+                logger.warn(`未找到更多照片，保持在第${this.currentPage}页`);
                 this.isLoading = false;
                 this.updateLoadMoreContainer(false);
                 return [];
@@ -324,12 +371,22 @@ class PhotoPaginationManager {
     }
 
     /**
-     * 检查是否还有更多照片
-     * 目前区别于博客频道，博客页面是根据从网络获取到的数据的hasMore字段来判断是否还有更多数据。后续接入真实数据后，也需要根据从网络获取的数据来判断是否还有更多图片。
+     * 检查是否还有更多照片可加载
      * @returns {boolean} 是否有更多照片
      */
     hasMorePhotos() {
-        return this.currentPage * this.photosPerPage < this.filteredPhotos.length;
+        // 首先检查API分页信息
+        if (this.photoManager && 
+            this.photoManager.paginationInfo && 
+            this.photoManager.paginationInfo.hasMore) {
+            return true;
+        }
+        
+        // 然后检查本地分页
+        const nextPage = this.currentPage + 1;
+        const startIndex = (nextPage - 1) * this.photosPerPage;
+        
+        return startIndex < this.filteredPhotos.length;
     }
 
     /**
@@ -337,11 +394,22 @@ class PhotoPaginationManager {
      * @returns {Array} 当前页照片数组
      */
     getPhotosForCurrentPage() {
+        // 安全检查
+        if (!this.filteredPhotos || this.filteredPhotos.length === 0) {
+            logger.warn('无照片数据可供渲染');
+            return [];
+        }
+        
         const startIndex = 0;
         const endIndex = this.currentPage * this.photosPerPage;
         
+        logger.debug(`获取当前页照片: startIndex=${startIndex}, endIndex=${endIndex}, 总数=${this.filteredPhotos.length}`);
+        
         // 返回从开始到当前页的所有照片（用于初次渲染，显示当前页之前的所有照片）
-        return this.filteredPhotos.slice(startIndex, endIndex);
+        const result = this.filteredPhotos.slice(startIndex, endIndex);
+        logger.debug(`返回了 ${result.length} 张照片用于渲染`);
+        
+        return result;
     }
 
     /**

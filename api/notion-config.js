@@ -47,7 +47,9 @@ module.exports = async function handler(req, res) {
       keyFingerprint: `${apiKeyPrefix}...${apiKeySuffix}`,
       directApiAllowed: false, // 禁止客户端直接调用API
       apiBasePath: '/api',
-      databaseId: process.env.NOTION_DATABASE_ID || null
+      databaseId: process.env.NOTION_DATABASE_ID || null,
+      blogDatabaseId: process.env.NOTION_DATABASE_BLOGARTICALS_ID || null,
+      lifeDatabaseId: process.env.NOTION_DATABASE_LIFEPHOTOS_ID || null
     };
     
     // 返回配置

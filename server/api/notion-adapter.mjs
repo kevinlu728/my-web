@@ -40,8 +40,10 @@ const { notionConfig } = require(resolve(rootDir, 'api/config/notion-config'));
 // 创建显式配置，不依赖环境变量的自动注入
 const explicitConfig = {
   apiKey: process.env.NOTION_API_KEY,
+  apiVersion: notionConfig.apiVersion || '2022-06-28',
   defaultDatabaseId: process.env.NOTION_DATABASE_ID,
-  apiVersion: notionConfig.apiVersion || '2022-06-28'
+  defaultBlogDatabaseId: process.env.NOTION_DATABASE_BLOGARTICALS_ID,
+  defaultLifeDatabaseId: process.env.NOTION_DATABASE_LIFEPHOTOS_ID
 };
 
 // 导入api目录中的服务
@@ -52,6 +54,8 @@ const notionService = notionServiceModule.notionService;
 if (notionService && notionService.config) {
   notionService.config.apiKey = explicitConfig.apiKey;
   notionService.config.defaultDatabaseId = explicitConfig.defaultDatabaseId;
+  notionService.config.defaultBlogDatabaseId = explicitConfig.defaultBlogDatabaseId;
+  notionService.config.defaultLifeDatabaseId = explicitConfig.defaultLifeDatabaseId;
   notionService.config.headers = {
     'Authorization': `Bearer ${explicitConfig.apiKey}`,
     'Content-Type': 'application/json',
@@ -67,6 +71,7 @@ const cors = require(resolve(rootDir, 'api/utils/cors'));
 
 // 导入api目录中的处理器
 const articleHandlers = require(resolve(rootDir, 'api/internal/article-handlers'));
+const photoHandlers = require(resolve(rootDir, 'api/internal/photo-handlers'));
 const databaseHandlers = require(resolve(rootDir, 'api/internal/database-handlers'));
 const contentHandlers = require(resolve(rootDir, 'api/internal/content-handlers'));
 const systemHandlers = require(resolve(rootDir, 'api/internal/system-handlers'));
@@ -81,6 +86,7 @@ export {
   validation,
   cors,
   articleHandlers,
+  photoHandlers,
   databaseHandlers,
   contentHandlers,
   systemHandlers,

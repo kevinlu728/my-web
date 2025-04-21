@@ -31,8 +31,13 @@
     
     <!-- 再加载API服务 -->
     <script src="./scripts/services/notionAPIService.js" type="module"></script>
+
+    <!-- 为了快速调试，先直接在html中加载懒加载库和-->
+    <!-- 加载vanilla-lazyload库 -->
+     <script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload@17.8.5/dist/lazyload.min.js"></script>
+    <!-- 加载masonry库 -->
     <script src="https://unpkg.com/imagesloaded@5/imagesloaded.pkgd.min.js"></script>
-<script src="https://unpkg.com/masonry-layout@4/dist/masonry.pkgd.min.js"></script> 
+    <script src="https://unpkg.com/masonry-layout@4/dist/masonry.pkgd.min.js"></script> 
     
     <!-- 结构化数据 -->
     <script type="application/ld+json">
@@ -88,29 +93,6 @@
                 <button class="module-selector" data-module="travel">
                     <i class="fas fa-plane-departure"></i> 旅行
                 </button>
-            </div>
-            
-            <!-- 模块统计信息 -->
-            <div class="module-stats">
-                <h3 class="module-stats-title">内容统计</h3>
-                <ul class="stats-list">
-                    <li class="stats-item">
-                        <span>电影收藏</span>
-                        <span>9</span>
-                    </li>
-                    <li class="stats-item">
-                        <span>足球记忆</span>
-                        <span>9</span>
-                    </li>
-                    <li class="stats-item">
-                        <span>旅行回忆</span>
-                        <span>9</span>
-                    </li>
-                    <li class="stats-item">
-                        <span>总内容</span>
-                        <span>27</span>
-                    </li>
-                </ul>
             </div>
         </div>
         

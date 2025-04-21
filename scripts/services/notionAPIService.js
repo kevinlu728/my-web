@@ -400,6 +400,96 @@ class NotionAPIService {
   }
 
   /**
+   * 获取照片列表
+   * @param {Object|string} params - 参数对象或数据库ID
+   * @returns {Promise<Object>} 照片列表和分页信息
+   */
+  async getPhotos(params) {
+    try {
+      let databaseId = null;
+      let requestBody = {};
+      
+      // 兼容两种调用方式：
+      // 1. getPhotos(databaseId)
+      // 2. getPhotos({ filter, sorts, limit, pageSize, startCursor })
+      if (typeof params === 'string') {
+        databaseId = params;
+        this.logInfo(`获取照片列表，数据库ID: ${databaseId}`);
+        requestBody = {
+          lifeDatabaseId: databaseId,
+          databaseId: databaseId,  // 兼容两种参数格式
+          limit: 100
+        };
+      } else {
+        const { filter, sorts, limit, pageSize, startCursor, lifeDatabaseId, databaseId } = params || {};
+        this.logInfo(`获取照片列表，参数:`, params);
+        requestBody = {
+          filter,
+          sorts,
+          limit,
+          pageSize: pageSize || 100,
+          startCursor,
+          lifeDatabaseId: lifeDatabaseId || databaseId,
+          databaseId: databaseId || lifeDatabaseId
+        };
+      }
+      
+      // 记录请求参数
+      this.logInfo('请求参数:', requestBody);
+      
+      const options = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      };
+      
+      const endpoint = '/photos';
+      const data = await this.executeRequest(endpoint, options);
+      
+      // 检查响应结构并记录
+      const responseStructure = {
+        hasResults: !!data.results,
+        resultsLength: data.results?.length,
+        hasPhotos: !!data.photos,
+        photosLength: data.photos?.length,
+        hasMore: !!data.hasMore || !!data.has_more,
+        nextCursor: data.nextCursor || data.next_cursor
+      };
+      this.logInfo('响应结构检查:', responseStructure);
+      
+      // 检查数据结构
+      if (!data.results && !data.photos) {
+        this.logError('无效的API响应格式 - 缺少结果:', data);
+        throw new Error('无效的API响应格式 - 缺少照片数据');
+      }
+      
+      // 兼容两种返回格式
+      const photos = data.photos || data.results;
+      
+      if (!Array.isArray(photos)) {
+        this.logError('无效的照片数据 - 不是数组:', photos);
+        throw new Error('无效的API响应格式 - 照片不是数组');
+      }
+      
+      // 返回照片列表，分页信息和源数据
+      return {
+        photos,
+        hasMore: data.hasMore || data.has_more || false,
+        nextCursor: data.nextCursor || data.next_cursor || null,
+        raw: data
+      };
+    } catch (error) {
+      this.logError('获取照片列表失败:', error);
+      // 详细记录异常堆栈
+      this.logError('错误堆栈:', error.stack);
+      this.logError('错误发生时间:', new Date().toISOString());
+      throw error;
+    }
+  }
+
+  /**
    * 执行API请求，支持自动重试和API实现切换
    */
   async executeRequest(url, options = {}, allowFallback = true) {
@@ -514,3 +604,4 @@ export const getDatabaseInfo = notionAPIService.getDatabaseInfo.bind(notionAPISe
 export const getDatabases = notionAPIService.getDatabases.bind(notionAPIService);
 export const testApiConnection = notionAPIService.testApiConnection.bind(notionAPIService);
 export const getBlockChildren = notionAPIService.getBlockChildren.bind(notionAPIService);
+export const getPhotos = notionAPIService.getPhotos.bind(notionAPIService);
