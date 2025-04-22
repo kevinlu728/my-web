@@ -34,6 +34,11 @@
       "dest": "/api/api-routes.js"
     },
     {
+      "src": "/api/photos",
+      "methods": ["POST", "OPTIONS"],
+      "dest": "/api/api-routes.js"
+    },
+    {
       "src": "/api/article-content/([^/]+)",
       "dest": "/api/api-routes.js?pageId=$1&type=article-content"
     },
