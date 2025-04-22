@@ -164,9 +164,6 @@ class PhotoManager {
         
         // 更新加载状态
         photoPaginationManager.updateLoadMoreContainer(false);
-        
-        // 更新筛选信息
-        photoRenderer.updateFilterInfo(window.pageState.currentModule, this.filteredPhotos.length);
     }
 
     /**
@@ -189,9 +186,6 @@ class PhotoManager {
                     
                     // 保存更新后的filteredPhotos总数
                     this.filteredPhotos = photoPaginationManager.filteredPhotos;
-                    
-                    // 更新筛选信息
-                    photoRenderer.updateFilterInfo(window.pageState.currentModule, this.filteredPhotos.length);
                     
                     // 强制更新加载指示器状态
                     photoPaginationManager.updateLoadMoreContainer(false);
@@ -291,14 +285,11 @@ class PhotoManager {
         
         logger.info(`筛选后照片数量: ${this.filteredPhotos.length}`);
         
-        // 重置分页状态
-        this.currentPage = 1;
+        // 重要修复: 同步更新分页管理器中的照片数据
+        photoPaginationManager.filterPhotosByModule(moduleType, this.filteredPhotos);
         
         // 更新UI
         this.render();
-        
-        // 更新筛选信息
-        photoRenderer.updateFilterInfo(moduleType, this.filteredPhotos.length);
     }
 
     /**

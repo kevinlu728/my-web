@@ -46,6 +46,10 @@ export function processPhotoListData(photos) {
             
             // 提取描述
             const description = photo.properties.Description?.rich_text?.[0]?.plain_text || '';
+
+            // 提取自定义字段
+            const customField = photo.properties['Custom Field']?.rich_text?.[0]?.plain_text || '';
+            const customFieldType = photo.properties['Custom Field Type']?.select?.name || '无额外字段';
             
             return {
                 id: photo.id,
@@ -56,6 +60,8 @@ export function processPhotoListData(photos) {
                 date,
                 category,
                 description,
+                customField,
+                customFieldType,
                 raw: photo // 保留原始数据
             };
         } catch (err) {

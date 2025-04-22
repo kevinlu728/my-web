@@ -287,6 +287,7 @@ class PhotoRenderer {
         photoItem.className = 'photo-item';
         photoItem.setAttribute('data-id', photo.id);
         photoItem.setAttribute('data-category', photo.category);
+        photoItem.setAttribute('data-custom-field', photo.customField);
         
         // 获取模块标签
         let moduleLabel = '未知';
@@ -332,7 +333,7 @@ class PhotoRenderer {
             </div>
             <div class="photo-info">
                 <h3 class="photo-title">${photo.title}</h3>
-                <div class="photo-date">${formatDateToCN(photo.date)}</div>
+                <div class="photo-custom-field" data-field="${photo.customFieldType}">${photo.customField}</div>
             </div>
         `;
         
@@ -342,36 +343,6 @@ class PhotoRenderer {
         }
         
         return photoItem;
-    }
-
-    /**
-     * 更新筛选信息显示
-     * @param {string} filterType 筛选类型
-     * @param {number} count 照片数量
-     */
-    updateFilterInfo(filterType, count) {
-        const filterTextEl = document.querySelector('.filter-text strong');
-        const photosCountEl = document.querySelector('.photos-count');
-        
-        if (filterTextEl) {
-            switch(filterType) {
-                case 'MOVIE':
-                    filterTextEl.textContent = '电影';
-                    break;
-                case 'FOOTBALL':
-                    filterTextEl.textContent = '足球';
-                    break;
-                case 'TRAVEL':
-                    filterTextEl.textContent = '旅行';
-                    break;
-                default:
-                    filterTextEl.textContent = '全部内容';
-            }
-        }
-        
-        if (photosCountEl) {
-            photosCountEl.textContent = `共 ${count} 项`;
-        }
     }
 
     /**

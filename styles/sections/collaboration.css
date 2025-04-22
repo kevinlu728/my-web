@@ -2,16 +2,25 @@
 
 /* 合作区域样式 */
 .collaboration {
-    margin: 3rem 0 2rem;
+    width: 100%;
+    max-width: 900px;
+    text-align: center;
+    padding: 1.2rem 3rem;
+    margin: 1rem 0 0rem;
     padding: 1.5rem 0;
+    background: rgba(255, 255, 255, 0.9);
     border-top: 1px solid rgba(52, 152, 219, 0.2);
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    position: relative;
+    overflow: hidden;
 }
 
 .collab-title {
-    font-size: 1.2rem;
-    color: var(--primary-color);
+    font-size: 1.5rem;
     font-weight: 600;
-    margin-bottom: 1.2rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
 }
 
 .collab-text {
@@ -33,7 +42,7 @@
 
 /* 联系按钮样式 */
 .contact-btn {
-    margin-top: 2rem;
+    margin-top: 1rem;
     padding: 0.8rem 2.5rem;
     background: linear-gradient(45deg, var(--secondary-color), #5dade2);
     color: white;
@@ -59,14 +68,40 @@
     box-shadow: 0 2px 4px rgba(52, 152, 219, 0.2);
 }
 
+.collaboration::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+}
+
+
 /* 响应式样式 */
 @media (max-width: 768px) {
     .collaboration {
         text-align: center;
-        padding: 1.5rem 0;
+        padding: 1rem;
     }
     
     .collab-text {
+        font-size: 1rem;
         white-space: normal;
+    }
+
+    .collab-title {
+        font-size: 1.4rem;
+    }
+
+    .collab-motto {
+        font-size: 1.1rem;
+        margin: 1.5rem 0;
+    }
+
+    .contact-btn {
+        padding: 0.8rem 2rem;
+        font-size: 1rem;
     }
 } 

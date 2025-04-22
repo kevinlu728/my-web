@@ -24,7 +24,6 @@ class PhotoPaginationManager {
         this.currentPage = 1;
         this.photosPerPage = 9;
         this.hasMore = true;
-        this.allPhotos = [];
         this.filteredPhotos = [];
         this.currentModuleType = ModuleType.ALL;
         
@@ -56,14 +55,13 @@ class PhotoPaginationManager {
         logger.info('初始化照片分页, 照片总数:', photos ? photos.length : 0);
         
         // 设置基础属性
-        this.allPhotos = photos || [];
-        this.filteredPhotos = [...this.allPhotos]; // 初始时复制所有照片到过滤列表
+        this.filteredPhotos = [...photos]; // 初始时复制所有照片到过滤列表
         this.photosPerPage = photosPerPage;
         this.currentPage = 1;
         this.isLoading = false;
         this.onLoadMore = onLoadMore; // 保存回调函数
         
-        logger.debug(`照片分页管理器初始化完成: 总照片数=${this.allPhotos.length}, 过滤后照片数=${this.filteredPhotos.length}`);
+        logger.debug(`照片分页管理器初始化完成: 总照片数=${this.filteredPhotos.length}`);
         
         // 添加平滑加载过渡效果
         this._addSmoothLoadingStyles();
@@ -97,21 +95,6 @@ class PhotoPaginationManager {
             `;
             document.head.appendChild(style);
         }
-    }
-
-    /**
-     * 根据当前模块类型筛选照片
-     */
-    _filterPhotosByModule() {
-        if (this.currentModuleType === ModuleType.ALL) {
-            this.filteredPhotos = [...this.allPhotos];
-        } else {
-            this.filteredPhotos = this.allPhotos.filter(photo => 
-                photo.type === this.currentModuleType
-            );
-        }
-        
-        logger.info(`照片已筛选，当前模块: ${this.currentModuleType}, 筛选后数量: ${this.filteredPhotos.length}`);
     }
 
     /**
@@ -478,18 +461,15 @@ class PhotoPaginationManager {
      * 切换模块类型
      * @param {string} moduleType 模块类型
      */
-    changeModuleType(moduleType) {
+    filterPhotosByModule(moduleType, filteredPhotos) {
         if (this.currentModuleType === moduleType) {
             return;
         }
-        
-        logger.info(`切换模块类型，从 ${this.currentModuleType} 到 ${moduleType}`);
         this.currentModuleType = moduleType;
+        this.filteredPhotos = [...filteredPhotos];
+        logger.info(`按模块筛选照片: ${moduleType}，更新分页管理器的筛选照片，数量: ${filteredPhotos.length}`);
         this.currentPage = 1;
         this.isLoading = false;
-        
-        // 重新筛选照片
-        this.filterPhotosByModule();
         
         // 更新加载状态
         this.updateLoadMoreContainer(false);
@@ -506,7 +486,6 @@ class PhotoPaginationManager {
     reset() {
         this.currentPage = 1;
         this.isLoading = false;
-        this.allPhotos = [];
         this.filteredPhotos = [];
         
         // 移除滚动监听
@@ -532,6 +511,8 @@ class PhotoPaginationManager {
         this.reset();
         logger.info('照片分页管理器已清理');
     }
+
+
 }
 
 // 导出单例实例

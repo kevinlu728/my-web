@@ -221,26 +221,26 @@ function addWelcomePageStyles(fromCache = false) {
     styleElement.id = 'welcome-page-style';
     styleElement.textContent = `
         .welcome-page {
-            padding: 2rem;
+            padding: 0rem;
             max-width: 800px;
             margin: 0 auto;
         }
         
         .welcome-header {
             text-align: center;
-            margin-bottom: 3rem;
-            padding-bottom: 2rem;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
             border-bottom: 1px solid #eee;
         }
         
         .welcome-header h1 {
-            font-size: 2.5rem;
+            font-size: 2rem;
             color: #2c3e50;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
         }
         
         .welcome-subtitle {
-            font-size: 1.2rem;
+            font-size: 1rem;
             color: #7f8c8d;
         }
         
