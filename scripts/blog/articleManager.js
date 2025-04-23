@@ -195,12 +195,12 @@ class ArticleManager {
             // 添加超时控制
             const timeoutId = setTimeout(() => {
                 if (this.abortController) {
-                    logger.warn('⚠️ 加载文章列表超时（8秒），尝试从缓存加载');
+                    logger.warn('⚠️ [请求超时] 加载文章列表超时（8秒），尝试从缓存加载');
                     this.abortController.abort();
                     // 尝试从缓存获取文章列表
                     const cachedArticles = articleCacheManager.loadArticlesFromCache();
                     if (cachedArticles) {
-                        logger.info('📦 从缓存加载文章列表成功');
+                        logger.info('✅ [缓存应急] 成功从缓存恢复文章列表');
                         this.articles = cachedArticles;
                         this.filterAndRenderArticles();
                         return this.articles;
@@ -230,7 +230,7 @@ class ArticleManager {
             const hasMore = result.hasMore;
             const nextCursor = result.nextCursor;
             
-            logger.info(`成功获取 ${articles.length} 篇文章`);
+            logger.info(`📡 [API响应] 获取到 ${articles.length} 篇文章`);
             
             // 保存文章列表和分页信息
             this.hasMore = hasMore;
@@ -280,7 +280,7 @@ class ArticleManager {
             // 使用缓存管理器尝试从缓存获取文章列表
             const cachedArticles = articleCacheManager.loadArticlesFromCache();
             if (cachedArticles) {
-                logger.info('📦 从缓存加载文章列表成功');
+                logger.info('✅ [缓存应急] 成功从缓存恢复文章列表');
                 this.articles = cachedArticles;
                 this.filterAndRenderArticles();
                 return this.articles;
@@ -610,7 +610,7 @@ class ArticleManager {
             
             // 使用缓存数据或从API获取
             if (cachedData) {
-                logger.info('📦 从缓存加载文章:', pageId);
+                // 不需要重复日志，缓存管理器已记录
                 
                 // 保存缓存中的分页状态
                 if (cachedData.hasMore === true && cachedData.nextCursor) {
@@ -618,10 +618,11 @@ class ArticleManager {
                         hasMore: cachedData.hasMore,
                         nextCursor: cachedData.nextCursor
                     });
-                    logger.info('从缓存恢复分页状态');
+                    logger.info('🔄 [分页恢复] 从缓存恢复分页状态，游标: ' + 
+                                (cachedData.nextCursor ? cachedData.nextCursor.substring(0, 8) + '...' : 'null'));
                 } else {
                     // 如果缓存数据中没有有效的分页信息，强制重置
-                    logger.info('缓存中没有有效的分页信息，保持重置状态');
+                    logger.info('⚠️ [分页重置] 缓存中没有有效的分页信息，重置状态');
                     articlePaginationManager.updateState({
                         hasMore: false,
                         nextCursor: null
@@ -630,7 +631,7 @@ class ArticleManager {
                 
                 // 如果文章已完全加载，则不需要显示加载更多
                 if (cachedData.isFullyLoaded === true) {
-                    logger.info('文章已完全加载，无需分页请求');
+                    logger.info('👍 [完整加载] 文章已完全加载，无需分页请求');
                     articlePaginationManager.updateState({
                         hasMore: false,
                         nextCursor: null
@@ -641,7 +642,7 @@ class ArticleManager {
                 return cachedData;
             }
 
-            logger.info('🌐 从网络加载文章:', pageId);
+            logger.info(`📡 [API请求] 从网络加载文章: ${pageId}`);
             
             // 设置超时控制
             const timeoutId = setTimeout(() => {
@@ -669,10 +670,11 @@ class ArticleManager {
                 return false;
             }
             
-            // 缓存文章内容，使用缓存管理器
+            // 缓存文章内容
+            logger.info(`📦 [缓存新文] 文章已加载${articleData.hasMore ? '(部分内容)' : '(全部内容)'}，正在缓存`);
             articleCacheManager.setArticleCache(pageId, {
                 ...articleData,
-                isFullyLoaded: !articleData.hasMore // 只有当没有更多内容时才标记为完全加载
+                isFullyLoaded: !articleData.hasMore
             });
             
             this.isLoading = false;

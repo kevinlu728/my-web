@@ -229,9 +229,10 @@ class ArticlePaginationManager {
      * @private
      */
     _checkIfShouldLoadMore() {
-        // 如果没有更多内容或正在加载，则跳过
-        if (this.isLoading || this.isLoadingMore || !this.hasMore || !this.nextCursor) {
-            return;
+        // 先检查是否有资格加载更多，例如是否有下一个游标和当前文章ID等
+        if (!this.hasMore || !this.nextCursor || this.isLoadingMore) {
+            logger.debug('⏸️ [分页检查] 目前不需要加载更多内容');
+            return false;
         }
         
         // 确保加载状态没有错误地保持锁定超过预期时间
@@ -248,6 +249,11 @@ class ArticlePaginationManager {
                 this._triggerLoadMore(loadMoreContainer, 0);
             }
         }
+        
+        // 条件满足，开始加载更多
+        logger.info('📥 [分页触发] 准备加载更多内容');
+        this._triggerLoadMore();
+        return true;
     }
 
     /**
@@ -348,6 +354,12 @@ class ArticlePaginationManager {
      * @returns {Promise<boolean>} 是否成功加载更多内容
      */
     async loadMoreContent(updateCacheCallback) {
+        // 检查是否在加载中
+        if (this.isLoadingMore) {
+            logger.info('⏸️ [分页跳过] 正在加载，跳过重复请求');
+            return false;
+        }
+        
         // 保存当前请求标识符
         const requestId = this.requestIdentifier;
         const currentPageId = this.currentPageId;
@@ -390,6 +402,9 @@ class ArticlePaginationManager {
             
             // 更新缓存
             if (typeof updateCacheCallback === 'function') {
+                logger.info(`🔄 [分页缓存] 更新缓存，${newBlocks.length}个新块，游标：${
+                    this.nextCursor ? this.nextCursor.substring(0, 8) + '...' : '无'
+                }`);
                 updateCacheCallback(this.currentPageId, newBlocks, this.hasMore, this.nextCursor);
             }
             
@@ -404,11 +419,12 @@ class ArticlePaginationManager {
 
             // 如果没有更多内容，确保显示提示
             if (!this.hasMore) {
-                logger.info('已加载所有内容，更新状态显示');
+                logger.info('✅ [分页完成] 已加载所有内容，文章完整加载');
                 // 先更新UI状态以显示"没有更多内容"
                 updateLoadMoreStatus(false, false);
             } else {
                 // 还有更多内容，更新状态
+                logger.info('📑 [分页就绪] 还有更多内容可加载');
                 updateLoadMoreStatus(false, true);
             }
 
@@ -417,7 +433,7 @@ class ArticlePaginationManager {
             this.isLoadingMore = false;
             return renderResult;
         } catch (error) {
-            logger.error('加载更多内容失败:', error);
+            logger.error('❌ [分页错误] 加载更多内容失败:', error);
             // 确保在错误情况下也重置状态
             clearTimeout(loadMoreTimeout);
             this.isLoadingMore = false;

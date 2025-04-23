@@ -11,12 +11,13 @@
  * - 提供模拟数据分页加载
  */
 
-import { ModuleType } from './lifeViewManager.js';
-import logger from '../utils/logger.js';
-import { throttle, showLoadingSpinner } from '../utils/common-utils.js';
-import lifecycleManager from '../utils/lifecycleManager.js';
 import notionAPIService from '../services/notionAPIService.js';
+import { lifeViewManager, ModuleType } from './lifeViewManager.js';
 import { processPhotoListData } from '../utils/photo-utils.js';
+import lifecycleManager from '../utils/lifecycleManager.js';
+import { throttle, showLoadingSpinner } from '../utils/common-utils.js';
+import logger from '../utils/logger.js';
+import { photoCacheManager } from './photoCacheManager.js';
 
 class PhotoPaginationManager {
     constructor() {
@@ -267,11 +268,12 @@ class PhotoPaginationManager {
      */
     async loadMorePhotos() {
         if (this.isLoading || !this.hasMorePhotos()) {
-            logger.info('跳过加载：isLoading=', this.isLoading, 'hasMore=', this.hasMorePhotos());
+            logger.info('⏸️ [跳过加载] 状态不允许加载更多');
             return [];
         }
         
         this.isLoading = true;
+        lifeViewManager.dispatchViewEvent('loadingStart');
         this.updateLoadMoreContainer(true);
         
         try {
@@ -284,28 +286,65 @@ class PhotoPaginationManager {
             
             // 如果有下一页且有游标，则使用API加载
             if (hasApiPagination && this.photoManager.paginationInfo.nextCursor) {
-                logger.info('使用API加载更多照片，游标:', this.photoManager.paginationInfo.nextCursor);
+                const cursor = this.photoManager.paginationInfo.nextCursor;
+                logger.info(`🔍 [分页加载] 准备加载下一页，游标: ${cursor}`);
                 
-                const response = await notionAPIService.getPhotos({
-                    lifeDatabaseId: this.photoManager.currentDatabaseId,
-                    startCursor: this.photoManager.paginationInfo.nextCursor,
-                    pageSize: this.photosPerPage,
-                    sorts: [{ 
-                        property: "Photo Date", 
-                        direction: "descending" 
-                    }]
-                });
+                // 先尝试从缓存获取分页数据
+                const cachedPagination = photoCacheManager.getCachedPaginationData(
+                    this.photoManager.currentDatabaseId,
+                    cursor
+                );
                 
-                if (response && response.photos && response.photos.length > 0) {
-                    // 处理API返回的照片数据，使用照片工具中的统一处理函数
-                    const processedPhotos = processPhotoListData(response.photos);
-                    newPhotos = processedPhotos;
+                if (cachedPagination && cachedPagination.photos && cachedPagination.photos.length > 0) {
+                    // 使用缓存数据
+                    logger.info(`🔄 [分页完成] 从缓存加载了 ${cachedPagination.photos.length} 张新照片`);
+                    
+                    newPhotos = cachedPagination.photos;
                     
                     // 更新分页信息
-                    this.photoManager.paginationInfo.hasMore = response.hasMore;
-                    this.photoManager.paginationInfo.nextCursor = response.nextCursor;
+                    if (cachedPagination.paginationInfo) {
+                        this.photoManager.paginationInfo = cachedPagination.paginationInfo;
+                    }
+                } else {
+                    // 缓存未命中，从API加载
+                    logger.info(`📡 [API请求] 分页加载，游标: ${cursor}`);
                     
-                    // 添加到总照片集合中
+                    const response = await notionAPIService.getPhotos({
+                        lifeDatabaseId: this.photoManager.currentDatabaseId,
+                        startCursor: cursor,
+                        pageSize: this.photosPerPage,
+                        sorts: [{ 
+                            property: "Photo Date", 
+                            direction: "descending" 
+                        }]
+                    });
+                    
+                    if (response && response.photos && response.photos.length > 0) {
+                        // 处理API返回的照片数据
+                        const processedPhotos = processPhotoListData(response.photos);
+                        newPhotos = processedPhotos;
+                        
+                        // 更新分页信息
+                        const paginationInfo = {
+                            hasMore: response.hasMore,
+                            nextCursor: response.nextCursor
+                        };
+                        this.photoManager.paginationInfo = paginationInfo;
+                        
+                        // 缓存分页数据
+                        photoCacheManager.cachePaginationData(
+                            this.photoManager.currentDatabaseId,
+                            cursor,
+                            processedPhotos,
+                            paginationInfo
+                        );
+                        
+                        logger.info(`📡 [API成功] 分页加载了 ${newPhotos.length} 张新照片，新游标: ${response.nextCursor || '无'}`);
+                    }
+                }
+                
+                // 添加到总照片集合中
+                if (newPhotos && newPhotos.length > 0) {
                     this.photoManager.photos = [...this.photoManager.photos, ...newPhotos];
                     
                     // 如果有过滤，也更新过滤后的照片集合
@@ -316,12 +355,10 @@ class PhotoPaginationManager {
                     } else {
                         this.filteredPhotos = [...this.filteredPhotos, ...newPhotos];
                     }
-                    
-                    logger.info(`从API加载了${newPhotos.length}张新照片，更新游标:`, response.nextCursor);
                 }
             } else {
                 // 如果没有API分页信息或游标，回退到原来的本地分页方式
-                logger.info('使用本地分页加载更多照片');
+                logger.info('📄 [本地分页] 使用已加载数据分页显示');
                 
                 // 先获取当前页码对应的照片
                 const nextPage = this.currentPage + 1;
@@ -329,7 +366,7 @@ class PhotoPaginationManager {
                 const endIndex = nextPage * this.photosPerPage;
                 newPhotos = this.filteredPhotos.slice(startIndex, endIndex);
                 
-                logger.info(`使用本地分页：第${nextPage}页，起始索引=${startIndex}，结束索引=${endIndex}，照片数=${newPhotos.length}`);
+                logger.info(`📄 [本地分页] 第${nextPage}页，加载了 ${newPhotos.length} 张照片`);
             }
             
             // 仅在成功获取到照片后才增加页码
@@ -338,17 +375,20 @@ class PhotoPaginationManager {
                 logger.info(`成功加载第${this.currentPage}页，共${newPhotos.length}张新照片`);
                 
                 this.isLoading = false;
+                lifeViewManager.dispatchViewEvent('loadingEnd');
                 return newPhotos;
             } else {
                 logger.warn(`未找到更多照片，保持在第${this.currentPage}页`);
                 this.isLoading = false;
                 this.updateLoadMoreContainer(false);
+                lifeViewManager.dispatchViewEvent('loadingEnd');
                 return [];
             }
         } catch (error) {
-            logger.error('加载更多照片失败:', error);
+            logger.error('❌ [加载错误] 分页加载失败:', error);
             this.isLoading = false;
             this.updateLoadMoreContainer(false, true);
+            lifeViewManager.dispatchViewEvent('loadingEnd');
             return [];
         }
     }

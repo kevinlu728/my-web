@@ -11,14 +11,14 @@
  */
 
 import notionAPIService from '../services/notionAPIService.js';
-import { ModuleType } from './lifeViewManager.js';
+import { lifeViewManager, ModuleType } from './lifeViewManager.js';
 import { photoPaginationManager } from './photoPaginationManager.js';
 import { photoRenderer } from './photoRenderer.js';
-
 import lifecycleManager from '../utils/lifecycleManager.js';
 import { processPhotoListData } from '../utils/photo-utils.js';
 import { generateMockPhotos } from '../utils/mock-utils.js';
 import logger from '../utils/logger.js';
+import { photoCacheManager } from './photoCacheManager.js';
 
 // 照片墙管理器
 class PhotoManager {
@@ -57,6 +57,8 @@ class PhotoManager {
             this.container.appendChild(photoGrid);
         }
         
+        lifeViewManager.dispatchViewEvent('loadingStart');
+        
         // 获取照片数据
         this.photos = await this.loadPhotos();
         this.filteredPhotos = [...this.photos];
@@ -71,6 +73,8 @@ class PhotoManager {
             this.onLoadMore.bind(this)
         );
 
+        lifeViewManager.dispatchViewEvent('loadingEnd');
+        
         this.render();
         
         // 注册清理函数
@@ -86,8 +90,27 @@ class PhotoManager {
      */
     async loadPhotos(options = {}) {
         try {
-            // 从API获取照片数据
-            logger.info('从Notion API获取照片数据...');
+            // 先尝试从缓存获取照片数据
+            const cachedData = photoCacheManager.getCachedPhotoList(this.currentDatabaseId, options);
+            
+            if (cachedData && cachedData.photos && cachedData.photos.length > 0) {
+                logger.info(`🔄 [渲染准备] 使用缓存数据显示 ${cachedData.photos.length} 张照片`);
+                
+                // 恢复分页信息
+                if (cachedData.paginationInfo) {
+                    this.hasMore = cachedData.paginationInfo.hasMore;
+                    this.nextCursor = cachedData.paginationInfo.nextCursor;
+                    this.paginationInfo = {
+                        hasMore: this.hasMore,
+                        nextCursor: this.nextCursor
+                    };
+                }
+                
+                return cachedData.photos;
+            }
+            
+            // 如果缓存未命中，从API获取数据
+            logger.info('📡 [API请求] 正在从Notion API获取照片数据...');
             const response = await notionAPIService.getPhotos({
                 lifeDatabaseId: this.currentDatabaseId,
                 limit: 100,
@@ -103,7 +126,7 @@ class PhotoManager {
                 throw new Error('API返回的照片数据无效');
             }
             
-            logger.info(`成功从API获取到 ${response.photos.length} 张照片`);
+            logger.info(`📡 [API成功] 获取到 ${response.photos.length} 张照片`);
             
             // 处理Notion数据到应用所需的格式
             const processedPhotos = processPhotoListData(response.photos);
@@ -119,11 +142,19 @@ class PhotoManager {
                 hasMore: this.hasMore,
                 nextCursor: this.nextCursor
             };
+            
+            // 缓存照片数据
+            photoCacheManager.cachePhotoList(
+                this.currentDatabaseId, 
+                processedPhotos, 
+                options, 
+                this.paginationInfo
+            );
 
             return this.photos;
         } catch (error) {
-            logger.error('从API获取照片失败:', error);
-            logger.warn('使用模拟数据作为备用');
+            logger.error('❌ [API错误] 获取照片失败:', error);
+            logger.warn('⚠️ [备用数据] 使用模拟数据代替');
             
             // 作为备用，使用模拟数据
             const mockPhotos = generateMockPhotos();
@@ -132,6 +163,15 @@ class PhotoManager {
             this.filteredPhotos = [...mockPhotos];
             this.hasMore = false;
             this.nextCursor = null;
+            
+            // 缓存模拟数据，但设置较短的过期时间（1小时）
+            photoCacheManager.cachePhotoList(
+                this.currentDatabaseId, 
+                mockPhotos, 
+                options, 
+                { hasMore: false, nextCursor: null },
+                60 * 60 * 1000 // 1小时
+            );
             
             return this.photos;
         }
@@ -142,6 +182,8 @@ class PhotoManager {
      */
     async render() {
         if (!this.container) return;
+        
+        lifeViewManager.dispatchViewEvent('beforeRender');
         
         // 获取当前页照片
         let photosToShow = photoPaginationManager.getPhotosForCurrentPage();
@@ -164,6 +206,8 @@ class PhotoManager {
         
         // 更新加载状态
         photoPaginationManager.updateLoadMoreContainer(false);
+        
+        lifeViewManager.dispatchViewEvent('afterRender');
     }
 
     /**
@@ -224,6 +268,11 @@ class PhotoManager {
      * @param {Object} photo 照片数据
      */
     onPhotoDetailClick(photo) {
+        lifeViewManager.dispatchViewEvent('photoSelected', { photoId: photo.id });
+        
+        // 缓存选中的照片，提高再次访问性能
+        photoCacheManager.cachePhoto(photo);
+        
         // 使用原始大图URL
         const imageUrl = photo.originalUrl || photo.coverUrl;
         

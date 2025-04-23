@@ -10,7 +10,7 @@
  */
 
 import logger from '../utils/logger.js';
-import { ModuleType } from './lifeViewManager.js';
+import {lifeViewManager, ModuleType} from './lifeViewManager.js';
 
 // 主题模块管理器
 class ThemeModuleManager {
@@ -149,6 +149,17 @@ class ThemeModuleManager {
         // 更新body主题类
         document.body.classList.remove(`theme-${prevModule}`);
         document.body.classList.add(`theme-${moduleType}`);
+        
+        // 触发视图模式改变事件
+        lifeViewManager.dispatchViewEvent('viewModeChanged', {
+            mode: moduleType,
+            previousMode: prevModule
+        });
+        
+        // 触发主题改变事件
+        lifeViewManager.dispatchViewEvent('themeChanged', {
+            theme: moduleType
+        });
         
         // 触发回调
         if (typeof this.callbacks.onModuleChange === 'function') {
