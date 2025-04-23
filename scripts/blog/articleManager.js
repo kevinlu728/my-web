@@ -44,7 +44,7 @@ import { tableOfContents } from './tableOfContents.js';
 // 导入工具函数
 import { categoryConfig } from '../config/categories.js';
 import { articleRouteUtils } from '../utils/article-router.js';
-import { displayArticleContent, showArticleError, processArticleListData } from '../utils/article-utils.js';
+import { validateArticleId, displayArticleContent, showArticleError, processArticleListData } from '../utils/article-utils.js';
 import { getArticlePlaceholder } from '../utils/placeholder-templates.js';
 import { showStatus, showError } from '../utils/common-utils.js';
 import logger from '../utils/logger.js';
@@ -92,36 +92,25 @@ class ArticleManager {
         logger.info('初始化文章管理器，数据库ID:', databaseId);
         this.currentDatabaseId = databaseId;
         
-        // 发布初始化完成事件
-        this.notifyInitialized();
-        
-        // 尝试使用分类管理器，但要检查它是否已初始化
-        if (this.categoryManager) {
-            this.categoryManager.initialize();
-        } else {
-            // 等待分类管理器初始化事件
-            logger.info('等待分类管理器初始化...');
-        }
-        
         try {
+            // 初始化分类管理器
+            this.initCategoryManager();
+
+            // 初始化欢迎页面管理器
+            this.initWelcomePageManager();
+
             // 加载文章列表
             const articles = await this.loadArticles();
+
+            // 更新分类列表
+            await this.updateCategories(articles);
             
             // 初始化搜索管理器
-            articleSearchManager.initialize({
-                onSearchResults: (searchResults, searchTerm) => {
-                    logger.info(`搜索结果: ${searchResults.length} 个匹配项`);
-                },
-                onResetSearch: () => {
-                    logger.info('重置搜索状态');
-                    this.filterAndRenderArticles();
-                },
-                // 添加获取文章数据的回调函数
-                getArticles: () => {
-                    return this.articles;
-                }
-            });
-            
+            this.initArticleSearchManager();
+
+            // 根据url显示文章或欢迎页
+            await this.showArticleOrWelcomePage();
+
             // 监听文章选择事件
             document.addEventListener('articleSelected', (e) => {
                 if (e.detail && e.detail.articleId) {
@@ -129,40 +118,14 @@ class ArticleManager {
                     this.showArticle(e.detail.articleId);
                 }
             });
-            
-            // 更新分类列表
-            if (articles && articles.length > 0) {
-                logger.info('更新分类列表...');
-                categoryManager.updateCategories(articles);
-                
-                // 设置分类变更和文章选择回调
-                categoryManager.setOnCategoryChange((category) => {
-                    logger.info('分类变更:', category);
-                    
-                    // 如果在搜索状态，清除搜索
-                    if (articleSearchManager.isInSearchMode()) {
-                        articleSearchManager.clearSearch();
-                    }
-                    
-                    this.filterAndRenderArticles();
-                });
-                
-                categoryManager.setOnArticleSelect((articleId) => {
-                    logger.info('文章选择');
-                    this.showArticle(articleId);
-                });
-                
-                // 从URL初始化状态
-                await this.initializeFromUrl();
-                
-            } else {
-                logger.info('没有文章，不更新分类');
-            }
-            
+              
+            // 发布初始化完成事件
+            this.notifyInitialized();
+
             return articles;
         } catch (error) {
-            logger.error('初始化失败:', error);
-            showError('初始化失败: ' + error.message);
+            logger.error('文章管理器初始化失败:', error);
+            showError('文章管理器初始化失败: ' + error.message);
             throw error;
         }
     }
@@ -185,10 +148,6 @@ class ArticleManager {
             // 创建新的 AbortController
             this.abortController = new AbortController();
             const signal = this.abortController.signal;
-            
-            // 显示加载状态 - 改为调用categoryManager的方法
-            logger.debug('显示文章树加载状态');
-            categoryManager.showTreeSkeleton();
             
             logger.info(`开始加载文章，数据库ID: ${this.currentDatabaseId}`);
             
@@ -250,15 +209,6 @@ class ArticleManager {
                 showStatus('没有找到文章', false, 'info');
             }
             
-            // 数据加载完成后更新分类列表
-            if (articles && articles.length > 0) {
-                categoryManager.updateCategories(articles);
-                // categoryManager负责隐藏自己的骨架屏
-            } else {
-                // 即使没有文章也应该隐藏骨架屏
-                categoryManager.hideTreeSkeleton();
-            }
-            
             return this.articles;
         } catch (error) {
             logger.error('加载文章列表失败:', error);
@@ -297,7 +247,93 @@ class ArticleManager {
             this.loadingLock = false;
         }
     }
-    
+
+    initCategoryManager() {
+        if (this.categoryManager) {
+            categoryManager.initialize();
+        }
+    }
+
+    // 用获取的文章列表数据更新分类列表
+    async updateCategories(articles) {
+        if (articles && articles.length > 0) {
+            logger.info('更新分类列表...');
+            categoryManager.updateCategories(articles);
+            
+            // 设置分类变更和文章选择回调
+            categoryManager.setOnCategoryChange((category) => {
+                logger.info('分类变更:', category);
+                
+                // 如果在搜索状态，清除搜索
+                if (articleSearchManager.isInSearchMode()) {
+                    articleSearchManager.clearSearch();
+                }
+                
+                this.filterAndRenderArticles();
+            });
+            
+            categoryManager.setOnArticleSelect((articleId) => {
+                logger.info('文章选择');
+                this.showArticle(articleId);
+            });
+            
+            // 从URL初始化状态
+            await this.initializeFromUrl();
+            
+        } else {
+            logger.info('没有文章，不更新分类');
+            // 即使没有文章也应该隐藏骨架屏
+            categoryManager.hideTreeSkeleton();
+        }
+    }
+
+    initArticleSearchManager() {
+        articleSearchManager.initialize({
+            // 添加获取文章数据的回调函数
+            getArticles: () => {
+                return this.articles;
+            },
+            onSearchResults: (searchResults, searchTerm) => {
+                logger.info(`搜索结果: ${searchResults.length} 个匹配项`);
+            },
+            onResetSearch: () => {
+                logger.info('重置搜索状态');
+                this.filterAndRenderArticles();
+            }
+        });
+    }
+
+    initWelcomePageManager() {
+        welcomePageManager.initialize({
+            getArticles: () => {
+                return this.articles;
+            },
+            onCategorySelect: (category) => {
+                categoryManager.selectCategory(category);
+            },
+            onArticleSelect: (articleId) => {
+                this.showArticle(articleId);
+            }
+        });
+    }
+
+    async showArticleOrWelcomePage() {
+        // 检查URL中是否有指定文章参数
+        const urlParams = new URLSearchParams(window.location.search);
+        const articleIdFromUrl = urlParams.get('article');
+        if (articleIdFromUrl) {
+            // 仅当URL中指定了文章ID时才加载文章
+            logger.info(`从URL参数加载文章: ${articleIdFromUrl}`);
+            await this.showArticle(articleIdFromUrl);
+        } else {
+            logger.info('URL里没有指定文章ID，显示欢迎页');
+            // 更新视图状态
+            contentViewManager.updateViewState('auto');
+            // 委托给欢迎页管理器处理
+            welcomePageManager.showWelcomePage(this.articles);
+        }
+    }
+
     // 取消当前加载
     cancelCurrentLoading() {
         if (this.abortController) {
@@ -327,31 +363,6 @@ class ArticleManager {
             logger.error('从URL初始化失败:', error);
             return false;
         }
-    }
-
-    // 显示欢迎页面
-    showWelcomePage() {
-        logger.info('显示欢迎页面 (委托给welcomePageManager)');
-        
-        // 通知视图管理器准备显示欢迎页面 - 添加的事件通信
-        contentViewManager.dispatchViewEvent(ViewEvents.BEFORE_WELCOME); 
-        
-        // 首先切换到加载模式
-        contentViewManager.setMode(ViewMode.LOADING);
-        
-        // 确保有文章数据
-        if (!this.articles || this.articles.length === 0) {
-            logger.info('欢迎页面需要文章数据，但当前没有数据...');
-            // 委托给welcomePageManager处理
-            welcomePageManager.ensureArticleDataAndShowWelcome(() => this.loadArticles());
-            return;
-        }
-        
-        // 如果已有文章数据，直接显示欢迎页面
-        welcomePageManager.showWelcomePage(this.articles);
-        
-        // 通知视图管理器欢迎页面显示完成 - 添加的事件通信
-        contentViewManager.dispatchViewEvent(ViewEvents.AFTER_WELCOME);
     }
 
     // 过滤并渲染文章列表
@@ -400,7 +411,7 @@ class ArticleManager {
             if (!articleContainer) return false;
 
             // 验证文章ID
-            if (!this.validateArticleId(articleId)) {
+            if (!validateArticleId(articleId)) {
                 showError('无效的文章ID');
                 return false;
             }
@@ -529,14 +540,7 @@ class ArticleManager {
             return false;
         }
     }
-    // 验证文章ID
-    validateArticleId(pageId) {
-        if (!pageId || pageId === 'undefined' || pageId === 'null') {
-        logger.error('无效的文章ID:', pageId);
-            return false;
-        }
-        return true;
-    }
+
     // 准备加载文章
     prepareArticleLoading(pageId) {
         logger.info('准备加载文章:', pageId);

@@ -38,14 +38,6 @@ class CategoryManager {
         this.onCategoryChange = null;
         this.onArticleSelect = null;
         this.articles = [];
-        this.isDebugMode = false;
-        
-        // 当文章管理器加载完毕时，我们需要隐藏骨架屏
-        // if (articleManager && typeof articleManager.addEventListener === 'function') {
-        //     articleManager.addEventListener('articlesLoaded', () => {
-        //         this.hideTreeSkeleton();
-        //     });
-        // }
         
         // 添加事件订阅
         document.addEventListener('articleManager:initialized', (e) => {
@@ -73,6 +65,7 @@ class CategoryManager {
      * 初始化分类管理器
      */
     initialize() {
+        logger.info('初始化分类管理器');
         this.articleTree = document.getElementById('article-tree');
         this.categoryList = document.getElementById('category-list');
         
@@ -81,20 +74,12 @@ class CategoryManager {
             return;
         }
         
-        // 显示骨架屏
+        // 立即显示骨架屏，稍后在更新分类列表（updateCategories）后会隐藏
         this.showTreeSkeleton();
-        
-        // 加载分类数据
-        this.loadCategories();
-
-        // 添加骨架屏配置到调试面板
-        if (this.isDebugMode) {
-            articleTreeSkeleton.addConfigUI('debug-panel-content');
-        }
     }
 
     /**
-     * 显示分类树骨架屏
+     * 显示文章列表骨架屏
      */
     showTreeSkeleton() {
         const treeContainer = document.querySelector('#article-tree .root-item > .tree-children');
@@ -102,64 +87,20 @@ class CategoryManager {
             logger.warn('分类树容器未找到');
             return;
         }
-        
-        // 使用骨架屏
+
+        logger.info('显示文章列表骨架屏');
         articleTreeSkeleton.show(treeContainer);
-        logger.info('显示分类树骨架屏');
     }
     
     /**
-     * 隐藏分类树骨架屏
+     * 隐藏文章列表骨架屏
      */
     hideTreeSkeleton() {
         const treeContainer = document.querySelector('#article-tree .root-item > .tree-children');
         if (!treeContainer) return;
         
         articleTreeSkeleton.hide(treeContainer);
-        logger.info('隐藏分类树骨架屏');
-    }
-
-    /**
-     * 加载分类数据
-     */
-    loadCategories() {
-        try {
-            // 检查必要的分类配置是否存在
-            if (!categoryConfig) {
-                logger.error('分类配置不存在');
-                this.hideTreeSkeleton();
-                return;
-            }
-            
-            this.categoryMap = {};
-            
-            // 从categoryConfig的nameMap和order创建分类数据结构
-            // 适配当前的配置格式，而不是期望一个data属性
-            const categories = Object.keys(categoryConfig.nameMap || {}).filter(key => key !== 'all');
-            
-            // 构建分类映射
-            categories.forEach(categoryId => {
-                const displayName = categoryConfig.nameMap[categoryId];
-                const order = categoryConfig.order[categoryId] || 50;
-                const colors = categoryConfig.colors[categoryId] || categoryConfig.colors.default;
-                
-                // 创建分类对象
-                this.categoryMap[categoryId] = {
-                    id: categoryId,
-                    name: displayName,
-                    order: order,
-                    colors: colors
-                };
-            });
-            
-            // 渲染分类树
-            this.renderCategoryTree();
-            
-            logger.info('分类数据加载完成，共', Object.keys(this.categoryMap).length, '个分类');
-        } catch (error) {
-            logger.error('加载分类数据时出错:', error.message);
-            this.hideTreeSkeleton();
-        }
+        logger.info('隐藏文章列表骨架屏');
     }
 
     // 获取分类的显示名称
@@ -176,6 +117,7 @@ class CategoryManager {
             return;
         }
         
+        logger.info('更新分类列表');
         this.articles = articles;
         this.categories.clear();
         this.categories.set('all', 0); // 初始化"全部"分类
@@ -582,120 +524,6 @@ class CategoryManager {
     }
 
     /**
-     * 渲染分类树
-     */
-    renderCategoryTree() {
-        if (!this.articleTree) {
-            logger.warn('文章树元素不存在，无法渲染分类树');
-            this.hideTreeSkeleton();
-            return;
-        }
-        
-        try {
-            // 获取根容器
-            const rootItem = this.articleTree.querySelector('.root-item');
-            if (!rootItem) {
-                logger.warn('未找到分类树根容器');
-                this.hideTreeSkeleton();
-                return;
-            }
-            
-            const treeChildren = rootItem.querySelector('.tree-children');
-            if (!treeChildren) {
-                logger.warn('未找到分类树子容器');
-                this.hideTreeSkeleton();
-                return;
-            }
-            
-            // 清空现有内容
-            treeChildren.innerHTML = '';
-            
-            // 获取所有分类并按顺序排序
-            const sortedCategories = Object.values(this.categoryMap)
-                .sort((a, b) => (a.order || 999) - (b.order || 999));
-            
-            // 如果没有分类，显示提示信息
-            if (sortedCategories.length === 0) {
-                treeChildren.innerHTML = '<li class="no-categories">暂无分类</li>';
-                this.hideTreeSkeleton();
-                return;
-            }
-            
-            // 创建"全部文章"节点
-            const allArticlesNode = document.createElement('li');
-            allArticlesNode.className = 'tree-item category-tree-item active';
-            allArticlesNode.dataset.category = 'all';
-            allArticlesNode.innerHTML = `
-                <div class="tree-item-content">
-                    <span class="expand-icon"><i class="fas fa-list"></i></span>
-                    <span class="category-name">全部文章</span>
-                    <span class="article-count">${this.articles.length || 0}</span>
-                </div>
-            `;
-            
-            // 添加全部文章点击事件
-            allArticlesNode.addEventListener('click', () => {
-                this.selectCategory('all');
-            });
-            
-            treeChildren.appendChild(allArticlesNode);
-            
-            // 渲染其他分类
-            for (const category of sortedCategories) {
-                const categoryNode = document.createElement('li');
-                categoryNode.className = 'tree-item category-tree-item';
-                categoryNode.dataset.category = category.id;
-                
-                // 计算该分类下的文章数量
-                const articleCount = this.articles.filter(article => 
-                    article.category === category.id
-                ).length;
-                
-                // 分类节点内容
-                categoryNode.innerHTML = `
-                    <div class="tree-item-content">
-                        <span class="expand-icon"><i class="fas fa-chevron-right"></i></span>
-                        <span class="category-name">${category.name}</span>
-                        <span class="article-count">${articleCount}</span>
-                    </div>
-                    <ul class="tree-children"></ul>
-                `;
-                
-                // 添加点击事件
-                categoryNode.querySelector('.tree-item-content').addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    
-                    // 切换展开状态
-                    categoryNode.classList.toggle('expanded');
-                    
-                    // 记录展开状态
-                    if (categoryNode.classList.contains('expanded')) {
-                        this.expandedCategories.add(category.id);
-                        
-                        // 加载该分类下的文章
-                        this.loadArticlesForCategory(category.id, categoryNode);
-                    } else {
-                        this.expandedCategories.delete(category.id);
-                    }
-                    
-                    // 选择该分类
-                    this.selectCategory(category.id);
-                });
-                
-                treeChildren.appendChild(categoryNode);
-            }
-            
-            // 隐藏骨架屏
-            this.hideTreeSkeleton();
-            
-        } catch (error) {
-            logger.error('渲染分类树时出错:', error.message || error);
-            logger.debug('错误详情:', error.stack || '无堆栈信息');
-            this.hideTreeSkeleton();
-        }
-    }
-
-    /**
      * 为分类加载文章
      * @param {string} categoryId 分类ID
      * @param {HTMLElement} categoryNode 分类节点
@@ -768,15 +596,6 @@ class CategoryManager {
             }
         } catch (error) {
             logger.error(`加载分类"${categoryId}"下的文章时出错:`, error.message || error);
-        }
-    }
-
-    // 使用事件获取的引用
-    someMethodThatNeedsArticleManager() {
-        if (this.articleManager) {
-            // 使用 this.articleManager
-        } else {
-            logger.warn('文章管理器尚未初始化');
         }
     }
 }

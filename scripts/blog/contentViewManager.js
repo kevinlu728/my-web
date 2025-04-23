@@ -62,6 +62,61 @@ class ContentViewManager {
         
         return true;
     }
+
+    /**
+     * 更新视图状态 - 添加状态检查防止循环
+     */
+    updateViewState(state = 'auto') {
+        try {
+            logger.debug(`准备更新视图状态: ${state}`);
+            
+            // 获取当前状态以避免无意义的重复设置
+            const currentMode = this.getCurrentMode();
+            
+            // 处理'loading'状态
+            if (state === 'loading') {
+                // 避免重复设置加载状态
+                if (currentMode === ViewMode.LOADING) {
+                    logger.debug('已经是加载状态，跳过重复设置');
+                    return;
+                }
+                this.setMode(ViewMode.LOADING);
+                return;
+            }
+            
+            // 处理'auto'状态
+            if (state === 'auto') {
+                const urlParams = new URLSearchParams(window.location.search);
+                const articleId = urlParams.get('article');
+                
+                // 如果有文章ID且当前不是文章模式，设置为文章模式
+                if (articleId && currentMode !== ViewMode.ARTICLE) {
+                    this.setMode(ViewMode.ARTICLE);
+                } 
+                // 如果没有文章ID且当前不是欢迎模式，设置为欢迎模式
+                else if (!articleId && currentMode !== ViewMode.WELCOME) {
+                    this.setMode(ViewMode.WELCOME);
+                } else {
+                    logger.debug(`当前已是正确模式(${currentMode})，跳过状态更新`);
+                }
+                return;
+            }
+            
+            // 处理特定的ViewMode值
+            if (Object.values(ViewMode).includes(state)) {
+                // 避免重复设置相同状态
+                if (currentMode === state) {
+                    logger.debug(`已经是${state}状态，跳过重复设置`);
+                    return;
+                }
+                this.setMode(state);
+            } else {
+                logger.warn(`未知的视图状态: ${state}，保持当前状态`);
+            }
+        } catch (error) {
+            logger.error('更新视图状态时出错:', error);
+        }
+    }
     
     /**
      * 设置视图模式

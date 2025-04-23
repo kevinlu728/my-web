@@ -245,7 +245,7 @@ export const welcomePageSkeleton = {
             // 检查是否真的添加成功
             const addedSkeleton = containerElement.querySelector('.welcome-page-skeleton');
             if (addedSkeleton) {
-                logger.info('欢迎页面骨架屏已成功显示');
+                logger.info('欢迎页面骨架屏已显示');
             } else {
                 logger.error('欢迎页面骨架屏HTML已设置但未找到元素');
             }

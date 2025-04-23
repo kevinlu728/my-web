@@ -50,6 +50,11 @@ class ArticleSearchManager {
         this.searchInput = document.getElementById('article-search');
         this.clearButton = document.getElementById('search-clear');
         
+        // 保存获取文章数据的回调
+        if (options.getArticles && typeof options.getArticles === 'function') {
+            this.getArticlesCallback = options.getArticles;
+        }
+
         // 保存回调函数
         if (options.onSearchResults && typeof options.onSearchResults === 'function') {
             this.onSearchResultsCallback = options.onSearchResults;
@@ -57,11 +62,6 @@ class ArticleSearchManager {
         
         if (options.onResetSearch && typeof options.onResetSearch === 'function') {
             this.onResetSearchCallback = options.onResetSearch;
-        }
-        
-        // 保存获取文章数据的回调
-        if (options.getArticles && typeof options.getArticles === 'function') {
-            this.getArticlesCallback = options.getArticles;
         }
         
         this.setupEventListeners();

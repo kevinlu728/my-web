@@ -145,59 +145,21 @@ export async function initializePage() {
         // 初始化视图事件
         initializeViewEvents();
         // 更新视图状态
-        updateViewState('loading');
+        contentViewManager.updateViewState('loading');
         
         // ===== 2. 核心组件初始化 =====
         // 初始化文章管理器
         logger.info('初始化文章管理器...');
         await articleManager.initialize(currentDatabaseId);
 
-        // 初始化欢迎页面管理器
-        logger.info('初始化欢迎页面管理器...');
-        welcomePageManager.initialize({
-            getArticles: () => articleManager.getArticles(),
-            onCategorySelect: (category) => {
-                categoryManager.selectCategory(category);
-            },
-            onArticleSelect: (articleId) => {
-                articleManager.showArticle(articleId);
-            }
-        });
-
         // 设置分类变更回调
-        categoryManager.setOnCategoryChange((category) => {
-            logger.info('分类变更为:', category);
-            articleManager.filterAndRenderArticles();
-        });
+        // categoryManager.setOnCategoryChange((category) => {
+        //     logger.info('分类变更为:', category);
+        //     articleManager.filterAndRenderArticles();
+        // });
         
         // ===== 3. 内容显示处理 =====
-        // 检查URL中是否有指定文章参数
-        try {
-            const urlParams = new URLSearchParams(window.location.search);
-            const articleIdFromUrl = urlParams.get('article');
-            
-            if (articleIdFromUrl) {
-                // 仅当URL中指定了文章ID时才加载文章
-                logger.info(`从URL参数加载文章: ${articleIdFromUrl}`);
-                await articleManager.showArticle(articleIdFromUrl);
-            } else {
-                // 更新视图状态
-                updateViewState('auto');
-                // 委托给欢迎页管理器处理
-                welcomePageManager.ensureArticleDataAndShowWelcome(() => articleManager.loadArticles());
-            }
-        } catch (error) {
-            logger.error('页面初始化过程中出错:', error);
-            // 即使出错，也尝试加载文章数据再显示欢迎页面
-            if (!articleManager.articles || articleManager.articles.length === 0) {
-                try {
-                    await articleManager.loadArticles();
-                } catch (loadError) {
-                    logger.error('加载文章数据出错:', loadError);
-                }
-            }
-            articleManager.showWelcomePage();
-        }
+
         
         // ===== 4. 辅助功能初始化 =====
         logger.info('✅ 页面初始化完成！开始初始化辅助功能...');
@@ -219,7 +181,7 @@ export async function initializePage() {
         
         // ===== 6. 收尾工作 =====
         // 更新视图状态
-        updateViewState('auto');
+        contentViewManager.updateViewState('auto');
         
         // 清除"正在初始化页面..."的状态消息
         showStatus('', false);
@@ -568,61 +530,6 @@ function initializeResizeHandle() {
             logger.warn('⚠️ 未找到拖动手柄或左侧栏元素，无法初始化');
         }
     }, 100);
-}
-
-/**
- * 更新视图状态 - 添加状态检查防止循环
- */
-function updateViewState(state = 'auto') {
-    try {
-        logger.debug(`准备更新视图状态: ${state}`);
-        
-        // 获取当前状态以避免无意义的重复设置
-        const currentMode = contentViewManager.getCurrentMode();
-        
-        // 处理'loading'状态
-        if (state === 'loading') {
-            // 避免重复设置加载状态
-            if (currentMode === ViewMode.LOADING) {
-                logger.debug('已经是加载状态，跳过重复设置');
-                return;
-            }
-            contentViewManager.setMode(ViewMode.LOADING);
-            return;
-        }
-        
-        // 处理'auto'状态
-        if (state === 'auto') {
-            const urlParams = new URLSearchParams(window.location.search);
-            const articleId = urlParams.get('article');
-            
-            // 如果有文章ID且当前不是文章模式，设置为文章模式
-            if (articleId && currentMode !== ViewMode.ARTICLE) {
-                contentViewManager.setMode(ViewMode.ARTICLE);
-            } 
-            // 如果没有文章ID且当前不是欢迎模式，设置为欢迎模式
-            else if (!articleId && currentMode !== ViewMode.WELCOME) {
-                contentViewManager.setMode(ViewMode.WELCOME);
-            } else {
-                logger.debug(`当前已是正确模式(${currentMode})，跳过状态更新`);
-            }
-            return;
-        }
-        
-        // 处理特定的ViewMode值
-        if (Object.values(ViewMode).includes(state)) {
-            // 避免重复设置相同状态
-            if (currentMode === state) {
-                logger.debug(`已经是${state}状态，跳过重复设置`);
-                return;
-            }
-            contentViewManager.setMode(state);
-        } else {
-            logger.warn(`未知的视图状态: ${state}，保持当前状态`);
-        }
-    } catch (error) {
-        logger.error('更新视图状态时出错:', error);
-    }
 }
 
 /**

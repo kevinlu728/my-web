@@ -156,7 +156,7 @@ class ArticlePaginationManager {
         // 使用改进的方法检测是否应该触发加载
         if (this._shouldTriggerLoad()) {
             const loadMoreContainer = document.querySelector('.load-more-container');
-            this._triggerLoadMore(loadMoreContainer, 0);
+            this._triggerLoadMore(loadMoreContainer);
         }
     }
 
@@ -246,12 +246,11 @@ class ArticlePaginationManager {
         if (this._shouldTriggerLoad()) {
             const loadMoreContainer = document.querySelector('.load-more-container');
             if (loadMoreContainer) {
-                this._triggerLoadMore(loadMoreContainer, 0);
+                this._triggerLoadMore(loadMoreContainer);
             }
         }
         
         // 条件满足，开始加载更多
-        logger.info('📥 [分页触发] 准备加载更多内容');
         this._triggerLoadMore();
         return true;
     }
@@ -289,7 +288,7 @@ class ArticlePaginationManager {
      * @param {HTMLElement} loadMoreContainer - 加载更多容器元素
      * @param {number} scrollPercentage - 滚动百分比
      */
-    _triggerLoadMore(loadMoreContainer, scrollPercentage) {
+    _triggerLoadMore(loadMoreContainer) {
         // 记录加载开始时间，用于超时检测
         this._loadingStartTime = Date.now();
         
@@ -310,8 +309,6 @@ class ArticlePaginationManager {
             }
             return;
         }
-        
-        logger.info('触发加载更多内容 - 滚动位置: ' + scrollPercentage.toFixed(2) + '%');
         
         // 防抖处理，避免重复触发
         if (this.triggerDebounceTimeout) {

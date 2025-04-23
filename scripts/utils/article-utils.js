@@ -10,6 +10,15 @@ import { imageLazyLoader } from '../blog/imageLazyLoader.js';
 import { formatDate } from './common-utils.js';
 import logger from './logger.js';
 
+// 验证文章ID
+export function validateArticleId(pageId) {
+    if (!pageId || pageId === 'undefined' || pageId === 'null') {
+        logger.error('无效的文章ID:', pageId);
+        return false;
+    }
+    return true;
+}
+
 /**
  * 在文本中高亮显示搜索词
  * @param {string} text 原始文本
