@@ -25,7 +25,49 @@ import { tableLazyLoader } from './tableLazyLoader.js';
 import { codeLazyLoader } from './codeLazyLoader.js';
 import { mathLazyLoader } from './mathLazyLoader.js';
 import { tableOfContents } from './tableOfContents.js';
+import { extractArticleData } from '../utils/article-utils.js';
+import { articlePageSkeleton } from '../utils/skeleton-loader.js';
 import logger from '../utils/logger.js';
+
+/**
+ * 显示文章内容
+ * @param {Object} articleData 文章数据
+ * @param {string} containerId 容器ID
+ * @param {boolean} hasMore 是否有更多内容
+ */
+export function renderArticleContent(articleData, containerId = 'article-container', hasMore = false) {
+    const articleContainer = document.getElementById(containerId);
+    if (!articleContainer) return;
+    
+    // 提取标题和块
+    const { title, blocks } = extractArticleData(articleData);
+    
+    // 渲染文章内容
+    const contentHtml = blocks && blocks.length > 0 ? 
+        renderNotionBlocks(blocks) : 
+        '<p>该文章暂无内容</p>';
+    
+    // 更新DOM
+    articleContainer.innerHTML = `
+        <h1 class="article-title">${title}</h1>
+        <div class="article-body" data-article-id="${articleData.page?.id || ''}">
+            ${contentHtml}
+        </div>
+        <div class="load-more-container">
+            ${hasMore ? 
+                '<div class="loading-text">下拉加载更多</div>' : 
+                '<div class="no-more">没有更多内容</div>'}
+        </div>
+    `;
+
+    // 处理文章中的图片和其他内容
+    const articleBody = articleContainer.querySelector('.article-body');
+    if (articleBody) {
+        imageLazyLoader.processImages(articleBody);
+    }
+    
+    return articleBody;
+}
 
 // 主渲染函数
 export function renderNotionBlocks(blocks) {

@@ -55,7 +55,7 @@ class WelcomePageManager {
         this.initialized = true;
         
         // 立即显示骨架屏，否则骨架屏显示太晚，会立即被隐藏，导致无法看到骨架屏
-        this.showWelcomePageSkeleton();
+        welcomePageSkeleton.show(this.getWelcomePageContainer());
 
         // 确保有文章数据时创建缓存
         const articles = typeof this.getArticles === 'function' ? this.getArticles() : [];
@@ -124,114 +124,7 @@ class WelcomePageManager {
         // 没有文章数据时，不应该保持骨架屏（否则骨架屏将不会消失），而是应该显示一个固定内容版本的欢迎页面，确保用户能看到欢迎页面。待实现
 
     }
-    
-    /**
-     * 显示欢迎页面骨架屏
-     */
-    showWelcomePageSkeleton() {
-        const container = document.getElementById('article-container');
-        if (container) {
-            logger.info('显示欢迎页面骨架屏');
-            welcomePageSkeleton.show(container);
-            
-            // 发送欢迎页骨架屏显示事件
-            const event = new CustomEvent('welcomeSkeletonShown', {
-                detail: { container }
-            });
-            document.dispatchEvent(event);
-        }
-    }
-    
-    /**
-     * 渲染欢迎页面
-     * @param {Array} articles 文章列表
-     * @param {boolean} fromCache 是否来自缓存
-     */
-    renderWelcomePage(articles, fromCache = false) {
-        if (!articles || articles.length === 0) {
-            logger.warn('没有文章数据用于渲染欢迎页面');
-            return;
-        }
-        
-        // 获取容器
-        const container = document.getElementById('article-container');
-        if (!container) {
-            logger.warn('找不到文章容器元素，无法渲染欢迎页面');
-            return;
-        }
-        
-        // 隐藏骨架屏，调用渲染函数
-        welcomePageSkeleton.hide(container);
-        
-        renderWelcomePage({
-            articles: articles,
-            onCategorySelect: this.onCategorySelect,
-            onArticleSelect: this.onArticleSelect,
-            categoryConfig: {
-                nameMap: this.categoryNameMap,
-                colors: categoryConfig.colors,
-                order: categoryConfig.order
-            },
-            fromCache: fromCache
-        });
-        
-        // 设置内容视图模式
-        contentViewManager.setMode(ViewMode.WELCOME);
-        
-        logger.info(`欢迎页面渲染完成，共 ${articles.length} 篇文章${fromCache ? ' (从缓存)' : ''}`);
-    }
-    
-    /**
-     * 从缓存加载欢迎页面数据
-     * @returns {Object|null} 缓存的欢迎页面数据或null
-     */
-    loadFromCache() {
-        try {
-            logger.info('尝试从缓存加载欢迎页面数据');
-            
-            // 使用 articleCacheManager 获取缓存
-            const cachedData = articleCacheManager.getArticleFromCache(WELCOME_PAGE_CACHE_KEY);
-            
-            if (!cachedData) {
-                logger.info('❌ [缓存未命中] 欢迎页面缓存不存在或已过期');
-                return null;
-            }
-            
-            logger.info('✅ [缓存命中] 从缓存加载了欢迎页面数据');
-            
-            // 保存到实例变量
-            this.cachedData = cachedData;
-            
-            return cachedData;
-        } catch (error) {
-            logger.error('从缓存加载欢迎页面数据失败:', error);
-            return null;
-        }
-    }
-    
-    /**
-     * 将欢迎页面数据保存到缓存
-     * @param {Object} data 要缓存的数据
-     */
-    saveToCache(data) {
-        try {
-            if (!data) {
-                logger.warn('没有数据可缓存');
-                return;
-            }
-            
-            // 使用 articleCacheManager 保存数据
-            articleCacheManager.setArticleCache(WELCOME_PAGE_CACHE_KEY, data);
-            
-            // 保存到实例变量
-            this.cachedData = data;
-            
-            logger.info('📦 [缓存写入] 欢迎页面数据已缓存');
-        } catch (error) {
-            logger.error('保存欢迎页面数据到缓存失败:', error);
-        }
-    }
-    
+
     /**
      * 准备欢迎页面缓存数据
      * @param {Array} articles 完整文章数据
@@ -271,6 +164,94 @@ class WelcomePageManager {
             timestamp: Date.now()
         };
     }
+
+    /**
+     * 从缓存加载欢迎页面数据
+     * @returns {Object|null} 缓存的欢迎页面数据或null
+     */
+    loadFromCache() {
+        try {
+            logger.info('尝试从缓存加载欢迎页面数据');
+            
+            // 使用 articleCacheManager 获取缓存
+            const cachedData = articleCacheManager.getArticleFromCache(WELCOME_PAGE_CACHE_KEY);
+            
+            if (!cachedData) {
+                logger.info('❌ [缓存未命中] 欢迎页面缓存不存在或已过期');
+                return null;
+            }
+            
+            logger.info('✅ [缓存命中] 从缓存加载了欢迎页面数据');
+            
+            // 保存到实例变量
+            this.cachedData = cachedData;
+            
+            return cachedData;
+        } catch (error) {
+            logger.error('从缓存加载欢迎页面数据失败:', error);
+            return null;
+        }
+    }
+
+    /**
+     * 将欢迎页面数据保存到缓存
+     * @param {Object} data 要缓存的数据
+     */
+    saveToCache(data) {
+        try {
+            if (!data) {
+                logger.warn('没有数据可缓存');
+                return;
+            }
+            
+            // 使用 articleCacheManager 保存数据
+            articleCacheManager.setArticleCache(WELCOME_PAGE_CACHE_KEY, data);
+            
+            // 保存到实例变量
+            this.cachedData = data;
+            
+            logger.info('📦 [缓存写入] 欢迎页面数据已缓存');
+        } catch (error) {
+            logger.error('保存欢迎页面数据到缓存失败:', error);
+        }
+    }
+    
+    /**
+     * 渲染欢迎页面
+     * @param {Array} articles 文章列表
+     * @param {boolean} fromCache 是否来自缓存
+     */
+    renderWelcomePage(articles, fromCache = false) {
+        if (!articles || articles.length === 0) {
+            logger.warn('没有文章数据用于渲染欢迎页面');
+            return;
+        }
+        
+        // 获取容器
+        const container = this.getWelcomePageContainer();
+        if (!container) {
+            logger.warn('找不到文章容器元素，无法渲染欢迎页面');
+            return;
+        } 
+        welcomePageSkeleton.hide(container);
+        
+        renderWelcomePage({
+            articles: articles,
+            onCategorySelect: this.onCategorySelect,
+            onArticleSelect: this.onArticleSelect,
+            categoryConfig: {
+                nameMap: this.categoryNameMap,
+                colors: categoryConfig.colors,
+                order: categoryConfig.order
+            },
+            fromCache: fromCache
+        });
+        
+        // 设置内容视图模式
+        contentViewManager.setMode(ViewMode.WELCOME);
+        
+        logger.info(`欢迎页面渲染完成，共 ${articles.length} 篇文章${fromCache ? ' (从缓存)' : ''}`);
+    }
     
     /**
      * 从缓存数据渲染欢迎页面
@@ -284,8 +265,13 @@ class WelcomePageManager {
         logger.info('使用缓存数据渲染欢迎页面');
         
         // 获取容器
-        const container = document.getElementById('article-container');
-        
+        const container = this.getWelcomePageContainer();
+        if (!container) {
+            logger.warn('找不到文章容器元素，无法渲染欢迎页面');
+            return;
+        }
+        welcomePageSkeleton.hide(container);
+
         renderWelcomePage({
             articles: recentArticles,
             onCategorySelect: this.onCategorySelect,
@@ -297,12 +283,8 @@ class WelcomePageManager {
             },
             fromCache: true
         });
-        
-        // 隐藏骨架屏
-        if (container) {
-            welcomePageSkeleton.hide(container);
-            contentViewManager.setMode(ViewMode.WELCOME);
-        }
+
+        contentViewManager.setMode(ViewMode.WELCOME);
     }
     
     /**
@@ -326,7 +308,7 @@ class WelcomePageManager {
                     this.saveToCache(this.prepareWelcomeData(articles));
                     
                     // 如果当前显示的是欢迎页面，刷新内容
-                    const container = document.getElementById('article-container');
+                    const container = this.getWelcomePageContainer();
                     if (container && container.querySelector('.welcome-page')) {
                         logger.info('检测到欢迎页面，刷新内容');
                         this.renderWelcomePage(articles);
@@ -336,6 +318,11 @@ class WelcomePageManager {
                 logger.error('后台刷新欢迎页面数据失败:', error);
             }
         }, 1000); // 延迟1秒执行
+    }
+
+    // 获取欢迎页面容器，欢迎页面和文章内容页面共用一个容器
+    getWelcomePageContainer() {
+        return document.getElementById('article-container');
     }
     
     /**

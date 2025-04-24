@@ -62,7 +62,7 @@
 
 /* 返回顶部按钮已移至scrollbar.css中统一定义 */
 
-/* 优化占位图样式 */
+/* 占位符内容样式 */
 .placeholder-content {
     display: flex;
     flex-direction: column;
@@ -71,6 +71,10 @@
     min-height: 400px;
     padding: 30px;
     text-align: center;
+}
+
+.placeholder-content i {
+    font-size: 24px;
 }
 
 .placeholder-image {
@@ -185,14 +189,14 @@
     min-height: 750px;
 }
 
-.skeleton-welcome-header {
+.welcome-page-skeleton-header {
     text-align: center;
     margin-bottom: 1.5rem;
     padding-bottom: 1.5rem;
     border-bottom: 1px solid #eee;
 }
 
-.skeleton-title {
+.welcome-page-skeleton-title {
     height: 35px;
     width: 65%;
     margin: 0 auto 1rem;
@@ -200,7 +204,7 @@
     background-color: #f0f0f0;
 }
 
-.skeleton-subtitle {
+.welcome-page-skeleton-subtitle {
     height: 22px;
     width: 85%;
     margin: 0 auto;
@@ -208,18 +212,18 @@
     background-color: #f0f0f0;
 }
 
-.skeleton-welcome-content {
+.welcome-page-skeleton-content {
     display: flex;
     flex-direction: column;
     gap: 2.5rem;
     padding: 0.5rem 0 0 0;
 }
 
-.skeleton-section {
+.welcome-page-skeleton-section {
     margin-bottom: 0.5rem;
 }
 
-.skeleton-section-title {
+.welcome-page-skeleton-section-title {
     height: 32px;
     width: 35%;
     border-radius: 4px;
@@ -227,46 +231,46 @@
     margin-bottom: 1.5rem;
 }
 
-.skeleton-list {
+.welcome-page-skeleton-list {
     display: flex;
     flex-direction: column;
     gap: 0.8rem;
 }
 
-.skeleton-list-item {
+.welcome-page-skeleton-list-item {
     height: 22px;
     width: 100%;
     border-radius: 4px;
     background-color: #f0f0f0;
 }
 
-.skeleton-category-tags {
+.welcome-page-skeleton-category-tags {
     display: flex;
     flex-wrap: wrap;
     gap: 1rem;
     margin-top: 1rem;
 }
 
-.skeleton-category-tag {
+.welcome-page-skeleton-category-tag {
     height: 40px;
     border-radius: 20px;
     background-color: #f0f0f0;
 }
 
-.skeleton-cat-1 { width: 60px; }
-.skeleton-cat-2 { width: 110px; }
-.skeleton-cat-3 { width: 110px; }
-.skeleton-cat-4 { width: 170px; }
-.skeleton-cat-5 { width: 125px; }
-.skeleton-cat-6 { width: 70px; }
+.welcome-page-skeleton-category-tag-1 { width: 60px; }
+.welcome-page-skeleton-category-tag-2 { width: 110px; }
+.welcome-page-skeleton-category-tag-3 { width: 110px; }
+.welcome-page-skeleton-category-tag-4 { width: 170px; }
+.welcome-page-skeleton-category-tag-5 { width: 125px; }
+.welcome-page-skeleton-category-tag-6 { width: 70px; }
 
-.skeleton-recent-articles {
+.welcome-page-skeleton-recent-articles {
     display: flex;
     flex-direction: column;
     gap: 1rem;
 }
 
-.skeleton-article-item {
+.welcome-page-skeleton-article-item {
     height: 50px;
     width: 100%;
     border-radius: 8px;
@@ -274,8 +278,8 @@
 }
 
 /* 骨架屏脉动动画 */
-.skeleton-pulse {
-    animation: skeleton-pulse 1.5s ease-in-out infinite;
+.welcome-page-skeleton-pulse {
+    animation: welcome-page-skeleton-pulse 1.5s ease-in-out infinite;
     background: linear-gradient(90deg, 
                 #f0f0f0 25%, 
                 #f8f8f8 50%, 
@@ -283,7 +287,7 @@
     background-size: 200% 100%;
 }
 
-@keyframes skeleton-pulse {
+@keyframes welcome-page-skeleton-pulse {
     0% {
         background-position: 100% 0;
     }
@@ -308,16 +312,137 @@
         padding: 1rem;
     }
     
-    .skeleton-title {
+    .welcome-page-skeleton-title {
         width: 80%;
     }
     
-    .skeleton-subtitle {
+    .welcome-page-skeleton-subtitle {
         width: 95%;
     }
     
-    .skeleton-category-tags {
+    .welcome-page-skeleton-category-tags {
         gap: 0.8rem;
     }
 }
 
+/* 文章内容页面骨架屏样式 */
+.article-page-skeleton {
+    width: 100%;
+    margin: 0 auto;
+    padding: 0.5rem;
+    min-height: 750px;
+}
+
+.article-page-skeleton-header {
+    text-align: left;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #eee;
+}
+
+.article-page-skeleton-title {
+    height: 35px;
+    width: 55%;
+    margin: 0 0 1rem; /* 调整为左对齐 */
+    border-radius: 4px;
+    background-color: #f0f0f0;
+}
+
+/* 文章内容区域骨架屏 */
+.article-page-skeleton-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    padding: 0.5rem 0;
+}
+
+/* 段落区域 */
+.article-page-skeleton-section {
+    margin-bottom: 1.5rem;
+    text-align: left;
+}
+
+/* 段落标题 */
+.article-page-skeleton-section-title {
+    height: 28px;
+    width: 40%;
+    border-radius: 4px;
+    background-color: #f0f0f0;
+    margin-bottom: 1.2rem;
+}
+
+/* 段落内容 - 新添加的组件 */
+.article-page-skeleton-section-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+/* 段落中的单行文本 */
+.article-page-skeleton-section-line {
+    height: 20px;
+    border-radius: 3px;
+    background-color: #f0f0f0;
+    margin-bottom: 0.5rem;
+}
+
+/* 行宽度变化，提高真实感 */
+.article-page-skeleton-section-line-full {
+    width: 100%;
+}
+
+.article-page-skeleton-section-line-medium {
+    width: 85%;
+}
+
+.article-page-skeleton-section-line-short {
+    width: 60%;
+}
+
+/* 骨架屏脉动动画 */
+.article-page-skeleton-section-line-pulse {
+    animation: article-page-skeleton-section-line-pulse 1.5s ease-in-out infinite;
+    background: linear-gradient(90deg, 
+                #f0f0f0 25%, 
+                #f8f8f8 50%, 
+                #f0f0f0 75%);
+    background-size: 200% 100%;
+}
+
+@keyframes article-page-skeleton-section-line-pulse {
+    0% {
+        background-position: 100% 0;
+    }
+    100% {
+        background-position: -100% 0;
+    }
+}
+
+/* 骨架屏淡入淡出 */
+.article-page-skeleton {
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.article-page-skeleton-loaded {
+    background-color: transparent;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .article-page-skeleton {
+        padding: 1rem;
+    }
+    
+    .article-page-skeleton-title {
+        width: 80%;
+    }
+    
+    .article-page-skeleton-section-title {
+        width: 60%;
+    }
+    
+    .article-page-skeleton-section-title {
+        width: 60%;
+    }
+}

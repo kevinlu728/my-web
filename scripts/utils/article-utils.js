@@ -6,8 +6,6 @@
  * @created 2024-03-20
  */
 
-import { imageLazyLoader } from '../blog/imageLazyLoader.js';   
-import { formatDate } from './common-utils.js';
 import logger from './logger.js';
 
 // 验证文章ID
@@ -70,52 +68,11 @@ export function extractCategoryFromProperties(properties) {
 }
 
 /**
- * 显示文章内容
- * @param {Object} articleData 文章数据
- * @param {Function} renderBlocks 渲染文章块的函数
- * @param {string} containerId 容器ID
- * @param {boolean} hasMore 是否有更多内容
- */
-export function displayArticleContent(articleData, renderBlocks, containerId = 'article-container', hasMore = false) {
-    const articleContainer = document.getElementById(containerId);
-    if (!articleContainer) return;
-    
-    // 提取标题和块
-    const { title, blocks } = extractArticleData(articleData);
-    
-    // 渲染文章内容
-    const contentHtml = blocks && blocks.length > 0 ? 
-        renderBlocks(blocks) : 
-        '<p>该文章暂无内容</p>';
-    
-    // 更新DOM
-    articleContainer.innerHTML = `
-        <h1 class="article-title">${title}</h1>
-        <div class="article-body" data-article-id="${articleData.page?.id || ''}">
-            ${contentHtml}
-        </div>
-        <div class="load-more-container">
-            ${hasMore ? 
-                '<div class="loading-text">下拉加载更多</div>' : 
-                '<div class="no-more">没有更多内容</div>'}
-        </div>
-    `;
-
-    // 处理文章中的图片和其他内容
-    const articleBody = articleContainer.querySelector('.article-body');
-    if (articleBody) {
-        imageLazyLoader.processImages(articleBody);
-    }
-    
-    return articleBody;
-}
-
-/**
  * 从文章数据中提取必要的元素
  * @param {Object} articleData 文章数据
  * @returns {Object} 提取的数据
  */
-function extractArticleData(articleData) {
+export function extractArticleData(articleData) {
     if (!articleData) {
         return { title: '无标题', blocks: [] };
     }

@@ -76,44 +76,83 @@ export const getArticleTreeSkeletonTemplate = () => {
 export const getWelcomePageSkeletonTemplate = () => {
   return `
     <div class="welcome-page-skeleton">
-      <div class="skeleton-welcome-header">
-        <div class="skeleton-title skeleton-pulse"></div>
-        <div class="skeleton-subtitle skeleton-pulse"></div>
+      <div class="welcome-page-skeleton-header">
+        <div class="welcome-page-skeleton-title skeleton-pulse"></div>
+        <div class="welcome-page-skeleton-subtitle skeleton-pulse"></div>
       </div>
       
-      <div class="skeleton-welcome-content">
-        <div class="skeleton-section">
-          <div class="skeleton-section-title skeleton-pulse"></div>
-          <div class="skeleton-list">
-            <div class="skeleton-list-item skeleton-pulse"></div>
-            <div class="skeleton-list-item skeleton-pulse"></div>
-            <div class="skeleton-list-item skeleton-pulse"></div>
+      <div class="welcome-page-skeleton-content">
+        <div class="welcome-page-skeleton-section">
+          <div class="welcome-page-skeleton-section-title skeleton-pulse"></div>
+          <div class="welcome-page-skeleton-list">
+            <div class="welcome-page-skeleton-list-item skeleton-pulse"></div>
+            <div class="welcome-page-skeleton-list-item skeleton-pulse"></div>
+            <div class="welcome-page-skeleton-list-item skeleton-pulse"></div>
           </div>
         </div>
         
-        <div class="skeleton-section">
-          <div class="skeleton-section-title skeleton-pulse"></div>
-          <div class="skeleton-category-tags">
-            <div class="skeleton-category-tag skeleton-cat-1 skeleton-pulse"></div>
-            <div class="skeleton-category-tag skeleton-cat-2 skeleton-pulse"></div>
-            <div class="skeleton-category-tag skeleton-cat-3 skeleton-pulse"></div>
-            <div class="skeleton-category-tag skeleton-cat-4 skeleton-pulse"></div>
-            <div class="skeleton-category-tag skeleton-cat-5 skeleton-pulse"></div>
-            <div class="skeleton-category-tag skeleton-cat-6 skeleton-pulse"></div>
+        <div class="welcome-page-skeleton-section">
+          <div class="welcome-page-skeleton-section-title skeleton-pulse"></div>
+          <div class="welcome-page-skeleton-category-tags">
+            <div class="welcome-page-skeleton-category-tag welcome-page-skeleton-category-tag-1 skeleton-pulse"></div>
+            <div class="welcome-page-skeleton-category-tag welcome-page-skeleton-category-tag-2 skeleton-pulse"></div>
+            <div class="welcome-page-skeleton-category-tag welcome-page-skeleton-category-tag-3 skeleton-pulse"></div>
+            <div class="welcome-page-skeleton-category-tag welcome-page-skeleton-category-tag-4 skeleton-pulse"></div>
+            <div class="welcome-page-skeleton-category-tag welcome-page-skeleton-category-tag-5 skeleton-pulse"></div>
+            <div class="welcome-page-skeleton-category-tag welcome-page-skeleton-category-tag-6 skeleton-pulse"></div>
           </div>
         </div>
         
-        <div class="skeleton-section">
-          <div class="skeleton-section-title skeleton-pulse"></div>
-          <div class="skeleton-recent-articles">
-            <div class="skeleton-article-item skeleton-pulse"></div>
-            <div class="skeleton-article-item skeleton-pulse"></div>
-            <div class="skeleton-article-item skeleton-pulse"></div>
-            <div class="skeleton-article-item skeleton-pulse"></div>
-            <div class="skeleton-article-item skeleton-pulse"></div>
+        <div class="welcome-page-skeleton-section">
+          <div class="welcome-page-skeleton-section-title skeleton-pulse"></div>
+          <div class="welcome-page-skeleton-recent-articles">
+            <div class="welcome-page-skeleton-article-item skeleton-pulse"></div>
+            <div class="welcome-page-skeleton-article-item skeleton-pulse"></div>
+            <div class="welcome-page-skeleton-article-item skeleton-pulse"></div>
+            <div class="welcome-page-skeleton-article-item skeleton-pulse"></div>
+            <div class="welcome-page-skeleton-article-item skeleton-pulse"></div>
           </div>
         </div>
       </div>
     </div>
   `;
 }; 
+
+export const getArticlePageSkeletonTemplate = () => {
+  return `
+  <div class="article-page-skeleton">
+      <!-- 文章标题区域 -->
+      <div class="article-page-skeleton-header">
+          <div class="article-page-skeleton-title skeleton-pulse"></div>
+      </div>
+      
+      <!-- 文章内容区域 - 3个段落 -->
+      <div class="article-page-skeleton-content">
+          <!-- 段落1 -->
+          <div class="article-page-skeleton-section">
+              <div class="article-page-skeleton-section-title skeleton-pulse"></div>
+              <div class="article-page-skeleton-section-content">
+                  <div class="article-page-skeleton-section-line article-page-skeleton-section-line-full skeleton-pulse"></div>
+                  <div class="article-page-skeleton-section-line article-page-skeleton-section-line-full skeleton-pulse"></div>
+                  <div class="article-page-skeleton-section-line article-page-skeleton-section-line-medium skeleton-pulse"></div>
+                  <div class="article-page-skeleton-section-line article-page-skeleton-section-line-full skeleton-pulse"></div>
+                  <div class="article-page-skeleton-section-line article-page-skeleton-section-line-short skeleton-pulse"></div>
+              </div>
+          </div>
+          
+          <!-- 段落2 -->
+          <div class="article-page-skeleton-section">
+              <div class="article-page-skeleton-section-title skeleton-pulse"></div>
+              <div class="article-page-skeleton-section-content">
+                  <div class="article-page-skeleton-section-line article-page-skeleton-section-line-full skeleton-pulse"></div>
+                  <div class="article-page-skeleton-section-line article-page-skeleton-section-line-full skeleton-pulse"></div>
+                  <div class="article-page-skeleton-section-line article-page-skeleton-section-line-short skeleton-pulse"></div>
+                  <div class="article-page-skeleton-section-line article-page-skeleton-section-line-full skeleton-pulse"></div>
+                  <div class="article-page-skeleton-section-line article-page-skeleton-section-line-full skeleton-pulse"></div>
+                  <div class="article-page-skeleton-section-line article-page-skeleton-section-line-medium skeleton-pulse"></div>
+              </div>
+          </div>
+      </div>
+  </div>
+`;
+};

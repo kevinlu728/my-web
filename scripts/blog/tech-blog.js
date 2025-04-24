@@ -34,6 +34,7 @@ import { scrollbar } from '../components/scrollbar.js';
 import { loadDebugPanel } from '../components/debugPanelLoader.js';
 
 import { showStatus, showError } from '../utils/common-utils.js';
+import notionAPIService from '../services/notionAPIService.js';
 
 logger.info('🚀 tech-blog.js 开始加载...');
 
@@ -597,46 +598,6 @@ function fixFontAwesomeIcons() {
             }
         }
     }
-}
-
-/**
- * 修改分类树初始化函数
- * @returns {void}
- */
-function initCategoryTree() {
-    document.querySelectorAll('.tree-toggle').forEach(toggle => {
-        // 创建点击处理函数并保存引用
-        const clickHandler = (e) => {
-            e.preventDefault();
-            const parent = toggle.parentElement;
-            parent.querySelector('.nested').classList.toggle('active');
-            toggle.classList.toggle('tree-toggle-down');
-        };
-        
-        // 保存引用
-        toggle._clickHandler = clickHandler;
-        
-        // 绑定事件
-        toggle.addEventListener('click', clickHandler);
-    });
-}
-
-// 修改文章链接事件绑定
-function bindArticleLinks() {
-    document.querySelectorAll('.article-link').forEach(link => {
-        // 创建点击处理函数并保存引用
-        const clickHandler = (e) => {
-            e.preventDefault();
-            const articleId = link.getAttribute('data-article-id');
-            loadArticle(articleId);
-        };
-        
-        // 保存引用
-        link._clickHandler = clickHandler;
-        
-        // 绑定事件
-        link.addEventListener('click', clickHandler);
-    });
 }
 
 /**

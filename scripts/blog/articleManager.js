@@ -18,8 +18,8 @@
  * 主要方法：
  * - initialize: 初始化文章管理器
  * - loadArticles: 加载文章列表
- * - showArticle: 显示单篇文章，包含重复加载检测
- * - loadAndDisplayArticle: 加载并显示文章内容
+ * - loadArticle: 加载单篇文章，包含重复加载检测
+ * - loadArticleData: 加载文章内容
  * 
  * 依赖关系：
  * - 依赖 notionAPIService.js 获取API数据
@@ -38,13 +38,14 @@ import { articleSearchManager } from './articleSearchManager.js';
 import { articlePaginationManager } from './articlePaginationManager.js';
 import { articleCacheManager } from './articleCacheManager.js';
 import { welcomePageManager } from './welcomePageManager.js';
-import { renderNotionBlocks, initializeLazyLoading } from './articleRenderer.js';
+import { renderArticleContent, initializeLazyLoading } from './articleRenderer.js';
 import { tableOfContents } from './tableOfContents.js';
 
 // 导入工具函数
 import { categoryConfig } from '../config/categories.js';
 import { articleRouteUtils } from '../utils/article-router.js';
-import { validateArticleId, displayArticleContent, showArticleError, processArticleListData } from '../utils/article-utils.js';
+import { validateArticleId, showArticleError, processArticleListData } from '../utils/article-utils.js';
+import { articlePageSkeleton } from '../utils/skeleton-loader.js';
 import { getArticlePlaceholder } from '../utils/placeholder-templates.js';
 import { showStatus, showError } from '../utils/common-utils.js';
 import logger from '../utils/logger.js';
@@ -96,38 +97,87 @@ class ArticleManager {
             // 初始化分类管理器
             this.initCategoryManager();
 
-            // 初始化欢迎页面管理器
-            this.initWelcomePageManager();
+            // 检查URL中是否有指定文章参数
+            const urlParams = new URLSearchParams(window.location.search);
+            const articleIdFromUrl = urlParams.get('article');
 
-            // 加载文章列表
-            const articles = await this.loadArticles();
-
-            // 更新分类列表
-            await this.updateCategories(articles);
-            
-            // 初始化搜索管理器
-            this.initArticleSearchManager();
-
-            // 根据url显示文章或欢迎页
-            await this.showArticleOrWelcomePage();
+            if (!articleIdFromUrl) {
+                logger.info('URL参数不含文章ID,将初始化欢迎页面管理器并显示欢迎页');
+                // 初始化欢迎页面管理器，在加载文章列表之前初始化欢迎页面管理器是因为希望尽早显示欢迎页面骨架屏
+                this.initWelcomePageManager();
+                // 加载文章列表
+                const articles = await this.loadArticles();
+                // 更新分类列表
+                await this.updateCategories(articles);
+                // 初始化搜索管理器
+                this.initArticleSearchManager();
+                // 更新视图状态
+                contentViewManager.updateViewState('auto');
+                // 委托给欢迎页管理器处理
+                welcomePageManager.showWelcomePage(articles);
+            } else {
+                // 仅当URL中指定了文章ID时才加载文章
+                logger.info(`URL参数包含文章ID: ${articleIdFromUrl},将显示指定文章`);
+                // 尽早显示文章内容页面骨架屏
+                articlePageSkeleton.show(this.getArticleContainer());
+                // 加载文章列表
+                const articles = await this.loadArticles();
+                // 更新分类列表
+                await this.updateCategories(articles);
+                // 初始化搜索管理器
+                this.initArticleSearchManager();
+                // 显示指定文章
+                await this.loadArticle(articleIdFromUrl);
+            }
 
             // 监听文章选择事件
             document.addEventListener('articleSelected', (e) => {
                 if (e.detail && e.detail.articleId) {
                     logger.info('从搜索结果中选择文章');
-                    this.showArticle(e.detail.articleId);
+                    this.loadArticle(e.detail.articleId);
                 }
             });
               
             // 发布初始化完成事件
             this.notifyInitialized();
-
-            return articles;
         } catch (error) {
-            logger.error('文章管理器初始化失败:', error);
-            showError('文章管理器初始化失败: ' + error.message);
+            logger.error('文章管理器初始化失败:', error.message);
             throw error;
         }
+    }
+
+    initCategoryManager() {
+        if (this.categoryManager) {
+            categoryManager.initialize();
+        }
+    }
+    initWelcomePageManager() {
+        welcomePageManager.initialize({
+            getArticles: () => {
+                return this.articles;
+            },
+            onCategorySelect: (category) => {
+                categoryManager.selectCategory(category);
+            },
+            onArticleSelect: (articleId) => {
+                this.loadArticle(articleId);
+            }
+        });
+    }
+    initArticleSearchManager() {
+        articleSearchManager.initialize({
+            // 添加获取文章数据的回调函数
+            getArticles: () => {
+                return this.articles;
+            },
+            onSearchResults: (searchResults, searchTerm) => {
+                logger.info(`搜索结果: ${searchResults.length} 个匹配项`);
+            },
+            onResetSearch: () => {
+                logger.info('重置搜索状态');
+                this.filterAndRenderArticles();
+            }
+        });
     }
     
     // 加载文章列表
@@ -211,14 +261,12 @@ class ArticleManager {
             
             return this.articles;
         } catch (error) {
-            logger.error('加载文章列表失败:', error);
+            logger.error('加载文章列表失败:', error.message);
             
             // 显示错误状态
             if (error.name === 'AbortError') {
                 logger.info('请求被中止，尝试使用缓存');
             } else {
-                showError(`加载文章列表失败: ${error.message}`);
-                
                 // 尝试显示更加用户友好的错误信息
                 if (error.message.includes('failed with status 500')) {
                     showError('服务器内部错误，请稍后再试或联系管理员');
@@ -247,11 +295,14 @@ class ArticleManager {
             this.loadingLock = false;
         }
     }
-
-    initCategoryManager() {
-        if (this.categoryManager) {
-            categoryManager.initialize();
+    // 取消当前加载
+    cancelCurrentLoading() {
+        if (this.abortController) {
+            logger.info('取消当前加载请求');
+            this.abortController.abort();
+            this.abortController = null;
         }
+        this.currentLoadingId = null;
     }
 
     // 用获取的文章列表数据更新分类列表
@@ -274,7 +325,7 @@ class ArticleManager {
             
             categoryManager.setOnArticleSelect((articleId) => {
                 logger.info('文章选择');
-                this.showArticle(articleId);
+                this.loadArticle(articleId);
             });
             
             // 从URL初始化状态
@@ -286,64 +337,6 @@ class ArticleManager {
             categoryManager.hideTreeSkeleton();
         }
     }
-
-    initArticleSearchManager() {
-        articleSearchManager.initialize({
-            // 添加获取文章数据的回调函数
-            getArticles: () => {
-                return this.articles;
-            },
-            onSearchResults: (searchResults, searchTerm) => {
-                logger.info(`搜索结果: ${searchResults.length} 个匹配项`);
-            },
-            onResetSearch: () => {
-                logger.info('重置搜索状态');
-                this.filterAndRenderArticles();
-            }
-        });
-    }
-
-    initWelcomePageManager() {
-        welcomePageManager.initialize({
-            getArticles: () => {
-                return this.articles;
-            },
-            onCategorySelect: (category) => {
-                categoryManager.selectCategory(category);
-            },
-            onArticleSelect: (articleId) => {
-                this.showArticle(articleId);
-            }
-        });
-    }
-
-    async showArticleOrWelcomePage() {
-        // 检查URL中是否有指定文章参数
-        const urlParams = new URLSearchParams(window.location.search);
-        const articleIdFromUrl = urlParams.get('article');
-        if (articleIdFromUrl) {
-            // 仅当URL中指定了文章ID时才加载文章
-            logger.info(`从URL参数加载文章: ${articleIdFromUrl}`);
-            await this.showArticle(articleIdFromUrl);
-        } else {
-            logger.info('URL里没有指定文章ID，显示欢迎页');
-            // 更新视图状态
-            contentViewManager.updateViewState('auto');
-            // 委托给欢迎页管理器处理
-            welcomePageManager.showWelcomePage(this.articles);
-        }
-    }
-
-    // 取消当前加载
-    cancelCurrentLoading() {
-        if (this.abortController) {
-            logger.info('取消当前加载请求');
-            this.abortController.abort();
-            this.abortController = null;
-        }
-        this.currentLoadingId = null;
-    }
-
     // 从URL初始化状态
     async initializeFromUrl() {
         try {
@@ -352,7 +345,7 @@ class ArticleManager {
                 // 文章显示回调
                 async (articleId) => {
                     this.currentPageId = articleId;
-                    await this.showArticle(articleId);
+                    await this.loadArticle(articleId);
                 },
                 // 分类选择回调
                 (category) => {
@@ -391,8 +384,8 @@ class ArticleManager {
         }
     }
     
-    // 显示文章内容
-    async showArticle(articleId) {
+    // 加载单篇文章的内容
+    async loadArticle(articleId) {
         // 避免重复加载相同的文章
         if (this.currentArticleId === articleId && document.querySelector('.article-body')) {
             logger.info(`文章 ${articleId} 已经显示，跳过重复加载`);
@@ -403,16 +396,18 @@ class ArticleManager {
         
         try {
             logger.info('开始加载文章:', articleId);
+
+            const articleContainer = this.getArticleContainer();
+            if (!articleContainer) return false;
+
+            articlePageSkeleton.show(this.getArticleContainer());
             
             // 通知视图管理器开始文章加载 - 添加的事件通信
             contentViewManager.dispatchViewEvent(ViewEvents.LOADING_START, { loadingType: 'article', articleId: articleId });
             
-            const articleContainer = document.getElementById('article-container');
-            if (!articleContainer) return false;
-
             // 验证文章ID
             if (!validateArticleId(articleId)) {
-                showError('无效的文章ID');
+                logger.error('无效的文章ID');
                 return false;
             }
             
@@ -435,7 +430,7 @@ class ArticleManager {
                 articleRouteUtils.updateArticleParam(articleId);
                 
                 // 加载文章数据
-                const articleData = await this.loadAndDisplayArticle(articleId);
+                const articleData = await this.loadArticleData(articleId);
                 if (!articleData) {
                     logger.info('文章加载已取消');
                     return false;
@@ -450,11 +445,13 @@ class ArticleManager {
                     nextCursor: articleData.hasMore === true && articleData.nextCursor ? articleData.nextCursor : null,
                     loadedBlocks: articleData.blocks || []
                 });
+
+                // 隐藏文章内容页面骨架屏
+                articlePageSkeleton.hide(articleContainer);
                 
                 // 显示文章内容
-                const articleBody = displayArticleContent(
+                const articleBody = renderArticleContent(
                     articleData, 
-                    renderNotionBlocks, 
                     'article-container', 
                     articlePaginationManager.hasMore
                 );
@@ -468,7 +465,7 @@ class ArticleManager {
                         logger.info('从缓存加载的文章，进行优化的渲染检查...');
                         // 使用较短延迟减少视觉上的延迟感
                         setTimeout(() => {
-                            const container = document.getElementById('article-container');
+                            const container = this.getArticleContainer();
                             if (container) {
                                 // 添加类以触发视觉效果，表明内容在重新加载
                                 container.classList.add('cache-refresh');
@@ -479,7 +476,7 @@ class ArticleManager {
                     
                     // 修改这里：确保当没有更多内容时，显示提示
                     if (!articlePaginationManager.hasMore) {
-                        const articleContainer = document.getElementById('article-container');
+                        const articleContainer = this.getArticleContainer();
                         // 查找或创建加载更多容器
                         let loadMoreContainer = articleContainer.querySelector('.load-more-container');
                         if (!loadMoreContainer) {
@@ -516,10 +513,7 @@ class ArticleManager {
                 
                 return true;
             } catch (error) {
-                logger.error('渲染文章失败:', error);
-                
-                // 使用showArticleError显示错误信息
-                showArticleError(error.message, 'article-container', articleId);
+                logger.error('渲染文章失败:', error.message);
                 
                 // 设置错误模式
                 contentViewManager.setMode(ViewMode.ERROR);
@@ -536,12 +530,12 @@ class ArticleManager {
                 this.isLoading = false;
             }
         } catch (error) {
-            logger.error('显示文章失败:', error);
+            logger.error('显示文章失败:', error.message);
             return false;
         }
     }
 
-    // 准备加载文章
+    // 文章加载前的准备，包括显示占位图、重置状态、更新URL参数等
     prepareArticleLoading(pageId) {
         logger.info('准备加载文章:', pageId);
         
@@ -549,14 +543,14 @@ class ArticleManager {
         this.requestIdentifier = Date.now();
         
         // 获取文章容器
-        const articleContainer = document.getElementById('article-container');
+        const articleContainer = this.getArticleContainer();
         if (!articleContainer) {
             logger.error('找不到文章容器');
             return false;
         }
         
         // 重置文章容器内容 - 使用导入的占位图模板
-        articleContainer.innerHTML = getArticlePlaceholder();
+        // articleContainer.innerHTML = getArticlePlaceholder();
         
         // 重置状态
         this.isLoading = true;
@@ -587,8 +581,8 @@ class ArticleManager {
         logger.info('文章加载准备完成');
         return true;
     }
-    // 加载和显示文章内容
-    async loadAndDisplayArticle(pageId) {
+    // 加载文章内容数据
+    async loadArticleData(pageId) {
         const requestId = this.requestIdentifier;
         logger.info('开始加载文章:', pageId);
         
@@ -684,7 +678,7 @@ class ArticleManager {
             this.isLoading = false;
             return articleData;
         } catch (error) {
-            logger.error('加载文章失败:', error);
+            logger.error('加载文章数据失败:', error.message);
             this.isLoading = false;
             throw error;
         } finally {
@@ -710,6 +704,10 @@ class ArticleManager {
      */
     getArticles() {
         return this.articles;
+    }
+
+    getArticleContainer() {
+        return document.getElementById('article-container');
     }
 
     // 公开初始化完成事件
