@@ -17,7 +17,6 @@
     <link rel="stylesheet" href="./styles/components/footer.css">
     <link rel="stylesheet" href="./styles/components/scrollbar.css">
     <link rel="stylesheet" href="./styles/layouts/life-layout.css">
-    <!-- <link rel="stylesheet" href="./styles/components/debug-panel.css"> -->
     <link rel="stylesheet" href="./styles/layouts/life-left-column.css">
     <link rel="stylesheet" href="./styles/layouts/life-right-column.css">
     <link rel="stylesheet" href="./styles/layouts/life-photo-wall.css">
@@ -28,9 +27,6 @@
         data-resource-type="font-awesome">
     <!-- 网站图标 -->
     <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
-    
-    <!-- 再加载API服务 -->
-    <script src="./scripts/services/notionAPIService.js" type="module"></script>
 
     <!-- 为了快速调试，先直接在html中加载懒加载库和-->
     <!-- 加载vanilla-lazyload库 -->
@@ -39,6 +35,13 @@
     <script src="https://unpkg.com/imagesloaded@5/imagesloaded.pkgd.min.js"></script>
     <script src="https://unpkg.com/masonry-layout@4/dist/masonry.pkgd.min.js"></script> 
     
+    <!-- 先加载日志模块、配置模块、资源管理器 -->
+    <script type="module">
+        // 导入logger, 确保它最先加载
+        import logger from './scripts/utils/logger.js';
+        import config from './scripts/config/config.js';
+    </script>
+
     <!-- 结构化数据 -->
     <script type="application/ld+json">
         {

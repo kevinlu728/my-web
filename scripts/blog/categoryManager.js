@@ -52,16 +52,6 @@ class CategoryManager {
     }
 
     /**
-     * 公开初始化完成事件
-     */
-    notifyInitialized() {
-        logger.debug('分类管理器初始化完成，发送初始化事件');
-        document.dispatchEvent(new CustomEvent('categoryManager:initialized', {
-            detail: { manager: this }
-        }));
-    }
-
-    /**
      * 初始化分类管理器
      */
     initialize() {
@@ -601,8 +591,4 @@ class CategoryManager {
 }
 
 export const categoryManager = new CategoryManager();
-
-// 初始化完成后发送事件
-setTimeout(() => categoryManager.notifyInitialized(), 0);
-
 export default CategoryManager; 

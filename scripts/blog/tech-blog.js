@@ -26,7 +26,6 @@ import config from '../config/config.js';
 import { resourceManager } from '../resource/resourceManager.js';
 import { articleManager } from './articleManager.js';
 import { categoryManager } from './categoryManager.js';
-import { welcomePageManager } from './welcomePageManager.js';
 import { contentViewManager, ViewMode, ViewEvents } from './contentViewManager.js';
 import { imageLazyLoader } from './imageLazyLoader.js';
 import { initNavigation } from '../components/navigation.js';
@@ -55,21 +54,23 @@ document.addEventListener('DOMContentLoaded', () => {
     logger.info('DOM内容已加载，开始页面加载前的准备工作...');
 
     // 提前设置content-unblocked事件监听器，不再依赖window.load事件
-    setupContentUnblockedListener();
+    // setupContentUnblockedListener();
 
     // 立即解除内容阻塞
-    // document.dispatchEvent(new Event('content-unblocked'));
-    setTimeout(() => {
-        document.dispatchEvent(new Event('content-unblocked'));
-    }, 50);
+    // setTimeout(() => {
+    //     document.dispatchEvent(new Event('content-unblocked'));
+    // }, 0);
 
-    // 如果资源管理器不可用，立即解锁内容并返回
-    if (resourceManager) {
-        // 加载页面所需的关键资源
-        resourceManager.loadCriticalResources();
-    } else {
-        logger.warn('⚠️ 资源管理器不可用，无法提前加载关键资源（页面显示效果可能受影响）');
-    }
+    initializePage().catch(error => {
+        logger.error('❌ 初始化失败:', error);
+        showStatus('页面初始化失败，请刷新重试', true, 'error');
+        window.pageState.error = error;
+    }).finally(() => {
+        // 初始化完成，设置统一状态标志
+        window.pageState.initialized = true;
+        window.pageState.initializing = false;
+        showStatus('', false);
+    });
     
     // 仅在非生产环境加载调试面板
     const isProduction = config && config.getEnvironment && config.getEnvironment() === 'production';
@@ -77,7 +78,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // 将模块导出到全局作用域，方便调试
         window.articleManager = articleManager;
         window.categoryManager = categoryManager;
-        window.imageLazyLoader = imageLazyLoader;
         window.config = config;
         // 加载调试面板组件
         loadDebugPanel({
@@ -94,18 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function setupContentUnblockedListener() {
     logger.info('设置内容解锁事件监听器...');
     document.addEventListener('content-unblocked', () => {
-        logger.info('🎉 内容已解锁，开始初始化页面');
-        // 初始化页面
-        initializePage().catch(error => {
-            logger.error('❌ 初始化失败:', error);
-            showStatus('页面初始化失败，请刷新重试', true, 'error');
-            window.pageState.error = error;
-        }).finally(() => {
-            // 初始化完成，设置统一状态标志
-            window.pageState.initialized = true;
-            window.pageState.initializing = false;
-            showStatus('', false);
-        });
+        logger.info('🎉 内容已解锁');
     }, { once: true });
 }
 
@@ -135,11 +124,10 @@ export async function initializePage() {
         // 设置状态 - 使用统一的状态变量
         window.pageState.loading = true;
 
-        // ===== 1. 环境准备和基础设置 =====
         logger.info('初始化技术博客页面...');
-        
-        const currentDatabaseId = config.notion.databaseIds?.blogArticles || config.notion.databaseId;
-        logger.info('当前数据库ID:', currentDatabaseId);
+        // ===== 1. 环境准备和基础设置 =====
+        const blogDatabaseId = config.notion.databaseIds?.blogArticles || config.notion.databaseId;
+        logger.info('博客数据库ID:', blogDatabaseId);
 
         // 初始化内容视图管理器，下面需要使用
         contentViewManager.initialize('article-container');
@@ -149,15 +137,14 @@ export async function initializePage() {
         contentViewManager.updateViewState('loading');
         
         // ===== 2. 核心组件初始化 =====
-        // 初始化文章管理器
-        logger.info('初始化文章管理器...');
-        await articleManager.initialize(currentDatabaseId);
+        // 初始化NotionAPI服务，后续文章管理器会使用
+        notionAPIService.initialize();
 
-        // 设置分类变更回调
-        // categoryManager.setOnCategoryChange((category) => {
-        //     logger.info('分类变更为:', category);
-        //     articleManager.filterAndRenderArticles();
-        // });
+        // 初始化资源管理器
+        resourceManager.initialize();
+
+        // 初始化文章管理器
+        await articleManager.initialize(blogDatabaseId);
         
         // ===== 3. 内容显示处理 =====
 

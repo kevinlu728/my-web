@@ -37,11 +37,11 @@ class ResourceManager {
         this.resourceConfig = resourceConfig;
         
         // 目前把初始化放在构造函数中，是希望尽早初始化，但也考虑从构造函数中移除，改为由页面（比如tech-blog.js）手动调用。
-        this.initialize();
+        // this.initialize();
     }
 
     initialize() {
-        logger.info('资源管理器初始化（日志级别尚未更新，早期日志使用info级别）...');
+        logger.info('资源管理器初始化...');
 
         // 1. 先初始化事件系统监听器
         this.initializeEventListeners();
@@ -74,6 +74,9 @@ class ResourceManager {
 
         // 4. 初始化内部状态
         this._resourceFallbackStatus = new Map();
+
+        // 5. 预加载关键资源
+        this.loadCriticalResources();
     }
 
     /**

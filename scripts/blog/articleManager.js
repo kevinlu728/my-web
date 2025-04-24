@@ -75,17 +75,6 @@ class ArticleManager {
         // 添加请求控制相关属性
         this.loadingStatus = new Map(); // 记录每篇文章的加载状态
         this.requestIdentifier = 0; // 添加请求标识符
-        
-        // 添加事件订阅
-        document.addEventListener('categoryManager:initialized', (e) => {
-            logger.debug('接收到分类管理器初始化事件');
-            this.categoryManager = e.detail.manager;
-        });
-        
-        document.addEventListener('articleSearchManager:initialized', (e) => {
-            logger.debug('接收到搜索管理器初始化事件');
-            this.articleSearchManager = e.detail.manager;
-        });
     }
 
     // 初始化
@@ -95,7 +84,7 @@ class ArticleManager {
         
         try {
             // 初始化分类管理器
-            this.initCategoryManager();
+            categoryManager.initialize();
 
             // 检查URL中是否有指定文章参数
             const urlParams = new URLSearchParams(window.location.search);
@@ -137,20 +126,12 @@ class ArticleManager {
                     this.loadArticle(e.detail.articleId);
                 }
             });
-              
-            // 发布初始化完成事件
-            this.notifyInitialized();
         } catch (error) {
             logger.error('文章管理器初始化失败:', error.message);
             throw error;
         }
     }
 
-    initCategoryManager() {
-        if (this.categoryManager) {
-            categoryManager.initialize();
-        }
-    }
     initWelcomePageManager() {
         welcomePageManager.initialize({
             getArticles: () => {
@@ -709,19 +690,7 @@ class ArticleManager {
     getArticleContainer() {
         return document.getElementById('article-container');
     }
-
-    // 公开初始化完成事件
-    notifyInitialized() {
-        logger.debug('文章管理器初始化完成，发送初始化事件');
-        document.dispatchEvent(new CustomEvent('articleManager:initialized', {
-            detail: { manager: this }
-        }));
-    }
 }
 
 export const articleManager = new ArticleManager();
-
-// 初始化完成后发送事件 
-setTimeout(() => articleManager.notifyInitialized(), 0);
-
 export default ArticleManager; 

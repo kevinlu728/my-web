@@ -9,6 +9,7 @@
     <meta name="keywords" content="博客,技术,生活,华为,京东,美团,电影,足球,旅行">
     <!-- 预加载策略 - 核心CSS使用preload，非关键资源使用prefetch -->
     <link rel="preload" href="./styles/main.css" as="style">
+    <link rel="preload" href="./styles/layouts/home-layout.css" as="style">
     <!-- CSS资源 - 使用相对路径 -->
     <link rel="stylesheet" href="./styles/main.css">
     <link rel="stylesheet" href="./styles/components/header.css">
@@ -28,8 +29,6 @@
         // 导入logger, 确保它最先加载
         import logger from './scripts/utils/logger.js';
         import config from './scripts/config/config.js';
-        import resourceManager from './scripts/resource/resourceManager.js';
-        // console.log('✅ 日志模块、配置模块、资源管理器已预加载');
     </script>
     
     <!-- 再加载API服务，首页暂时不使用Notion API服务，而AI服务会由聊天组件加载 -->

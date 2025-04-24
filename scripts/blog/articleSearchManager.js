@@ -67,9 +67,6 @@ class ArticleSearchManager {
         this.setupEventListeners();
         
         logger.debug('文章搜索管理器已初始化');
-        
-        // 公开初始化完成事件
-        this.notifyInitialized();
     }
 
     /**
@@ -356,20 +353,8 @@ class ArticleSearchManager {
         this.updateClearButton();
         this.resetSearch();
     }
-
-    // 公开初始化完成事件
-    notifyInitialized() {
-        logger.debug('搜索管理器初始化完成，发送初始化事件');
-        document.dispatchEvent(new CustomEvent('articleSearchManager:initialized', {
-            detail: { manager: this }
-        }));
-    }
 }
 
 // 导出单例实例
 export const articleSearchManager = new ArticleSearchManager();
-
-// 初始化完成后发送事件
-setTimeout(() => articleSearchManager.notifyInitialized(), 0);
-
 export default ArticleSearchManager; 

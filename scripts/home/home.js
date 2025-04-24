@@ -34,22 +34,8 @@ logger.info('🚀 home.js 开始加载...');
 document.addEventListener('DOMContentLoaded', () => {
     logger.info('DOM内容已加载，开始页面加载前的准备工作...');
 
-    // 如果资源管理器不可用，立即解锁内容并返回
-    if (resourceManager) {
-        // 加载页面所需的关键资源
-        resourceManager.loadCriticalResources();
-    } else {
-        logger.warn('⚠️ 资源管理器不可用，无法提前加载关键资源（页面显示效果可能受影响）');
-    }
-
-    // 初始化页面
     initializePage().catch(error => {
         logger.error('❌ 初始化失败:', error);
-        // window.pageState.error = error;
-    }).finally(() => {
-        // 初始化完成，设置统一状态标志
-        // window.pageState.initialized = true;
-        // window.pageState.initializing = false;
     });
 });
 
@@ -61,13 +47,16 @@ async function initializePage() {
     logger.info('初始化主页...');
 
     try {
-        // 第一步：加载HTML UI组件
+        // 初始化资源管理器
+        resourceManager.initialize();
+
+        // 加载HTML UI组件
         await loadHtmlComponents();
 
-        // 第二步：初始化JavaScript功能组件
+        // 初始化JavaScript功能组件
         initJsComponents();
 
-        // 第三步：为HTML组件初始化事件监听器
+        // 为HTML组件初始化事件监听器
         initHtmlComponentEvents();
 
         logger.debug('🎉 所有组件初始化完成！');

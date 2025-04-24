@@ -10,19 +10,18 @@
     <!-- 预加载策略 - 核心CSS使用preload，非关键资源使用prefetch -->
     <link rel="preload" href="./styles/main.css" as="style">
     <link rel="preload" href="./styles/layouts/blog-layout.css" as="style">
-    <!-- <link rel="preload" href="./scripts/resource/resourceManager.js" as="script" crossorigin="anonymous"> -->
     <!-- CSS资源 - 使用相对路径 -->
     <link rel="stylesheet" href="./styles/main.css">
     <link rel="stylesheet" href="./styles/components/header.css">
     <link rel="stylesheet" href="./styles/components/footer.css">
     <link rel="stylesheet" href="./styles/components/scrollbar.css">
     <link rel="stylesheet" href="./styles/layouts/blog-layout.css">
-    <link rel="stylesheet" href="./styles/components/debug-panel.css">
     <link rel="stylesheet" href="./styles/layouts/blog-left-column.css">
     <link rel="stylesheet" href="./styles/layouts/blog-right-column.css">
+    <link rel="stylesheet" href="./styles/sections/article.css">
     <link rel="stylesheet" href="./styles/components/code-block.css">
     <link rel="stylesheet" href="./styles/components/table-block.css">
-    <link rel="stylesheet" href="./styles/sections/article.css">
+    <link rel="stylesheet" href="./styles/components/debug-panel.css">
     <!-- 优先使用本地Font Awesome资源 -->
     <link rel="stylesheet" href="/assets/libs/font-awesome/all.min.css" 
         id="local-font-awesome" 
@@ -65,12 +64,7 @@
         // 导入logger, 确保它最先加载
         import logger from './scripts/utils/logger.js';
         import config from './scripts/config/config.js';
-        import resourceManager from './scripts/resource/resourceManager.js';
-        // console.log('✅ 日志模块、配置模块、资源管理器已预加载');
     </script>
-    
-    <!-- 再加载API服务 -->
-    <script src="./scripts/services/notionAPIService.js" type="module"></script>
     
     <!-- 结构化数据 -->
     <script type="application/ld+json">
