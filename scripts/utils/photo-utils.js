@@ -48,8 +48,8 @@ export function processPhotoListData(photos) {
             const description = photo.properties.Description?.rich_text?.[0]?.plain_text || '';
 
             // 提取自定义字段
-            const customField = photo.properties['Custom Field']?.rich_text?.[0]?.plain_text || '';
-            const customFieldType = photo.properties['Custom Field Type']?.select?.name || '无额外字段';
+            const extendedField = photo.properties['Extend Field']?.rich_text?.[0]?.plain_text || '';
+            const extendedFieldType = photo.properties['Extend Field Type']?.select?.name || '无额外字段';
             
             return {
                 id: photo.id,
@@ -60,8 +60,8 @@ export function processPhotoListData(photos) {
                 date,
                 category,
                 description,
-                customField,
-                customFieldType,
+                extendedField,
+                extendedFieldType,
                 raw: photo // 保留原始数据
             };
         } catch (err) {

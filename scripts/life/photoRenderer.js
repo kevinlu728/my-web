@@ -301,11 +301,11 @@ class PhotoRenderer {
             }
             
             // 防止重复初始化，只有在没有实例或实例已销毁时才创建新实例
-            if (this.masonryInstance && this.masonryInstance.element === photoGrid) {
-                logger.debug('Masonry实例已存在且关联到当前容器，跳过重复初始化');
-                this.masonryInstance.layout(); // 重新布局以适应新内容
-                return;
-            }
+            // if (this.masonryInstance && this.masonryInstance.element === photoGrid) {
+            //     logger.debug('Masonry实例已存在且关联到当前容器，跳过重复初始化');
+            //     this.masonryInstance.layout(); // 重新布局以适应新内容
+            //     return;
+            // }
             
             // 清理之前的实例
             if (this.masonryInstance) {
@@ -371,7 +371,7 @@ class PhotoRenderer {
         photoItem.className = 'photo-item';
         photoItem.setAttribute('data-id', photo.id);
         photoItem.setAttribute('data-category', photo.category);
-        photoItem.setAttribute('data-custom-field', photo.customField);
+        photoItem.setAttribute('data-extended-field', photo.extendedField);
         
         // 获取模块标签
         let moduleLabel = '未知';
@@ -417,7 +417,7 @@ class PhotoRenderer {
             </div>
             <div class="photo-info">
                 <h3 class="photo-title">${photo.title}</h3>
-                <div class="photo-custom-field" data-field="${photo.customFieldType}">${photo.customField}</div>
+                <div class="photo-extended-field" data-field="${photo.extendedFieldType}">${photo.extendedField}</div>
             </div>
         `;
         
