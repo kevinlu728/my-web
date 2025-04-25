@@ -35,20 +35,16 @@ class ThemeModuleManager {
         }
         
         // 初始化模块样式
-        this.initializeModuleStyles();
+        this.initModuleStyles();
         
         // 初始化模块选择器UI
-        this.initializeModuleSelectors();
-        
-        logger.info('主题模块管理器初始化完成');
+        this.initModuleSelectors();
     }
     
     /**
      * 初始化模块样式
      */
-    initializeModuleStyles() {
-        logger.info('初始化模块样式...');
-        
+    initModuleStyles() {
         // 添加模块样式类到body，用于全局主题切换
         document.body.classList.add('theme-all');
         
@@ -58,9 +54,7 @@ class ThemeModuleManager {
     /**
      * 初始化模块选择器UI
      */
-    initializeModuleSelectors() {
-        logger.info('初始化模块选择器...');
-        
+    initModuleSelectors() {
         // 查找所有模块选择器按钮并添加初始状态
         const moduleSelectors = document.querySelectorAll('.module-selector');
         

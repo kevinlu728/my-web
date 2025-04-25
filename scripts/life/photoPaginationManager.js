@@ -53,7 +53,7 @@ class PhotoPaginationManager {
      * @param {Function} onLoadMore 加载更多的回调函数
      */
     initialize(photos, photosPerPage = 9, onLoadMore = null) {
-        logger.info('初始化照片分页, 照片总数:', photos ? photos.length : 0);
+        logger.info('初始化照片分页管理器, 照片总数:', photos ? photos.length : 0);
         
         // 设置基础属性
         this.filteredPhotos = [...photos]; // 初始时复制所有照片到过滤列表

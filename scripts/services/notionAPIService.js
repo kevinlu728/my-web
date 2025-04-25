@@ -33,11 +33,11 @@ class NotionAPIService {
     async initialize() {
         // 调试信息：验证logger对象
         if (logger === console) {
-            console.warn('⚠️ NotionAPIService: 未找到logger模块，使用console作为回退');
+            console.warn('⚠️ 未找到logger模块，使用console作为回退');
         } else {
-            logger.info('✅ NotionAPIService: 成功获取logger模块');
+            logger.info('✅ 成功获取logger模块');
         }
-        this.logInfo('NotionAPIService初始化...');
+        this.logInfo('初始化NotionAPIService...');
         this.initBaseUrl();
 
         // 为了提升页面加载速度，暂时关闭自动选择最佳API实现。

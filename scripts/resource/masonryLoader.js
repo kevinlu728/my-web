@@ -1,76 +1,51 @@
-/**
- * @file gridjsLoader.js
- * @description GridJS表格库资源加载管理器
- * @author 陆凯
- * @version 1.1.0
- * @created 2024-03-22
- * @updated 2025-04-15
- * 
- * 该模块负责管理GridJS表格库相关资源的加载：
- * - 负责加载GridJS核心库和样式表
- * - 通过resourceManager系统实现资源加载和回退
- * - 提供资源加载状态跟踪和事件通知
- * - 实现资源加载超时和失败处理
- * - 支持多CDN源加载和本地资源回退
- * 
- * 主要方法：
- * - loadGridjsResources: 加载GridJS相关资源
- * - _loadGridjsCore: 加载GridJS核心JavaScript库
- * - _loadGridjsTheme: 加载GridJS主题样式表
- * - _getResourceUrls: 获取资源的URL信息
- * 
- * 内部使用scriptResourceLoader和styleResourceLoader加载实际资源
- */
-
 import logger from '../utils/logger.js';
 import resourceConfig from '../config/resources.js';
-import { styleResourceLoader } from './styleResourceLoader.js';
 import { scriptResourceLoader } from './scriptResourceLoader.js';
 
 /**
- * GridJS加载控制
+ * Masonry加载器类
  */
-class GridjsLoader {
+class MasonryLoader {
     constructor() {
         this.resourceConfig = resourceConfig;
         this.loadingPromise = null;
     }
     
     /**
-     * 加载GridJS相关资源
+     * 加载Masonry相关资源
      * @returns {Promise} - 加载完成的Promise
      */
-    loadGridjsResources() {
-        logger.info('📊 加载GridJS表格资源');
+    loadMasonryResources() {
+        logger.info('🧱 加载Masonry资源');
 
-        // 尝试从资源配置中获取GridJS资源信息
-        let gridjsCoreConfig;
-        let gridjsThemeConfig;
+        // 尝试从资源配置中获取Masonry资源信息
+        let masonryConfig;
+        let imagesLoadedConfig;
         
         try {
-            gridjsCoreConfig = this.resourceConfig.resources.scripts['gridjs-core'];
-            gridjsThemeConfig = this.resourceConfig.resources.styles['gridjs-theme'];
+            masonryConfig = this.resourceConfig.resources.scripts['masonry'];
+            imagesLoadedConfig = this.resourceConfig.resources.scripts['imagesLoaded'];
             
-            if (!gridjsCoreConfig) {
-                logger.warn('⚠️ 未在资源配置中找到gridjs-core配置,将使用默认值');
+            if (!masonryConfig) {
+                logger.warn('⚠️ 未在资源配置中找到masonry配置,将使用默认值');
             }
-            if (!gridjsThemeConfig) {
-                logger.warn('⚠️ 未在资源配置中找到gridjs-theme配置,将使用默认值');
+            if (!imagesLoadedConfig) {
+                logger.warn('⚠️ 未在资源配置中找到imagesLoaded配置,将使用默认值');
             }
         } catch (error) {
-            logger.warn('⚠️ 获取GridJS资源配置失败,将使用默认值', error);
+            logger.warn('⚠️ 获取Masonry资源配置失败,将使用默认值', error);
         }
         
         // 检查是否已加载
-        if (window.gridjsLoaded && window.gridjs) {
-            logger.debug('✓ GridJS已加载,跳过加载过程');
+        if (window.masonryLoaded && typeof Masonry !== 'undefined' && typeof imagesLoaded !== 'undefined') {
+            logger.debug('✓ Masonry已加载,跳过加载过程');
             return Promise.resolve(true);
         }
         
         // 如果已经在加载中，避免重复加载
-        if (window.gridjsLoading) {
-            logger.debug('⏳ GridJS正在加载中,等待完成...');
-            return this._waitForGridjsLoaded();
+        if (window.masonryLoading) {
+            logger.debug('⏳ Masonry正在加载中,等待完成...');
+            return this._waitForMasonryLoaded();
         }
         
         // 如果已有加载Promise，直接返回
@@ -79,34 +54,34 @@ class GridjsLoader {
         }
         
         // 标记为正在加载
-        window.gridjsLoading = true;
+        window.masonryLoading = true;
         
         // 执行加载
         // 由于已接入事件系统，且底层加载器已经打印错误日志，所以在then、catch中简化处理，避免过多日志。未来考虑删除这个Promise。
         this.loadingPromise = Promise.resolve()
             .then(() => {
-                logger.info('📦 加载GridJS核心库和样式');
+                logger.info('📦 加载Masonry和imagesLoaded');
                 
-                // 并行加载JS和CSS
+                // 并行加载两个JS
                 return Promise.all([
-                    this._loadGridjsCore(gridjsCoreConfig),
-                    this._loadGridjsTheme(gridjsThemeConfig)
+                    this._loadMasonry(masonryConfig),
+                    this._loadImagesLoaded(imagesLoadedConfig)
                 ]);
             })
-            .then(([coreLoaded, cssLoaded]) => {
-                if (!coreLoaded) {
-                    window.gridjsLoading = false;
+            .then(([masonryLoaded, imagesLoadedLoaded]) => {
+                if (!masonryLoaded) {
+                    window.masonryLoading = false;
                     return false;
                 }
                 
                 // 标记为加载完成
-                window.gridjsLoaded = true;
-                window.gridjsLoading = false;
+                window.masonryLoaded = true;
+                window.masonryLoading = false;
                 return true;
             })
             .catch(error => {
-                window.gridjsLoaded = false;
-                window.gridjsLoading = false;
+                window.masonryLoaded = false;
+                window.masonryLoading = false;
                 return false;
             });
             
@@ -114,14 +89,14 @@ class GridjsLoader {
     }
     
     /**
-     * 等待GridJS加载完成
+     * 等待Masonry加载完成
      * @private
      * @returns {Promise} - 加载完成的Promise
      */
-    _waitForGridjsLoaded() {
+    _waitForMasonryLoaded() {
         return new Promise((resolve) => {
             const checkInterval = setInterval(() => {
-                if (window.gridjsLoaded) {
+                if (window.masonryLoaded) {
                     clearInterval(checkInterval);
                     clearTimeout(timeout);
                     resolve(true);
@@ -131,46 +106,46 @@ class GridjsLoader {
             // 设置超时，避免无限等待
             const timeout = setTimeout(() => {
                 clearInterval(checkInterval);
-                logger.warn('等待GridJS加载超时');
+                logger.warn('等待Masonry加载超时');
                 resolve(false);
             }, 5000);
         });
     }
     
     /**
-     * 加载GridJS核心库
+     * 加载Masonry库
      * @private
-     * @param {Object} coreConfig - GridJS核心库配置
+     * @param {Object} masonryConfig - Masonry库配置
      * @returns {Promise} - 加载完成的Promise
      */
-    _loadGridjsCore(coreConfig) {
+    _loadMasonry(masonryConfig) {
         return new Promise(resolve => {
             try {
-                const version = this.resourceConfig?.versions?.gridjs || '6.0.6';
+                const version = this.resourceConfig?.versions?.masonry || '4.2.2';
                 
                 // 从配置或默认值获取URL
-                let urls = this._getResourceUrls('scripts', 'gridjs-core', coreConfig);
+                let urls = this._getResourceUrls('scripts', 'masonry', masonryConfig);
                 if (!urls || !urls.primaryUrl) {
-                    urls = this._getDefaultGridjsCoreUrls(version);
-                    logger.debug('⚠️ 未找到有效的GridJS URL,使用默认值');
+                    urls = this._getDefaultMasonryUrls(version);
+                    logger.debug('⚠️ 未找到有效的Masonry URL,使用默认值');
                 }
                 
                 // 构建加载选项
                 const options = {
                     async: true,  // 异步加载
                     attributes: {
-                        'data-resource-group': 'table',
-                        'data-resource-id': 'gridjs-core',
-                        'data-resource-type': 'table',
+                        'data-resource-group': 'layout',
+                        'data-resource-id': 'masonry',
+                        'data-resource-type': 'masonry',
                         'data-local-fallback': urls.localUrl
                     },
                     fallbacks: urls.fallbackUrls || [],
                     localFallback: urls.localUrl
                 };
 
-                logger.debug(`Gridjs核心库的URL: ${urls.primaryUrl} , 本地回退URL: ${urls.localUrl}`);
+                logger.debug(`Masonry的URL: ${urls.primaryUrl} , 本地回退URL: ${urls.localUrl}`);
                 if (urls.fallbackUrls && urls.fallbackUrls.length > 0) {
-                    logger.debug(`Gridjs核心库的备用URLs: ${urls.fallbackUrls.join(', ')}`);
+                    logger.debug(`Masonry的备用URLs: ${urls.fallbackUrls.join(', ')}`);
                 }
                 
                 // 加载脚本
@@ -185,7 +160,7 @@ class GridjsLoader {
                     if (result && (result.status === 'loaded' || result.status === 'cached' || result.status === 'existing')) {
                         resolve(true);
                     } else {
-                        throw new Error('GridJS核心库加载失败');
+                        throw new Error('Masonry加载失败');
                     }
                 })
                 .catch(error => {
@@ -198,53 +173,53 @@ class GridjsLoader {
     }
     
     /**
-     * 加载GridJS样式
+     * 加载ImagesLoaded库
      * @private
-     * @param {Object} themeConfig - GridJS主题样式配置
+     * @param {Object} imagesLoadedConfig - ImagesLoaded库配置
      * @returns {Promise} - 加载完成的Promise
      */
-    _loadGridjsTheme(themeConfig) {
+    _loadImagesLoaded(imagesLoadedConfig) {
         return new Promise(resolve => {
             try {
-                const version = this.resourceConfig?.versions?.gridjs || '6.0.6';
+                const version = this.resourceConfig?.versions?.imagesLoaded || '5.0.0';
                 
                 // 从配置或默认值获取URL
-                let urls = this._getResourceUrls('styles', 'gridjs-theme', themeConfig);
+                let urls = this._getResourceUrls('scripts', 'imagesLoaded', imagesLoadedConfig);
                 if (!urls || !urls.primaryUrl) {
-                    urls = this._getDefaultGridjsThemeUrls(version);
-                    logger.debug('⚠️ 未找到有效的GridJS主题URL,使用默认值');
+                    urls = this._getDefaultImagesLoadedUrls(version);
+                    logger.debug('⚠️ 未找到有效的ImagesLoaded URL,使用默认值');
                 }
                 
                 // 构建加载选项
                 const options = {
                     attributes: {
-                        'data-resource-group': 'table',
-                        'data-resource-id': 'gridjs-theme',
-                        'data-resource-type': 'table',
+                        'data-resource-group': 'layout',
+                        'data-resource-id': 'imagesLoaded',
+                        'data-resource-type': 'imagesLoaded',
                         'data-local-fallback': urls.localUrl
                     },
                     fallbacks: urls.fallbackUrls || [],
                     localFallback: urls.localUrl
                 };
                 
-                logger.debug(`GridJS主题的URL: ${urls.primaryUrl} , 本地回退URL: ${urls.localUrl}`);
+                logger.debug(`ImagesLoaded的URL: ${urls.primaryUrl} , 本地回退URL: ${urls.localUrl}`);
                 if (urls.fallbackUrls && urls.fallbackUrls.length > 0) {
-                    logger.debug(`Gridjs主题的备用URLs(包括备用CDN和本地回退): ${urls.fallbackUrls.join(', ')}`);
+                    logger.debug(`ImagesLoaded的备用URLs(包括备用CDN和本地回退): ${urls.fallbackUrls.join(', ')}`);
                 }
 
-                // 加载CSS
+                // 加载脚本
                 // 由于已接入事件系统，且底层加载器已经打印错误日志，所以在then、catch中简化处理，避免过多日志。
-                styleResourceLoader.loadStylesheet({
+                scriptResourceLoader.loadScript({
                     url: urls.primaryUrl,
                     attributes: options.attributes,
-                    priority: 'medium',
-                    nonBlocking: true
+                    priority: 'medium'
                 })
-                .then(success => {
-                    if (success) {
+                .then(result => {
+                    // 检查是否成功加载
+                    if (result && (result.status === 'loaded' || result.status === 'cached' || result.status === 'existing')) {
                         resolve(true);
                     } else {
-                        resolve(false);
+                        throw new Error('Masonry加载失败');
                     }
                 })
                 .catch(error => {
@@ -289,41 +264,41 @@ class GridjsLoader {
     }
     
     /**
-     * 获取默认的GridJS核心库URL
+     * 获取默认的Masonry库URL
      * @private
-     * @param {string} version - GridJS版本
+     * @param {string} version - Masonry版本
      * @returns {Object} - 包含主URL、回退URL和本地URL的对象
      */
-    _getDefaultGridjsCoreUrls(version) {
+    _getDefaultMasonryUrls(version) {
         return {
-            primaryUrl: `https://cdn.jsdelivr.net/npm/gridjs@${version}/dist/gridjs.umd.js`,
+            primaryUrl: `https://cdn.jsdelivr.net/npm/masonry-layout@${version}/dist/masonry.pkgd.min.js`,
             fallbackUrls: [
-                `https://cdnjs.cloudflare.com/ajax/libs/gridjs/${version}/gridjs.umd.js`
+                `https://cdnjs.cloudflare.com/ajax/libs/masonry-layout/${version}/masonry.pkgd.min.js`
             ],
-            localUrl: `/assets/libs/gridjs/gridjs.umd.js`
+            localUrl: `/assets/libs/masonry/masonry.pkgd.min.js`
         };
     }
     
     /**
-     * 获取默认的GridJS主题样式URL
+     * 获取默认的ImagesLoaded库URL
      * @private
-     * @param {string} version - GridJS版本
+     * @param {string} version - ImagesLoaded版本
      * @returns {Object} - 包含主URL、回退URL和本地URL的对象
      */
-    _getDefaultGridjsThemeUrls(version) {
+    _getDefaultImagesLoadedUrls(version) {
         return {
-            primaryUrl: `https://cdn.jsdelivr.net/npm/gridjs@${version}/dist/theme/mermaid.min.css`,
+            primaryUrl: `https://cdn.jsdelivr.net/npm/imagesloaded@${version}/imagesloaded.pkgd.min.js`,
             fallbackUrls: [
-                `https://cdnjs.cloudflare.com/ajax/libs/gridjs/${version}/mermaid.min.css`
+                `https://cdnjs.cloudflare.com/ajax/libs/imagesloaded/${version}/imagesloaded.pkgd.min.js`
             ],
-            localUrl: `/assets/libs/gridjs/theme/mermaid.min.css`
+            localUrl: `/assets/libs/imagesloaded/imagesloaded.pkgd.min.js`
         };
     }
 }
 
 // 创建并导出单例实例
-const gridjsLoader = new GridjsLoader();
+const masonryLoader = new MasonryLoader();
 
 // 同时提供命名导出和默认导出
-export { gridjsLoader, GridjsLoader };
-export default gridjsLoader; 
+export { masonryLoader, MasonryLoader };
+export default masonryLoader; 

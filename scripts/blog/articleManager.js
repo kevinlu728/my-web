@@ -38,7 +38,7 @@ import { articleSearchManager } from './articleSearchManager.js';
 import { articlePaginationManager } from './articlePaginationManager.js';
 import { articleCacheManager } from './articleCacheManager.js';
 import { welcomePageManager } from './welcomePageManager.js';
-import { renderArticleContent, initializeLazyLoading } from './articleRenderer.js';
+import { renderArticleContent, initLazyLoading as initLazyLoading } from './articleRenderer.js';
 import { tableOfContents } from './tableOfContents.js';
 
 // 导入工具函数
@@ -52,8 +52,8 @@ import logger from '../utils/logger.js';
 
 class ArticleManager {
     constructor() {
+        this.blogDatabaseId = null;
         this.articles = [];
-        this.currentDatabaseId = null;
         this.currentCategory = 'all';
         this.isLoading = false;
         this.currentLoadingId = null;
@@ -80,7 +80,7 @@ class ArticleManager {
     // 初始化
     async initialize(databaseId) {
         logger.info('初始化文章管理器，数据库ID:', databaseId);
-        this.currentDatabaseId = databaseId;
+        this.blogDatabaseId = databaseId;
         
         try {
             // 初始化分类管理器
@@ -180,7 +180,7 @@ class ArticleManager {
             this.abortController = new AbortController();
             const signal = this.abortController.signal;
             
-            logger.info(`开始加载文章，数据库ID: ${this.currentDatabaseId}`);
+            logger.info(`开始加载文章，数据库ID: ${this.blogDatabaseId}`);
             
             // 添加超时控制
             const timeoutId = setTimeout(() => {
@@ -204,7 +204,7 @@ class ArticleManager {
             
             // 获取文章列表
             logger.info('正在从 API 获取文章列表...');
-            const result = await getArticles(this.currentDatabaseId);
+            const result = await getArticles(this.blogDatabaseId);
             
             // 清除超时
             clearTimeout(timeoutId);
@@ -439,7 +439,7 @@ class ArticleManager {
                 
                 // 处理懒加载
                 if (articleBody) {
-                    initializeLazyLoading(articleBody);
+                    initLazyLoading(articleBody);
                     
                     // 检查是否从缓存加载
                     if (articleData._fromCache) {

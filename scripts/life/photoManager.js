@@ -23,11 +23,9 @@ import { photoCacheManager } from './photoCacheManager.js';
 // 照片墙管理器
 class PhotoManager {
     constructor() {
-        this.currentDatabaseId = null;
+        this.lifeDatabaseId = null;
         this.photos = []; // 所有照片数据
         this.filteredPhotos = []; // 经过筛选的照片
-        this.containerId = null; // 容器元素ID
-        this.container = null; // 容器元素
         this.currentPage = 1; // 当前页码，用于分页加载
         this.photosPerPage = 9; // 每页显示照片数
         this.isLoading = false; // 用于控制无限滚动加载
@@ -39,22 +37,21 @@ class PhotoManager {
      * @param {string} databaseId 数据库ID
      * @param {string} containerId 容器元素ID
      */
-    async initialize(databaseId, containerId) {
+    async initialize(databaseId) {
         logger.info('初始化照片管理器，数据库ID:', databaseId);
-        this.currentDatabaseId = databaseId;
+        this.lifeDatabaseId = databaseId;
 
-        this.containerId = containerId;
-        this.container = document.getElementById(containerId);
-        
-        if (!this.container) {
-            logger.error(`未找到容器元素: #${containerId}`);
-            throw new Error(`未找到容器元素: #${containerId}`);
+        const container = this.getPhotoContainer();
+        if (!container) {
+            logger.error('未找到照片墙容器元素');
+            throw new Error('未找到照片墙容器元素');
         }
+        
         // 创建照片网格容器（如果不存在）
-        if (!this.container.querySelector('.photo-grid')) {
+        if (!container.querySelector('.photo-grid')) {
             const photoGrid = document.createElement('div');
             photoGrid.className = 'photo-grid';
-            this.container.appendChild(photoGrid);
+            container.appendChild(photoGrid);
         }
         
         lifeViewManager.dispatchViewEvent('loadingStart');
@@ -64,7 +61,7 @@ class PhotoManager {
         this.filteredPhotos = [...this.photos];
         
         // 初始化渲染器
-        photoRenderer.initialize(this.container);
+        photoRenderer.initialize(container);
 
         // 初始化分页管理器
         photoPaginationManager.initialize(
@@ -91,7 +88,7 @@ class PhotoManager {
     async loadPhotos(options = {}) {
         try {
             // 先尝试从缓存获取照片数据
-            const cachedData = photoCacheManager.getCachedPhotoList(this.currentDatabaseId, options);
+            const cachedData = photoCacheManager.getCachedPhotoList(this.lifeDatabaseId, options);
             
             if (cachedData && cachedData.photos && cachedData.photos.length > 0) {
                 logger.info(`🔄 [渲染准备] 使用缓存数据显示 ${cachedData.photos.length} 张照片`);
@@ -112,7 +109,7 @@ class PhotoManager {
             // 如果缓存未命中，从API获取数据
             logger.info('📡 [API请求] 正在从Notion API获取照片数据...');
             const response = await notionAPIService.getPhotos({
-                lifeDatabaseId: this.currentDatabaseId,
+                lifeDatabaseId: this.lifeDatabaseId,
                 limit: 100,
                 sorts: [{ 
                     property: "Photo Date", 
@@ -145,7 +142,7 @@ class PhotoManager {
             
             // 缓存照片数据
             photoCacheManager.cachePhotoList(
-                this.currentDatabaseId, 
+                this.lifeDatabaseId, 
                 processedPhotos, 
                 options, 
                 this.paginationInfo
@@ -166,7 +163,7 @@ class PhotoManager {
             
             // 缓存模拟数据，但设置较短的过期时间（1小时）
             photoCacheManager.cachePhotoList(
-                this.currentDatabaseId, 
+                this.lifeDatabaseId, 
                 mockPhotos, 
                 options, 
                 { hasMore: false, nextCursor: null },
@@ -181,7 +178,8 @@ class PhotoManager {
      * 渲染照片墙
      */
     async render() {
-        if (!this.container) return;
+        const container = this.getPhotoContainer();
+        if (!container) return;
         
         lifeViewManager.dispatchViewEvent('beforeRender');
         
@@ -199,7 +197,7 @@ class PhotoManager {
         
         // 使用渲染器渲染照片
         photoRenderer.render(
-            this.container, 
+            container, 
             photosToShow, 
             this.filteredPhotos.length
         );
@@ -255,9 +253,12 @@ class PhotoManager {
     renderMorePhotos(newPhotos) {
         if (!newPhotos || newPhotos.length === 0) return;
         
+        const container = this.getPhotoContainer();
+        if (!container) return;
+
         // 使用渲染器渲染更多照片
         photoRenderer.renderMorePhotos(
-            this.container, 
+            container, 
             newPhotos,
             this.onPhotoDetailClick.bind(this)
         );
@@ -339,6 +340,14 @@ class PhotoManager {
         
         // 更新UI
         this.render();
+    }
+
+    getPhotos() {
+        return this.photos;
+    }
+
+    getPhotoContainer() {
+        return document.getElementById('photo-wall-container');
     }
 
     /**

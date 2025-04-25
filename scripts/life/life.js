@@ -18,16 +18,13 @@
 import logger from '../utils/logger.js';
 import config from '../config/config.js';
 
+import notionAPIService from '../services/notionAPIService.js';
 import { resourceManager } from '../resource/resourceManager.js';
+import { photoManager } from './photoManager.js';
+import { themeModuleManager } from './themeModuleManager.js';
 import { lifeViewManager, ModuleType, ViewMode } from './lifeViewManager.js';
 import { initNavigation } from '../components/navigation.js';
 import { scrollbar } from '../components/scrollbar.js';
-import { showStatus, showError } from '../utils/common-utils.js';
-
-// 后续需要实现的模块管理器
-import { photoManager } from './photoManager.js';
-import { themeModuleManager } from './themeModuleManager.js';
-
 import lifecycleManager from '../utils/lifecycleManager.js';
 
 logger.info('🚀 life.js 开始加载...');
@@ -51,20 +48,21 @@ document.addEventListener('DOMContentLoaded', () => {
     logger.info('DOM内容已加载，开始页面加载前的准备工作...');
 
     // 提前设置content-unblocked事件监听器
-    setupContentUnblockedListener();
+    // setupContentUnblockedListener();
 
     // 立即解除内容阻塞
-    setTimeout(() => {
-        document.dispatchEvent(new Event('content-unblocked'));
-    }, 50);
+    // setTimeout(() => {
+    //     document.dispatchEvent(new Event('content-unblocked'));
+    // }, 0);
 
-    // 如果资源管理器不可用，立即解锁内容并返回
-    if (resourceManager) {
-        // 加载页面所需的关键资源，包括vanilla-lazyload
-        resourceManager.loadCriticalResources();
-    } else {
-        logger.warn('⚠️ 资源管理器不可用，无法提前加载关键资源（页面显示效果可能受影响）');
-    }
+    initializePage().catch(error => {
+        logger.error('❌ 初始化失败:', error);
+        window.pageState.error = error;
+    }).finally(() => {
+        // 初始化完成，设置统一状态标志
+        window.pageState.initialized = true;
+        window.pageState.initializing = false;
+    });
     
     // 仅在非生产环境加载调试信息
     const isProduction = config && config.getEnvironment && config.getEnvironment() === 'production';
@@ -84,14 +82,7 @@ function setupContentUnblockedListener() {
     document.addEventListener('content-unblocked', () => {
         logger.info('🎉 内容已解锁，开始初始化页面');
         // 初始化页面
-        initializePage().catch(error => {
-            logger.error('❌ 初始化失败:', error);
-            window.pageState.error = error;
-        }).finally(() => {
-            // 初始化完成，设置统一状态标志
-            window.pageState.initialized = true;
-            window.pageState.initializing = false;
-        });
+
     }, { once: true });
 }
 
@@ -100,6 +91,7 @@ function setupContentUnblockedListener() {
  * @returns {Promise<void>}
  */
 export async function initializePage() {
+    // ===== 锁检查和初始状态设置 =====
     // 初始化生命周期管理器
     lifecycleManager.initialize('life');
     
@@ -126,8 +118,8 @@ export async function initializePage() {
         // ===== 1. 环境准备和基础设置 =====
         logger.info('初始化生活频道页面...');
         
-        const currentDatabaseId = config.notion.databaseIds?.lifePhotos || '';
-        logger.info('当前数据库ID:', currentDatabaseId);
+        const lifeDatabaseId = config.notion.databaseIds?.lifePhotos || '';
+        logger.info('生活频道数据库ID:', lifeDatabaseId);
 
         // 初始化视图管理器
         lifeViewManager.initialize('photo-wall-container');
@@ -136,24 +128,18 @@ export async function initializePage() {
         // 更新视图状态
         updateViewMode(ViewMode.LOADING);
         
-        // 加载vanilla-lazyload库，暂时放在这里加载，后续移到resourceManager中加载
-        logger.info('正在加载vanilla-lazyload库...');
-        await loadVanillaLazyload();
-        
         // ===== 2. 核心组件初始化 =====
+        // 初始化NotionAPI服务，后续照片管理器会使用
+        notionAPIService.initialize();
+
+        // 初始化资源管理器
+        resourceManager.initialize('life');
+
         // 初始化照片墙管理器
-        logger.info('初始化照片墙管理器...');
-        await photoManager.initialize(currentDatabaseId, 'photo-wall-container');
+        await photoManager.initialize(lifeDatabaseId);
         
         // 初始化主题模块管理器，并设置模块切换回调
-        logger.info('初始化主题模块管理器...');
-        themeModuleManager.initialize({
-            onModuleChange: (moduleType) => {
-                logger.info(`切换到模块: ${moduleType}`);
-                window.pageState.currentModule = moduleType;
-                photoManager.filterByModule(moduleType);
-            }
-        });
+        initThemeModuleManager();
         
         // ===== 3. 辅助功能初始化 =====
         logger.info('✅ 页面初始化完成！开始初始化辅助功能...');
@@ -260,8 +246,6 @@ function initializeViewEvents() {
         logger.debug(`照片选择事件触发: ${photoId}`);
         // 处理照片选择，例如显示详情视图
     });
-    
-    logger.info('视图事件监听初始化完成');
 }
 
 /**
@@ -289,22 +273,13 @@ function updateViewMode(mode) {
     }
 }
 
-
-/**
- * 加载vanilla-lazyload库
- * @returns {Promise<void>}
- */
-async function loadVanillaLazyload() {
-    // 这里使用resourceManager加载vanilla-lazyload库
-    // 实际实现需要在config/resources.js中配置vanilla-lazyload资源
-    return new Promise((resolve, reject) => {
-        // 假设资源加载已经配置好
-        resolve();
-        
-        // 实际实现应该类似：
-        // resourceManager.loadResource('vanilla-lazyload')
-        //   .then(() => resolve())
-        //   .catch(err => reject(err));
+function initThemeModuleManager() {
+    themeModuleManager.initialize({
+        onModuleChange: (moduleType) => {
+            logger.info(`切换到模块: ${moduleType}`);
+            window.pageState.currentModule = moduleType;
+            photoManager.filterByModule(moduleType);
+        }
     });
 }
 

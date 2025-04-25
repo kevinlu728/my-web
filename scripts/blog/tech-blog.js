@@ -23,17 +23,16 @@
 import logger from '../utils/logger.js';
 import config from '../config/config.js';
 
+import notionAPIService from '../services/notionAPIService.js';
 import { resourceManager } from '../resource/resourceManager.js';
 import { articleManager } from './articleManager.js';
-import { categoryManager } from './categoryManager.js';
 import { contentViewManager, ViewMode, ViewEvents } from './contentViewManager.js';
 import { imageLazyLoader } from './imageLazyLoader.js';
 import { initNavigation } from '../components/navigation.js';
 import { scrollbar } from '../components/scrollbar.js';
 import { loadDebugPanel } from '../components/debugPanelLoader.js';
-
 import { showStatus, showError } from '../utils/common-utils.js';
-import notionAPIService from '../services/notionAPIService.js';
+
 
 logger.info('🚀 tech-blog.js 开始加载...');
 
@@ -77,7 +76,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!isProduction) {
         // 将模块导出到全局作用域，方便调试
         window.articleManager = articleManager;
-        window.categoryManager = categoryManager;
         window.config = config;
         // 加载调试面板组件
         loadDebugPanel({
@@ -132,7 +130,7 @@ export async function initializePage() {
         // 初始化内容视图管理器，下面需要使用
         contentViewManager.initialize('article-container');
         // 初始化视图事件
-        initializeViewEvents();
+        initViewEvents();
         // 更新视图状态
         contentViewManager.updateViewState('loading');
         
@@ -141,7 +139,7 @@ export async function initializePage() {
         notionAPIService.initialize();
 
         // 初始化资源管理器
-        resourceManager.initialize();
+        resourceManager.initialize('blog');
 
         // 初始化文章管理器
         await articleManager.initialize(blogDatabaseId);
@@ -156,10 +154,10 @@ export async function initializePage() {
         initNavigation();
 
         // 初始化左栏宽度调整功能
-        initializeResizableLeftColumn();
+        initResizableLeftColumn();
         
         // 初始化拖动手柄
-        initializeResizeHandle();
+        initResizeHandle();
 
         // 初始化滚动行为
         scrollbar.initialize();
@@ -206,7 +204,7 @@ export async function initializePage() {
     }
 }
 
-function initializeViewEvents() {
+function initViewEvents() {
     logger.info('初始化视图事件监听...');
     
     // 注册视图事件处理程序
@@ -280,7 +278,7 @@ function initializeViewEvents() {
  * 初始化可调整宽度的左侧栏
  * 允许用户拖动调整左侧导航栏的宽度，实现类似飞书文档的丝滑体验
  */
-function initializeResizableLeftColumn() {
+function initResizableLeftColumn() {
     const leftColumn = document.querySelector('.left-column');
     const resizeHandle = document.querySelector('.resize-handle');
     const separatorLine = document.querySelector('.separator-line');
@@ -496,7 +494,7 @@ function initializeResizableLeftColumn() {
     });
 }
 
-function initializeResizeHandle() {
+function initResizeHandle() {
     logger.info('初始化拖动手柄。稍微延迟以确保所有样式已加载'); 
     setTimeout(() => {
         const leftColumn = document.querySelector('.left-column');

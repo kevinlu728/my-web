@@ -40,14 +40,14 @@ class ResourceManager {
         // this.initialize();
     }
 
-    initialize() {
-        logger.info('资源管理器初始化...');
+    initialize(pageId) {
+        logger.info('初始化资源管理器...');
 
         // 1. 先初始化事件系统监听器
-        this.initializeEventListeners();
+        this.initEventListeners();
         
         // 2. 初始化浏览器默认错误事件监听器
-        this.initializeBrowserEventListeners();
+        this.initBrowserEventListeners();
 
         // 3. 设置资源加载器依赖
         if (styleResourceLoader && typeof styleResourceLoader.setDependencies === 'function') {
@@ -76,14 +76,14 @@ class ResourceManager {
         this._resourceFallbackStatus = new Map();
 
         // 5. 预加载关键资源
-        this.loadCriticalResources();
+        this.loadCriticalResources(pageId);
     }
 
     /**
      * 初始化事件监听器
      * 监听资源相关事件并处理
      */
-    initializeEventListeners() {
+    initEventListeners() {
         // 监听资源加载失败事件
         resourceEvents.on(RESOURCE_EVENTS.LOADING_FAILURE, (data) => {
             logger.info(`📢 收到资源加载失败事件: ${data.resourceId || data.resourceType || '未知资源'} [来源: ${data.sender || '未知'}]`);
@@ -140,7 +140,7 @@ class ResourceManager {
      * 初始化浏览器默认错误事件监听器
      * 当浏览器尝试加载<script> 脚本、<link rel="stylesheet"> 样式表、<img> 图片、其他外部资源（如 <audio>, <video> 等）并失败时，会自动触发 error 事件：
      */
-    initializeBrowserEventListeners() {
+    initBrowserEventListeners() {
         // 使用类实例属性替代局部变量，降低内存占用
         this.processedErrors = new Set();
         
@@ -557,8 +557,15 @@ class ResourceManager {
      * 2. 中低优先级资源（如 Prism、Katex等）全部采用懒加载，在包含这些资源的页面中才会由懒加载模块调用加载器（PrismLoader、KatexLoader等）进行加载。
      * 之所以保留该函数，是因为它可能在未来用于加载其他关键资源，而且目前用它来检查加载失败的资源，可以确保在页面加载时及时发现并处理资源加载问题。
      */
-    loadCriticalResources() {
+    loadCriticalResources(pageId) {
         logger.debug('🚀 加载页面所需关键资源...（目前没有实际用处）');
+
+        //根据页面类型加载不同的资源
+        if (pageId === 'blog') {
+            // 加载博客页面所需的关键资源
+        } else if (pageId === 'life') {
+            // 加载生活页面所需的关键资源
+        }
         
         // 使用resourceChecker检查加载失败的资源
         setTimeout(() => {

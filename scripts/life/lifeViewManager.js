@@ -70,7 +70,7 @@ class LifeViewManager {
         // 处理待处理的模式变更
         this.processPendingModeChanges();
         
-        logger.info('视图管理器初始化完成');
+        // logger.info('视图管理器初始化完成');
         
         // 发布初始化完成事件
         document.dispatchEvent(new CustomEvent('lifeViewManager:initialized', {

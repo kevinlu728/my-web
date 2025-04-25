@@ -67,7 +67,7 @@ class Scrollbar {
                 // 为博客页面或生活页面添加全局滚动事件监听器
                 this.initScrollListeners();
                 // 由scrollbar来负责初始化返回顶部按钮，之前是由tech-blog.js负责的。
-                this.initializeBackToTop();
+                this.initBackToTop();
             }
             
             logger.debug('✅ 滚动条初始化完成');
@@ -257,7 +257,7 @@ class Scrollbar {
     /**
      * 初始化返回顶部按钮
      */
-    initializeBackToTop() {
+    initBackToTop() {
         logger.debug('初始化返回顶部按钮...');
         
         // 检查是否已存在返回顶部按钮，避免重复创建

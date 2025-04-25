@@ -15,7 +15,7 @@
  * 
  * 主要导出函数：
  * - renderNotionBlocks: 渲染Notion块数组为HTML
- * - initializeLazyLoading: 初始化懒加载功能
+ * - initLazyLoading: 初始化懒加载功能
  * 
  * 依赖于tableLazyLoader.js和codeLazyLoader.js实现懒加载功能。
  */
@@ -113,7 +113,7 @@ export function renderMoreBlocks(newBlocks) {
         
         // 处理新加载内容中的图片和其他懒加载内容
         imageLazyLoader.processImages(articleBody);
-        initializeLazyLoading(articleBody);
+        initLazyLoading(articleBody);
         
         // 检查新内容中是否有标题元素
         const hasNewHeadings = newBlocks.some(block => 
@@ -453,7 +453,7 @@ function renderBlock(block) {
  * 初始化懒加载功能
  * @param {HTMLElement} container - 文章容器元素
  */
-export function initializeLazyLoading(container) {
+export function initLazyLoading(container) {
     if (!container) {
         logger.warn('无法初始化懒加载：容器不存在');
         return;

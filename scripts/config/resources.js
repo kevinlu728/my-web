@@ -58,9 +58,9 @@ export const versions = {
     animateCss: '4.1.1',
 
     // 图片处理
-    'vanilla-lazyload': '17.8.5',
-    'masonry': '4.2.2',
-    'imagesLoaded': '5.0.0',
+    vanillaLazyload: '17.8.5',
+    masonry: '4.2.2',
+    imagesLoaded: '5.0.0',
 };
 
 /**
@@ -452,25 +452,25 @@ export const resources = {
         'vanilla-lazyload': {
             type: 'js',
             priority: 'high',
-            group: 'images',
+            group: 'image',
             source: {
                 primary: {
                     provider: 'jsdelivr',
                     library: 'vanilla-lazyload',
-                    version: versions['vanilla-lazyload'],
+                    version: versions.vanillaLazyload,
                     path: 'dist/lazyload.min.js'
                 },
                 fallbacks: [
                     {
                         provider: 'cdnjs',
                         library: 'vanilla-lazyload',
-                        version: versions['vanilla-lazyload'],
+                        version: versions.vanillaLazyload,
                         path: 'lazyload.min.js'
                     }
                 ]
             },
             attributes: {
-                'data-resource-type': 'lazyload',
+                'data-resource-type': 'vanilla',
                 'data-local-fallback': '/assets/libs/vanilla-lazyload/lazyload.min.js'
             }
         },
@@ -491,6 +491,12 @@ export const resources = {
                         library: 'masonry',
                         version: versions.masonry,
                         path: 'masonry.pkgd.min.js'
+                    },
+                    {
+                        provider: 'unpkg',
+                        library: 'masonry-layout',
+                        version: versions.masonry,
+                        path: 'dist/masonry.pkgd.min.js'
                     }
                 ]
             },
@@ -505,18 +511,24 @@ export const resources = {
             group: 'layout',
             source: {
                 primary: {
-                    provider: 'jsdelivr',
+                    provider: 'jsdelivr',  // 恢复项目一贯的 CDN 优先级
                     library: 'imagesloaded',
                     version: versions.imagesLoaded,
                     path: 'imagesloaded.pkgd.min.js'
                 },
                 fallbacks: [
                     {
-                        provider: 'cdnjs',
+                        provider: 'unpkg',
                         library: 'imagesloaded',
                         version: versions.imagesLoaded,
                         path: 'imagesloaded.pkgd.min.js'
                     }
+                    // {
+                    //     provider: 'cdnjs',  // 目前cdnjs还不支持imagesloaded 5.0版本，暂时注释掉
+                    //     library: 'imagesloaded',
+                    //     version: versions.imagesLoaded,
+                    //     path: 'imagesloaded.pkgd.min.js'
+                    // }
                 ]
             },
             attributes: {
