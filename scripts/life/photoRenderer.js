@@ -127,6 +127,16 @@ class PhotoRenderer {
                     const container = el.closest('.photo-img-container');
                     if (container) {
                         container.classList.remove('placeholder-loading');
+                        
+                        // 图片加载后移除最小高度限制
+                        container.style.minHeight = '0';
+                        container.style.height = 'auto';
+                        
+                        // 强制直接隐藏占位符元素，确保在各个环境表现一致
+                        const placeholder = container.querySelector('.photo-placeholder');
+                        if (placeholder) {
+                            placeholder.style.display = 'none';
+                        }
                     }
                     
                     // 触发布局更新
@@ -418,6 +428,16 @@ class PhotoRenderer {
                         const container = imgEl.closest('.photo-img-container');
                         if (container) {
                             container.classList.remove('placeholder-loading');
+                            
+                            // 图片加载后移除最小高度限制
+                            container.style.minHeight = '0';
+                            container.style.height = 'auto';
+                            
+                            // 强制隐藏占位符
+                            const placeholder = container.querySelector('.photo-placeholder');
+                            if (placeholder) {
+                                placeholder.style.display = 'none';
+                            }
                         }
                     }
                     
@@ -435,6 +455,16 @@ class PhotoRenderer {
                         const container = img.closest('.photo-img-container');
                         if (container) {
                             container.classList.remove('placeholder-loading');
+                            
+                            // 移除最小高度限制
+                            container.style.minHeight = '0';
+                            container.style.height = 'auto';
+                            
+                            // 强制直接隐藏占位符元素
+                            const placeholder = container.querySelector('.photo-placeholder');
+                            if (placeholder) {
+                                placeholder.style.display = 'none';
+                            }
                         }
                     });
                     
@@ -503,9 +533,6 @@ class PhotoRenderer {
         photoItem.innerHTML = `
             <div class="photo-img-container placeholder-loading">
                 <span class="module-tag ${moduleClass}">${moduleLabel}</span>
-                <div class="photo-placeholder">
-                    <div class="placeholder-animation"></div>
-                </div>
                 <img 
                     class="photo-img lazy blur-effect"
                     src="${thumbnailUrl}" 
@@ -513,6 +540,9 @@ class PhotoRenderer {
                     data-original="${photo.originalUrl || photo.coverUrl}"
                     alt="${photo.title}"
                 >
+                <div class="photo-placeholder">
+                    <div class="placeholder-animation"></div>
+                </div>
             </div>
             <div class="photo-info">
                 <h3 class="photo-title">${photo.title}</h3>
@@ -535,10 +565,15 @@ class PhotoRenderer {
             // 设置占位符的高度，应该与最终图片比例一致
             const placeholders = photoItem.querySelectorAll('.photo-placeholder');
             if (placeholders.length > 0) {
-                // 不直接设置高度，而是通过padding-bottom百分比控制比例
-                // 这是一个常用的保持比例技巧，100%宽度 * 图片高宽比
-                placeholders[0].style.paddingBottom = (imgRatio * 100) + '%';
-                placeholders[0].style.height = '0';
+                // 使用最小高度而不是padding-bottom来设置容器高度
+                const container = photoItem.querySelector('.photo-img-container');
+                if (container) {
+                    // 根据图片宽高比计算高度
+                    const containerWidth = container.offsetWidth;
+                    const expectedHeight = containerWidth * imgRatio;
+                    // 设置最小高度而不是padding-bottom
+                    container.style.minHeight = expectedHeight + 'px';
+                }
             }
             
             // 获取图片元素
@@ -554,6 +589,15 @@ class PhotoRenderer {
                     const container = imgElement.closest('.photo-img-container');
                     if (container) {
                         container.classList.remove('placeholder-loading');
+                        // 图片加载后移除最小高度限制
+                        container.style.minHeight = '0';
+                        container.style.height = 'auto';
+                        
+                        // 强制直接隐藏占位符元素
+                        const placeholder = container.querySelector('.photo-placeholder');
+                        if (placeholder) {
+                            placeholder.style.display = 'none';
+                        }
                     }
                     
                     // 通知Masonry重新布局
@@ -573,8 +617,13 @@ class PhotoRenderer {
             // 图片加载失败也需要显示内容
             const placeholders = photoItem.querySelectorAll('.photo-placeholder');
             if (placeholders.length > 0) {
-                placeholders[0].style.paddingBottom = '75%'; // 默认4:3比例
-                placeholders[0].style.height = '0';
+                // 设置默认的最小高度
+                const container = photoItem.querySelector('.photo-img-container');
+                if (container) {
+                    const containerWidth = container.offsetWidth;
+                    // 使用4:3的比例
+                    container.style.minHeight = (containerWidth * 0.75) + 'px';
+                }
             }
             
             // 添加错误样式
