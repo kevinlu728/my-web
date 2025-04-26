@@ -109,19 +109,48 @@ class PhotoRenderer {
                 this.lazyLoadInstance.destroy();
             }
             
+            logger.info('初始化LazyLoad图片懒加载，应用高斯模糊效果...');
+            
             this.lazyLoadInstance = new LazyLoad({
                 elements_selector: '.lazy',
                 threshold: 300,
                 callback_loaded: (el) => {
+                    logger.debug(`LazyLoad回调: 图片加载完成，清除模糊效果: ${el.getAttribute('data-src')}`);
+                    
+                    // 清除模糊效果
+                    el.classList.remove('blur-effect');
+                    
+                    // 添加加载完成类名
                     el.classList.add('loaded');
+                    
+                    // 移除容器的加载状态
+                    const container = el.closest('.photo-img-container');
+                    if (container) {
+                        container.classList.remove('placeholder-loading');
+                    }
+                    
                     // 触发布局更新
                     if (this.masonryInstance) {
-                        this.masonryInstance.layout();
+                        setTimeout(() => {
+                            this.masonryInstance.layout();
+                        }, 50);
                     }
+                },
+                callback_error: (el) => {
+                    logger.error(`图片加载失败: ${el.getAttribute('data-src')}`);
+                    // 为失败的图片添加样式，显示错误状态
+                    el.classList.add('error');
+                    const container = el.closest('.photo-img-container');
+                    if (container) {
+                        container.classList.add('load-error');
+                    }
+                },
+                callback_enter: (el) => {
+                    logger.debug(`图片进入视口，开始加载: ${el.getAttribute('data-src')}`);
                 }
             });
             
-            logger.info('LazyLoad初始化成功');
+            logger.info('✅ LazyLoad初始化成功，高斯模糊效果已启用');
         } catch (error) {
             logger.error('初始化LazyLoad失败:', error);
         }
@@ -132,9 +161,28 @@ class PhotoRenderer {
      */
     updateImageLazyLoad() {
         if (this.lazyLoadInstance) {
+            logger.info('🔄 更新图片懒加载实例，重新检测需要加载的图片...');
             setTimeout(() => {
-                this.lazyLoadInstance.update();
+                try {
+                    // 获取当前所有lazy图片
+                    const lazyImages = document.querySelectorAll('.photo-img.lazy');
+                    logger.debug(`发现 ${lazyImages.length} 张待处理的懒加载图片`);
+                    
+                    // 更新懒加载实例
+                    this.lazyLoadInstance.update();
+                    
+                    // 添加更详细的日志以追踪懒加载进度
+                    if (lazyImages.length > 0) {
+                        // 记录已加载和未加载的图片数量
+                        const loadedImages = document.querySelectorAll('.photo-img.lazy.loaded');
+                        logger.debug(`懒加载状态: ${loadedImages.length}/${lazyImages.length} 张图片已加载`);
+                    }
+                } catch (error) {
+                    logger.error('更新懒加载实例时出错:', error);
+                }
             }, 100);
+        } else {
+            logger.warn('懒加载实例不存在，无法更新');
         }
     }
 
@@ -191,6 +239,8 @@ class PhotoRenderer {
             return;
         }
         
+        logger.info(`✨ 开始渲染 ${photos.length} 张照片，应用高斯模糊效果`);
+        
         // 渲染照片
         photos.forEach(photo => {
             const photoElement = this.createPhotoElement(photo, clickHandler);
@@ -236,7 +286,7 @@ class PhotoRenderer {
             return;
         }
         
-        logger.info(`开始渲染 ${newPhotos.length} 张新照片`);
+        logger.info(`✨ 开始渲染 ${newPhotos.length} 张新照片，应用高斯模糊效果`);
         
         // 创建临时容器，保存所有新元素
         const fragment = document.createDocumentFragment();
@@ -300,7 +350,7 @@ class PhotoRenderer {
                 return;
             }
             
-            // 防止重复初始化，只有在没有实例或实例已销毁时才创建新实例
+            // 防止重复初始化，只有在没有实例或实例已销毁时才创建新实例。但以下代码会导致图片重叠渲染问题，所以注释掉
             // if (this.masonryInstance && this.masonryInstance.element === photoGrid) {
             //     logger.debug('Masonry实例已存在且关联到当前容器，跳过重复初始化');
             //     this.masonryInstance.layout(); // 重新布局以适应新内容
@@ -333,13 +383,18 @@ class PhotoRenderer {
                 item.style.float = 'left';
             });
             
-            // 修正后的Masonry配置
+            logger.info(`配置瀑布流布局，启用错落有致的照片排列`);
+            
+            // 修正后的Masonry配置 - 关键修改以适应不同比例照片
             this.masonryInstance = new Masonry(photoGrid, {
                 itemSelector: '.photo-item',
                 columnWidth: '.grid-sizer',
                 gutter: '.gutter-sizer',
                 percentPosition: true,
-                transitionDuration: 0
+                transitionDuration: 300, // 添加过渡效果使重排更平滑
+                // 增加图片加载前的稳定性
+                initLayout: true,
+                resize: true
             });
             
             // 设置全局引用，用于图片加载回调
@@ -347,10 +402,48 @@ class PhotoRenderer {
             
             // 监控图片加载
             if (typeof imagesLoaded !== 'undefined') {
-                imagesLoaded(photoGrid).on('progress', () => {
-                    this.masonryInstance.layout();
+                imagesLoaded(photoGrid).on('progress', (instance, image) => {
+                    logger.debug(`图片加载进度: ${instance.progressedCount}/${instance.images.length}`);
+                    
+                    // 确保当前图片父元素移除加载状态
+                    const imgEl = image.img;
+                    if (imgEl && imgEl.classList) {
+                        // 移除模糊效果
+                        imgEl.classList.remove('blur-effect');
+                        
+                        // 添加加载完成类
+                        imgEl.classList.add('loaded');
+                        
+                        // 移除容器占位状态
+                        const container = imgEl.closest('.photo-img-container');
+                        if (container) {
+                            container.classList.remove('placeholder-loading');
+                        }
+                    }
+                    
+                    // 每张图片加载完成后重新布局
+                    if (this.masonryInstance) {
+                        this.masonryInstance.layout();
+                    }
                 }).on('always', () => {
-                    setTimeout(() => this.masonryInstance.layout(), 100);
+                    logger.info('所有图片加载完成，执行最终布局');
+                    // 遍历所有图片，强制清除模糊效果
+                    const allImages = photoGrid.querySelectorAll('.photo-img');
+                    allImages.forEach(img => {
+                        img.classList.remove('blur-effect');
+                        img.classList.add('loaded');
+                        const container = img.closest('.photo-img-container');
+                        if (container) {
+                            container.classList.remove('placeholder-loading');
+                        }
+                    });
+                    
+                    // 稍微延迟以确保DOM完全更新
+                    setTimeout(() => {
+                        if (this.masonryInstance) {
+                            this.masonryInstance.layout();
+                        }
+                    }, 200);
                 });
             }
             
@@ -370,7 +463,7 @@ class PhotoRenderer {
         const photoItem = document.createElement('div');
         photoItem.className = 'photo-item';
         photoItem.setAttribute('data-id', photo.id);
-        photoItem.setAttribute('data-category', photo.category);
+        photoItem.setAttribute('data-category', photo.category ? photo.category.toLowerCase() : 'unknown');
         photoItem.setAttribute('data-extended-field', photo.extendedField);
         
         // 获取模块标签
@@ -379,6 +472,7 @@ class PhotoRenderer {
         
         // 改用category而不是type来确定标签
         const category = photo.category ? photo.category.toLowerCase() : '';
+        logger.debug(`模块标签: ${category}`);
         
         switch(category) {
             case 'movie':
@@ -402,17 +496,22 @@ class PhotoRenderer {
                 moduleClass = 'unknown';
         }
         
+        // 创建模糊版本的图片URL (保持相同URL但添加模糊指示符，实际模糊效果通过CSS实现)
+        const thumbnailUrl = photo.thumbnailUrl || photo.coverUrl;
+        
         // 使用缩略图作为显示图片，使用data-original属性存储原始图片URL
         photoItem.innerHTML = `
-            <div class="photo-img-container">
+            <div class="photo-img-container placeholder-loading">
                 <span class="module-tag ${moduleClass}">${moduleLabel}</span>
+                <div class="photo-placeholder">
+                    <div class="placeholder-animation"></div>
+                </div>
                 <img 
-                    class="photo-img lazy"
-                    src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
-                    data-src="${photo.thumbnailUrl || photo.coverUrl}"
+                    class="photo-img lazy blur-effect"
+                    src="${thumbnailUrl}" 
+                    data-src="${thumbnailUrl}"
                     data-original="${photo.originalUrl || photo.coverUrl}"
                     alt="${photo.title}"
-                    onload="this.classList.add('loaded'); if(window.msnry) window.msnry.layout();"
                 >
             </div>
             <div class="photo-info">
@@ -421,10 +520,76 @@ class PhotoRenderer {
             </div>
         `;
         
+        // 记录日志
+        logger.debug(`创建照片元素 ID: ${photo.id}, 缩略图URL: ${thumbnailUrl}`);
+        
         // 添加点击事件，查看原始大图
         if (clickHandler) {
             photoItem.addEventListener('click', () => clickHandler(photo));
         }
+        
+        // 模拟获取图片尺寸，添加一个隐藏的图片预加载
+        const preloadImg = new Image();
+        preloadImg.onload = () => {
+            const imgRatio = preloadImg.height / preloadImg.width;
+            // 设置占位符的高度，应该与最终图片比例一致
+            const placeholders = photoItem.querySelectorAll('.photo-placeholder');
+            if (placeholders.length > 0) {
+                // 不直接设置高度，而是通过padding-bottom百分比控制比例
+                // 这是一个常用的保持比例技巧，100%宽度 * 图片高宽比
+                placeholders[0].style.paddingBottom = (imgRatio * 100) + '%';
+                placeholders[0].style.height = '0';
+            }
+            
+            // 获取图片元素
+            const imgElement = photoItem.querySelector('.photo-img');
+            if (imgElement) {
+                // 设置加载事件
+                imgElement.addEventListener('load', function() {
+                    // 移除模糊效果
+                    imgElement.classList.remove('blur-effect');
+                    imgElement.classList.add('loaded');
+                    
+                    // 移除占位符
+                    const container = imgElement.closest('.photo-img-container');
+                    if (container) {
+                        container.classList.remove('placeholder-loading');
+                    }
+                    
+                    // 通知Masonry重新布局
+                    if (window.msnry) {
+                        window.msnry.layout();
+                    }
+                }, {once: true}); // 只触发一次
+            }
+            
+            // 通知Masonry重新布局
+            if (window.msnry) {
+                window.msnry.layout();
+            }
+        };
+        
+        preloadImg.onerror = () => {
+            // 图片加载失败也需要显示内容
+            const placeholders = photoItem.querySelectorAll('.photo-placeholder');
+            if (placeholders.length > 0) {
+                placeholders[0].style.paddingBottom = '75%'; // 默认4:3比例
+                placeholders[0].style.height = '0';
+            }
+            
+            // 添加错误样式
+            const container = photoItem.querySelector('.photo-img-container');
+            if (container) {
+                container.classList.add('load-error');
+            }
+            
+            // 通知Masonry重新布局
+            if (window.msnry) {
+                window.msnry.layout();
+            }
+        };
+        
+        preloadImg.src = thumbnailUrl;
         
         return photoItem;
     }

@@ -55,7 +55,7 @@ export function renderWelcomePage(options) {
         <div class="welcome-page${fromCache ? ' from-cache' : ''}">
             <div class="welcome-header">
                 <h1>忙时有序，专注前行</h1>
-                <p class="welcome-subtitle">记录终端（移动端）相关技术的小型知识库</p>
+                <p class="welcome-subtitle">Android / iOS / Web / AI工程化，一个终端（移动端）相关技术的小型知识库</p>
                 ${fromCache ? '<span class="cache-badge">缓存数据</span>' : ''}
             </div>
             

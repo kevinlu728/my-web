@@ -165,12 +165,15 @@ export async function initializePage() {
         window.pageState.loading = false;
         window.pageState.error = error;
         
-        // 错误处理
+        // 记录详细错误信息以便调试
         if (error.name === 'NetworkError') {
             logger.error('网络连接错误，请检查网络连接');
         } else {
             logger.error('其它类型错误:', error.message);
         }
+
+        // 显示友好的错误提示界面
+        showErrorPage(error);
     } finally {
         // 确保在所有情况下都释放锁
         window.pageState.initializing = false;
@@ -345,3 +348,80 @@ window.addEventListener('load', () => {
 window.addEventListener('unload', () => {
     cleanupPage();
 });
+
+/**
+ * 显示友好的错误提示界面
+ * @param {Error} error 错误对象
+ */
+function showErrorPage(error) {
+    logger.info('显示友好的错误提示界面');
+    
+    // 寻找右侧栏容器
+    const rightColumn = document.querySelector('.life-content .right-column');
+    if (!rightColumn) {
+        logger.error('未找到右侧栏容器，无法显示错误页面');
+        return;
+    }
+    
+    // 清空右侧栏内容
+    rightColumn.innerHTML = '';
+    
+    // 确定错误类型和消息
+    let errorTitle = '数据加载失败';
+    let errorMessage = '很抱歉，无法加载生活频道数据。这可能是暂时性问题，请稍后再试。';
+    let errorCode = '';
+    
+    if (error.name === 'NetworkError' || error.message.includes('network') || error.message.includes('连接')) {
+        errorTitle = '网络连接问题';
+        errorMessage = '无法连接到数据服务器。请检查您的网络连接，或者稍后再试。';
+        errorCode = 'NETWORK_ERROR';
+    } else if (error.message.includes('权限') || error.message.includes('permission') || error.message.includes('unauthorized')) {
+        errorTitle = '权限错误';
+        errorMessage = '您没有访问此内容的权限。如需帮助，请联系管理员。';
+        errorCode = 'PERMISSION_DENIED';
+    } else if (error.message.includes('timeout') || error.message.includes('超时')) {
+        errorTitle = '请求超时';
+        errorMessage = '服务器响应时间过长。请稍后再试。';
+        errorCode = 'REQUEST_TIMEOUT';
+    } else if (error.status === 500 || error.message.includes('500')) {
+        errorTitle = '服务器错误';
+        errorMessage = 'Notion服务器暂时不可用。请稍后再试。';
+        errorCode = 'SERVER_ERROR';
+    }
+    
+    // 创建错误页面HTML
+    const errorPageHTML = `
+        <div class="error-page">
+            <div class="error-icon"></div>
+            <h2 class="error-title">${errorTitle}</h2>
+            <p class="error-message">${errorMessage}</p>
+            ${errorCode ? `<div class="error-code">${errorCode}</div>` : ''}
+            <div class="error-action">
+                <button class="retry-button" id="retry-button">
+                    <span class="retry-button-icon"></span>
+                    <span>重新加载</span>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // 添加错误页面到右侧栏
+    rightColumn.innerHTML = errorPageHTML;
+    
+    // 添加重试按钮事件
+    const retryButton = document.getElementById('retry-button');
+    if (retryButton) {
+        retryButton.addEventListener('click', () => {
+            logger.info('用户点击重试按钮，重新初始化页面');
+            // 清空错误状态
+            window.pageState.error = null;
+            // 显示加载提示
+            rightColumn.innerHTML = '<div class="loading-container" style="text-align: center; padding: 100px 0;"><div class="loading-spinner"></div><div class="loading-text">正在重新加载...</div></div>';
+            // 延迟一点以显示加载提示
+            setTimeout(() => {
+                // 重新初始化页面
+                initializePage();
+            }, 500);
+        });
+    }
+}

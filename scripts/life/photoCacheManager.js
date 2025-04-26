@@ -27,7 +27,7 @@ class PhotoCacheManager {
         };
         
         this.defaultExpiration = 8 * 60 * 60 * 1000; // 默认为8小时
-        this.enabled = true; // 控制是否启用缓存
+        this.enabled = false; // 控制是否启用缓存
         
         // 初始化检查
         this._initializeCache();

@@ -40,6 +40,7 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   float: left; /* 关键：必须添加浮动属性 */
+  will-change: transform; /* 提高性能 */
 }
 
 /* 悬停效果 */
@@ -54,14 +55,24 @@
   width: 100%;
   overflow: hidden;
   line-height: 0;
+  background-color: #f5f5f5;
+  transition: background-color 0.3s ease, height 0.3s ease;
+  /* 移除固定的宽高比设置 */
+}
+
+/* 已加载的图片容器 */
+.photo-img-container:has(.photo-img.loaded) {
+  background-color: transparent;
 }
 
 /* 照片图像 */
 .photo-img {
   width: 100%;
-  height: auto;
+  height: auto; /* 恢复为auto，保持图片原始比例 */
   display: block;
-  transition: transform 0.5s ease;
+  transition: transform 0.5s ease, opacity 0.5s ease, filter 0.5s ease;
+  /* 移除object-fit，让图片保持原始比例 */
+  backface-visibility: hidden; /* 提高性能 */
 }
 
 /* 图片悬停效果 */
@@ -148,7 +159,7 @@ background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/200
   font-size: 12px;
   font-weight: 600;
   color: white;
-  z-index: 2;
+  z-index: 5;
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
@@ -177,12 +188,27 @@ background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/200
   background-color: #9c27b0;
 }
 
+/* 电影模块照片容器比例 */
+.photo-item[data-category="movie"] .photo-img-container {
+  /* 移除固定宽高比 */
+}
+
 .module-tag.football {
   background-color: #4CAF50;
 }
 
+/* 足球模块照片容器比例 */
+.photo-item[data-category="football"] .photo-img-container {
+  /* 移除固定宽高比 */
+}
+
 .module-tag.travel {
   background-color: #2196F3;
+}
+
+/* 旅行模块照片容器比例 */
+.photo-item[data-category="travel"] .photo-img-container {
+  /* 移除固定宽高比 */
 }
 
 /* 电影模块特定样式 */
@@ -325,14 +351,83 @@ background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/200
  * 5. 加载状态和特效
  * ------------------------------------ */
 
+/* 占位元素样式 */
+.photo-placeholder {
+  position: relative; /* 改为相对定位以支持padding-bottom技巧 */
+  width: 100%;
+  height: 100%; /* 高度会被JavaScript覆盖 */
+  background-color: #f0f0f0;
+  z-index: 1;
+  overflow: hidden;
+  min-height: 100px; /* 给一个最小高度，避免完全塌陷 */
+}
+
+/* 占位动画 */
+.placeholder-animation {
+  position: absolute;
+  width: 200%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  background: linear-gradient(90deg, 
+    rgba(255,255,255,0) 0%, 
+    rgba(255,255,255,0.6) 50%, 
+    rgba(255,255,255,0) 100%);
+  animation: placeholderShimmer 1.5s infinite linear;
+  transform: translateX(-50%);
+}
+
+@keyframes placeholderShimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* 图片加载后隐藏占位 */
+.photo-img.loaded + .photo-placeholder,
+.photo-img-container:not(.placeholder-loading) .photo-placeholder {
+  display: none;
+}
+
 /* 图片加载效果 */
-.photo-img.lazy:not(.loaded) {
+.photo-img.blur-effect {
   filter: blur(10px);
-  transition: filter 0.3s;
+  transition: filter 0.5s ease;
+}
+
+.photo-img.lazy:not(.loaded) {
+  z-index: 2; /* 确保图片在加载动画上方 */
+  position: relative;
 }
 
 .photo-img.loaded {
-  filter: blur(0);
+  filter: blur(0); /* 强制清除所有模糊效果 */
+  opacity: 1; /* 确保加载完毕的图片可见 */
+  transition: filter 0.5s ease, opacity 0.3s ease;
+  z-index: 2;
+  position: relative;
+}
+
+/* 图片加载错误状态 */
+.photo-img.error {
+  filter: grayscale(100%) brightness(0.9);
+}
+
+.photo-img-container.load-error::after {
+  content: "加载失败";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #f44336;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  z-index: 1;
 }
 
 /* 无照片状态 */

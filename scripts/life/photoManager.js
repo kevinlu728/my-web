@@ -150,25 +150,26 @@ class PhotoManager {
 
             return this.photos;
         } catch (error) {
-            logger.error('❌ [API错误] 获取照片失败:', error);
-            logger.warn('⚠️ [备用数据] 使用模拟数据代替');
+            logger.error('❌ [API错误] 获取照片失败:', error.message);
+            // logger.warn('⚠️ [备用数据] 使用模拟数据代替');
+            throw error;
             
             // 作为备用，使用模拟数据
-            const mockPhotos = generateMockPhotos();
-            logger.debug(`生成了 ${mockPhotos.length} 张模拟照片数据`);
-            this.photos = mockPhotos;
-            this.filteredPhotos = [...mockPhotos];
-            this.hasMore = false;
-            this.nextCursor = null;
+            // const mockPhotos = generateMockPhotos();
+            // logger.debug(`生成了 ${mockPhotos.length} 张模拟照片数据`);
+            // this.photos = mockPhotos;
+            // this.filteredPhotos = [...mockPhotos];
+            // this.hasMore = false;
+            // this.nextCursor = null;
             
-            // 缓存模拟数据，但设置较短的过期时间（1小时）
-            photoCacheManager.cachePhotoList(
-                this.lifeDatabaseId, 
-                mockPhotos, 
-                options, 
-                { hasMore: false, nextCursor: null },
-                60 * 60 * 1000 // 1小时
-            );
+            // // 缓存模拟数据，但设置较短的过期时间（1小时）
+            // photoCacheManager.cachePhotoList(
+            //     this.lifeDatabaseId, 
+            //     mockPhotos, 
+            //     options, 
+            //     { hasMore: false, nextCursor: null },
+            //     60 * 60 * 1000 // 1小时
+            // );
             
             return this.photos;
         }
