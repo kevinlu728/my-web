@@ -114,9 +114,7 @@ class PhotoRenderer {
             this.lazyLoadInstance = new LazyLoad({
                 elements_selector: '.lazy',
                 threshold: 300,
-                callback_loaded: (el) => {
-                    logger.debug(`LazyLoad回调: 图片加载完成，清除模糊效果: ${el.getAttribute('data-src')}`);
-                    
+                callback_loaded: (el) => {             
                     // 清除模糊效果
                     el.classList.remove('blur-effect');
                     
@@ -156,7 +154,7 @@ class PhotoRenderer {
                     }
                 },
                 callback_enter: (el) => {
-                    logger.debug(`图片进入视口，开始加载: ${el.getAttribute('data-src')}`);
+                    // logger.debug(`图片进入视口，开始加载: ${el.getAttribute('data-src')}`);
                 }
             });
             
@@ -200,16 +198,16 @@ class PhotoRenderer {
      * 渲染照片墙
      * @param {HTMLElement} container 容器元素
      * @param {Array} photos 要渲染的照片数组
-     * @param {number} totalCount 照片总数
+     * @param {number} countOfCurrentModule 当前模块照片总数
      * @param {Function} clickHandler 点击处理函数
      */
-    render(container, photos, totalCount, clickHandler) {
+    render(container, photos, countOfCurrentModule, clickHandler) {
         if (!container) {
             logger.error('渲染照片墙失败：未提供容器');
             return;
         }
         
-        logger.debug(`获取到 ${photos ? photos.length : 0} 张照片准备渲染，总数: ${totalCount}`);
+        logger.debug(`渲染 ${photos ? photos.length : 0} 张照片,当前模块共 ${countOfCurrentModule} 张照片`);
         
         const photoGrid = container.querySelector('.photo-grid');
         if (!photoGrid) {
@@ -273,7 +271,7 @@ class PhotoRenderer {
                 this.updateImageLazyLoad();
             }
             
-            logger.info(`照片墙渲染完成，已显示 ${photos.length} / ${totalCount} 张照片`);
+            logger.info(`照片墙渲染完成，已显示 ${photos.length} / ${countOfCurrentModule} 张照片`);
         }, 0);
     }
 
@@ -284,7 +282,6 @@ class PhotoRenderer {
      * @param {Function} clickHandler 照片点击处理函数
      */
     renderMorePhotos(container, newPhotos, clickHandler) {
-        logger.info('渲染更多照片...');
         if (!container || !newPhotos || newPhotos.length === 0) {
             logger.warn('无法渲染新照片：参数无效或无新照片');
             return;
@@ -360,13 +357,6 @@ class PhotoRenderer {
                 return;
             }
             
-            // 防止重复初始化，只有在没有实例或实例已销毁时才创建新实例。但以下代码会导致图片重叠渲染问题，所以注释掉
-            // if (this.masonryInstance && this.masonryInstance.element === photoGrid) {
-            //     logger.debug('Masonry实例已存在且关联到当前容器，跳过重复初始化');
-            //     this.masonryInstance.layout(); // 重新布局以适应新内容
-            //     return;
-            // }
-            
             // 清理之前的实例
             if (this.masonryInstance) {
                 this.masonryInstance.destroy();
@@ -393,8 +383,6 @@ class PhotoRenderer {
                 item.style.float = 'left';
             });
             
-            logger.info(`配置瀑布流布局，启用错落有致的照片排列`);
-            
             // 修正后的Masonry配置 - 关键修改以适应不同比例照片
             this.masonryInstance = new Masonry(photoGrid, {
                 itemSelector: '.photo-item',
@@ -413,7 +401,7 @@ class PhotoRenderer {
             // 监控图片加载
             if (typeof imagesLoaded !== 'undefined') {
                 imagesLoaded(photoGrid).on('progress', (instance, image) => {
-                    logger.debug(`图片加载进度: ${instance.progressedCount}/${instance.images.length}`);
+                    // logger.debug(`图片加载进度: ${instance.progressedCount}/${instance.images.length}`);
                     
                     // 确保当前图片父元素移除加载状态
                     const imgEl = image.img;
@@ -475,9 +463,7 @@ class PhotoRenderer {
                         }
                     }, 200);
                 });
-            }
-            
-            logger.info(`瀑布流布局初始化成功: ${items.length}个项目，容器宽度${photoGrid.offsetWidth}px`);
+            }   
         } catch (error) {
             logger.error('初始化Masonry失败:', error);
         }
@@ -502,8 +488,6 @@ class PhotoRenderer {
         
         // 改用category而不是type来确定标签
         const category = photo.category ? photo.category.toLowerCase() : '';
-        logger.debug(`模块标签: ${category}`);
-        
         switch(category) {
             case 'movie':
                 moduleLabel = '电影';
@@ -549,9 +533,6 @@ class PhotoRenderer {
                 <div class="photo-extended-field" data-field="${photo.extendedFieldType}">${photo.extendedField}</div>
             </div>
         `;
-        
-        // 记录日志
-        logger.debug(`创建照片元素 ID: ${photo.id}, 缩略图URL: ${thumbnailUrl}`);
         
         // 添加点击事件，查看原始大图
         if (clickHandler) {

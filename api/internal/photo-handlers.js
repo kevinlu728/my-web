@@ -43,16 +43,37 @@ async function getPhotos(req, res) {
     
     console.log(`使用数据库ID: ${databaseId}`);
     
-    // 2. 调用服务获取数据
-    const data = await notionService.queryDatabase(databaseId);
+    // 2. 从请求中获取分页参数和过滤条件
+    const startCursor = req.body.startCursor || req.body.start_cursor;
+    const pageSize = req.body.pageSize || req.body.page_size || 100;
+    const filter = req.body.filter;
     
-    // 3. 构建并返回响应
+    // 特殊处理sorts参数，保证原样传递客户端提供的sorts参数
+    let sorts = req.body.sorts;
+    if (!sorts) {
+      // 如果没有提供，使用默认的Photo Date降序排序
+      sorts = [{ property: "Photo Date", direction: "descending" }];
+    }
+    
+    console.log(`查询参数: startCursor=${startCursor || '无'}, pageSize=${pageSize}, filter=${!!filter}, sorts=`, sorts);
+    
+    // 3. 调用服务获取数据，使用支持游标的方法
+    const data = await notionService.queryDatabaseWithCursor(databaseId, {
+      startCursor,
+      pageSize,
+      filter,
+      sorts
+    });
+    
+    // 4. 构建并返回响应
     return formatResponse(res, {
       success: true,
       results: data.results,
       photos: data.results, // 增加photos字段以保持一致性
       hasMore: data.has_more,
-      nextCursor: data.next_cursor
+      has_more: data.has_more, // 兼容旧版本
+      nextCursor: data.next_cursor,
+      next_cursor: data.next_cursor // 兼容旧版本
     });
   } catch (error) {
     return handleError(res, error);

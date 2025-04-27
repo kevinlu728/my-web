@@ -24,9 +24,8 @@ import { photoCacheManager } from './photoCacheManager.js';
 class PhotoManager {
     constructor() {
         this.lifeDatabaseId = null;
-        this.photos = []; // 所有照片数据
-        this.filteredPhotos = []; // 经过筛选的照片
-        this.currentPage = 1; // 当前页码，用于分页加载
+        this.photos = []; // 已加载的全部照片
+        this.paginationInfo = null; // 分页信息
         this.photosPerPage = 9; // 每页显示照片数
         this.isLoading = false; // 用于控制无限滚动加载
         this.scrollListeners = []; // 用于存储滚动监听器
@@ -57,27 +56,29 @@ class PhotoManager {
         lifeViewManager.dispatchViewEvent('loadingStart');
         
         // 获取照片数据
-        this.photos = await this.loadPhotos();
-        this.filteredPhotos = [...this.photos];
+        const processedPhotos = await this.loadPhotos();
+        this.photos = [...processedPhotos];
         
         // 初始化渲染器
         photoRenderer.initialize(container);
 
         // 初始化分页管理器
         photoPaginationManager.initialize(
-            this.photos, 
+            this.lifeDatabaseId,
+            processedPhotos, 
             this.photosPerPage,
-            this.onLoadMore.bind(this)
+            this.paginationInfo,
+            this.onNewPhotosLoaded.bind(this)
         );
 
         lifeViewManager.dispatchViewEvent('loadingEnd');
         
-        this.render();
+        this.render(this.photos);
         
         // 注册清理函数
         lifecycleManager.registerCleanup('photoManager', this.cleanup.bind(this));
         
-        logger.info(`照片墙管理器初始化完成，共加载 ${this.photos.length} 张照片`);
+        logger.info(`照片管理器初始化完成，共加载 ${processedPhotos.length} 张照片`);
     }
 
     /**
@@ -94,19 +95,12 @@ class PhotoManager {
                 logger.info(`🔄 [渲染准备] 使用缓存数据显示 ${cachedData.photos.length} 张照片`);
                 
                 // 恢复分页信息
-                if (cachedData.paginationInfo) {
-                    this.hasMore = cachedData.paginationInfo.hasMore;
-                    this.nextCursor = cachedData.paginationInfo.nextCursor;
-                    this.paginationInfo = {
-                        hasMore: this.hasMore,
-                        nextCursor: this.nextCursor
-                    };
-                }
+                this.paginationInfo = cachedData.paginationInfo;
                 
                 return cachedData.photos;
             }
             
-            // 如果缓存未命中，从API获取数据
+            // 如果缓存未命中，从API获取数据，首次加载100张，后续分页管理器加载更多照片时每次加载pageSize张
             logger.info('📡 [API请求] 正在从Notion API获取照片数据...');
             const response = await notionAPIService.getPhotos({
                 lifeDatabaseId: this.lifeDatabaseId,
@@ -129,16 +123,10 @@ class PhotoManager {
             const processedPhotos = processPhotoListData(response.photos);
             logger.info(`处理后的照片数量: ${processedPhotos.length}张`);
             
-            this.photos = processedPhotos;
-            this.hasMore = response.hasMore;
-            this.nextCursor = response.nextCursor;
-            this.filteredPhotos = [...this.photos]; // 初始未筛选
-            
-            // 保存分页信息，供加载更多使用
             this.paginationInfo = {
-                hasMore: this.hasMore,
-                nextCursor: this.nextCursor
-            };
+                hasMore: response.hasMore,
+                nextCursor: response.nextCursor
+            }
             
             // 缓存照片数据
             photoCacheManager.cachePhotoList(
@@ -148,37 +136,18 @@ class PhotoManager {
                 this.paginationInfo
             );
 
-            return this.photos;
+            return processedPhotos;
         } catch (error) {
             logger.error('❌ [API错误] 获取照片失败:', error.message);
             // logger.warn('⚠️ [备用数据] 使用模拟数据代替');
             throw error;
-            
-            // 作为备用，使用模拟数据
-            // const mockPhotos = generateMockPhotos();
-            // logger.debug(`生成了 ${mockPhotos.length} 张模拟照片数据`);
-            // this.photos = mockPhotos;
-            // this.filteredPhotos = [...mockPhotos];
-            // this.hasMore = false;
-            // this.nextCursor = null;
-            
-            // // 缓存模拟数据，但设置较短的过期时间（1小时）
-            // photoCacheManager.cachePhotoList(
-            //     this.lifeDatabaseId, 
-            //     mockPhotos, 
-            //     options, 
-            //     { hasMore: false, nextCursor: null },
-            //     60 * 60 * 1000 // 1小时
-            // );
-            
-            return this.photos;
         }
     }
 
     /**
      * 渲染照片墙
      */
-    async render() {
+    async render(photosOfCurrentModule) {
         const container = this.getPhotoContainer();
         if (!container) return;
         
@@ -187,20 +156,13 @@ class PhotoManager {
         // 获取当前页照片
         let photosToShow = photoPaginationManager.getPhotosForCurrentPage();
         
-        // 如果分页管理器没有返回照片，但我们有照片数据，则使用前N张
-        if ((!photosToShow || photosToShow.length === 0) && this.filteredPhotos.length > 0) {
-            logger.warn('分页管理器未返回照片，使用备用方式获取照片');
-            photosToShow = this.filteredPhotos.slice(0, this.photosPerPage);
-            logger.debug(`备用方式获取了 ${photosToShow.length} 张照片`);
-        }
-        
-        logger.debug(`准备渲染 ${photosToShow.length} / ${this.filteredPhotos.length} 张照片`);
+        logger.debug(`准备渲染 ${photosToShow.length} 张照片,当前模块共 ${photosOfCurrentModule.length} 张照片`);
         
         // 使用渲染器渲染照片
         photoRenderer.render(
             container, 
             photosToShow, 
-            this.filteredPhotos.length
+            photosOfCurrentModule.length
         );
         
         // 更新加载状态
@@ -212,39 +174,28 @@ class PhotoManager {
     /**
      * 加载更多照片
      */
-    async onLoadMore() {
-        logger.info('加载更多照片...');
-        
-        try {
-            // 使用photoPaginationManager加载更多照片
-            const newPhotos = await photoPaginationManager.loadMorePhotos();
-            
-            if (newPhotos && newPhotos.length > 0) {
-                logger.info(`获取到${newPhotos.length}张新照片，准备渲染`);
-                
-                // 确保在调用渲染之前DOM已准备好
-                setTimeout(() => {
-                    // 渲染新照片
-                    this.renderMorePhotos(newPhotos);
-                    
-                    // 保存更新后的filteredPhotos总数
-                    this.filteredPhotos = photoPaginationManager.filteredPhotos;
-                    
-                    // 强制更新加载指示器状态
-                    photoPaginationManager.updateLoadMoreContainer(false);
-                    
-                    logger.info('完成新照片渲染和UI更新');
-                }, 0);
-            } else {
-                logger.warn('未获取到新照片，跳过渲染');
-                // 重置加载状态
-                photoPaginationManager.updateLoadMoreContainer(false);
-            }
-        } catch (error) {
-            logger.error('加载照片出错:', error);
-            // 确保错误情况下也重置加载状态
-            photoPaginationManager.updateLoadMoreContainer(false, true);
+    onNewPhotosLoaded(newPhotos, needUpdateTotalPhotos = true) {
+        if (!newPhotos || newPhotos.length === 0) {
+            logger.warn('照片管理器未接收到新照片，跳过渲染');
+            return;
         }
+        
+        logger.info(`获取到 ${newPhotos.length} 张新照片，准备渲染`);
+        if (needUpdateTotalPhotos) {
+            this.photos = [...this.photos, ...newPhotos];
+            logger.info(`加载新照片后，当前共有 ${this.photos.length} 张照片`);
+        }
+        
+        // 确保在调用渲染之前DOM已准备好
+        setTimeout(() => {
+            // 渲染新照片
+            this.renderMorePhotos(newPhotos);
+            
+            // 强制更新加载指示器状态
+            photoPaginationManager.updateLoadMoreContainer(false);
+            
+            logger.info('完成新照片渲染和UI更新');
+        }, 0);
     }
 
     /**
@@ -314,11 +265,12 @@ class PhotoManager {
      */
     filterByModule(moduleType) {
         logger.info(`按模块筛选照片: ${moduleType}`);
+        let currentModulePhotos = [];
         
         if (moduleType === ModuleType.ALL) {
-            this.filteredPhotos = [...this.photos];
+            currentModulePhotos = [...this.photos];
         } else {
-            this.filteredPhotos = this.photos.filter(photo => {
+            currentModulePhotos = this.photos.filter(photo => {
                 const category = photo.category?.toLowerCase();
                 
                 switch (moduleType) {
@@ -334,13 +286,13 @@ class PhotoManager {
             });
         }
         
-        logger.info(`筛选后照片数量: ${this.filteredPhotos.length}`);
+        logger.info(`当前模块的照片数量: ${currentModulePhotos.length}`);
         
         // 重要修复: 同步更新分页管理器中的照片数据
-        photoPaginationManager.filterPhotosByModule(moduleType, this.filteredPhotos);
+        photoPaginationManager.filterPhotosByModule(moduleType, currentModulePhotos);
         
         // 更新UI
-        this.render();
+        this.render(currentModulePhotos);
     }
 
     getPhotos() {

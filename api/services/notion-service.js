@@ -164,6 +164,118 @@ const notionService = {
     // 缓存结果
     return cacheManager.set(cacheKey, data);
   },
+
+  /**
+   * 使用游标查询数据库，支持分页获取超过100条数据
+   * @param {string} databaseId - 数据库ID
+   * @param {Object} options - 查询选项
+   * @param {string} options.startCursor - 分页游标
+   * @param {number} options.pageSize - 每页数量，最大100
+   * @param {Object} options.filter - 过滤条件
+   * @param {Array} options.sorts - 排序条件
+   * @returns {Promise<Object>} 数据库查询结果
+   */
+  async queryDatabaseWithCursor(databaseId, options = {}) {
+    if (!databaseId) {
+      throw new Error('未提供数据库ID，请在请求中指定或设置环境变量');
+    }
+    
+    // 解构选项参数
+    const { 
+      startCursor, 
+      pageSize = 100,
+      filter,
+      sorts
+    } = options;
+    
+    // 构建缓存键，包含游标信息
+    const cacheKey = `db:${databaseId}:${startCursor || 'initial'}`;
+    const cached = cacheManager.get(cacheKey);
+    if (cached) {
+      console.log(`使用缓存数据: ${cacheKey}`);
+      return cached;
+    }
+    
+    console.log(`查询数据库(使用游标): ${databaseId}, 游标: ${startCursor || '初始'}`);
+    
+    // 构建请求体
+    const requestBody = {
+      page_size: Math.min(pageSize, 100) // 确保不超过API限制
+    };
+    
+    // 设置排序参数 - 如果客户端提供了排序参数，则使用客户端的排序参数，否则使用默认排序
+    if (sorts && Array.isArray(sorts) && sorts.length > 0) {
+      console.log(`使用客户端提供的排序参数:`, sorts);
+      
+      // 确保排序格式正确 - Notion API要求的格式可以是两种:
+      // 1. { property: "标题", direction: "ascending" } - 按属性排序
+      // 2. { timestamp: "created_time", direction: "descending" } - 按时间戳排序
+      const processedSorts = sorts.map(sort => {
+        // 已经符合格式的情况
+        if ((sort.property || sort.timestamp) && sort.direction) {
+          return sort;
+        }
+        
+        // 处理可能带有其他格式的排序参数
+        // 例如前端可能发送: { field: "标题", order: "asc" }
+        const newSort = {};
+        
+        // 判断排序字段类型并设置
+        if (sort.property || sort.field || sort.column) {
+          newSort.property = sort.property || sort.field || sort.column;
+        } else if (sort.timestamp || sort.time) {
+          newSort.timestamp = sort.timestamp || sort.time || 'created_time';
+        } else {
+          // 如果无法确定，默认使用created_time
+          newSort.timestamp = 'created_time';
+        }
+        
+        // 设置排序方向
+        if (sort.direction) {
+          newSort.direction = sort.direction;
+        } else if (sort.order) {
+          // 转换asc/desc到ascending/descending
+          newSort.direction = sort.order === 'asc' ? 'ascending' : 'descending';
+        } else {
+          // 默认降序
+          newSort.direction = 'descending';
+        }
+        
+        return newSort;
+      });
+      
+      console.log(`处理后的排序参数:`, processedSorts);
+      requestBody.sorts = processedSorts;
+    } else {
+      // 默认排序 - 使用created_time降序排序
+      console.log(`使用默认排序参数: created_time降序`);
+      requestBody.sorts = [{ timestamp: 'created_time', direction: 'descending' }];
+    }
+    
+    // 添加过滤条件（如果有）
+    if (filter) {
+      console.log(`添加过滤条件:`, filter);
+      requestBody.filter = filter;
+    }
+    
+    // 添加游标（如果有）
+    if (startCursor) {
+      console.log(`添加游标: ${startCursor}`);
+      requestBody.start_cursor = startCursor;
+    }
+    
+    console.log(`最终请求体:`, requestBody);
+    
+    // 发送请求
+    const data = await fetchWithRetry(`https://api.notion.com/v1/databases/${databaseId}/query`, {
+      method: 'POST',
+      headers: config.headers,
+      body: JSON.stringify(requestBody)
+    });
+    
+    // 缓存结果
+    return cacheManager.set(cacheKey, data);
+  },
   
   /**
    * 获取页面内容和块

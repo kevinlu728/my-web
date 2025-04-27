@@ -21,11 +21,13 @@ import { photoCacheManager } from './photoCacheManager.js';
 
 class PhotoPaginationManager {
     constructor() {
+        this.lifeDatabaseId = null;
+
         // 分页状态
+        this.photos = [];
         this.currentPage = 1;
         this.photosPerPage = 9;
-        this.hasMore = true;
-        this.filteredPhotos = [];
+        this.paginationInfo = null;
         this.currentModuleType = ModuleType.ALL;
         
         // 加载状态
@@ -38,6 +40,7 @@ class PhotoPaginationManager {
         // 绑定方法的this上下文
         this._handleScroll = this._handleScroll.bind(this);
         this._handleWindowResize = this._handleWindowResize.bind(this);
+        this.onNewPhotosLoaded = null;
         
         // 添加窗口尺寸变化监听
         window.addEventListener('resize', this._handleWindowResize);
@@ -50,19 +53,19 @@ class PhotoPaginationManager {
      * 初始化照片分页
      * @param {Array} photos 所有照片数据
      * @param {number} photosPerPage 每页照片数量
-     * @param {Function} onLoadMore 加载更多的回调函数
+     * @param {Function} onNewPhotosLoaded 新照片加载的回调函数
      */
-    initialize(photos, photosPerPage = 9, onLoadMore = null) {
-        logger.info('初始化照片分页管理器, 照片总数:', photos ? photos.length : 0);
+    initialize(databaseId, photos, photosPerPage = 9, paginationInfo, onNewPhotosLoaded = null) {
+        logger.info('初始化照片分页管理器, 照片总数:', photos ? photos.length : 0, '，分页信息:', paginationInfo);
         
         // 设置基础属性
-        this.filteredPhotos = [...photos]; // 初始时复制所有照片到过滤列表
+        this.lifeDatabaseId = databaseId;
+        this.photos = [...photos];
         this.photosPerPage = photosPerPage;
+        this.paginationInfo = paginationInfo;
         this.currentPage = 1;
         this.isLoading = false;
-        this.onLoadMore = onLoadMore; // 保存回调函数
-        
-        logger.debug(`照片分页管理器初始化完成: 总照片数=${this.filteredPhotos.length}`);
+        this.onNewPhotosLoaded = onNewPhotosLoaded; // 保存回调函数
         
         // 添加平滑加载过渡效果
         this._addSmoothLoadingStyles();
@@ -230,8 +233,6 @@ class PhotoPaginationManager {
             return;
         }
         
-        logger.info('触发加载更多内容 - 滚动位置: ' + scrollPercentage.toFixed(2) + '%');
-        
         // 防抖处理，避免重复触发
         if (this.triggerDebounceTimeout) {
             clearTimeout(this.triggerDebounceTimeout);
@@ -245,9 +246,11 @@ class PhotoPaginationManager {
                     logger.info('执行加载更多照片操作');
 
                     // 使用回调函数通知外部（照片墙管理器），照片墙管理器会再次调用下面的loadMorePhotos方法，获取新照片。
-                    if (typeof this.onLoadMore === 'function') {
-                        this.onLoadMore();
-                    }
+                    // if (typeof this.onLoadMore === 'function') {
+                    //     this.onLoadMore();
+                    // }
+
+                    this.loadMorePhotos();
                     
                     // 清除触发状态
                     this.triggerDebounceTimeout = null;
@@ -277,21 +280,16 @@ class PhotoPaginationManager {
         this.updateLoadMoreContainer(true);
         
         try {
-            // 检查是否有分页信息
-            const hasApiPagination = this.photoManager && 
-                                    this.photoManager.paginationInfo && 
-                                    this.photoManager.paginationInfo.hasMore;
-            
             let newPhotos = [];
             
-            // 如果有下一页且有游标，则使用API加载
-            if (hasApiPagination && this.photoManager.paginationInfo.nextCursor) {
-                const cursor = this.photoManager.paginationInfo.nextCursor;
+            // 如果有分页信息，且有下一页和游标，则使用API加载
+            if (this.paginationInfo && this.paginationInfo.hasMore && this.paginationInfo.nextCursor) {
+                const cursor = this.paginationInfo.nextCursor;
                 logger.info(`🔍 [分页加载] 准备加载下一页，游标: ${cursor}`);
                 
                 // 先尝试从缓存获取分页数据
                 const cachedPagination = photoCacheManager.getCachedPaginationData(
-                    this.photoManager.currentDatabaseId,
+                    this.lifeDatabaseId,
                     cursor
                 );
                 
@@ -303,14 +301,14 @@ class PhotoPaginationManager {
                     
                     // 更新分页信息
                     if (cachedPagination.paginationInfo) {
-                        this.photoManager.paginationInfo = cachedPagination.paginationInfo;
+                        this.paginationInfo = cachedPagination.paginationInfo;
                     }
                 } else {
                     // 缓存未命中，从API加载
                     logger.info(`📡 [API请求] 分页加载，游标: ${cursor}`);
                     
                     const response = await notionAPIService.getPhotos({
-                        lifeDatabaseId: this.photoManager.currentDatabaseId,
+                        lifeDatabaseId: this.lifeDatabaseId,
                         startCursor: cursor,
                         pageSize: this.photosPerPage,
                         sorts: [{ 
@@ -325,37 +323,31 @@ class PhotoPaginationManager {
                         newPhotos = processedPhotos;
                         
                         // 更新分页信息
-                        const paginationInfo = {
+                        this.paginationInfo = {
                             hasMore: response.hasMore,
                             nextCursor: response.nextCursor
                         };
-                        this.photoManager.paginationInfo = paginationInfo;
-                        
+
                         // 缓存分页数据
                         photoCacheManager.cachePaginationData(
-                            this.photoManager.currentDatabaseId,
+                            this.lifeDatabaseId,
                             cursor,
                             processedPhotos,
-                            paginationInfo
+                            this.paginationInfo
                         );
                         
                         logger.info(`📡 [API成功] 分页加载了 ${newPhotos.length} 张新照片，新游标: ${response.nextCursor || '无'}`);
                     }
                 }
                 
-                // 添加到总照片集合中
+                // 只有通过API加载新照片后，才需要更新总照片集合；如果是下面的通过本地分页方式获取的照片，则不需要更新总照片集合，因为这些照片其实已经存在。
                 if (newPhotos && newPhotos.length > 0) {
-                    this.photoManager.photos = [...this.photoManager.photos, ...newPhotos];
-                    
-                    // 如果有过滤，也更新过滤后的照片集合
-                    if (this.currentFilter) {
-                        // 应用同样的过滤规则
-                        const filteredNewPhotos = this.applyFilter(newPhotos, this.currentFilter);
-                        this.filteredPhotos = [...this.filteredPhotos, ...filteredNewPhotos];
-                    } else {
-                        this.filteredPhotos = [...this.filteredPhotos, ...newPhotos];
-                    }
+                    this.photos = [...this.photos, ...newPhotos];
+                    logger.info(`加载新照片后，当前共 ${this.photos.length} 张照片`);
                 }
+
+                // 通知照片管理器开始渲染新照片，且需要更新总照片集合
+                this.onNewPhotosLoaded(newPhotos, true);
             } else {
                 // 如果没有API分页信息或游标，回退到原来的本地分页方式
                 logger.info('📄 [本地分页] 使用已加载数据分页显示');
@@ -364,16 +356,18 @@ class PhotoPaginationManager {
                 const nextPage = this.currentPage + 1;
                 const startIndex = (nextPage - 1) * this.photosPerPage;
                 const endIndex = nextPage * this.photosPerPage;
-                newPhotos = this.filteredPhotos.slice(startIndex, endIndex);
+                newPhotos = this.photos.slice(startIndex, endIndex);
+
+                // 通知照片管理器开始渲染新照片，且不需要更新总照片集合
+                this.onNewPhotosLoaded(newPhotos, false);
                 
                 logger.info(`📄 [本地分页] 第${nextPage}页，加载了 ${newPhotos.length} 张照片`);
             }
             
-            // 仅在成功获取到照片后才增加页码
+            // 收尾工作，仅在成功获取到照片后才增加页码，并更新相关状态
             if (newPhotos && newPhotos.length > 0) {
                 this.currentPage++;
-                logger.info(`成功加载第${this.currentPage}页，共${newPhotos.length}张新照片`);
-                
+                logger.info(`成功加载第 ${this.currentPage} 页，共 ${newPhotos.length} 张新照片`);
                 this.isLoading = false;
                 lifeViewManager.dispatchViewEvent('loadingEnd');
                 return newPhotos;
@@ -399,9 +393,7 @@ class PhotoPaginationManager {
      */
     hasMorePhotos() {
         // 首先检查API分页信息
-        if (this.photoManager && 
-            this.photoManager.paginationInfo && 
-            this.photoManager.paginationInfo.hasMore) {
+        if (this.paginationInfo && this.paginationInfo.hasMore) {
             return true;
         }
         
@@ -409,7 +401,7 @@ class PhotoPaginationManager {
         const nextPage = this.currentPage + 1;
         const startIndex = (nextPage - 1) * this.photosPerPage;
         
-        return startIndex < this.filteredPhotos.length;
+        return startIndex < this.photos.length;
     }
 
     /**
@@ -418,7 +410,7 @@ class PhotoPaginationManager {
      */
     getPhotosForCurrentPage() {
         // 安全检查
-        if (!this.filteredPhotos || this.filteredPhotos.length === 0) {
+        if (!this.photos || this.photos.length === 0) {
             logger.warn('无照片数据可供渲染');
             return [];
         }
@@ -426,10 +418,10 @@ class PhotoPaginationManager {
         const startIndex = 0;
         const endIndex = this.currentPage * this.photosPerPage;
         
-        logger.debug(`获取当前页照片: startIndex=${startIndex}, endIndex=${endIndex}, 总数=${this.filteredPhotos.length}`);
+        logger.debug(`获取当前页照片: startIndex=${startIndex}, endIndex=${endIndex}, 总数=${this.photos.length}`);
         
         // 返回从开始到当前页的所有照片（用于初次渲染，显示当前页之前的所有照片）
-        const result = this.filteredPhotos.slice(startIndex, endIndex);
+        const result = this.photos.slice(startIndex, endIndex);
         logger.debug(`返回了 ${result.length} 张照片用于渲染`);
         
         return result;
@@ -482,10 +474,7 @@ class PhotoPaginationManager {
             if (retryBtn) {
                 retryBtn.addEventListener('click', (e) => {
                     e.preventDefault();
-                    // 使用回调函数通知加载更多
-                    if (typeof this.onLoadMore === 'function') {
-                        this.onLoadMore();
-                    }
+                    this.loadMorePhotos();
                 });
             }
         } else {
@@ -501,13 +490,12 @@ class PhotoPaginationManager {
      * 切换模块类型
      * @param {string} moduleType 模块类型
      */
-    filterPhotosByModule(moduleType, filteredPhotos) {
+    filterPhotosByModule(moduleType, currentModulePhotos) {
         if (this.currentModuleType === moduleType) {
             return;
         }
         this.currentModuleType = moduleType;
-        this.filteredPhotos = [...filteredPhotos];
-        logger.info(`按模块筛选照片: ${moduleType}，更新分页管理器的筛选照片，数量: ${filteredPhotos.length}`);
+        this.photos = [...currentModulePhotos];  //这行可能有问题
         this.currentPage = 1;
         this.isLoading = false;
         
@@ -526,7 +514,7 @@ class PhotoPaginationManager {
     reset() {
         this.currentPage = 1;
         this.isLoading = false;
-        this.filteredPhotos = [];
+        this.photos = [];
         
         // 移除滚动监听
         if (this.scrollHandler && this.scrollContainer) {
@@ -551,8 +539,6 @@ class PhotoPaginationManager {
         this.reset();
         logger.info('照片分页管理器已清理');
     }
-
-
 }
 
 // 导出单例实例
