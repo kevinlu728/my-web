@@ -12,7 +12,7 @@
 
 import notionAPIService from '../services/notionAPIService.js';
 import { lifeViewManager, ModuleType } from './lifeViewManager.js';
-import { photoPaginationManager } from './photoPaginationManager.js';
+import { photoPaginationManager, DEFAULT_PHOTOS_PER_PAGE } from './photoPaginationManager.js';
 import { photoRenderer } from './photoRenderer.js';
 import lifecycleManager from '../utils/lifecycleManager.js';
 import { processPhotoListData } from '../utils/photo-utils.js';
@@ -26,7 +26,6 @@ class PhotoManager {
         this.lifeDatabaseId = null;
         this.photos = []; // 已加载的全部照片
         this.paginationInfo = null; // 分页信息
-        this.photosPerPage = 9; // 每页显示照片数
         this.isLoading = false; // 用于控制无限滚动加载
         this.scrollListeners = []; // 用于存储滚动监听器
     }
@@ -66,7 +65,6 @@ class PhotoManager {
         photoPaginationManager.initialize(
             this.lifeDatabaseId,
             processedPhotos, 
-            this.photosPerPage,
             this.paginationInfo,
             this.onNewPhotosLoaded.bind(this)
         );
@@ -104,7 +102,7 @@ class PhotoManager {
             logger.info('📡 [API请求] 正在从Notion API获取照片数据...');
             const response = await notionAPIService.getPhotos({
                 lifeDatabaseId: this.lifeDatabaseId,
-                limit: 100,
+                pageSize: DEFAULT_PHOTOS_PER_PAGE,
                 sorts: [{ 
                     property: "Photo Date", 
                     direction: "descending" 

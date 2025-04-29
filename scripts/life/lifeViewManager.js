@@ -17,6 +17,7 @@ export const ModuleType = {
     MOVIE: 'movie',
     FOOTBALL: 'football',
     TRAVEL: 'travel',
+    FOOD: 'food',
     ALL: 'all'
 };
 

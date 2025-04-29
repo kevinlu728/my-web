@@ -53,7 +53,7 @@ class PhotoRenderer {
                     // 延迟以确保样式完全应用
                     setTimeout(() => {
                         this.initImageLazyLoad();
-                    }, 300);
+                    }, 200);
                 } else if (data.resourceId === 'masonry' && this.photoGridContainer) {
                     logger.info('✅ Masonry已加载成功，准备初始化瀑布流');
                     // 当Masonry资源加载且容器已存在时，初始化布局
@@ -500,6 +500,10 @@ class PhotoRenderer {
             case 'travel':
                 moduleLabel = '旅行';
                 moduleClass = 'travel';
+                break;
+            case 'food':
+                moduleLabel = '美食';
+                moduleClass = 'food';
                 break;
             case 'test':
                 moduleLabel = '测试';

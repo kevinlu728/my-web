@@ -8,6 +8,8 @@
 
 // 导入配置
 const { notionConfig } = require('../config/notion-config');
+const LIMIT = 100;
+const DEFAULT_PAGE_SIZE = 10;
 
 // 基础配置
 const config = {
@@ -157,7 +159,7 @@ const notionService = {
       headers: config.headers,
       body: JSON.stringify({
         sorts: [{ timestamp: 'created_time', direction: 'descending' }],
-        page_size: 100
+        page_size: LIMIT  // 查询文章列表使用queryDatabase接口，一次性获取尽可能多的文章，避免分页
       })
     });
     
@@ -183,7 +185,7 @@ const notionService = {
     // 解构选项参数
     const { 
       startCursor, 
-      pageSize = 100,
+      pageSize = DEFAULT_PAGE_SIZE,
       filter,
       sorts
     } = options;
@@ -200,7 +202,7 @@ const notionService = {
     
     // 构建请求体
     const requestBody = {
-      page_size: Math.min(pageSize, 100) // 确保不超过API限制
+      page_size: Math.min(pageSize, LIMIT) // 确保不超过API限制
     };
     
     // 设置排序参数 - 如果客户端提供了排序参数，则使用客户端的排序参数，否则使用默认排序
@@ -284,7 +286,7 @@ const notionService = {
    * @param {string} cursor - 分页游标
    * @returns {Promise<Object>} 页面内容和块
    */
-  async getPageContent(pageId, pageSize = 10, cursor = undefined) {
+  async getPageContent(pageId, pageSize = DEFAULT_PAGE_SIZE, cursor = undefined) {
     if (!pageId) {
       throw new Error('缺少页面ID');
     }

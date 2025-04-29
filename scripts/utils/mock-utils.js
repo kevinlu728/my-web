@@ -30,6 +30,11 @@ function generateSvgImage(width, height, type, index) {
             bgColor = getRandomColor(210, 75, 50); 
             title = `旅行 ${index}`;
             break;
+        case 'FOOD':
+            // 橙色系 - HSL色相0-10
+            bgColor = getRandomColor(20, 80, 50); 
+            title = `美食 ${index}`;
+            break;
         default:
             bgColor = '#cccccc';
     }

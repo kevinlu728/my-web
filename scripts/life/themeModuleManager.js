@@ -96,7 +96,8 @@ class ThemeModuleManager {
             { type: ModuleType.ALL, label: '全部' },
             { type: ModuleType.MOVIE, label: '电影' },
             { type: ModuleType.FOOTBALL, label: '足球' },
-            { type: ModuleType.TRAVEL, label: '旅行' }
+            { type: ModuleType.TRAVEL, label: '旅行' },
+            { type: ModuleType.FOOD, label: '美食' }
         ];
         
         modules.forEach(module => {

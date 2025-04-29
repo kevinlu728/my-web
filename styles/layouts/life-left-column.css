@@ -74,18 +74,23 @@
 
 /* 模块特定颜色 */
 .module-selector[data-module="movie"].active {
-    background-color: #9c27b0;
-    box-shadow: 0 4px 10px rgba(156, 39, 176, 0.3);
+    background-color: #d1c4e9; /* 淡紫色 */
+    box-shadow: 0 4px 10px rgba(209, 196, 233, 0.5);
 }
 
 .module-selector[data-module="football"].active {
-    background-color: #4caf50;
-    box-shadow: 0 4px 10px rgba(76, 175, 80, 0.3);
+    background-color: #c8e6c9; /* 淡绿色 */
+    box-shadow: 0 4px 10px rgba(200, 230, 201, 0.5);
 }
 
 .module-selector[data-module="travel"].active {
-    background-color: #ff9800;
-    box-shadow: 0 4px 10px rgba(255, 152, 0, 0.3);
+    background-color: #bbdefb; /* 淡蓝色 */
+    box-shadow: 0 4px 10px rgba(187, 222, 251, 0.5);
+}
+
+.module-selector[data-module="food"].active {
+    background-color: #ffe0b2; /* 淡橙色 */
+    box-shadow: 0 4px 10px rgba(255, 224, 178, 0.5);
 }
 
 /* 响应式调整 */

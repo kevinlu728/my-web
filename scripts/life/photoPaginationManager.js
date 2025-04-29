@@ -19,6 +19,8 @@ import { throttle, showLoadingSpinner } from '../utils/common-utils.js';
 import logger from '../utils/logger.js';
 import { photoCacheManager } from './photoCacheManager.js';
 
+export const DEFAULT_PHOTOS_PER_PAGE = 10;
+
 class PhotoPaginationManager {
     constructor() {
         this.lifeDatabaseId = null;
@@ -26,7 +28,7 @@ class PhotoPaginationManager {
         // 分页状态
         this.photos = [];
         this.currentPage = 1;
-        this.photosPerPage = 9;
+        this.photosPerPage = DEFAULT_PHOTOS_PER_PAGE; //每页显示照片数
         this.paginationInfo = null;
         this.currentModuleType = ModuleType.ALL;
         
@@ -52,16 +54,14 @@ class PhotoPaginationManager {
     /**
      * 初始化照片分页
      * @param {Array} photos 所有照片数据
-     * @param {number} photosPerPage 每页照片数量
      * @param {Function} onNewPhotosLoaded 新照片加载的回调函数
      */
-    initialize(databaseId, photos, photosPerPage = 9, paginationInfo, onNewPhotosLoaded = null) {
+    initialize(databaseId, photos, paginationInfo, onNewPhotosLoaded = null) {
         logger.info('初始化照片分页管理器, 照片总数:', photos ? photos.length : 0, '，分页信息:', paginationInfo);
         
         // 设置基础属性
         this.lifeDatabaseId = databaseId;
         this.photos = [...photos];
-        this.photosPerPage = photosPerPage;
         this.paginationInfo = paginationInfo;
         this.currentPage = 1;
         this.isLoading = false;

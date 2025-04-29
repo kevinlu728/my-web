@@ -14,6 +14,8 @@
 
 // 尝试获取logger，如果未初始化则使用console作为回退
 const logger = window.loggerModule || console;
+const LIMIT = 100;
+const DEFAULT_PAGE_SIZE = 10;
 
 /**
  * Notion API服务类
@@ -268,7 +270,7 @@ class NotionAPIService {
         try {
         let databaseId = null;
         let requestBody = {};
-        
+
         // 兼容两种调用方式：
         // 1. getArticles(databaseId)
         // 2. getArticles({ filter, sorts, limit, pageSize, startCursor })
@@ -278,7 +280,7 @@ class NotionAPIService {
             requestBody = {
             database_id: databaseId,
             databaseId: databaseId,  // 兼容两种参数格式
-            limit: 100
+            limit: LIMIT
             };
         } else {
             const { filter, sorts, limit, pageSize, startCursor, database_id, databaseId } = params || {};
@@ -287,7 +289,7 @@ class NotionAPIService {
             filter,
             sorts,
             limit,
-            pageSize: pageSize || 100,
+            pageSize: pageSize || LIMIT,
             startCursor,
             database_id: database_id || databaseId,
             databaseId: databaseId || database_id
@@ -429,7 +431,7 @@ class NotionAPIService {
             requestBody = {
             lifeDatabaseId: databaseId,
             databaseId: databaseId,  // 兼容两种参数格式
-            limit: 100
+            limit: LIMIT
             };
         } else {
             const { filter, sorts, limit, pageSize, startCursor, lifeDatabaseId, databaseId } = params || {};
@@ -438,7 +440,7 @@ class NotionAPIService {
             filter,
             sorts,
             limit,
-            pageSize: pageSize || 100,
+            pageSize: pageSize || LIMIT,
             startCursor,
             lifeDatabaseId: lifeDatabaseId || databaseId,
             databaseId: databaseId || lifeDatabaseId
