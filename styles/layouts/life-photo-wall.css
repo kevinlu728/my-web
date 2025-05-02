@@ -115,15 +115,30 @@
   margin-bottom: 8px;
 }
 
-/* ===== 自定义字段增强 ===== */
+/* 扩展字段和标签容器 */
+.photo-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start; /* 对齐方式改为顶部，便于多标签换行 */
+  flex-wrap: wrap;
+  /* 添加负边距以在移动设备上换行时保持对齐 */
+  margin: 0 -5px;
+}
+
+/* ===== 扩展字段增强 ===== */
 .photo-extended-field {
   font-size: 13px;
   color: #5a5a5a; /* 提升对比度 */
-  margin-bottom: 8px;
+  margin: 0 5px 0 0;
   display: flex;
   align-items: center;
   position: relative;
   padding-left: 20px; /* 图标缩进 */
+  flex: 1; /* 让扩展字段占据剩余空间 */
+  min-width: 0; /* 确保文本可以被截断 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
   
 /* 字段类型图标 */
@@ -158,20 +173,20 @@ background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/200
 
 /* 模块标签 */
 .module-tag {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  padding: 4px 10px;
-  border-radius: 20px;
+  position: static; /* 从绝对定位改为静态定位 */
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 15px;
   font-size: 12px;
   font-weight: 600;
   color: white;
-  z-index: 5;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  margin: 0 3px 3px 0; /* 修改间距，允许更紧凑布局和换行 */
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1); /* 减小阴影 */
+  flex-shrink: 0; /* 防止标签被压缩 */
 }
 
 /* 标签样式 */
-.photo-tags {
+/* .photo-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
@@ -184,7 +199,7 @@ background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/200
   color: #666;
   border-radius: 3px;
   font-size: 12px;
-}
+} */
 
 /* ------------------------------------
  * 3. 模块特定样式
@@ -192,30 +207,23 @@ background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/200
 
 /* 类型标签颜色 */
 .module-tag.movie {
-  background-color: #9c27b0;
-}
-
-/* 电影模块照片容器比例 */
-.photo-item[data-category="movie"] .photo-img-container {
-  /* 移除固定宽高比 */
+  background-color: #d1c4e9; /* 淡紫色 */
+  color: #673ab7; /* 深紫色文字 */
 }
 
 .module-tag.football {
-  background-color: #4CAF50;
-}
-
-/* 足球模块照片容器比例 */
-.photo-item[data-category="football"] .photo-img-container {
-  /* 移除固定宽高比 */
+  background-color: #c8e6c9; /* 淡绿色 */
+  color: #2e7d32; /* 深绿色文字 */
 }
 
 .module-tag.travel {
-  background-color: #2196F3;
+  background-color: #bbdefb; /* 淡蓝色 */
+  color: #1976d2; /* 深蓝色文字 */
 }
 
-/* 旅行模块照片容器比例 */
-.photo-item[data-category="travel"] .photo-img-container {
-  /* 移除固定宽高比 */
+.module-tag.food {
+  background-color: #ffe0b2; /* 淡橙色 */
+  color: #e65100; /* 深橙色文字 */
 }
 
 /* 电影模块特定样式 */
@@ -351,6 +359,20 @@ background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/200
   
   .photo-info {
     padding: 10px;
+  }
+
+  /* 移动设备上扩展字段和标签调整 */
+  .photo-info-row {
+    margin-top: 5px;
+  }
+  
+  .photo-extended-field {
+    margin-bottom: 5px;
+    max-width: 70%; /* 在移动设备上限制宽度 */
+  }
+  
+  .module-tag {
+    margin: 0;
   }
 }
 

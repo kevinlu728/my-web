@@ -41,8 +41,13 @@ export function processPhotoListData(photos) {
             const dateStr = photo.properties['Photo Date']?.date?.start;
             const date = dateStr ? new Date(dateStr) : new Date();
             
-            // 提取分类
-            const category = photo.properties.Category?.select?.name || '未分类';
+            // 提取分类 (多选)
+            let categories = [];
+            if (photo.properties.Category?.multi_select) {
+                categories = photo.properties.Category.multi_select.map(item => item.name);
+            }
+            // 向后兼容 - 保留单个category字段，使用第一个分类或"未分类"
+            const category = categories.length > 0 ? categories[0] : '未分类';
             
             // 提取描述
             const description = photo.properties.Description?.rich_text?.[0]?.plain_text || '';
@@ -58,7 +63,8 @@ export function processPhotoListData(photos) {
                 originalUrl,   // 改名字段
                 coverUrl: thumbnailUrl || originalUrl, // 兼容现有代码，优先使用缩略图
                 date,
-                category,
+                category,      // 向后兼容 - 使用第一个分类
+                categories,    // 新增 - 所有分类的数组
                 description,
                 extendedField,
                 extendedFieldType,
@@ -87,8 +93,16 @@ export function searchPhotos(photos, searchTerm) {
         // 搜索标题匹配
         const titleMatch = photo.title?.toLowerCase().includes(term);
         
-        // 搜索分类匹配
-        const categoryMatch = photo.category?.toLowerCase().includes(term);
+        // 搜索分类匹配 (检查所有分类)
+        let categoryMatch = false;
+        if (photo.categories && Array.isArray(photo.categories)) {
+            categoryMatch = photo.categories.some(cat => 
+                cat.toLowerCase().includes(term)
+            );
+        } else if (photo.category) {
+            // 向后兼容 - 如果没有categories数组，使用单个category
+            categoryMatch = photo.category.toLowerCase().includes(term);
+        }
         
         return titleMatch || categoryMatch;
     });

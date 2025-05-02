@@ -269,17 +269,27 @@ class PhotoManager {
             currentModulePhotos = [...this.photos];
         } else {
             currentModulePhotos = this.photos.filter(photo => {
-                const category = photo.category?.toLowerCase();
-                
-                switch (moduleType) {
-                    case ModuleType.MOVIE:
-                        return category === 'movie';
-                    case ModuleType.FOOTBALL:
-                        return category === 'football';
-                    case ModuleType.TRAVEL:
-                        return category === 'travel';
-                    default:
-                        return true;
+                // 优先检查categories数组
+                if (photo.categories && Array.isArray(photo.categories)) {
+                    // 将模块类型与照片的多个分类进行匹配
+                    const typeToFind = moduleType.toLowerCase();
+                    return photo.categories.some(cat => cat.toLowerCase() === typeToFind);
+                } else {
+                    // 向后兼容 - 使用单个category
+                    const category = photo.category?.toLowerCase();
+                    
+                    switch (moduleType) {
+                        case ModuleType.MOVIE:
+                            return category === 'movie';
+                        case ModuleType.FOOTBALL:
+                            return category === 'football';
+                        case ModuleType.TRAVEL:
+                            return category === 'travel';
+                        case ModuleType.FOOD:
+                            return category === 'food';
+                        default:
+                            return true;
+                    }
                 }
             });
         }

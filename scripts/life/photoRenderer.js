@@ -479,39 +479,83 @@ class PhotoRenderer {
         const photoItem = document.createElement('div');
         photoItem.className = 'photo-item';
         photoItem.setAttribute('data-id', photo.id);
-        photoItem.setAttribute('data-category', photo.category ? photo.category.toLowerCase() : 'unknown');
+        
+        // 使用categories数组设置data-category属性
+        const categoryAttr = photo.categories && photo.categories.length > 0 
+            ? photo.categories.join(' ').toLowerCase() 
+            : (photo.category ? photo.category.toLowerCase() : 'unknown');
+        photoItem.setAttribute('data-category', categoryAttr);
+        
         photoItem.setAttribute('data-extended-field', photo.extendedField);
         
-        // 获取模块标签
-        let moduleLabel = '未知';
-        let moduleClass = 'unknown';
-        
-        // 改用category而不是type来确定标签
-        const category = photo.category ? photo.category.toLowerCase() : '';
-        switch(category) {
-            case 'movie':
-                moduleLabel = '电影';
-                moduleClass = 'movie';
-                break;
-            case 'football':
-                moduleLabel = '足球';
-                moduleClass = 'football';
-                break;
-            case 'travel':
-                moduleLabel = '旅行';
-                moduleClass = 'travel';
-                break;
-            case 'food':
-                moduleLabel = '美食';
-                moduleClass = 'food';
-                break;
-            case 'test':
-                moduleLabel = '测试';
-                moduleClass = 'test';
-                break;
-            default:
-                moduleLabel = photo.category || '未分类';  // 如果有其他分类则显示原始分类名
-                moduleClass = 'unknown';
+        // 生成分类标签HTML
+        let categoryTagsHTML = '';
+        // 优先使用categories数组
+        if (photo.categories && Array.isArray(photo.categories) && photo.categories.length > 0) {
+            categoryTagsHTML = photo.categories.map(cat => {
+                // 确定标签类和标签文本
+                let moduleClass = 'unknown';
+                let moduleLabel = cat;
+                
+                // 映射标签名称
+                switch(cat.toLowerCase()) {
+                    case 'movie':
+                        moduleLabel = '电影';
+                        moduleClass = 'movie';
+                        break;
+                    case 'football':
+                        moduleLabel = '足球';
+                        moduleClass = 'football';
+                        break;
+                    case 'travel':
+                        moduleLabel = '旅行';
+                        moduleClass = 'travel';
+                        break;
+                    case 'food':
+                        moduleLabel = '美食';
+                        moduleClass = 'food';
+                        break;
+                    case 'test':
+                        moduleLabel = '测试';
+                        moduleClass = 'test';
+                        break;
+                }
+                
+                return `<span class="module-tag ${moduleClass.toLowerCase()}">${moduleLabel}</span>`;
+            }).join('');
+        } else {
+            // 向后兼容 - 如果没有categories数组，使用单个category
+            let moduleLabel = '未知';
+            let moduleClass = 'unknown';
+            
+            const category = photo.category ? photo.category.toLowerCase() : '';
+            switch(category) {
+                case 'movie':
+                    moduleLabel = '电影';
+                    moduleClass = 'movie';
+                    break;
+                case 'football':
+                    moduleLabel = '足球';
+                    moduleClass = 'football';
+                    break;
+                case 'travel':
+                    moduleLabel = '旅行';
+                    moduleClass = 'travel';
+                    break;
+                case 'food':
+                    moduleLabel = '美食';
+                    moduleClass = 'food';
+                    break;
+                case 'test':
+                    moduleLabel = '测试';
+                    moduleClass = 'test';
+                    break;
+                default:
+                    moduleLabel = photo.category || '未分类';
+                    moduleClass = 'unknown';
+            }
+            
+            categoryTagsHTML = `<span class="module-tag ${moduleClass}">${moduleLabel}</span>`;
         }
         
         // 创建模糊版本的图片URL (保持相同URL但添加模糊指示符，实际模糊效果通过CSS实现)
@@ -520,7 +564,7 @@ class PhotoRenderer {
         // 使用缩略图作为显示图片，使用data-original属性存储原始图片URL
         photoItem.innerHTML = `
             <div class="photo-img-container placeholder-loading">
-                <span class="module-tag ${moduleClass}">${moduleLabel}</span>
+                
                 <img 
                     class="photo-img lazy blur-effect"
                     src="${thumbnailUrl}" 
@@ -534,7 +578,10 @@ class PhotoRenderer {
             </div>
             <div class="photo-info">
                 <h3 class="photo-title">${photo.title}</h3>
-                <div class="photo-extended-field" data-field="${photo.extendedFieldType}">${photo.extendedField}</div>
+                <div class="photo-info-row">
+                    <div class="photo-extended-field" data-field="${photo.extendedFieldType}">${photo.extendedField}</div>
+                    ${categoryTagsHTML}
+                </div>
             </div>
         `;
         
