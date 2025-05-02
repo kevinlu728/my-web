@@ -684,6 +684,7 @@ class PhotoRenderer {
         // 销毁懒加载实例
         if (this.lazyLoadInstance) {
             this.lazyLoadInstance.destroy();
+            this.lazyLoadInstance = null;
         }
         
         // 销毁Masonry实例
@@ -694,6 +695,17 @@ class PhotoRenderer {
         
         // 移除全局引用
         window.msnry = null;
+        
+        // 清理资源加载状态
+        this.resourceLoadStatus = {
+            'vanilla-lazyload': false,
+            'masonry': false,
+            'imagesLoaded': false
+        };
+        
+        // 清理容器引用
+        this.container = null;
+        this.photoGridContainer = null;
     }
 }
 

@@ -532,11 +532,22 @@ class PhotoPaginationManager {
         // 移除事件监听
         if (this.scrollHandler && this.scrollContainer) {
             this.scrollContainer.removeEventListener('scroll', this.scrollHandler);
+            this.scrollHandler = null;
         }
         
-        window.removeEventListener('resize', this.handleWindowResize);
+        window.removeEventListener('resize', this._handleWindowResize);
         
+        // 清理超时计时器
+        if (this.triggerDebounceTimeout) {
+            clearTimeout(this.triggerDebounceTimeout);
+            this.triggerDebounceTimeout = null;
+        }
+        
+        // 重置其他状态
         this.reset();
+        this.scrollContainer = null;
+        this.onNewPhotosLoaded = null;
+        
         logger.info('照片分页管理器已清理');
     }
 }

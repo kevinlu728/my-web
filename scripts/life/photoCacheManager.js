@@ -12,6 +12,7 @@
 
 import logger from '../utils/logger.js';
 import { lifeViewManager } from './lifeViewManager.js';
+import lifecycleManager from '../utils/lifecycleManager.js';
 
 class PhotoCacheManager {
     constructor() {
@@ -50,6 +51,9 @@ class PhotoCacheManager {
             
             // 清理过期缓存
             this._cleanExpiredCache(metadata);
+            
+            // 注册清理函数
+            lifecycleManager.registerCleanup('photoCacheManager', this.cleanup.bind(this));
             
             logger.info('照片缓存管理器初始化完成');
         } catch (error) {
@@ -581,6 +585,24 @@ class PhotoCacheManager {
             logger.error('获取缓存统计失败:', error);
             return { enabled: this.enabled, error: true };
         }
+    }
+
+    /**
+     * 清理函数
+     * @param {boolean} clearCache 是否同时清除缓存，默认为false
+     */
+    cleanup(clearCache = false) {
+        logger.info('清理照片缓存管理器...');
+        
+        // 如果需要，清除缓存
+        if (clearCache) {
+            this.clearAllCache();
+        }
+        
+        // 重置状态
+        this.enabled = true;
+        
+        logger.info('照片缓存管理器已清理');
     }
 }
 

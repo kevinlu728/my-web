@@ -11,6 +11,7 @@
 
 import logger from '../utils/logger.js';
 import {lifeViewManager, ModuleType} from './lifeViewManager.js';
+import lifecycleManager from '../utils/lifecycleManager.js';
 
 // 主题模块管理器
 class ThemeModuleManager {
@@ -39,6 +40,9 @@ class ThemeModuleManager {
         
         // 初始化模块选择器UI
         this.initModuleSelectors();
+        
+        // 注册清理函数
+        lifecycleManager.registerCleanup('themeModuleManager', this.cleanup.bind(this));
     }
     
     /**
@@ -182,6 +186,33 @@ class ThemeModuleManager {
      */
     getCurrentModule() {
         return this.currentModule;
+    }
+
+    /**
+     * 清理函数
+     */
+    cleanup() {
+        logger.info('清理主题模块管理器...');
+        
+        // 移除所有模块选择器的事件监听
+        document.querySelectorAll('.module-selector').forEach(selector => {
+            // 清除所有事件监听器
+            const newSelector = selector.cloneNode(true);
+            selector.parentNode.replaceChild(newSelector, selector);
+        });
+        
+        // 移除主题类
+        if (this.currentModule) {
+            document.body.classList.remove(`theme-${this.currentModule}`);
+        }
+        
+        // 重置状态
+        this.currentModule = ModuleType.ALL;
+        this.callbacks = {
+            onModuleChange: null
+        };
+        
+        logger.info('主题模块管理器已清理');
     }
 }
 

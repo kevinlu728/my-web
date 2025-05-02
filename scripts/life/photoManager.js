@@ -331,6 +331,9 @@ class PhotoManager {
         
         // 重置状态
         this.isLoading = false;
+        this.photos = [];
+        this.paginationInfo = null;
+        this.lifeDatabaseId = null;
     }
 }
 
