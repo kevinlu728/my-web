@@ -309,47 +309,6 @@ function initModuleChangeEvents() {
 }
 
 /**
- * 清理页面资源和事件监听器
- * 在页面卸载或切换到其他功能区时调用
- */
-export function cleanupPage() {
-    logger.info('开始清理生活频道页面资源...');
-    
-    try {
-        // 使用生命周期管理器清理所有注册的模块
-        lifecycleManager.cleanup();
-        
-        // 重置页面状态
-        window.pageState.initialized = false;
-        window.pageState.initializing = false;
-        window.pageState.loading = false;
-        
-        logger.info('生活频道页面资源清理完成');
-    } catch (error) {
-        logger.error('清理页面资源时发生错误:', error);
-    }
-}
-
-// 窗口加载完成后再次检查，以防动态内容改变了页面高度
-window.addEventListener('load', () => {
-    logger.info('页面完全加载，再次检查滚动位置...');
-    scrollbar.checkInitialScrollPosition();
-    
-    // 定期检查返回顶部按钮是否存在并正确显示
-    setTimeout(() => {
-        if (!document.querySelector('.back-to-top.visible') && scrollbar.shouldShowBackToTop()) {
-            logger.info('页面已滚动但返回顶部按钮未显示，强制显示按钮');
-            scrollbar.toggleBackToTopButton(true);
-        }
-    }, 1000);
-});
-
-// 在页面卸载时执行清理
-window.addEventListener('unload', () => {
-    cleanupPage();
-});
-
-/**
  * 显示友好的错误提示界面
  * @param {Error} error 错误对象
  */
@@ -425,3 +384,96 @@ function showErrorPage(error) {
         });
     }
 }
+
+/**
+ * 清理页面资源和事件监听器
+ * 在页面卸载或切换到其他功能区时调用
+ */
+export function cleanupPage() {
+    logger.info('开始清理生活频道页面资源...');
+    
+    try {
+        // 移除事件监听器
+        const photoWallContainer = document.getElementById('photo-wall-container');
+        if (photoWallContainer) {
+            // 移除数据属性
+            photoWallContainer.removeAttribute('data-view-mode');
+        }
+        
+        // 移除容器中的内容
+        const rightColumn = document.querySelector('.life-content .right-column');
+        if (rightColumn) {
+            rightColumn.innerHTML = '';
+        }
+        
+        // 移除主题类
+        document.body.classList.remove('theme-all');
+        Object.values(ModuleType).forEach(type => {
+            document.body.classList.remove(`theme-${type}`);
+        });
+        
+        // 使用生命周期管理器清理所有注册的模块
+        // 这会调用我们为所有组件设置的cleanup函数
+        lifecycleManager.cleanup();
+        
+        // 清理可能遗漏的DOM引用
+        if (scrollbar && typeof scrollbar.cleanup === 'function') {
+            scrollbar.cleanup();
+        }
+        
+        if (lifeViewManager && typeof lifeViewManager.cleanup === 'function') {
+            lifeViewManager.cleanup();
+        }
+        
+        // 重置视图状态
+        lifeViewManager.reset();
+        
+        // 完全重置页面状态
+        window.pageState = {
+            initialized: false,
+            initializing: false,
+            loading: false,
+            currentModule: ModuleType.ALL,
+            currentViewMode: ViewMode.GRID,
+            error: null
+        };
+        
+        // 移除调试时添加到全局对象的引用
+        if (!config || !config.getEnvironment || config.getEnvironment() !== 'production') {
+            // 仅在非生产环境中清理这些引用
+            window.photoManager = undefined;
+            window.themeModuleManager = undefined;
+            window.config = undefined;
+        }
+        
+        logger.info('生活频道页面资源清理完成');
+    } catch (error) {
+        logger.error('清理页面资源时发生错误:', error.message);
+        // 即使出错，也尝试重置关键状态
+        window.pageState = {
+            initialized: false,
+            initializing: false,
+            loading: false,
+            error: error
+        };
+    }
+}
+
+// 窗口加载完成后再次检查，以防动态内容改变了页面高度
+window.addEventListener('load', () => {
+    logger.info('页面完全加载，再次检查滚动位置...');
+    scrollbar.checkInitialScrollPosition();
+    
+    // 定期检查返回顶部按钮是否存在并正确显示
+    setTimeout(() => {
+        if (!document.querySelector('.back-to-top.visible') && scrollbar.shouldShowBackToTop()) {
+            logger.info('页面已滚动但返回顶部按钮未显示，强制显示按钮');
+            scrollbar.toggleBackToTopButton(true);
+        }
+    }, 1000);
+});
+
+// 在页面卸载时执行清理
+window.addEventListener('unload', () => {
+    cleanupPage();
+});

@@ -217,6 +217,43 @@ class LifeViewManager {
         
         logger.info('视图管理器已销毁');
     }
+
+    /**
+     * 重置视图管理器状态
+     * 不完全销毁，保留容器引用，但重置其他状态
+     */
+    reset() {
+        logger.info('重置视图管理器状态...');
+        
+        // 移除所有事件监听器
+        Object.keys(this.eventHandlers).forEach(eventName => {
+            this.off(eventName);
+        });
+        
+        // 移除视图模式类
+        if (this.container && this.currentMode) {
+            this.container.classList.remove(`view-mode-${this.currentMode.toLowerCase()}`);
+            // 默认重置为网格模式
+            this.container.classList.add(`view-mode-${ViewMode.GRID.toLowerCase()}`);
+        }
+        
+        this.currentMode = ViewMode.GRID;
+        this.pendingModeChanges = [];
+        this.eventHandlers = {};
+        
+        logger.info('视图管理器状态已重置');
+        
+        return true;
+    }
+    
+    /**
+     * 清理函数 - 兼容生命周期管理器
+     */
+    cleanup() {
+        logger.info('清理视图管理器...');
+        this.reset();
+        logger.info('视图管理器已清理');
+    }
 }
 
 // 创建单例实例

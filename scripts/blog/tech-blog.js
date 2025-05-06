@@ -32,7 +32,7 @@ import { initNavigation } from '../components/navigation.js';
 import { scrollbar } from '../components/scrollbar.js';
 import { loadDebugPanel } from '../components/debugPanelLoader.js';
 import { showStatus, showError } from '../utils/common-utils.js';
-
+import lifecycleManager from '../utils/lifecycleManager.js';
 
 logger.info('🚀 tech-blog.js 开始加载...');
 
@@ -102,6 +102,9 @@ function setupContentUnblockedListener() {
  */
 export async function initializePage() {
     // ===== 锁检查和初始状态设置 =====
+    // 初始化生命周期管理器
+    lifecycleManager.initialize('blog');
+
     // 防止重复初始化 - 使用统一的状态锁
     if (window.pageState.initializing) {
         logger.info('页面正在初始化中，跳过重复初始化');
