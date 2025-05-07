@@ -14,11 +14,12 @@ import notionAPIService from '../services/notionAPIService.js';
 import { lifeViewManager, ModuleType } from './lifeViewManager.js';
 import { photoPaginationManager, DEFAULT_PHOTOS_PER_PAGE } from './photoPaginationManager.js';
 import { photoRenderer } from './photoRenderer.js';
+import { photoCacheManager } from './photoCacheManager.js';
+import { photoDetailManager } from './photoDetailManager.js';
 import lifecycleManager from '../utils/lifecycleManager.js';
 import { processPhotoListData } from '../utils/photo-utils.js';
 import { generateMockPhotos } from '../utils/mock-utils.js';
 import logger from '../utils/logger.js';
-import { photoCacheManager } from './photoCacheManager.js';
 
 // 照片墙管理器
 class PhotoManager {
@@ -28,6 +29,8 @@ class PhotoManager {
         this.paginationInfo = null; // 分页信息
         this.isLoading = false; // 用于控制无限滚动加载
         this.scrollListeners = []; // 用于存储滚动监听器
+        this.currentModuleType = ModuleType.ALL;
+        this.currentModulePhotos = [];
     }
 
     /**
@@ -68,6 +71,9 @@ class PhotoManager {
             this.paginationInfo,
             this.onNewPhotosLoaded.bind(this)
         );
+
+        // 初始化照片详情管理器
+        photoDetailManager.initialize();
 
         lifeViewManager.dispatchViewEvent('loadingEnd');
         
@@ -160,7 +166,8 @@ class PhotoManager {
         photoRenderer.render(
             container, 
             photosToShow, 
-            photosOfCurrentModule.length
+            photosOfCurrentModule.length,
+            this.onPhotoDetailClick.bind(this)
         );
         
         // 更新加载状态
@@ -216,45 +223,22 @@ class PhotoManager {
 
     /**
      * 打开照片详情
-     * @param {Object} photo 照片数据
+     * @param {Object} photo 照片数据对象
      */
     onPhotoDetailClick(photo) {
+        logger.info(`点击照片: ${photo.title}`);
         lifeViewManager.dispatchViewEvent('photoSelected', { photoId: photo.id });
         
         // 缓存选中的照片，提高再次访问性能
         photoCacheManager.cachePhoto(photo);
         
-        // 使用原始大图URL
-        const imageUrl = photo.originalUrl || photo.coverUrl;
+        // 获取当前模块所有照片，便于前后导航
+        const currentModulePhotos = this.getCurrentModulePhotos();
+        const currentIndex = currentModulePhotos.findIndex(p => p.id === photo.id);
+        logger.debug(`当前照片索引: ${currentIndex}/${currentModulePhotos.length}`);
         
-        // 创建模态窗口显示大图
-        const modal = document.createElement('div');
-        modal.className = 'photo-detail-modal';
-        modal.innerHTML = `
-            <div class="photo-detail-container">
-                <button class="close-btn">&times;</button>
-                <img src="${imageUrl}" alt="${photo.title}" class="photo-detail-img">
-                <div class="photo-detail-info">
-                    <h2>${photo.title}</h2>
-                    <p class="photo-detail-date">${formatDateToCN(photo.date)}</p>
-                    <p class="photo-detail-description">${photo.description || '无描述'}</p>
-                </div>
-            </div>
-        `;
-        
-        // 添加关闭按钮事件
-        modal.querySelector('.close-btn').addEventListener('click', () => {
-            document.body.removeChild(modal);
-        });
-        
-        // 点击模态窗口背景关闭
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                document.body.removeChild(modal);
-            }
-        });
-        
-        document.body.appendChild(modal);
+        // 使用照片详情管理器显示照片详情
+        photoDetailManager.openPhotoDetail(photo, currentModulePhotos, currentIndex);
     }
 
     /**
@@ -263,21 +247,20 @@ class PhotoManager {
      */
     filterByModule(moduleType) {
         logger.info(`按模块筛选照片: ${moduleType}`);
-        let currentModulePhotos = [];
+        this.currentModuleType = moduleType;
         
+        let currentModulePhotos = [];
         if (moduleType === ModuleType.ALL) {
             currentModulePhotos = [...this.photos];
         } else {
             currentModulePhotos = this.photos.filter(photo => {
                 // 优先检查categories数组
                 if (photo.categories && Array.isArray(photo.categories)) {
-                    // 将模块类型与照片的多个分类进行匹配
                     const typeToFind = moduleType.toLowerCase();
                     return photo.categories.some(cat => cat.toLowerCase() === typeToFind);
                 } else {
                     // 向后兼容 - 使用单个category
                     const category = photo.category?.toLowerCase();
-                    
                     switch (moduleType) {
                         case ModuleType.MOVIE:
                             return category === 'movie';
@@ -293,17 +276,24 @@ class PhotoManager {
                 }
             });
         }
-        
         logger.info(`当前模块的照片数量: ${currentModulePhotos.length}`);
-        
+        this.currentModulePhotos = currentModulePhotos;
+
         // 重要修复: 同步更新分页管理器中的照片数据
         photoPaginationManager.filterPhotosByModule(moduleType, currentModulePhotos);
-        
+
         // 更新UI
         this.render(currentModulePhotos);
     }
 
     getPhotos() {
+        return this.photos;
+    }
+
+    getCurrentModulePhotos() {
+        if (this.currentModulePhotos && this.currentModulePhotos.length > 0) {
+            return this.currentModulePhotos;
+        }
         return this.photos;
     }
 

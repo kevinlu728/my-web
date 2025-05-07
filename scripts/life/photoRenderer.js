@@ -587,6 +587,26 @@ class PhotoRenderer {
         
         // 添加点击事件，查看原始大图
         if (clickHandler) {
+            // 优化: 使图片容器和标题都可点击，而不仅仅是整个卡片
+            const imgContainer = photoItem.querySelector('.photo-img-container');
+            if (imgContainer) {
+                imgContainer.style.cursor = 'pointer';
+                imgContainer.addEventListener('click', (e) => {
+                    e.stopPropagation(); // 防止事件冒泡
+                    clickHandler(photo);
+                });
+            }
+            
+            const photoTitle = photoItem.querySelector('.photo-title');
+            if (photoTitle) {
+                photoTitle.style.cursor = 'pointer';
+                photoTitle.addEventListener('click', (e) => {
+                    e.stopPropagation(); // 防止事件冒泡
+                    clickHandler(photo);
+                });
+            }
+            
+            // 保留卡片整体的点击事件作为备份
             photoItem.addEventListener('click', () => clickHandler(photo));
         }
         

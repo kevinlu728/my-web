@@ -469,3 +469,520 @@ background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/200
   color: #888;
   font-size: 16px;
 }
+
+/* ------------------------------------
+ * 6. 照片详情模态框样式
+ * ------------------------------------ */
+
+/* 模态框背景 */
+.photo-detail-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    animation: fadeIn 0.3s forwards;
+}
+
+/* 淡入/淡出动画 */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+/* 模态框容器 */
+.photo-detail-container {
+    position: relative;
+    max-width: 95%;
+    max-height: 95%;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: scaleUp 0.3s forwards;
+    transform-origin: center;
+    transition: all 0.3s ease-in-out;
+}
+
+/* 全屏模式 */
+.photo-detail-modal.fullscreen .photo-detail-container {
+    max-width: 100%;
+    max-height: 100%;
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+}
+
+.photo-detail-modal.fullscreen .photo-detail-image-wrapper {
+    max-height: 100vh;
+    flex: 1;
+}
+
+.photo-detail-modal.fullscreen .photo-detail-img {
+    max-height: 95vh;
+}
+
+/* 放大动画 */
+@keyframes scaleUp {
+    from { transform: scale(0.9); }
+    to { transform: scale(1); }
+}
+
+/* 关闭按钮 */
+.close-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 36px;
+    height: 36px;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.close-btn:hover {
+    background-color: rgba(0, 0, 0, 0.7);
+    transform: scale(1.1);
+}
+
+/* 详情图片 */
+.photo-detail-img {
+    max-width: 100%;
+    max-height: 85vh;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+    transition: transform 0.3s ease;
+    transform-origin: center;
+    width: auto;
+    height: auto;
+}
+
+/* 照片控制按钮 */
+.photo-detail-controls {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+    display: flex;
+    gap: 10px;
+    z-index: 10;
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 8px;
+    border-radius: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    transition: opacity 0.3s ease;
+}
+
+/* 自动隐藏控制按钮，鼠标悬停时显示 */
+.photo-detail-image-wrapper:hover .photo-detail-controls {
+    opacity: 1;
+}
+
+.photo-detail-image-wrapper .photo-detail-controls {
+    opacity: 0.6;
+}
+
+.photo-detail-modal.fullscreen .photo-detail-controls {
+    bottom: 25px;
+    right: 25px;
+}
+
+/* 控制按钮通用样式 */
+.control-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.8);
+    color: #333;
+    border: none;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.control-btn:hover {
+    background-color: #fff;
+    transform: scale(1.1);
+}
+
+.control-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* 全屏控制按钮 */
+.fullscreen-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.8);
+    color: #333;
+    border: none;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.fullscreen-btn:hover {
+    background-color: #fff;
+    transform: scale(1.1);
+}
+
+/* 照片导航 */
+.photo-navigation {
+    display: flex;
+    align-items: center;
+    margin-left: 10px;
+    border-left: 1px solid rgba(255, 255, 255, 0.3);
+    padding-left: 10px;
+}
+
+.nav-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.8);
+    color: #333;
+    border: none;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.nav-btn:hover {
+    background-color: #fff;
+    transform: scale(1.1);
+}
+
+.nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.nav-counter {
+    color: #fff;
+    font-size: 14px;
+    margin: 0 10px;
+    white-space: nowrap;
+}
+
+/* 照片信息区域 */
+.photo-detail-info {
+    padding: 20px;
+    background-color: #fff;
+}
+
+.photo-detail-info h2 {
+    margin: 0 0 10px 0;
+    font-size: 22px;
+    color: #333;
+    line-height: 1.4;
+}
+
+.photo-detail-date {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.photo-detail-description {
+    font-size: 16px;
+    line-height: 1.6;
+    color: #444;
+    white-space: pre-line; /* 保留换行符 */
+}
+
+/* 扩展字段和分类标签 */
+.photo-detail-extended {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.extended-label {
+    font-weight: 600;
+    color: #555;
+    margin-right: 8px;
+}
+
+.extended-value {
+    color: #0277bd;
+}
+
+/* 分类标签区域 */
+.photo-detail-categories {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+/* 详情页面中的分类标签 */
+.category-tag {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+
+/* 类型标签颜色 */
+.category-tag.movie {
+    background-color: #d1c4e9;
+    color: #673ab7;
+}
+
+.category-tag.football {
+    background-color: #c8e6c9;
+    color: #2e7d32;
+}
+
+.category-tag.travel {
+    background-color: #bbdefb;
+    color: #1976d2;
+}
+
+.category-tag.food {
+    background-color: #ffe0b2;
+    color: #e65100;
+}
+
+/* 照片描述 */
+.photo-detail-description {
+    font-size: 16px;
+    line-height: 1.6;
+    color: #444;
+    white-space: pre-line; /* 保留换行符 */
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+/* 响应式调整 */
+@media (max-width: 767px) {
+    .photo-detail-container {
+        max-width: 95%;
+        flex-direction: column;
+    }
+    
+    .photo-detail-img {
+        max-height: 60vh;
+    }
+    
+    .photo-detail-info {
+        padding: 15px;
+    }
+    
+    .photo-detail-info h2 {
+        font-size: 18px;
+    }
+    
+    .close-btn {
+        top: 10px;
+        right: 10px;
+        width: 30px;
+        height: 30px;
+        font-size: 20px;
+    }
+}
+
+/* 大屏幕优化 */
+@media (min-width: 1200px) {
+    .photo-detail-container {
+        max-width: 95%;
+        display: flex;
+        flex-direction: row;
+    }
+    
+    .photo-detail-img {
+        max-width: 85%;
+        max-height: 90vh;
+    }
+    
+    .photo-detail-image-wrapper {
+        flex: 1;
+        max-height: none;
+    }
+    
+    .photo-detail-info {
+        width: 25%;
+        min-width: 300px;
+        padding: 30px;
+        overflow-y: auto;
+        max-height: 90vh;
+    }
+}
+
+/* 中等屏幕优化 */
+@media (max-width: 1199px) and (min-width: 768px) {
+    .photo-detail-container {
+        max-width: 95%;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .photo-detail-image-wrapper {
+        max-height: 70vh;
+    }
+    
+    .photo-detail-img {
+        max-height: 65vh;
+    }
+}
+
+/* 图片包装器 - 用于加载状态显示 */
+.photo-detail-image-wrapper {
+    position: relative;
+    min-height: 300px;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f0f0f0;
+    overflow: hidden;
+    max-height: 85vh;
+    width: 100%;
+}
+
+/* 图片加载提示 */
+.photo-detail-loader {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #666;
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    z-index: 5;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.photo-detail-loader.load-error {
+    color: #f44336;
+    background-color: rgba(255, 255, 255, 0.9);
+}
+
+/* 全屏模式下的样式优化 */
+.photo-detail-modal.fullscreen {
+    background-color: rgba(0, 0, 0, 0.95);
+}
+
+.photo-detail-modal.fullscreen .photo-detail-container {
+    max-width: 100%;
+    max-height: 100%;
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+    background-color: transparent;
+}
+
+.photo-detail-modal.fullscreen .photo-detail-image-wrapper {
+    max-height: 100vh;
+    height: 100%;
+    flex: 1;
+    background-color: transparent;
+}
+
+.photo-detail-modal.fullscreen .photo-detail-img {
+    max-height: 95vh;
+    max-width: 95vw;
+}
+
+.photo-detail-modal.fullscreen .photo-detail-info {
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 10px;
+    margin: 20px;
+    max-height: calc(100vh - 40px);
+}
+
+.photo-detail-modal.fullscreen .close-btn {
+    top: 20px;
+    right: 20px;
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+/* 添加平滑的动画过渡 */
+.photo-detail-modal * {
+    transition: all 0.3s ease;
+}
+
+/* 图片加载完成后的显示 */
+.photo-detail-img.loaded {
+    animation: fadeInImage 0.5s ease forwards;
+}
+
+@keyframes fadeInImage {
+    from { opacity: 0.5; }
+    to { opacity: 1; }
+}
+
+/* 图片加载错误状态 */
+.photo-detail-img.error {
+    filter: grayscale(100%) brightness(0.8);
+    opacity: 0.7;
+}
+
+.photo-detail-image-wrapper.load-error::after {
+    content: "加载失败";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 10px 20px;
+    background-color: rgba(255, 255, 255, 0.8);
+    color: #f44336;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* 全屏模式下的错误显示 */
+.photo-detail-modal.fullscreen .photo-detail-image-wrapper.load-error::after {
+    background-color: rgba(0, 0, 0, 0.6);
+    color: #ff6b6b;
+    padding: 15px 30px;
+    font-size: 16px;
+}
