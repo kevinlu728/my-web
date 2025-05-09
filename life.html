@@ -8,18 +8,10 @@
     <meta name="description" content="云栖小栈 - 陆凯的个人网站">
     <meta name="keywords" content="生活,电影,足球,旅行">
     <!-- 预加载策略 - 核心CSS使用preload，非关键资源使用prefetch -->
-    <link rel="preload" href="./styles/main.css" as="style">
-    <link rel="preload" href="./styles/layouts/life-layout.css" as="style">
+    <link rel="preload" href="./styles/life/life.css" as="style">
     <!-- <link rel="preload" href="./scripts/resource/resourceManager.js" as="script" crossorigin="anonymous"> -->
     <!-- CSS资源 - 使用相对路径 -->
-    <link rel="stylesheet" href="./styles/main.css">
-    <link rel="stylesheet" href="./styles/components/header.css">
-    <link rel="stylesheet" href="./styles/components/footer.css">
-    <link rel="stylesheet" href="./styles/components/scrollbar.css">
-    <link rel="stylesheet" href="./styles/layouts/life-layout.css">
-    <link rel="stylesheet" href="./styles/layouts/life-left-column.css">
-    <link rel="stylesheet" href="./styles/layouts/life-right-column.css">
-    <link rel="stylesheet" href="./styles/layouts/life-photo-wall.css">
+    <link rel="stylesheet" href="./styles/life/life.css">
     <!-- 优先使用本地Font Awesome资源 -->
     <link rel="stylesheet" href="/assets/libs/font-awesome/all.min.css" 
         id="local-font-awesome" 
@@ -27,13 +19,6 @@
         data-resource-type="font-awesome">
     <!-- 网站图标 -->
     <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
-
-    <!-- 为了快速调试，先直接在html中加载懒加载库和-->
-    <!-- 加载vanilla-lazyload库 -->
-     <!-- <script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload@17.8.5/dist/lazyload.min.js"></script> -->
-    <!-- 加载masonry库 -->
-    <!-- <script src="https://unpkg.com/imagesloaded@5/imagesloaded.pkgd.min.js"></script>
-    <script src="https://unpkg.com/masonry-layout@4/dist/masonry.pkgd.min.js"></script>  -->
     
     <!-- 先加载日志模块、配置模块、资源管理器 -->
     <script type="module">

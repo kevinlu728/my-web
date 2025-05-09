@@ -280,4 +280,4 @@
 /* 加载中状态的文本样式 */
 .loading-spinner + .loading-text {
     opacity: 0.9;
-}
+} 

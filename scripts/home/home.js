@@ -4,7 +4,7 @@
  * @author 陆凯
  * @version 1.1.0
  * @created 2024-03-09
- * @updated 2024-07-12
+ * @updated 2024-07-22
  * 
  * 该文件是网站主页的控制中心，负责协调页面生命周期和组件管理：
  * 1. 资源加载：预加载页面所需的关键资源
@@ -22,7 +22,7 @@
 
 import logger from '../utils/logger.js';
 import { resourceManager } from '../resource/resourceManager.js';
-import { initNavigation } from '../components/navigation.js';
+import { initNavigation, initScrollNavigation, initActiveNavLink } from '../components/navigation.js';
 import { scrollbar } from '../components/scrollbar.js';
 import { initChatWidget } from '../components/chatWidget.js';
 import { initContactModals } from '../components/contactModals.js';
@@ -125,6 +125,12 @@ function initJsComponents() {
     try {
         // 初始化导航菜单
         initNavigation();
+        
+        // 初始化滚动导航效果
+        initScrollNavigation();
+        
+        // 初始化导航高亮
+        initActiveNavLink();
 
         // 初始化滚动条
         scrollbar.initialize();
@@ -159,12 +165,46 @@ function initHtmlComponentEvents() {
 
         // 初始化聊天窗口组件事件
         initChatWidgetEvents();
+        
+        // 初始化英雄区事件
+        initHeroSectionEvents();
 
         logger.info('✅ 所有HTML组件事件监听器初始化完成');
     } catch (error) {
         logger.error('❌ 初始化HTML组件事件监听器失败:', error.message);
     }
     
+}
+
+/**
+ * 初始化英雄区的事件监听器
+ */
+function initHeroSectionEvents() {
+    // 处理"了解更多"按钮的点击事件
+    const heroCtaBtn = document.querySelector('.hero-cta');
+    if (!heroCtaBtn) {
+        logger.warn('⚠️ 未找到英雄区CTA按钮，无法绑定事件');
+        return;
+    }
+    
+    heroCtaBtn.addEventListener('click', () => {
+        logger.debug('点击了"了解更多"按钮');
+        
+        // 平滑滚动到内容部分
+        const homeContent = document.querySelector('.home-content');
+        if (homeContent) {
+            // 计算滚动位置，考虑任何偏移量
+            const headerHeight = document.querySelector('.header')?.offsetHeight || 0;
+            const scrollToY = homeContent.offsetTop - headerHeight - 20; // 减去一点额外空间
+            
+            window.scrollTo({
+                top: scrollToY,
+                behavior: 'smooth'
+            });
+        }
+    });
+    
+    logger.debug('✅ 英雄区事件绑定完成');
 }
     
 /**

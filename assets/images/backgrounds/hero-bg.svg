@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="1920" height="1080" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
+  <!-- 渐变背景 -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4b6cb7" />
+      <stop offset="100%" stop-color="#89c8da" />
+    </linearGradient>
+    <!-- 网格图案 -->
+    <pattern id="grid" width="100" height="100" patternUnits="userSpaceOnUse">
+      <path d="M 100 0 L 0 0 0 100" fill="none" stroke="rgba(255, 255, 255, 0.1)" stroke-width="1"/>
+    </pattern>
+    <!-- 粒子效果 -->
+    <filter id="blur" x="0" y="0">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" />
+    </filter>
+  </defs>
+  
+  <!-- 主背景 -->
+  <rect width="100%" height="100%" fill="url(#bgGradient)"/>
+  
+  <!-- 网格装饰 -->
+  <rect width="100%" height="100%" fill="url(#grid)" opacity="0.4"/>
+  
+  <!-- 装饰性圆和线条 -->
+  <g opacity="0.6">
+    <!-- 模拟连接线和节点的网络效果 -->
+    <circle cx="200" cy="200" r="5" fill="white" opacity="0.7"/>
+    <circle cx="400" cy="300" r="3" fill="white" opacity="0.5"/>
+    <circle cx="600" cy="200" r="4" fill="white" opacity="0.6"/>
+    <circle cx="800" cy="400" r="5" fill="white" opacity="0.7"/>
+    <circle cx="1000" cy="300" r="3" fill="white" opacity="0.5"/>
+    <circle cx="1200" cy="200" r="4" fill="white" opacity="0.6"/>
+    <circle cx="1400" cy="350" r="5" fill="white" opacity="0.7"/>
+    <circle cx="1600" cy="250" r="3" fill="white" opacity="0.5"/>
+    <circle cx="1800" cy="450" r="4" fill="white" opacity="0.6"/>
+    <circle cx="300" cy="500" r="5" fill="white" opacity="0.7"/>
+    <circle cx="500" cy="600" r="3" fill="white" opacity="0.5"/>
+    <circle cx="700" cy="500" r="4" fill="white" opacity="0.6"/>
+    <circle cx="900" cy="700" r="5" fill="white" opacity="0.7"/>
+    <circle cx="1100" cy="600" r="3" fill="white" opacity="0.5"/>
+    <circle cx="1300" cy="500" r="4" fill="white" opacity="0.6"/>
+    <circle cx="1500" cy="650" r="5" fill="white" opacity="0.7"/>
+    <circle cx="1700" cy="550" r="3" fill="white" opacity="0.5"/>
+    <circle cx="400" cy="800" r="4" fill="white" opacity="0.6"/>
+    
+    <!-- 连接线 -->
+    <line x1="200" y1="200" x2="400" y2="300" stroke="white" stroke-width="1" opacity="0.2"/>
+    <line x1="400" y1="300" x2="600" y2="200" stroke="white" stroke-width="1" opacity="0.2"/>
+    <line x1="600" y1="200" x2="800" y2="400" stroke="white" stroke-width="1" opacity="0.2"/>
+    <line x1="800" y1="400" x2="1000" y2="300" stroke="white" stroke-width="1" opacity="0.2"/>
+    <line x1="1000" y1="300" x2="1200" y2="200" stroke="white" stroke-width="1" opacity="0.2"/>
+    <line x1="1200" y1="200" x2="1400" y2="350" stroke="white" stroke-width="1" opacity="0.2"/>
+    <line x1="1400" y1="350" x2="1600" y2="250" stroke="white" stroke-width="1" opacity="0.2"/>
+    <line x1="1600" y1="250" x2="1800" y2="450" stroke="white" stroke-width="1" opacity="0.2"/>
+    <line x1="300" y1="500" x2="500" y2="600" stroke="white" stroke-width="1" opacity="0.2"/>
+    <line x1="500" y1="600" x2="700" y2="500" stroke="white" stroke-width="1" opacity="0.2"/>
+    <line x1="700" y1="500" x2="900" y2="700" stroke="white" stroke-width="1" opacity="0.2"/>
+    <line x1="900" y1="700" x2="1100" y2="600" stroke="white" stroke-width="1" opacity="0.2"/>
+    <line x1="1100" y1="600" x2="1300" y2="500" stroke="white" stroke-width="1" opacity="0.2"/>
+    <line x1="1300" y1="500" x2="1500" y2="650" stroke="white" stroke-width="1" opacity="0.2"/>
+    <line x1="1500" y1="650" x2="1700" y2="550" stroke="white" stroke-width="1" opacity="0.2"/>
+    
+    <!-- 交叉连接 -->
+    <line x1="200" y1="200" x2="300" y2="500" stroke="white" stroke-width="1" opacity="0.1"/>
+    <line x1="600" y1="200" x2="500" y2="600" stroke="white" stroke-width="1" opacity="0.1"/>
+    <line x1="1000" y1="300" x2="900" y2="700" stroke="white" stroke-width="1" opacity="0.1"/>
+    <line x1="1400" y1="350" x2="1300" y2="500" stroke="white" stroke-width="1" opacity="0.1"/>
+    <line x1="1800" y1="450" x2="1700" y2="550" stroke="white" stroke-width="1" opacity="0.1"/>
+  </g>
+  
+  <!-- 右下角效果 -->
+  <g opacity="0.3" filter="url(#blur)">
+    <circle cx="1700" cy="800" r="150" fill="#6DD5FA" opacity="0.5"/>
+    <circle cx="1800" cy="900" r="100" fill="#2980B9" opacity="0.4"/>
+  </g>
+  
+  <!-- 左上角效果 -->
+  <g opacity="0.3" filter="url(#blur)">
+    <circle cx="200" cy="150" r="120" fill="#2980B9" opacity="0.4"/>
+    <circle cx="100" cy="80" r="80" fill="#6DD5FA" opacity="0.5"/>
+  </g>
+</svg> 

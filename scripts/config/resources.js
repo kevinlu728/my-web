@@ -868,19 +868,6 @@ export function getResourceStrategy(resourceType) {
     return resourceStrategies.mapping.default;
 }
 
-// 如果有统一的资源管理模块，可以添加Masonry资源
-export const externalLibraries = {
-    // ...其他库
-    masonry: {
-        js: [
-            'https://unpkg.com/imagesloaded@5/imagesloaded.pkgd.min.js',
-            'https://unpkg.com/masonry-layout@4/dist/masonry.pkgd.min.js'
-        ],
-        css: []
-    }
-    // ...其他资源
-};
-
 // 导出资源配置 - 公共API
 export default {
     versions,

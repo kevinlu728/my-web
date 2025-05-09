@@ -28,7 +28,7 @@ import { resourceManager } from '../resource/resourceManager.js';
 import { articleManager } from './articleManager.js';
 import { contentViewManager, ViewMode, ViewEvents } from './contentViewManager.js';
 import { imageLazyLoader } from './imageLazyLoader.js';
-import { initNavigation } from '../components/navigation.js';
+import { initNavigation, initScrollNavigation, initActiveNavLink } from '../components/navigation.js';
 import { scrollbar } from '../components/scrollbar.js';
 import { loadDebugPanel } from '../components/debugPanelLoader.js';
 import { showStatus, showError } from '../utils/common-utils.js';
@@ -155,6 +155,12 @@ export async function initializePage() {
 
         // 初始化导航
         initNavigation();
+
+        // 初始化滚动导航效果
+        initScrollNavigation();
+        
+        // 初始化导航高亮
+        initActiveNavLink();
 
         // 初始化左栏宽度调整功能
         initResizableLeftColumn();

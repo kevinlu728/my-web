@@ -1,9 +1,9 @@
 /**
- * @file blog-layout.css
+ * @file blog.css
  * @description 博客页面的统一布局样式
  * @author 陆凯
  * @created 2024-03-09
- * @updated 2024-05-22
+ * @updated 2024-08-16
  * 
  * 该文件专注于博客页面的整体布局样式，包括：
  * - 博客页面的整体布局（flex布局、间距等）
@@ -12,6 +12,29 @@
  * - 响应式布局调整
  * 注意：特定组件的内部样式（如左栏内部）由各自的CSS文件控制
  */
+
+/* 导入基础样式 */
+@import '../base.css';
+/* 导入组件样式 */
+@import '../components/header.css';
+@import '../components/footer.css';
+@import '../components/scrollbar.css'; /* 导入统一的滚动条样式 */
+@import '../components/modal.css'; /* 导入统一的模态框样式 */
+@import '../components/hero-section.css'; /* 新增: 英雄区样式 */
+@import '../components/loading-spinner.css'; /* 导入统一的加载动画样式 */
+@import '../components/debug-panel.css';
+/* 导入布局样式 */
+@import './blog-left-column.css';
+@import './blog-right-column.css';
+@import './article.css';
+@import './code-block.css';
+@import './table-block.css';
+
+/* 博客页面特定样式 */
+body.article-page {
+    overflow: hidden; /* 博客页面禁用默认滚动条，内容区域自己处理滚动 */
+    height: 100vh; /* 确保填满整个视口 */
+}
 
 /* 博客页面主容器 */
 .blog-content {

@@ -1,0 +1,157 @@
+/**
+ * 英雄区样式
+ * 提供网站首页的主要视觉元素
+ */
+
+/* 英雄区容器 */
+.hero-section {
+    position: relative;
+    width: 100%;
+    height: 35vh; /* 降低高度，从50vh减小到35vh */
+    min-height: 250px; /* 减小最小高度 */
+    overflow: hidden;
+    margin-bottom: 0; /* 移除底部边距，使其与内容区无缝衔接 */
+}
+
+/* 背景图容器 */
+.hero-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+}
+
+/* 背景图样式 */
+.hero-background img,
+.hero-background svg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* 半透明渐变叠加层，增强可读性并向下延伸 */
+.hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(rgba(74, 108, 183, 0.3), rgba(137, 200, 218, 0.05) 70%, transparent);
+    z-index: -1;
+}
+
+/* 英雄区内容容器 */
+.hero-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    padding: calc(60px + 2rem) 2rem 2rem 2rem; /* 上 右 下 左 */
+    color: #fff;
+    text-align: center;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* 头像样式 */
+.hero-avatar {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    margin-bottom: 1rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hero-avatar:hover {
+    transform: scale(1.05);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+}
+
+/* 简介标题样式 */
+.hero-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* 简介副标题样式 */
+.hero-subtitle {
+    font-size: 1.2rem;
+    font-weight: 300;
+    margin-bottom: 1rem;
+    max-width: 800px;
+    line-height: 1.6;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* CTA按钮 */
+/* .hero-cta {
+    padding: 0.8rem 2rem;
+    font-size: 1rem;
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 1rem;
+    backdrop-filter: blur(5px);
+}
+
+.hero-cta:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+} */
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .hero-section {
+        height: 30vh; /* 移动设备上降低高度 */
+        min-height: 220px; /* 减小移动设备上的最小高度 */
+    }
+    
+    .hero-content {
+        padding: calc(60px + 1rem) 1rem 1rem 1rem; /* 移动设备上减少内边距 */
+    }
+    
+    .hero-avatar {
+        width: 150px;
+        height: 150px;
+    }
+    
+    .hero-title {
+        font-size: 2rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.2rem;
+    }
+}
+
+/* 迷你英雄区样式（用于博客和生活页面） */
+.hero-section.mini {
+    height: 30vh;
+    min-height: 250px;
+}
+
+.hero-section.mini .hero-avatar {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 1rem;
+}
+
+.hero-section.mini .hero-title {
+    font-size: 2rem;
+}
+
+.hero-section.mini .hero-subtitle {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+} 

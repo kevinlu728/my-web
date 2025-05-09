@@ -1,0 +1,153 @@
+/**
+ * @file blog-layout.css
+ * @description 博客页面的统一布局样式
+ * @author 陆凯
+ * @created 2024-03-09
+ * @updated 2024-05-22
+ * 
+ * 该文件专注于博客页面的整体布局样式，包括：
+ * - 博客页面的整体布局（flex布局、间距等）
+ * - 左侧栏和右侧栏的基本定位、大小和布局属性
+ * - 拖动手柄的样式和行为
+ * - 响应式布局调整
+ * 注意：特定组件的内部样式（如左栏内部）由各自的CSS文件控制
+ */
+
+/* 博客页面特定样式 */
+body.article-page {
+    overflow: hidden; /* 博客页面禁用默认滚动条，内容区域自己处理滚动 */
+    height: 100vh; /* 确保填满整个视口 */
+}
+
+/* 博客页面主容器 */
+.blog-content {
+    display: flex; /* 保持flex布局 */
+    flex-direction: row; /* 水平方向 */
+    gap: 0; /* 完全移除间距 */
+    max-width: 100%; /* 让页面横向撑满 */
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 15px 13px; /* 减小左右内边距为15px */
+    min-height: calc(100vh - 70px); /* 调整最小高度，移除footer后减少的高度更少 */
+    position: relative;
+    z-index: 1;
+    box-sizing: border-box;
+    align-items: stretch; /* 恢复为拉伸，确保栏目高度一致 */
+    margin-top: 50px; /* 减小顶部外边距，更接近底部间距 */
+    border-top: 1px solid rgba(0, 0, 0, 0.05); /* 添加顶部细微分隔线 */
+    padding-top: 20px; /* 添加顶部内边距 */
+    /* 不设置overflow属性，让内部元素处理滚动 */
+}
+
+/* 左侧栏基本定位和大小 */
+.blog-content .left-column {
+    position: fixed; /* 保持固定定位 */
+    top: 72px; /* 与顶部导航栏底部对齐 */
+    left: 15px; /* 添加左侧定位 */
+    height: calc(100vh - 85px); /* 设置高度与内容区域一致 */
+    width: 300px; /* 初始宽度 */
+    overflow-y: auto; /* 如果左侧内容过多允许滚动 */
+    overflow-x: hidden;
+    z-index: 2;
+    transition: width 0.2s ease; /* 添加宽度变化的过渡效果 */
+}
+
+/* 右侧栏基本定位和大小 */
+.blog-content .right-column {
+    position: relative; /* 保持固定定位以防止上移问题 */
+    margin-left: calc(10px + 300px + 3px); /* 使用更小的左侧内边距但保持拖动手柄宽度 */
+    flex: 1; /* 填充剩余空间 */
+    height: calc(100vh - 85px); /* 固定高度，与左栏保持一致 */
+    min-width: 0; /* 允许收缩 */
+    overflow-y: auto !important; /* 仅创建一个纵向滚动区域 */
+    overflow-x: hidden !important; /* 防止水平滚动 */
+    z-index: 1;
+    transition: left 0.2s ease, right 0.2s ease; /* 修改过渡效果只针对位置变化 */
+}
+
+/* 拖动手柄定位和大小 */
+.resize-handle {
+    position: fixed; /* 保持固定定位 */
+    top: 72px; /* 与左侧栏顶部对齐 */
+    left: calc(15px + 300px); /* 与左侧栏右边对齐 */
+    height: calc(100vh - 85px); /* 与左侧栏高度一致 */
+    width: 3px; /* 拖动手柄宽度 */
+    margin: 0;
+    padding: 0;
+    z-index: 10;
+    transition: left 0.2s ease, width 0.2s ease; /* 仅保留位置和尺寸的过渡效果 */
+    box-sizing: border-box; /* 确保宽度计算包含边框 */
+    pointer-events: auto; /* 确保可以拖动 */
+}
+
+/* 响应式布局 - 中等屏幕 */
+@media (max-width: 1200px) {
+    .blog-content {
+        padding: 15px 10px 15px; /* 减小左右内边距 */
+        gap: 0; /* 保持无间距 */
+        margin-top: 45px; /* 调整顶部间距 */
+        border-top: 1px solid rgba(0, 0, 0, 0.05); /* 保持顶部分隔线 */
+    }
+    
+    .blog-content .left-column {
+        width: 220px; /* 稍微减小宽度 */
+        top: 65px; /* 与顶部导航栏底部对齐 */
+        height: calc(100vh - 85px); /* 调整高度 */
+    }
+    
+    .resize-handle {
+        position: fixed;
+        top: 65px; /* 与左侧栏顶部对齐 */
+        left: calc(10px + 220px); /* 更新拖动手柄位置 */
+        height: calc(100vh - 85px); /* 与左侧栏高度一致 */
+        /* 只保留位置和尺寸属性 */
+    }
+    
+    .blog-content .right-column {
+        position: fixed; /* 保持固定定位 */
+        top: 65px; /* 调整顶部位置 */
+        right: 10px; /* 调整右侧位置 */
+        left: calc(10px + 220px); /* 更新左边距，移除额外间距 */
+        width: auto; /* 自动宽度 */
+        height: calc(100vh - 85px); /* 固定高度，与左栏保持一致 */
+    }
+}
+
+/* 响应式布局 - 小屏幕 */
+@media (max-width: 768px) {
+    .blog-content {
+        flex-direction: column; /* 小屏幕改为垂直布局 */
+        padding: 12px 10px 10px; /* 调整内边距，包括顶部 */
+        gap: 15px; /* 垂直间距 */
+        margin-top: 40px; /* 调整顶部间距 */
+        border-top: 1px solid rgba(0, 0, 0, 0.05); /* 保持顶部分隔线 */
+        overflow-y: auto !important; /* 小屏幕下主容器可以滚动 */
+        /* 滚动条样式通过custom-scrollbar类应用 */
+    }
+    
+    .blog-content .left-column {
+        position: relative; /* 小屏幕下改回相对定位 */
+        top: 0;
+        left: 0;
+        height: auto; /* 自动高度 */
+        width: 100% !important; /* 强制宽度100% */
+        overflow-y: visible !important; /* 确保在小屏幕上不显示滚动条 */
+    }
+    
+    .blog-content .right-column {
+        position: relative; /* 小屏幕恢复相对定位 */
+        top: auto; /* 重置顶部位置 */
+        right: auto; /* 重置右侧位置 */
+        left: auto; /* 重置左侧位置 */
+        margin-left: 0; /* 重置左边距 */
+        width: 100%; /* 确保宽度100% */
+        height: auto !important; /* 小屏幕下自适应高度 */
+        overflow-y: visible !important; /* 小屏幕下允许内容流动，避免双滚动 */
+        overflow-x: hidden !important; /* 防止水平滚动 */
+        max-height: none !important; /* 移除最大高度限制 */
+    }
+    
+    .resize-handle {
+        display: none !important; /* 在小屏设备上隐藏调整手柄 */
+    }
+} 

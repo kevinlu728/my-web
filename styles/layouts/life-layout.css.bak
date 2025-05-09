@@ -9,6 +9,12 @@
  * - 响应式布局调整
  */
 
+/* 生活页面特定样式 */
+body.life-page {
+    overflow: hidden; /* 生活页面禁用默认滚动条，内容区域自己处理滚动 */
+    height: 100vh; /* 确保填满整个视口 */
+}
+
 /* 生活频道主容器 */
 .life-content {
     display: flex;
@@ -123,4 +129,3 @@
         max-height: none !important;
     }
 }
-

@@ -2,6 +2,7 @@
 :root {
     --primary-color: #2c3e50;
     --secondary-color: #4299e1;
+    --tertiary-color: #f0f8ff; /* 非常浅的蓝色，可用于背景和高亮 */
     --background-color: #f8f9fa;
     --text-color: #2c3e50;
     --accent-color: #e74c3c;
@@ -14,18 +15,6 @@
     box-sizing: border-box;
 }
 
-/* 页面特定样式 - 仅针对博客页面 */
-body.article-page {
-    overflow: hidden; /* 博客页面禁用默认滚动条，内容区域自己处理滚动 */
-    height: 100vh; /* 确保填满整个视口 */
-}
-
-/* 页面特定样式 - 仅针对生活页面 */
-body.life-page {
-    overflow: hidden; /* 生活页面禁用默认滚动条，内容区域自己处理滚动 */
-    height: 100vh; /* 确保填满整个视口 */
-}
-
 /* 基础页面样式 */
 body {
     font-family: 'Arial', sans-serif;
@@ -36,7 +25,7 @@ body {
 }
 
 /* 主要容器样式 */
-.home-content {
+/* .home-content {
     max-width: 1200px;
     margin: 0 auto;
     padding: 2rem;
@@ -45,6 +34,6 @@ body {
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     padding-top: 60px;
     margin-top: 60px;
-}
+} */
 
 /* 注意：博客页面布局已移至 layouts/blog-layout.css */ 

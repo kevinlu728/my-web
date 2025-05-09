@@ -23,7 +23,7 @@ import { resourceManager } from '../resource/resourceManager.js';
 import { photoManager } from './photoManager.js';
 import { themeModuleManager } from './themeModuleManager.js';
 import { lifeViewManager, ModuleType, ViewMode } from './lifeViewManager.js';
-import { initNavigation } from '../components/navigation.js';
+import { initNavigation, initScrollNavigation, initActiveNavLink } from '../components/navigation.js';
 import { scrollbar } from '../components/scrollbar.js';
 import lifecycleManager from '../utils/lifecycleManager.js';
 
@@ -146,6 +146,12 @@ export async function initializePage() {
 
         // 初始化导航
         initNavigation();
+
+        // 初始化滚动导航效果
+        initScrollNavigation();
+        
+        // 初始化导航高亮
+        initActiveNavLink();
         
         // 初始化滚动行为
         scrollbar.initialize();

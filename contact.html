@@ -8,12 +8,13 @@
     <meta name="description" content="云栖小栈 - 陆凯的个人网站">
     <meta name="keywords" content="联系方式">
     <!-- 预加载策略 -->
-    <link rel="preload" href="./styles/main.css" as="style">
+
     <!-- CSS资源 - 使用相对路径 -->
-    <link rel="stylesheet" href="./styles/main.css">
+    <link rel="stylesheet" href="./styles/base.css">
     <link rel="stylesheet" href="./styles/components/header.css">
     <link rel="stylesheet" href="./styles/components/footer.css">
     <link rel="stylesheet" href="./styles/components/scrollbar.css">
+    <link rel="stylesheet" href="./styles/components/hero-section.css">
     <!-- 优先使用本地Font Awesome资源 -->
     <link rel="stylesheet" href="/assets/libs/font-awesome/all.min.css" 
           id="local-font-awesome" 
@@ -161,11 +162,15 @@
 
     <!-- 确保navigation脚本正确加载 -->
     <script type="module">
-        import { initNavigation } from './scripts/components/navigation.js';
+        import { initNavigation, initScrollNavigation, initActiveNavLink } from './scripts/components/navigation.js';
         
         document.addEventListener('DOMContentLoaded', () => {
             // 初始化导航
             initNavigation();
+            // 初始化滚动导航效果
+            initScrollNavigation();
+            // 初始化导航高亮
+            initActiveNavLink();
         });
     </script>
 </body>

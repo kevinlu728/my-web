@@ -1,0 +1,207 @@
+/**
+ * @file profile-cards.css
+ * @description 首页个人简介卡片的统一样式
+ * @created 2024-08-15
+ * 
+ * 该文件定义了首页上三种卡片的样式：
+ * - 职业旅程卡片
+ * - 生活简介卡片
+ * - 合作卡片
+ * 包含了卡片的基础样式和特定变体样式
+ */
+
+/* ==== 卡片通用基础样式 ==== */
+.profile-card {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 卡片顶部装饰线 */
+.profile-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--secondary-color), var(--tertiary-color));
+}
+
+/* 卡片标题通用样式 */
+.card-title {
+    font-size: 1.3rem;
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+/* 卡片副标题通用样式 */
+.card-subtitle {
+    font-size: 1.1rem;
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 1.2rem;
+}
+
+/* 列表项通用样式 */
+.card-item {
+    display: block;
+    margin-bottom: 1rem;
+    position: relative;
+    padding-left: 1.2rem;
+    line-height: 1.8;
+    color: #4a5568;
+}
+
+/* 列表项前缀通用样式 */
+.card-item::before {
+    position: absolute;
+    left: 0;
+    color: var(--secondary-color);
+}
+
+/* ==== 职业旅程卡片特定样式 ==== */
+.card-career {
+    text-align: center;
+    padding: 2rem 3rem 1rem 3rem;
+}
+
+.card-career .card-title {
+    font-size: 1.3rem;
+}
+
+.card-career .card-items-container {
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: left;
+    padding-left: 2rem;
+}
+
+.card-career .card-item {
+    font-size: 1.1rem;
+}
+
+.card-career .card-item::before {
+    content: "•";
+}
+
+/* ==== 生活简介卡片特定样式 ==== */
+.card-life {
+    text-align: center;
+    padding: 2rem 3rem 1rem 3rem;
+}
+
+.card-life .card-title {
+    font-size: 1.3rem;
+}
+
+.card-life .card-items-container {
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: left;
+    padding-left: 2rem;
+}
+
+.card-life .card-item {
+    font-size: 1.1rem;
+}
+
+.card-life .card-item::before {
+    content: "•";
+}
+
+/* ==== 合作卡片特定样式 ==== */
+.card-collaboration {
+    text-align: center;
+    padding: 2rem 3rem 1.5rem 3rem;
+}
+
+.card-collaboration .card-title {
+    font-size: 1.3rem;
+    margin-bottom: 1.5rem;
+}
+
+.card-collaboration .card-text {
+    color: #4a5568;
+    font-size: 1rem;
+    line-height: 1.8;
+    margin-bottom: 0.8rem;
+}
+
+.card-collaboration .card-motto {
+    color: var(--secondary-color);
+    font-size: 1rem;
+    font-style: italic;
+    margin-bottom: 1.5rem;
+}
+
+/* 联系按钮样式 */
+.contact-btn {
+    margin-top: 0.8rem;
+    padding: 0.8rem 2.5rem;
+    background: linear-gradient(45deg, var(--secondary-color), #5dade2);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
+}
+
+.contact-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+    background: linear-gradient(45deg, #5dade2, var(--secondary-color));
+}
+
+.contact-btn:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 4px rgba(52, 152, 219, 0.2);
+}
+
+/* ==== 响应式样式 ==== */
+@media (max-width: 768px) {
+    .profile-card {
+        padding: 1rem;
+    }
+    
+    .card-career, 
+    .card-life {
+        padding: 1.5rem;
+    }
+    
+    .card-career .card-title,
+    .card-life .card-title {
+        font-size: 1.3rem;
+    }
+    
+    .card-career .card-items-container,
+    .card-life .card-items-container {
+        padding-left: 1rem;
+    }
+    
+    .card-career .card-item,
+    .card-life .card-item {
+        font-size: 1rem;
+        margin-bottom: 0.8rem;
+    }
+    
+    .card-collaboration {
+        padding: 1.5rem;
+    }
+    
+    .card-collaboration .card-title {
+        font-size: 1.3rem;
+    }
+    
+    .contact-btn {
+        padding: 0.7rem 2rem;
+    }
+} 

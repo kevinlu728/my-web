@@ -5,34 +5,33 @@
 ```
 styles/
 ├── base.css                # 基础样式和重置
-├── main.css                # 主样式文件，导入所有其他样式
 ├── fallback.css            # 资源加载失败时的回退样式
 ├── font-awesome-fixed.css  # 图标字体样式
+├── home/                   # 首页相关样式
+│   ├── home.css            # 首页主样式文件
+│   └── profile-cards.css   # 首页个人简介卡片样式
+├── blog/                   # 博客相关样式
+│   ├── blog.css            # 博客页面主样式文件
+│   ├── article.css         # 文章内容样式
+│   ├── code-block.css      # 代码块样式
+│   ├── table-block.css     # 表格样式
+│   ├── blog-left-column.css  # 博客左侧栏样式
+│   ├── blog-right-column.css # 博客右侧栏样式
+│   └── blog-resize-handle.css # 博客栏宽调整组件样式
+├── life/                   # 生活频道相关样式
+│   └── life.css            # 生活频道主样式文件
 ├── components/             # UI组件样式
 │   ├── header.css          # 页头样式
 │   ├── footer.css          # 页脚样式
 │   ├── chat.css            # 聊天组件样式
 │   ├── modal.css           # 模态框样式
 │   ├── debug-panel.css     # 调试面板样式
-│   ├── code-block.css      # 代码块样式
-│   ├── table-block.css     # 表格样式
 │   ├── loading-spinner.css # 加载动画样式
 │   ├── scrollbar.css       # 自定义滚动条样式
 │   └── ...
 ├── layouts/                # 页面布局样式
-│   ├── home-layout.css     # 首页布局
-│   ├── blog-layout.css     # 博客页面布局
-│   ├── blog-left-column.css # 博客左侧栏样式
-│   ├── blog-right-column.css # 博客右侧栏样式
-│   ├── blog-resize-handle.css # 博客栏宽调整组件样式
-│   ├── life-layout.css     # 生活频道布局
 │   └── ...
 └── sections/               # 页面区块样式
-    ├── article.css         # 文章内容样式
-    ├── profile.css         # 个人资料样式
-    ├── career.css          # 职业经历样式
-    ├── intro.css           # 简介区块样式
-    ├── collaboration.css   # 合作区块样式
     ├── photo-wall.css      # 照片墙样式
     └── ...
 ```
@@ -116,11 +115,39 @@ styles/
 
 ## 重构历史
 
+### 2024-08-16
+
+- 将 `home-layout.css` 重命名为 `home.css` 并移动到新创建的 `home/` 目录下
+- 将 `blog-layout.css` 重命名为 `blog.css` 并移动到新创建的 `blog/` 目录下
+- 将 `code-block.css` 和 `table-block.css` 从 `components/` 目录移动到 `blog/` 目录
+- 将 `article.css` 从 `sections/` 目录移动到 `blog/` 目录
+- 将 `life-layout.css` 重命名为 `life.css` 并移动到新创建的 `life/` 目录下
+- 调整了相关导入路径
+- 优化了博客页面样式的组织结构
+
+### 2024-08-16
+
+- 将 `profile-cards.css` 从 `sections/` 目录移动到 `home/` 目录
+- 调整相关导入路径以保持引用正确
+- 进一步优化首页样式的组织结构
+
+### 2024-08-16
+
+- 将 `home.css` 移动到新创建的 `home/` 目录下
+- 调整了导入路径以适应新的文件位置
+- 进一步优化了首页样式的组织结构
+
+### 2024-08-15
+
+- 创建了统一的 `profile-cards.css` 合并首页卡片样式
+- 移除了冗余的 `profile.css`、`career-intro.css`、`life-intro.css` 和 `collaboration.css`
+- 使用更语义化的类名（`.profile-card`, `.card-career` 等）
+- 改进了卡片组件的复用性和一致性
+
 ### 2024-03-09
 
 - 整合了 `tech-blog-layout.css`, `article.css` 和 `tech-blog-custom.css` 为新的 `blog-layout.css`
 - 移除了 `base.css` 中的重复定义
-- 调整了 `main.css` 中的导入顺序
 - 统一了命名约定，使用 `.blog-content` 作为博客页面的主容器类名 
 
 ### 2024-03-10

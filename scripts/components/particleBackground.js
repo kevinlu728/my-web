@@ -114,10 +114,10 @@ class ParticleBackground {
                             value_area: 800 
                         } 
                     },
-                    color: { value: "#3498db" },
+                    color: { value: "#4299e1" },
                     shape: { type: "circle" },
                     opacity: { 
-                        value: 0.6,
+                        value: 0.5,
                         random: false 
                     },
                     size: { 
@@ -127,7 +127,7 @@ class ParticleBackground {
                     line_linked: {
                         enable: true,
                         distance: 150,
-                        color: "#3498db",
+                        color: "#64b5f6",
                         opacity: 0.3,
                         width: 1
                     },
@@ -157,7 +157,7 @@ class ParticleBackground {
                         grab: {
                             distance: 140,
                             line_linked: {
-                                opacity: 0.6
+                                opacity: 0.5
                             }
                         }
                     }

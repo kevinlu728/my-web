@@ -1,0 +1,146 @@
+/**
+ * @file life.css
+ * @description 生活频道的整体布局样式
+ * @created 2024-05-24
+ * @updated 2024-08-16
+ * 
+ * 该文件专注于生活频道的整体布局样式，包括：
+ * - 生活页面的左右两栏布局结构
+ * - 左侧导航栏与右侧照片墙的基本定位
+ * - 响应式布局调整
+ */
+
+/* 导入基础样式 */
+@import '../base.css';
+/* 导入组件样式 */
+@import '../components/header.css';
+@import '../components/footer.css';
+@import '../components/scrollbar.css'; /* 导入统一的滚动条样式 */
+@import '../components/modal.css'; /* 导入统一的模态框样式 */
+@import '../components/hero-section.css'; /* 新增: 英雄区样式 */
+@import '../components/loading-spinner.css'; /* 导入统一的加载动画样式 */
+/* 导入布局样式 */
+@import './life-left-column.css';
+@import './life-right-column.css';
+@import './life-photo-wall.css';
+
+/* 生活页面特定样式 */
+body.life-page {
+    overflow: hidden; /* 生活页面禁用默认滚动条，内容区域自己处理滚动 */
+    height: 100vh; /* 确保填满整个视口 */
+}
+
+/* 生活频道主容器 */
+.life-content {
+    display: flex;
+    flex-direction: row;
+    gap: 0;
+    max-width: 100%;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 15px 13px;
+    min-height: calc(100vh - 70px);
+    position: relative;
+    z-index: 1;
+    box-sizing: border-box;
+    align-items: stretch;
+    margin-top: 50px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    padding-top: 20px;
+}
+
+/* 左侧栏布局 */
+.life-content .left-column {
+    position: fixed;
+    top: 72px;
+    left: 15px;
+    height: calc(100vh - 85px);
+    width: 250px; /* 固定宽度，比博客页面略窄 */
+    overflow-y: auto;
+    overflow-x: hidden;
+    z-index: 2;
+    transition: transform 0.3s ease;
+}
+
+/* 右侧栏布局 */
+.life-content .right-column {
+    position: relative;
+    margin-left: calc(10px + 250px + 3px); /* 左栏宽度 + 间距 */
+    flex: 1;
+    height: calc(100vh - 85px);
+    min-width: 0;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    z-index: 1;
+}
+
+/* 页面标题区域 */
+.life-header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eaeaea;
+}
+
+.life-header h1 {
+    font-size: 2.2rem;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.life-header p {
+    font-size: 1rem;
+    color: #666;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+/* 响应式布局 - 中等屏幕 */
+@media (max-width: 1200px) {
+    .life-content {
+        padding: 15px 10px 15px;
+        margin-top: 45px;
+    }
+    
+    .life-content .left-column {
+        width: 220px;
+        top: 65px;
+        height: calc(100vh - 85px);
+    }
+    
+    .life-content .right-column {
+        margin-left: calc(10px + 220px + 10px);
+    }
+}
+
+/* 响应式布局 - 小屏幕 */
+@media (max-width: 768px) {
+    .life-content {
+        flex-direction: column;
+        padding: 12px 10px 10px;
+        gap: 15px;
+        margin-top: 40px;
+        overflow-y: auto !important;
+    }
+    
+    .life-content .left-column {
+        position: relative;
+        top: 0;
+        left: 0;
+        height: auto;
+        width: 100% !important;
+        overflow-y: visible !important;
+    }
+    
+    .life-content .right-column {
+        position: relative;
+        top: auto;
+        right: auto;
+        left: auto;
+        margin-left: 0;
+        width: 100%;
+        height: auto !important;
+        overflow-y: visible !important;
+        max-height: none !important;
+    }
+} 
