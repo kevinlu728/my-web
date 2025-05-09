@@ -206,7 +206,8 @@ export async function initializePage() {
             showError('页面初始化失败，请稍后重试');
         }
         
-        // 此处不再抛出错误，让调用者通过Promise.catch捕获
+        // 显示友好的错误提示界面
+        showErrorPage(error);
     } finally {
         // 确保在所有情况下都释放锁 - 使用统一的状态变量
         window.pageState.initializing = false;
@@ -592,6 +593,15 @@ function fixFontAwesomeIcons() {
             }
         }
     }
+}
+
+/**
+ * 显示友好的错误提示界面
+ * @param {Error} error 错误对象
+ */
+function showErrorPage(error) {
+    logger.error('显示友好的错误提示界面', error);
+    //待实现
 }
 
 /**

@@ -403,116 +403,115 @@ class ArticleManager {
             // 在加载开始时设置加载模式
             contentViewManager.setMode(ViewMode.LOADING);
             
-            try {
-                // 通知文章将要显示 - 添加的事件通信
-                contentViewManager.dispatchViewEvent(ViewEvents.BEFORE_ARTICLE, { articleId: articleId });
-                
-                // 更新URL参数 - 使用路由工具
-                articleRouteUtils.updateArticleParam(articleId);
-                
-                // 加载文章数据
-                const articleData = await this.loadArticleData(articleId);
-                if (!articleData) {
-                    logger.info('文章加载已取消');
-                    return false;
-                }
-                
-                // 设置当前页面ID和分页状态
-                this.currentPageId = articleId;
-                
-                // 更新分页管理器的状态
-                articlePaginationManager.updateState({
-                    hasMore: articleData.hasMore === true && articleData.nextCursor ? true : false,
-                    nextCursor: articleData.hasMore === true && articleData.nextCursor ? articleData.nextCursor : null,
-                    loadedBlocks: articleData.blocks || []
-                });
-
-                // 隐藏文章内容页面骨架屏
-                articlePageSkeleton.hide(articleContainer);
-                
-                // 显示文章内容
-                const articleBody = renderArticleContent(
-                    articleData, 
-                    'article-container', 
-                    articlePaginationManager.hasMore
-                );
-                
-                // 处理懒加载
-                if (articleBody) {
-                    initLazyLoading(articleBody);
-                    
-                    // 检查是否从缓存加载
-                    if (articleData._fromCache) {
-                        logger.info('从缓存加载的文章，进行优化的渲染检查...');
-                        // 使用较短延迟减少视觉上的延迟感
-                        setTimeout(() => {
-                            const container = this.getArticleContainer();
-                            if (container) {
-                                // 添加类以触发视觉效果，表明内容在重新加载
-                                container.classList.add('cache-refresh');
-                                setTimeout(() => container.classList.remove('cache-refresh'), 500);
-                            }
-                        }, 100); // 减少延迟时间，降低等待感
-                    }
-                    
-                    // 修改这里：确保当没有更多内容时，显示提示
-                    if (!articlePaginationManager.hasMore) {
-                        const articleContainer = this.getArticleContainer();
-                        // 查找或创建加载更多容器
-                        let loadMoreContainer = articleContainer.querySelector('.load-more-container');
-                        if (!loadMoreContainer) {
-                            loadMoreContainer = document.createElement('div');
-                            loadMoreContainer.className = 'load-more-container';
-                            articleBody.appendChild(loadMoreContainer);
-                        }
-                        loadMoreContainer.innerHTML = '<div class="no-more">没有更多内容</div>';
-                    }
-                }
-                
-                // 配置加载更多功能
-                articlePaginationManager.configureLoadMoreFeature(articleContainer);
-                
-                // 当文章加载完成后初始化目录导航
-                if (articleBody) {
-                    // 初始化目录导航
-                    const hasInitialized = tableOfContents.initialize();
-                    
-                    // 如果文章没有目录（标题不足），则销毁之前的目录
-                    if (!hasInitialized) {
-                        tableOfContents.destroy();
-                    }
-                }
-                
-                // 在渲染成功后才设置文章模式
-                contentViewManager.setMode(ViewMode.ARTICLE);
-                
-                // 通知文章已显示 - 添加的事件通信
-                contentViewManager.dispatchViewEvent(ViewEvents.AFTER_ARTICLE, { articleId: articleId });
-                
-                // 通知加载完成 - 添加的事件通信
-                contentViewManager.dispatchViewEvent(ViewEvents.LOADING_END, { loadingType: 'article', articleId: articleId });
-                
-                return true;
-            } catch (error) {
-                logger.error('渲染文章失败:', error.message);
-                
-                // 设置错误模式
-                contentViewManager.setMode(ViewMode.ERROR);
-                
-                // 通知错误 - 添加的事件通信
-                contentViewManager.dispatchViewEvent('articleError', { 
-                    articleId: articleId, 
-                    error: error.message 
-                });
-                
+            // 通知文章将要显示 - 添加的事件通信
+            contentViewManager.dispatchViewEvent(ViewEvents.BEFORE_ARTICLE, { articleId: articleId });
+            
+            // 更新URL参数 - 使用路由工具
+            articleRouteUtils.updateArticleParam(articleId);
+            
+            // 加载文章数据
+            const articleData = await this.loadArticleData(articleId);
+            if (!articleData) {
+                logger.info('文章加载已取消');
                 return false;
-            } finally {
-                // 重置加载状态
-                this.isLoading = false;
             }
+            
+            // 设置当前页面ID和分页状态
+            this.currentPageId = articleId;
+            
+            // 更新分页管理器的状态
+            articlePaginationManager.updateState({
+                hasMore: articleData.hasMore === true && articleData.nextCursor ? true : false,
+                nextCursor: articleData.hasMore === true && articleData.nextCursor ? articleData.nextCursor : null,
+                loadedBlocks: articleData.blocks || []
+            });
+
+            // 隐藏文章内容页面骨架屏
+            articlePageSkeleton.hide(articleContainer);
+            
+            // 显示文章内容
+            const articleBody = renderArticleContent(
+                articleData, 
+                'article-container', 
+                articlePaginationManager.hasMore
+            );
+            
+            // 处理懒加载
+            if (articleBody) {
+                initLazyLoading(articleBody);
+                
+                // 检查是否从缓存加载
+                if (articleData._fromCache) {
+                    logger.info('从缓存加载的文章，进行优化的渲染检查...');
+                    // 使用较短延迟减少视觉上的延迟感
+                    setTimeout(() => {
+                        const container = this.getArticleContainer();
+                        if (container) {
+                            // 添加类以触发视觉效果，表明内容在重新加载
+                            container.classList.add('cache-refresh');
+                            setTimeout(() => container.classList.remove('cache-refresh'), 500);
+                        }
+                    }, 100); // 减少延迟时间，降低等待感
+                }
+                
+                // 修改这里：确保当没有更多内容时，显示提示
+                if (!articlePaginationManager.hasMore) {
+                    const articleContainer = this.getArticleContainer();
+                    // 查找或创建加载更多容器
+                    let loadMoreContainer = articleContainer.querySelector('.load-more-container');
+                    if (!loadMoreContainer) {
+                        loadMoreContainer = document.createElement('div');
+                        loadMoreContainer.className = 'load-more-container';
+                        articleBody.appendChild(loadMoreContainer);
+                    }
+                    loadMoreContainer.innerHTML = '<div class="no-more">没有更多内容</div>';
+                }
+            }
+            
+            // 配置加载更多功能
+            articlePaginationManager.configureLoadMoreFeature(articleContainer);
+            
+            // 当文章加载完成后初始化目录导航
+            if (articleBody) {
+                // 初始化目录导航
+                const hasInitialized = tableOfContents.initialize();
+                
+                // 如果文章没有目录（标题不足），则销毁之前的目录
+                if (!hasInitialized) {
+                    tableOfContents.destroy();
+                }
+            }
+            
+            // 在渲染成功后才设置文章模式
+            contentViewManager.setMode(ViewMode.ARTICLE);
+            
+            // 通知文章已显示 - 添加的事件通信
+            contentViewManager.dispatchViewEvent(ViewEvents.AFTER_ARTICLE, { articleId: articleId });
+            
+            // 通知加载完成 - 添加的事件通信
+            contentViewManager.dispatchViewEvent(ViewEvents.LOADING_END, { loadingType: 'article', articleId: articleId });
+            
+            return true;
+            
         } catch (error) {
             logger.error('显示文章失败:', error.message);
-            return false;
+            
+            // 设置错误模式
+            contentViewManager.setMode(ViewMode.ERROR);
+            
+            // 通知错误 - 添加的事件通信
+            contentViewManager.dispatchViewEvent('articleError', { 
+                articleId: articleId, 
+                error: error.message 
+            });
+            
+            // 重置加载状态
+            this.isLoading = false;
+            
+            throw error;
+        } finally {
+            // 重置加载状态
+            this.isLoading = false;
         }
     }
 
@@ -628,7 +627,7 @@ class ArticleManager {
                 if (this.abortController) {
                     logger.warn('⚠️ 加载文章内容超时（12秒），中断请求');
                     this.abortController.abort();
-                    showStatus('加载文章超时，请尝试刷新页面', true, 'warning');
+                    throw new Error('加载文章超时，请尝试刷新页面');
                 }
             }, 12000); // 12秒超时
             

@@ -26,7 +26,7 @@ const ScrollbarClasses = {
  */
 export const PageTypes = {
     HOME: 'home-page',
-    BLOG: 'article-page',
+    BLOG: 'blog-page',
     LIFE: 'life-page'
 };
 

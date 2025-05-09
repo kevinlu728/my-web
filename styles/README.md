@@ -117,13 +117,12 @@ styles/
 
 ### 2024-08-16
 
-- 将 `home-layout.css` 重命名为 `home.css` 并移动到新创建的 `home/` 目录下
-- 将 `blog-layout.css` 重命名为 `blog.css` 并移动到新创建的 `blog/` 目录下
-- 将 `code-block.css` 和 `table-block.css` 从 `components/` 目录移动到 `blog/` 目录
-- 将 `article.css` 从 `sections/` 目录移动到 `blog/` 目录
-- 将 `life-layout.css` 重命名为 `life.css` 并移动到新创建的 `life/` 目录下
-- 调整了相关导入路径
-- 优化了博客页面样式的组织结构
+- 创建 `styles/home` 目录，将 `home-layout.css` 重命名为 `home.css` 并移动到 `styles/home` 目录中
+- 创建 `styles/blog` 目录，将 `blog-layout.css` 重命名为 `blog.css` 并移动到 `styles/blog` 目录中
+- 将组件CSS文件 `blog-left-column.css`, `blog-right-column.css`, `blog-resize-handle.css` 移动到 `styles/blog` 目录
+- 将 `article.css`, `code-block.css`, `table-block.css` 移动到 `styles/blog` 目录
+- 将 `life-left-column.css`, `life-right-column.css`, `life-photo-wall.css` 移动到 `styles/life` 目录
+- 修正首页布局结构，统一与其他页面一致的内容容器位置和内边距
 
 ### 2024-08-16
 

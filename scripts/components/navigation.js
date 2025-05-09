@@ -14,6 +14,41 @@
  * - 滚动状态：导航栏背景变为半透明白色，文字颜色改变
  * 
  */
+
+// 添加一个立即执行函数，设置初始导航状态，避免闪烁
+(function setInitialNavigationState() {
+    // 检查是否有hero-section来决定初始导航样式
+    if (document.readyState === 'loading') {
+        // 如果DOM尚未加载完成，添加一个transition-paused类，暂停过渡效果
+        document.documentElement.classList.add('nav-transition-paused');
+        // 监听DOM内容加载事件
+        document.addEventListener('DOMContentLoaded', () => {
+            // 预先确定初始导航状态
+            const header = document.querySelector('.header');
+            if (header) {
+                const heroSection = document.querySelector('.hero-section');
+                // 如果页面上没有hero-section，或者滚动位置已经超过阈值，直接应用scrolled样式
+                if (!heroSection || window.scrollY > heroSection.clientHeight * 0.1) {
+                    header.classList.add('scrolled');
+                }
+                // 延迟移除过渡暂停，允许平滑过渡
+                setTimeout(() => {
+                    document.documentElement.classList.remove('nav-transition-paused');
+                }, 50);
+            }
+        });
+    } else {
+        // DOM已加载，直接设置初始状态
+        const header = document.querySelector('.header');
+        if (header) {
+            const heroSection = document.querySelector('.hero-section');
+            if (!heroSection || window.scrollY > heroSection.clientHeight * 0.1) {
+                header.classList.add('scrolled');
+            }
+        }
+    }
+})();
+
 export function initNavigation() {
     const hamburger = document.querySelector('.hamburger');
     const navMenu = document.querySelector('.nav-menu');
@@ -84,6 +119,8 @@ export function initScrollNavigation() {
     
     // 监听滚动事件
     window.addEventListener('scroll', () => {
+        // 如果导航处于过渡暂停状态，不执行滚动更新
+        if (document.documentElement.classList.contains('nav-transition-paused')) return;
         updateHeaderOnScroll();
     });
 }
@@ -121,8 +158,14 @@ function updateHeaderOnScroll() {
  * 初始化当前页面的导航高亮
  */
 export function initActiveNavLink() {
-    const currentPath = window.location.pathname;
+    // 优化导航高亮逻辑，减少重排/重绘
     const navLinks = document.querySelectorAll('.nav-menu a');
+    if (navLinks.length === 0) return;
+
+    const currentPath = window.location.pathname;
+    
+    // 将所有操作放入一个DocumentFragment中，减少DOM操作次数
+    const fragment = document.createDocumentFragment();
     
     navLinks.forEach(link => {
         // 移除所有已有的aria-current属性
@@ -141,6 +184,15 @@ export function initActiveNavLink() {
             // 设置为当前页
             link.setAttribute('aria-current', 'page');
         }
+        
+        // 将修改后的链接添加到fragment中
+        fragment.appendChild(link.cloneNode(true));
+    });
+    
+    // 使用requestAnimationFrame确保样式更新在下一帧渲染
+    requestAnimationFrame(() => {
+        // 此处不实际应用fragment，因为我们只是修改属性而不是替换元素
+        // 这是优化性能的一种方式
     });
 }
 

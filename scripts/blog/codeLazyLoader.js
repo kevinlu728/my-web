@@ -228,7 +228,7 @@ class CodeLazyLoader {
         linkElement.setAttribute('data-id', 'code-styles');
         linkElement.rel = 'stylesheet';
         // CSS文件路径
-        const CSS_FILE_PATH = '/styles/components/code-block.css';
+        const CSS_FILE_PATH = '/styles/blog/code-block.css';
         linkElement.href = CSS_FILE_PATH;
         
         // 添加加载错误处理

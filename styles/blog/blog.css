@@ -31,7 +31,7 @@
 @import './table-block.css';
 
 /* 博客页面特定样式 */
-body.article-page {
+body.blog-page {
     overflow: hidden; /* 博客页面禁用默认滚动条，内容区域自己处理滚动 */
     height: 100vh; /* 确保填满整个视口 */
 }

@@ -319,7 +319,7 @@ export const articlePageSkeleton = {
             }
             
             // 防止重复添加骨架屏
-            if (containerElement.querySelector('.article-page-skeleton')) {
+            if (containerElement.querySelector('.article-skeleton')) {
                 logger.debug('文章内容页面骨架屏已存在，跳过重复显示');
                 return;
             }
@@ -328,7 +328,7 @@ export const articlePageSkeleton = {
             containerElement.innerHTML = '';
             
             // 添加骨架屏标识类，用于应用高度样式
-            containerElement.classList.add('article-page-skeleton-loaded');
+            containerElement.classList.add('article-skeleton-loaded');
             
             // 创建骨架屏HTML - 使用模板
             const skeletonHTML = getArticlePageSkeletonTemplate();
@@ -337,7 +337,7 @@ export const articlePageSkeleton = {
             containerElement.innerHTML = skeletonHTML;
             
             // 检查是否真的添加成功
-            const addedSkeleton = containerElement.querySelector('.article-page-skeleton');
+            const addedSkeleton = containerElement.querySelector('.article-skeleton');
             if (addedSkeleton) {
                 logger.info('文章内容页面骨架屏已显示');
             } else {
@@ -366,7 +366,7 @@ export const articlePageSkeleton = {
             }
             
             // 检查是否有骨架屏
-            const skeletonElement = containerElement.querySelector('.article-page-skeleton');
+            const skeletonElement = containerElement.querySelector('.article-skeleton');
             if (skeletonElement) {
                 // 添加淡出效果
                 skeletonElement.style.opacity = '0';
@@ -376,7 +376,7 @@ export const articlePageSkeleton = {
                     if (containerElement && containerElement.contains(skeletonElement)) {
                         containerElement.removeChild(skeletonElement);
                     }
-                    containerElement.classList.remove('article-page-skeleton-loaded');
+                    containerElement.classList.remove('article-skeleton-loaded');
                 }, 100);
                 
                 logger.info('文章内容页面骨架屏已隐藏');

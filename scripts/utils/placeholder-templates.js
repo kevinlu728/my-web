@@ -120,36 +120,36 @@ export const getWelcomePageSkeletonTemplate = () => {
 
 export const getArticlePageSkeletonTemplate = () => {
   return `
-  <div class="article-page-skeleton">
+  <div class="article-skeleton">
       <!-- 文章标题区域 -->
-      <div class="article-page-skeleton-header">
-          <div class="article-page-skeleton-title skeleton-pulse"></div>
+      <div class="article-skeleton-header">
+          <div class="article-skeleton-title skeleton-pulse"></div>
       </div>
       
       <!-- 文章内容区域 - 3个段落 -->
-      <div class="article-page-skeleton-content">
+      <div class="article-skeleton-content">
           <!-- 段落1 -->
-          <div class="article-page-skeleton-section">
-              <div class="article-page-skeleton-section-title skeleton-pulse"></div>
-              <div class="article-page-skeleton-section-content">
-                  <div class="article-page-skeleton-section-line article-page-skeleton-section-line-full skeleton-pulse"></div>
-                  <div class="article-page-skeleton-section-line article-page-skeleton-section-line-full skeleton-pulse"></div>
-                  <div class="article-page-skeleton-section-line article-page-skeleton-section-line-medium skeleton-pulse"></div>
-                  <div class="article-page-skeleton-section-line article-page-skeleton-section-line-full skeleton-pulse"></div>
-                  <div class="article-page-skeleton-section-line article-page-skeleton-section-line-short skeleton-pulse"></div>
+          <div class="article-skeleton-section">
+              <div class="article-skeleton-section-title skeleton-pulse"></div>
+              <div class="article-skeleton-section-content">
+                  <div class="article-skeleton-section-line article-skeleton-section-line-full skeleton-pulse"></div>
+                  <div class="article-skeleton-section-line article-skeleton-section-line-full skeleton-pulse"></div>
+                  <div class="article-skeleton-section-line article-skeleton-section-line-medium skeleton-pulse"></div>
+                  <div class="article-skeleton-section-line article-skeleton-section-line-full skeleton-pulse"></div>
+                  <div class="article-skeleton-section-line article-skeleton-section-line-short skeleton-pulse"></div>
               </div>
           </div>
           
           <!-- 段落2 -->
-          <div class="article-page-skeleton-section">
-              <div class="article-page-skeleton-section-title skeleton-pulse"></div>
-              <div class="article-page-skeleton-section-content">
-                  <div class="article-page-skeleton-section-line article-page-skeleton-section-line-full skeleton-pulse"></div>
-                  <div class="article-page-skeleton-section-line article-page-skeleton-section-line-full skeleton-pulse"></div>
-                  <div class="article-page-skeleton-section-line article-page-skeleton-section-line-short skeleton-pulse"></div>
-                  <div class="article-page-skeleton-section-line article-page-skeleton-section-line-full skeleton-pulse"></div>
-                  <div class="article-page-skeleton-section-line article-page-skeleton-section-line-full skeleton-pulse"></div>
-                  <div class="article-page-skeleton-section-line article-page-skeleton-section-line-medium skeleton-pulse"></div>
+          <div class="article-skeleton-section">
+              <div class="article-skeleton-section-title skeleton-pulse"></div>
+              <div class="article-skeleton-section-content">
+                  <div class="article-skeleton-section-line article-skeleton-section-line-full skeleton-pulse"></div>
+                  <div class="article-skeleton-section-line article-skeleton-section-line-full skeleton-pulse"></div>
+                  <div class="article-skeleton-section-line article-skeleton-section-line-short skeleton-pulse"></div>
+                  <div class="article-skeleton-section-line article-skeleton-section-line-full skeleton-pulse"></div>
+                  <div class="article-skeleton-section-line article-skeleton-section-line-full skeleton-pulse"></div>
+                  <div class="article-skeleton-section-line article-skeleton-section-line-medium skeleton-pulse"></div>
               </div>
           </div>
       </div>

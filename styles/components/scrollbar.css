@@ -125,7 +125,7 @@ body::-webkit-scrollbar-thumb:hover {
 }
 
 /* 博客页面特定的滚动条样式 */
-.article-page .blog-content {
+.blog-page .blog-content {
     /* 博客内容区在大屏幕模式下不滚动 */
     position: relative;
     overflow: hidden;

@@ -326,21 +326,21 @@
 }
 
 /* 文章内容页面骨架屏样式 */
-.article-page-skeleton {
+.article-skeleton {
     width: 100%;
     margin: 0 auto;
     padding: 0.5rem;
     min-height: 750px;
 }
 
-.article-page-skeleton-header {
+.article-skeleton-header {
     text-align: left;
     margin-bottom: 1.5rem;
     padding-bottom: 1.5rem;
     border-bottom: 1px solid #eee;
 }
 
-.article-page-skeleton-title {
+.article-skeleton-title {
     height: 35px;
     width: 55%;
     margin: 0 0 1rem; /* 调整为左对齐 */
@@ -349,7 +349,7 @@
 }
 
 /* 文章内容区域骨架屏 */
-.article-page-skeleton-content {
+.article-skeleton-content {
     display: flex;
     flex-direction: column;
     gap: 2rem;
@@ -357,13 +357,13 @@
 }
 
 /* 段落区域 */
-.article-page-skeleton-section {
+.article-skeleton-section {
     margin-bottom: 1.5rem;
     text-align: left;
 }
 
 /* 段落标题 */
-.article-page-skeleton-section-title {
+.article-skeleton-section-title {
     height: 28px;
     width: 40%;
     border-radius: 4px;
@@ -372,14 +372,14 @@
 }
 
 /* 段落内容 - 新添加的组件 */
-.article-page-skeleton-section-content {
+.article-skeleton-section-content {
     display: flex;
     flex-direction: column;
     gap: 0.8rem;
 }
 
 /* 段落中的单行文本 */
-.article-page-skeleton-section-line {
+.article-skeleton-section-line {
     height: 20px;
     border-radius: 3px;
     background-color: #f0f0f0;
@@ -387,21 +387,21 @@
 }
 
 /* 行宽度变化，提高真实感 */
-.article-page-skeleton-section-line-full {
+.article-skeleton-section-line-full {
     width: 100%;
 }
 
-.article-page-skeleton-section-line-medium {
+.article-skeleton-section-line-medium {
     width: 85%;
 }
 
-.article-page-skeleton-section-line-short {
+.article-skeleton-section-line-short {
     width: 60%;
 }
 
 /* 骨架屏脉动动画 */
-.article-page-skeleton-section-line-pulse {
-    animation: article-page-skeleton-section-line-pulse 1.5s ease-in-out infinite;
+.article-skeleton-section-line-pulse {
+    animation: article-skeleton-section-line-pulse 1.5s ease-in-out infinite;
     background: linear-gradient(90deg, 
                 #f0f0f0 25%, 
                 #f8f8f8 50%, 
@@ -409,7 +409,7 @@
     background-size: 200% 100%;
 }
 
-@keyframes article-page-skeleton-section-line-pulse {
+@keyframes article-skeleton-section-line-pulse {
     0% {
         background-position: 100% 0;
     }
@@ -419,30 +419,30 @@
 }
 
 /* 骨架屏淡入淡出 */
-.article-page-skeleton {
+.article-skeleton {
     opacity: 1;
     transition: opacity 0.3s ease;
 }
 
-.article-page-skeleton-loaded {
+.article-skeleton-loaded {
     background-color: transparent;
 }
 
 /* 响应式调整 */
 @media (max-width: 768px) {
-    .article-page-skeleton {
+    .article-skeleton {
         padding: 1rem;
     }
     
-    .article-page-skeleton-title {
+    .article-skeleton-title {
         width: 80%;
     }
     
-    .article-page-skeleton-section-title {
+    .article-skeleton-section-title {
         width: 60%;
     }
     
-    .article-page-skeleton-section-title {
+    .article-skeleton-section-title {
         width: 60%;
     }
 } 
