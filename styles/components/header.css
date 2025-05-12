@@ -7,19 +7,23 @@
     top: 0;
     left: 0;
     right: 0;
-    background-color: transparent; /* 初始为透明背景 */
-    box-shadow: none; /* 初始没有阴影 */
+    background-color: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     z-index: 1000;
     height: 60px;
     transition: background-color 0.3s ease, box-shadow 0.3s ease;
     will-change: background-color, box-shadow;
 }
 
-/* 滚动时的导航栏样式 */
+/* 修改：专门针对首页的悬浮效果，确保导航栏悬浮在英雄区上方 */
+.home-page:not(.scrolled) .header {
+    background-color: transparent;
+    box-shadow: none;
+}
+
+/* 滚动时的导航栏样式只需保留加深阴影效果 */
 .header.scrolled {
-    background-color: rgba(255, 255, 255, 0.95);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .nav-container {
@@ -48,57 +52,46 @@
     background-color: transparent;
 }
 
-/* 默认导航链接为白色（当在英雄区上方时） */
+/* 默认导航链接为深色（与早期版本一致） */
 .nav-menu a {
-    color: white;
+    color: var(--primary-color);
     text-decoration: none;
     font-weight: 500;
     transition: color 0.3s ease, border-bottom-color 0.3s ease;
     position: relative;
     z-index: 2;
     background-color: transparent;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
     will-change: color;
 }
 
-/* 滚动后的导航链接颜色 */
-.header.scrolled .nav-menu a {
-    color: var(--primary-color);
-    text-shadow: none;
-    transition: color 0.3s ease, border-bottom-color 0.3s ease;
+/* 修改：专门针对首页的导航链接颜色 */
+.home-page:not(.scrolled) .header .nav-menu a {
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-/* 确保滚动状态下的高亮链接保持高亮 - 优先级更高 */
-.header.scrolled .nav-menu li.active a,
-.header.scrolled .nav-menu a[aria-current="page"] {
-    color: var(--secondary-color);
-    text-shadow: none;
-}
-
-/* 导航链接悬停效果 */
-.nav-menu a:hover {
-    color: white; /* 默认悬停为白色，在英雄区上方 */
-}
-
-/* 滚动状态下的悬停效果 */
-.header.scrolled .nav-menu a:hover {
-    color: var(--secondary-color); /* 滚动后悬停为蓝色 */
-    transition: color 0.2s ease;
-}
-
-/* 导航高亮样式 */
+/* 确保滚动状态下的高亮链接保持高亮 */
 .nav-menu li.active a,
 .nav-menu a[aria-current="page"] {
-    color: white; /* 默认在英雄区上方时为白色 */
+    color: var(--secondary-color);
     font-weight: 600;
     position: relative;
 }
 
-/* 滚动后的导航高亮链接颜色 */
-.header.scrolled .nav-menu li.active a,
-.header.scrolled .nav-menu a[aria-current="page"] {
-    color: var(--secondary-color); /* 滚动后使用蓝色 */
-    text-shadow: none;
+/* 只在首页英雄区上方时使用白色高亮 */
+.home-page:not(.scrolled) .header .nav-menu li.active a,
+.home-page:not(.scrolled) .header .nav-menu a[aria-current="page"] {
+    color: white;
+}
+
+/* 导航链接悬停效果 */
+.nav-menu a:hover {
+    color: var(--secondary-color);
+}
+
+/* 在首页英雄区上方悬停时才使用白色 */
+.home-page:not(.scrolled) .header .nav-menu a:hover {
+    color: white;
 }
 
 /* 默认情况下所有链接的基础下划线状态 */
@@ -109,10 +102,15 @@
     left: 0;
     width: 100%;
     height: 2px;
-    background-color: white; /* 默认为白色下划线 */
+    background-color: var(--secondary-color); /* 默认为蓝色下划线 */
     transform: scaleX(0); /* 默认不显示 */
     transition: transform 0.3s ease;
     transform-origin: center;
+}
+
+/* 在首页英雄区上方时才使用白色下划线 */
+.home-page:not(.scrolled) .header .nav-menu a::after {
+    background-color: white;
 }
 
 /* 所有链接在悬停时的下划线效果 */
@@ -126,9 +124,29 @@
     transform: scaleX(1); /* 高亮时总是显示 */
 }
 
-/* 滚动后的下划线颜色 */
-.header.scrolled .nav-menu a::after {
-    background-color: var(--secondary-color); /* 滚动后使用蓝色下划线 */
+/* 网站标题样式 - 恢复渐变效果 */
+.web-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    letter-spacing: 1px;
+    padding: 0.5rem 0;
+    transition: transform 0.3s ease, color 0.3s ease;
+    background: linear-gradient(45deg, var(--secondary-color), #8442e1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* 在首页英雄区上方时网站标题为白色 */
+.home-page:not(.scrolled) .header .web-title {
+    color: white;
+    -webkit-text-fill-color: white; /* 覆盖渐变效果，直接使用白色 */
+    background: none;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.web-title:hover {
+    transform: scale(1.05);
 }
 
 /* 移动端下划线颜色，保持蓝色 */
@@ -176,30 +194,6 @@
 
 .hamburger.active span:nth-child(3) {
     transform: rotate(-45deg) translate(5px, -6px);
-}
-
-/* 网站标题样式 */
-.web-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: white; /* 默认为白色 */
-    letter-spacing: 1px;
-    padding: 0.5rem 0;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-    transition: transform 0.3s ease, color 0.3s ease;
-}
-
-/* 滚动后的网站标题样式 */
-.header.scrolled .web-title {
-    color: var(--primary-color);
-    background: linear-gradient(45deg, var(--secondary-color), #8442e1);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-shadow: none;
-}
-
-.web-title:hover {
-    transform: scale(1.05);
 }
 
 @media (max-width: 768px) {

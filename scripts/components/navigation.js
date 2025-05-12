@@ -10,42 +10,20 @@
  * - 移动端汉堡菜单的展开/收起
  * - 菜单项点击后的导航菜单收起
  * 负责在页面滚动时动态改变导航栏的样式：
- * - 初始状态：导航栏透明，文字白色
+ * - 初始状态：导航栏透明，文字白色（首页）
  * - 滚动状态：导航栏背景变为半透明白色，文字颜色改变
  * 
  */
 
-// 添加一个立即执行函数，设置初始导航状态，避免闪烁
-(function setInitialNavigationState() {
-    // 检查是否有hero-section来决定初始导航样式
+// 初始导航状态设置
+(function initNavigation() {
+    // 初始加载时，根据滚动位置设置body类
     if (document.readyState === 'loading') {
-        // 如果DOM尚未加载完成，添加一个transition-paused类，暂停过渡效果
-        document.documentElement.classList.add('nav-transition-paused');
-        // 监听DOM内容加载事件
         document.addEventListener('DOMContentLoaded', () => {
-            // 预先确定初始导航状态
-            const header = document.querySelector('.header');
-            if (header) {
-                const heroSection = document.querySelector('.hero-section');
-                // 如果页面上没有hero-section，或者滚动位置已经超过阈值，直接应用scrolled样式
-                if (!heroSection || window.scrollY > heroSection.clientHeight * 0.1) {
-                    header.classList.add('scrolled');
-                }
-                // 延迟移除过渡暂停，允许平滑过渡
-                setTimeout(() => {
-                    document.documentElement.classList.remove('nav-transition-paused');
-                }, 50);
-            }
+            updateHeaderOnScroll();
         });
     } else {
-        // DOM已加载，直接设置初始状态
-        const header = document.querySelector('.header');
-        if (header) {
-            const heroSection = document.querySelector('.hero-section');
-            if (!heroSection || window.scrollY > heroSection.clientHeight * 0.1) {
-                header.classList.add('scrolled');
-            }
-        }
+        updateHeaderOnScroll();
     }
 })();
 
@@ -73,54 +51,15 @@ export function initNavigation() {
     });
 }
 
-// 以下函数已不再使用，由initActiveNavLink替代
-// 保留但注释掉以便未来参考
-/*
-function highlightCurrentPage() {
-    // 获取当前页面的URL路径
-    const currentPath = window.location.pathname;
-    
-    // 查找所有导航链接
-    const navLinks = document.querySelectorAll('.nav-menu a');
-    
-    // 遍历每个链接，检查是否匹配当前路径
-    navLinks.forEach(link => {
-        const linkPath = new URL(link.href, window.location.origin).pathname;
-        const linkFilename = linkPath.split('/').pop();
-        const currentFilename = currentPath.split('/').pop() || 'index.html';
-        
-        // 清除之前的标记
-        link.removeAttribute('aria-current');
-        link.parentElement.classList.remove('active');
-        
-        // 如果链接匹配当前页面或者首页特殊情况
-        if (linkFilename === currentFilename || 
-            (currentFilename === '' && linkFilename === 'index.html')) {
-            // 添加WAI-ARIA标记
-            link.setAttribute('aria-current', 'page');
-            // 添加高亮类
-            link.parentElement.classList.add('active');
-        }
-    });
-}
-*/
-
 /**
  * 初始化滚动导航效果
  */
 export function initScrollNavigation() {
-    const header = document.querySelector('.header');
-    if (!header) {
-        return;
-    }
-    
-    // 根据初始滚动位置设置导航栏样式
+    // 根据初始滚动位置设置body样式
     updateHeaderOnScroll();
     
     // 监听滚动事件
     window.addEventListener('scroll', () => {
-        // 如果导航处于过渡暂停状态，不执行滚动更新
-        if (document.documentElement.classList.contains('nav-transition-paused')) return;
         updateHeaderOnScroll();
     });
 }
@@ -130,27 +69,24 @@ export function initScrollNavigation() {
  * @private
  */
 function updateHeaderOnScroll() {
-    const header = document.querySelector('.header');
-    if (!header) return;
-    
     const scrollPosition = window.scrollY;
     const heroSection = document.querySelector('.hero-section');
     
-    // 如果没有hero-section（如在某些页面），则始终应用scrolled类
-    if (!heroSection) {
-        header.classList.add('scrolled');
+    // 如果不是首页或没有hero-section，始终使用scrolled样式
+    if (!document.body.classList.contains('home-page') || !heroSection) {
+        document.body.classList.add('scrolled');
         return;
     }
     
-    // 有hero-section时，根据滚动位置决定
+    // 首页上有hero-section时，根据滚动位置决定
     const threshold = heroSection.clientHeight * 0.1;
     
     if (scrollPosition > threshold) {
-        // 滚动超过阈值，添加scrolled类
-        header.classList.add('scrolled');
+        // 滚动超过阈值，添加scrolled类到body
+        document.body.classList.add('scrolled');
     } else {
         // 滚动位置在阈值以下，移除scrolled类
-        header.classList.remove('scrolled');
+        document.body.classList.remove('scrolled');
     }
 }
 
