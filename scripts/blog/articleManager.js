@@ -38,7 +38,7 @@ import { articleSearchManager } from './articleSearchManager.js';
 import { articlePaginationManager } from './articlePaginationManager.js';
 import { articleCacheManager } from './articleCacheManager.js';
 import { welcomePageManager } from './welcomePageManager.js';
-import { renderArticleContent, initLazyLoading as initLazyLoading } from './articleRenderer.js';
+import { renderArticleContent } from './articleRenderer.js';
 import { tableOfContents } from './tableOfContents.js';
 
 // 导入工具函数
@@ -438,8 +438,6 @@ class ArticleManager {
             
             // 处理懒加载
             if (articleBody) {
-                initLazyLoading(articleBody);
-                
                 // 检查是否从缓存加载
                 if (articleData._fromCache) {
                     logger.info('从缓存加载的文章，进行优化的渲染检查...');

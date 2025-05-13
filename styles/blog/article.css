@@ -133,34 +133,45 @@
 /* 图片加载状态指示器样式 */
 .image-loader {
     position: relative;
-    min-height: 100px;
-    background-color: #f5f5f5;
+    min-height: 0; /* 移除最小高度限制 */
+    background-color: transparent; /* 改为透明背景 */
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 /* 图片容器样式 */
-.article-body .image-container {
+.article-body .image-container,
+.article-body .image-wrapper,
+.article-image-container {
     position: relative;
-    margin: 1.5rem auto;
+    margin: 0.5rem auto; /* 减少间距，从1.5rem改为0.5rem */
     overflow: hidden;
     border-radius: 6px;
-    text-align: center; /* 居中图片容器 */
-    max-width: 95%; /* 增加宽度，使其更好地适应新布局 */
+    text-align: center; /* 统一居中对齐图片容器 */
+    max-width: 100%; /* 让容器占据全部宽度 */
 }
 
 /* 图片基础样式 */
-.article-body img {
-    max-width: 75%; /* 调整为75%，适应更宽的内容区域 */
+.article-body img,
+.lazy-image {
+    max-width: 60%; /* 调整为60%，与JS处理逻辑一致 */
     height: auto;
     border-radius: 6px;
-    margin: 1.5rem auto; /* 居中显示 */
+    margin: 0 auto; /* 居中显示 */
     display: block;
     transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1); /* 添加轻微阴影 */
     max-height: 600px; /* 限制最大高度 */
     object-fit: contain; /* 保持比例 */
+    cursor: zoom-in; /* 指示图片可点击放大 */
+}
+
+/* 图片悬停效果 */
+.article-body img:hover,
+.lazy-image:hover {
+    transform: scale(1.02); /* 轻微放大效果，提示可交互 */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15); /* 增强阴影效果 */
 }
 
 /* 图片说明文字 */
@@ -168,7 +179,7 @@
     font-size: 0.9rem;
     color: #666;
     text-align: center;
-    margin-top: 0.5rem;
+    margin-top: 0.3rem; /* 减少顶部边距，从0.5rem改为0.3rem */
     font-style: italic;
 }
 
@@ -176,10 +187,10 @@
 .article-body img.lazy-image,
 .lazy-image {
     opacity: 0;
-    min-height: 100px; /* 最小高度，避免布局跳动 */
-    background-color: #f0f0f0; /* 加载前的背景色 */
+    min-height: 0; /* 移除最小高度，避免出现大占位框 */
+    background-color: transparent; /* 改为透明背景，不显示背景色 */
     position: relative;
-    transform: translateY(10px); /* 轻微的上移效果 */
+    transform: translateY(5px);
     transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out, background-color 0.3s;
 }
 
@@ -188,7 +199,7 @@
 .lazy-image.loaded {
     opacity: 1;
     background-color: transparent;
-    transform: translateY(0); /* 恢复位置 */
+    transform: translateY(0);
 }
 
 /* 大图片处理 */
@@ -203,15 +214,15 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 1rem;
+    padding: 0.5rem; /* 减少内边距，从1rem改为0.5rem */
     background-color: #f8f9fa;
     border: 1px solid #e2e8f0;
-    border-radius: 8px;
+    border-radius: 6px; /* 保持一致的圆角 */
     color: #64748b;
     font-size: 0.9rem;
     cursor: pointer;
     transition: all 0.2s ease;
-    margin: 1rem 0;
+    margin: 0.5rem 0; /* 减少上下边距，从1rem改为0.5rem */
     text-align: center;
 }
 

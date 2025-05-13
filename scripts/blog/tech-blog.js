@@ -272,7 +272,6 @@ function initViewEvents() {
         logger.info('文章内容已显示，应用图片样式');
         const articleBody = document.querySelector('.article-body');
         if (articleBody) {
-            imageLazyLoader.applyArticleImageStyles(articleBody);
             // 设置标记，表示已处理
             window[processingKey] = true;
             

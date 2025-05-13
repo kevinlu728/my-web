@@ -63,6 +63,8 @@ export function renderArticleContent(articleData, containerId = 'article-contain
     // 处理文章中的图片和其他内容
     const articleBody = articleContainer.querySelector('.article-body');
     if (articleBody) {
+        initLazyLoading(articleBody);
+        // 处理图片懒加载，processImages 内部已包含更新操作
         imageLazyLoader.processImages(articleBody);
     }
     
@@ -112,6 +114,7 @@ export function renderMoreBlocks(newBlocks) {
         articleBody.insertAdjacentHTML('beforeend', newContent);
         
         // 处理新加载内容中的图片和其他懒加载内容
+        // processImages 内部已包含对 LazyLoad 实例的更新操作
         imageLazyLoader.processImages(articleBody);
         initLazyLoading(articleBody);
         
@@ -255,10 +258,14 @@ function renderImage(block) {
         return `<div class="image-placeholder">图片</div>`;
     }
     
-    // 简化图片渲染，移除内联加载器，完全依赖imageLazyLoader
+    // 优化图片渲染，使其与Vanilla-LazyLoad库兼容
     return `
-        <div class="article-image-container">
-            <img src="${url}" alt="图片" data-original-src="${url}" style="max-width: 100%;">
+        <div class="article-image-container" style="text-align: center;">
+            <img class="lazy-image" 
+                 data-src="${url}" 
+                 data-original-src="${url}" 
+                 alt="图片" 
+                 style="max-width: 60%; height: auto; margin: 0 auto; display: block; cursor: zoom-in;">
         </div>
     `;
 }
@@ -460,6 +467,14 @@ export function initLazyLoading(container) {
     }
     
     logger.info('初始化懒加载功能...');
+
+    // 初始化图片懒加载
+    const imageBlocks = container.querySelectorAll('.lazy-image');
+    logger.info(`找到 ${imageBlocks.length} 个图片待懒加载`);
+    if (imageBlocks.length > 0 && typeof imageLazyLoader !== 'undefined') {
+        logger.info('初始化图片懒加载...');
+        imageLazyLoader.initialize();
+    }
     
     // 标记容器已初始化
     container.dataset.lazyInitialized = 'true';
@@ -468,7 +483,7 @@ export function initLazyLoading(container) {
     const codeBlocks = container.querySelectorAll('.lazy-block.code-block');
     logger.info(`找到 ${codeBlocks.length} 个代码块待懒加载`);
     if (codeBlocks.length > 0 && typeof codeLazyLoader !== 'undefined') {
-        logger.info('处理代码块...');
+        logger.info('初始化代码块懒加载...');
         codeLazyLoader.initialize();
     }
     
@@ -477,7 +492,7 @@ export function initLazyLoading(container) {
     const inlineEquations = container.querySelectorAll('.inline-equation');
     logger.info(`找到 ${equationBlocks.length} 个公式待懒加载 和 ${inlineEquations.length} 个内联公式待懒加载`);
     if (equationBlocks.length > 0 && typeof mathLazyLoader !== 'undefined') {
-        logger.info('处理数学公式...');
+        logger.info('初始化数学公式懒加载...');
         mathLazyLoader.initialize();
     }
     if (inlineEquations.length > 0 && typeof mathLazyLoader !== 'undefined') {
