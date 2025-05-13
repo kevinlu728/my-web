@@ -1,0 +1,439 @@
+/* 文章分类相关样式移到这里 */
+
+/* 分类图标样式 */
+.category-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.5rem;
+    color: #a0aec0;
+    font-size: 0.9rem;
+    transition: color 0.3s ease;
+}
+
+/* 选中状态下的分类图标高亮 */
+.category-tree-item.active .category-icon {
+    color: #0891b2;
+}
+
+.category-tree-item:hover .category-icon {
+    color: #4a5568;
+}
+
+/* 文章图标样式 */
+.article-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.5rem;
+    color: #a0aec0;
+    font-size: 0.9rem;
+    transition: color 0.3s ease;
+}
+
+/* 选中状态下的文章图标高亮 */
+.article-tree-item.active .article-icon {
+    color: #0891b2;
+}
+
+.article-tree-item:hover .article-icon {
+    color: #4a5568;
+}
+
+/* 树形文章列表样式 */
+.article-tree-container {
+    margin-bottom: 2.5rem;
+    padding: 0;
+    width: 100%;
+}
+
+.article-tree-container h2 {
+    color: #34495e;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+#article-tree {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border-radius: 0;
+    background-color: transparent;
+    border: none;
+    padding: 0.5rem 0;
+    width: 100%;
+}
+
+.tree-item {
+    margin-bottom: 0.25rem;
+    transition: all 0.2s ease;
+    width: 100%;
+}
+
+.tree-item-content {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.8rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: transparent;
+    color: #4a5568;
+    position: relative;
+    overflow: hidden;
+    margin: 0 0;
+}
+
+.tree-item-content:hover {
+    background: #f1f5f9;
+}
+
+.tree-item-content::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #4299e1;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+}
+
+.tree-item-content:hover::after {
+    transform: scaleX(1);
+}
+
+.root-item > .tree-item-content {
+    font-weight: 600;
+    background: transparent;
+    border-bottom: 1px solid #e9ecef;
+    margin-bottom: 0.5rem;
+    color: #2d3748;
+}
+
+.category-tree-item > .tree-item-content {
+    color: #2d3748;
+    font-weight: 500;
+}
+
+.article-tree-item > .tree-item-content {
+    margin-left: 1.2rem;
+    padding-left: 0.8rem;
+    border-left: none;
+}
+
+.tree-toggle {
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.3rem;
+    transition: transform 0.2s ease;
+    opacity: 0.5;
+}
+
+/* 树形导航图标基本样式 */
+.tree-toggle i {
+    font-size: 0.75rem;
+    color: #bbc4d4;
+    transition: transform 0.3s ease, color 0.3s ease;
+    display: inline-block;
+    transform-origin: center center;
+}
+
+.tree-item-content:hover .tree-toggle {
+    opacity: 0.7;
+}
+
+/* 默认状态下箭头指向右侧 */
+.tree-toggle i {
+    transform: rotate(0deg);
+}
+
+/* 展开状态下箭头指向下方 */
+.tree-item.expanded > .tree-item-content .tree-toggle i {
+    transform: rotate(90deg);
+    color: #4299e1;
+}
+
+/* 确保使用FontAwesome箭头向右图标 */
+.tree-toggle i:before {
+    content: "\f054" !important; /* 固定使用向右箭头，通过旋转控制方向 */
+    font-family: "Font Awesome 6 Free" !important;
+    font-weight: 900 !important;
+}
+
+/* 全部收起状态下隐藏子项 */
+#article-tree .root-item.all-collapsed > .tree-children {
+    display: none !important;
+}
+
+/* 树形结构展开动画 */
+@keyframes tree-expand {
+    from { max-height: 0; opacity: 0; }
+    to { max-height: 1000px; opacity: 1; }
+}
+
+.tree-item.expanded > .tree-children {
+    display: block;
+    animation: tree-expand 0.3s ease-out forwards;
+}
+
+.item-name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.item-count {
+    margin-left: 8px;
+    font-size: 0.85em;
+    color: #a0aec0;
+}
+
+.tree-children {
+    list-style: none;
+    padding-left: 0.8rem;
+    margin: 0.2rem 0 0.2rem 0.3rem;
+    display: none;
+    position: relative;
+    transition: all 0.3s ease-out;  /* 添加过渡效果 */
+}
+
+/* 树形结构层级连线 */
+.tree-children {
+    position: relative;
+}
+
+/* 响应式调整的树形子项 */
+@media (max-width: 768px) {
+    .tree-children {
+        padding-left: 0.6rem;
+    }
+}
+
+/* 树形加载状态 */
+.tree-children .loading {
+    display: flex;
+    flex-direction: column; /* 改为垂直排列 */
+    align-items: center;
+    justify-content: center;
+    color: #718096;
+    padding: 1.5rem 0; /* 只保留上下padding */
+    font-size: 0.9rem;
+    margin: 0.5rem auto; /* 水平居中显示 */
+    transition: all 0.3s ease;
+    width: 100%; /* 使用100%宽度 */
+    background-color: transparent; /* 移除背景 */
+    box-shadow: none; /* 移除阴影 */
+    border-radius: 0; /* 移除圆角 */
+    animation: none; /* 移除背景动画 */
+}
+
+.tree-children .loading .resource-loading-spinner {
+    width: 2rem; /* 加大spinner尺寸 */
+    height: 2rem;
+    border: 2.5px solid rgba(203, 213, 224, 0.4);
+    border-top-color: #3182ce; /* 蓝色更深一些 */
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem; /* 增加间距 */
+}
+
+.tree-children .loading span {
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    animation: pulse-text 2s infinite ease-in-out;
+    white-space: nowrap;
+    color: #4a5568; /* 深一点的颜色更清晰 */
+}
+
+/* 背景脉动动画 */
+@keyframes pulse-bg {
+    0% { background-color: rgba(247, 250, 252, 0.7); }
+    50% { background-color: rgba(235, 244, 255, 0.9); }
+    100% { background-color: rgba(247, 250, 252, 0.7); }
+}
+
+/* 文字脉动动画 */
+@keyframes pulse-text {
+    0% { opacity: 0.8; }
+    50% { opacity: 1; }
+    100% { opacity: 0.8; }
+}
+
+/* 移除旧的加载动画，改用专用spinner元素 */
+.tree-children .loading::before {
+    content: none;
+}
+
+/* 树形加载动画 */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 激活状态样式 */
+.tree-item.active > .tree-item-content {
+    background: #f0f9ff;
+    color: #3182ce;
+    border-color: transparent;
+    box-shadow: none;
+}
+
+/* 只高亮标题部分，而不是整个根节点 */
+#article-tree .root-item.active {
+    background-color: transparent;
+}
+
+.tree-item.active > .tree-item-content .tree-toggle i {
+    color: #3182ce;
+}
+
+.article-tree-item.active > .tree-item-content {
+    background: #f0f7fa;
+    color: #0891b2;
+    font-weight: 500;
+    box-shadow: none;
+}
+
+.article-tree-item.active > .tree-item-content::after {
+    transform: scaleX(1);
+    background: #319795;
+}
+
+.article-tree-item.active .item-name {
+    color: #2c7a7b;
+}
+
+.article-tree-item.active .item-date {
+    color: #4fd1c5;
+}
+
+/* 文章列表样式 */
+#article-list {
+    padding: 0;
+    list-style: none;
+}
+
+.article-item {
+    margin-bottom: 0.8rem;
+    transition: all 0.3s ease;
+}
+
+.article-item a {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 1rem 1.2rem;
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 10px;
+    border: 1px solid #edf2f7;
+    text-decoration: none;
+    color: #2d3748;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.01);
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+.article-item a:hover {
+    background: #f7fafc;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.03);
+    border-color: #63b3ed;
+}
+
+/* 选中状态样式 */
+.article-item.active a {
+    background: #ebf8ff;
+    border-color: #4299e1;
+    box-shadow: 0 2px 4px rgba(66, 153, 225, 0.1);
+    position: relative;
+}
+
+.article-item.active a::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: #4299e1;
+    border-radius: 4px 0 0 4px;
+}
+
+.article-title-text {
+    font-weight: 500;
+    color: #4a5568;
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* 选中状态的文字样式 */
+.article-item.active .article-title-text {
+    color: #2b6cb0;
+    font-weight: 600;
+}
+
+.article-date {
+    display: none;
+    color: #a0aec0;
+    font-size: 0.9em;
+    margin-left: 1.5rem;
+    white-space: nowrap;
+}
+
+/* 树形文章列表附加样式 */
+.item-date {
+    color: #a0aec0;
+    font-size: 0.85em;
+    margin-left: 8px;
+}
+
+/* 无结果提示样式 */
+.tree-children .no-results {
+    color: #a0aec0;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    font-style: italic;
+}
+
+/* 搜索高亮 */
+.tree-item .search-highlight {
+    background-color: rgba(99, 179, 237, 0.2);
+    padding: 0.1em 0.2em;
+    border-radius: 2px;
+}
+
+/* 根目录图标样式 */
+.root-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.5rem;
+    color: #a0aec0;
+    font-size: 0.9rem;
+    transition: color 0.3s ease;
+}
+
+/* 选中状态下的根目录图标高亮 */
+.root-item.active .root-icon {
+    color: #0891b2;
+}
+
+.root-item:hover .root-icon {
+    color: #4a5568;
+}
+
+/* 全部收起状态下的箭头 */
+#article-tree .root-item.all-collapsed > .tree-item-content .tree-toggle i {
+    transform: rotate(0deg);
+}

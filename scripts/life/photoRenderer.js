@@ -35,7 +35,7 @@ class PhotoRenderer {
         logger.info('初始化照片渲染器...');
         this.container = container;
         this.initResourceEventListeners();
-        this.loadImageLazyloadResources();
+        this.loadResources();
     }
 
     initResourceEventListeners() {
@@ -70,7 +70,7 @@ class PhotoRenderer {
         });
     }
 
-    loadImageLazyloadResources() {
+    loadResources() {
         if (typeof LazyLoad === 'undefined') {
             logger.info('正在加载图片懒加载所需的资源(当前使用VanillaLazyload库)...');
             vanillaLoader.loadVanillaResources()
