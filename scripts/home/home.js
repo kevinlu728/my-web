@@ -165,46 +165,12 @@ function initHtmlComponentEvents() {
 
         // 初始化聊天窗口组件事件
         initChatWidgetEvents();
-        
-        // 初始化英雄区事件
-        initHeroSectionEvents();
 
         logger.info('✅ 所有HTML组件事件监听器初始化完成');
     } catch (error) {
         logger.error('❌ 初始化HTML组件事件监听器失败:', error.message);
     }
     
-}
-
-/**
- * 初始化英雄区的事件监听器
- */
-function initHeroSectionEvents() {
-    // 处理"了解更多"按钮的点击事件
-    const heroCtaBtn = document.querySelector('.hero-cta');
-    if (!heroCtaBtn) {
-        logger.warn('⚠️ 未找到英雄区CTA按钮，无法绑定事件');
-        return;
-    }
-    
-    heroCtaBtn.addEventListener('click', () => {
-        logger.debug('点击了"了解更多"按钮');
-        
-        // 平滑滚动到内容部分
-        const homeContent = document.querySelector('.home-content');
-        if (homeContent) {
-            // 计算滚动位置，考虑任何偏移量
-            const headerHeight = document.querySelector('.header')?.offsetHeight || 0;
-            const scrollToY = homeContent.offsetTop - headerHeight - 20; // 减去一点额外空间
-            
-            window.scrollTo({
-                top: scrollToY,
-                behavior: 'smooth'
-            });
-        }
-    });
-    
-    logger.debug('✅ 英雄区事件绑定完成');
 }
     
 /**
@@ -224,8 +190,6 @@ function initSocialLinksEvents() {
             // 可以添加分析跟踪或其他功能
         });
     });
-    
-    // logger.info(`✅ 已为${socialLinks.length}个社交链接绑定事件`);
 }
     
 /**

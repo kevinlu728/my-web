@@ -129,8 +129,8 @@ class Scrollbar {
             // 首页只应用样式，不需要其他复杂的滚动逻辑
             // 应用全局滚动条样式
             document.body.classList.add(ScrollbarClasses.CUSTOM);
-            // 应用首页内容区滚动条
-            this.applyScrollbarStyle(ScrollTargets.HOME_CONTENT, ScrollbarClasses.CUSTOM);
+            // 应用首页内容区滚动条，首页已移除home-content外层容器 
+            // this.applyScrollbarStyle(ScrollTargets.HOME_CONTENT, ScrollbarClasses.CUSTOM);
         }
     }
     /**
