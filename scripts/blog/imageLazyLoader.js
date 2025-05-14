@@ -2,21 +2,24 @@
  * @file imageLazyLoader.js
  * @description 图片懒加载工具，实现图片的延迟加载和优化
  * @author 陆凯
- * @version 1.0.0
+ * @version 1.1.0
  * @created 2024-03-08
  * 
  * 该模块实现了图片的懒加载功能，提高页面加载性能和用户体验：
- * - 使用IntersectionObserver监测图片可见性
+ * - 使用Vanilla-LazyLoad库实现高性能懒加载
  * - 图片进入视口时才加载
  * - 支持渐进式加载效果
- * - 支持加载失败的回退处理
+ * - 支持加载失败的回退处理和重试机制
  * - 支持响应式图片
- * - 支持WebP等现代图片格式的检测和使用
+ * - 支持图片点击放大预览
  * 
  * 主要方法：
  * - processImages: 处理页面中的所有图片
- * - loadImage: 加载单个图片
- * - setupIntersectionObserver: 设置交叉观察器
+ * - presetImageSize: 预设图片尺寸避免布局抖动
+ * - applyCustomStyles: 应用自定义样式到图片
+ * - handleImageError: 处理图片加载错误
+ * - setupResponsiveImage: 设置响应式图片
+ * - cleanup: 清理懒加载相关资源
  */
 
 import logger from '../utils/logger.js';
@@ -35,8 +38,6 @@ class ImageLazyLoader {
         this.initResourceEventListeners();
         this.loadImageResources();
         this.initIntersectionObserver();
-
-        // 初始化图片预览模态框
         imageModal.initialize();
     }
 
@@ -154,7 +155,6 @@ class ImageLazyLoader {
                 this.lazyLoadInstance.destroy();
             }
             
-            // 创建新的LazyLoad实例
             logger.info('正在初始化Vanilla-LazyLoad...');
             
             // 配置LazyLoad选项
@@ -320,8 +320,8 @@ class ImageLazyLoader {
     addZoomToImage(img) {
         if (!img || img.hasClickHandler) return;
         
-        img.style.cursor = 'zoom-in';
-        img.addEventListener('click', () => {
+            img.style.cursor = 'zoom-in';
+            img.addEventListener('click', () => {
             const imgSrc = img.getAttribute('data-src') || img.src;
             imageModal.open(imgSrc);
         });

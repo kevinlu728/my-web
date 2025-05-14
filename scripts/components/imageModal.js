@@ -108,6 +108,9 @@ class ImageModal {
                 font-size: 30px;
                 cursor: pointer;
                 padding: 10px;
+                margin-bottom: 10px;
+                z-index: 1010; /* 确保关闭按钮位于最上层 */
+                text-shadow: 0 0 4px rgba(0, 0, 0, 0.5); /* 简单的文字阴影，提高可见性 */
             }
             
             .modal-zoom {
@@ -177,6 +180,13 @@ class ImageModal {
         
         this.modalContainer.addEventListener('click', (e) => {
             if (e.target === this.modalContainer) {
+                this.close();
+            }
+        });
+        
+        // 添加ESC键关闭功能
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.modalContainer.classList.contains('active')) {
                 this.close();
             }
         });
