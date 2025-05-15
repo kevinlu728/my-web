@@ -1,12 +1,23 @@
 /**
  * 代码块样式
+ * @updated 2024-08-29 - 移除!important标记，优化选择器特异性
+ * @updated 2024-08-30 - 修复移除!important后出现的灰色背景问题
+ * @updated 2024-08-30 - 修复代码块字体大小变化问题
  */
 
+/* 修复灰色背景问题 - 增强选择器特异性并明确设置为透明背景 */
+.article-content .lazy-block.code-block,
+body .article-content .lazy-block.code-block,
 .lazy-block.code-block {
-    background: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
+    background: none;
+    background-color: transparent;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+    border: none;
 }
+
+/* 确保代码容器样式不受影响 */
 .code-container {
     background-color: #2b2b2b;
     border-radius: 3px;
@@ -58,18 +69,25 @@
     overflow-x: auto;
     background-color: #2b2b2b;
 }
-.code-content pre {
+/* 增加选择器特异性 */
+.code-content pre,
+.article-content .code-content pre,
+body .code-content pre {
     margin: 0;
     padding: 0;
-    background: none !important;
+    background: none;
 }
-.code-content code {
-    font-family: "JetBrains Mono", Consolas, Monaco, "Andale Mono", monospace !important;
-    font-size: 14px !important;
-    line-height: 1.4 !important;
-    background: none !important;
-    padding: 0 !important;
-    color: #a9b7c6 !important;
+/* 增加选择器特异性以替代!important */
+.article-content .code-content code,
+body .article-content .code-content code,
+.code-content code,
+body .code-content code {
+    font-family: "JetBrains Mono", Consolas, Monaco, "Andale Mono", monospace;
+    font-size: 14px;
+    line-height: 1.4;
+    background: none;
+    padding: 0;
+    color: #a9b7c6;
 }
 .copy-success {
     position: absolute;
@@ -96,70 +114,87 @@
 }
 
 /* IntelliJ IDEA Darcula 主题精确匹配 */
-.token.comment {
-    color: #629755 !important;
-    font-style: italic !important;
+/* 使用更高特异性的选择器替代!important */
+.article-content .code-content .token.comment,
+.code-content .token.comment {
+    color: #629755;
+    font-style: italic;
 }
-.token.keyword {
-    color: #cc7832 !important;
-    font-weight: bold !important;
+.article-content .code-content .token.keyword,
+.code-content .token.keyword {
+    color: #cc7832;
+    font-weight: bold;
 }
-.token.string {
-    color: #6a8759 !important;
+.article-content .code-content .token.string,
+.code-content .token.string {
+    color: #6a8759;
 }
-.token.number {
-    color: #6897bb !important;
+.article-content .code-content .token.number,
+.code-content .token.number {
+    color: #6897bb;
 }
-.token.operator {
-    color: #a9b7c6 !important;
+.article-content .code-content .token.operator,
+.code-content .token.operator {
+    color: #a9b7c6;
 }
-.token.class-name {
-    color: #a9b7c6 !important;
+.article-content .code-content .token.class-name,
+.code-content .token.class-name {
+    color: #a9b7c6;
 }
-.token.function {
-    color: #ffc66d !important;
+.article-content .code-content .token.function,
+.code-content .token.function {
+    color: #ffc66d;
 }
-.token.punctuation {
-    color: #a9b7c6 !important;
+.article-content .code-content .token.punctuation,
+.code-content .token.punctuation {
+    color: #a9b7c6;
 }
-.token.property {
-    color: #9876aa !important;
+.article-content .code-content .token.property,
+.code-content .token.property {
+    color: #9876aa;
 }
 
 /* 特殊关键字颜色 */
-.token.builtin {
-    color: #cc7832 !important;
-    font-weight: bold !important;
+.article-content .code-content .token.builtin,
+.code-content .token.builtin {
+    color: #cc7832;
+    font-weight: bold;
 }
-.token.important {
-    color: #cc7832 !important;
-    font-weight: bold !important;
+.article-content .code-content .token.important,
+.code-content .token.important {
+    color: #cc7832;
+    font-weight: bold;
 }
 
 /* 变量名颜色 */
-.token.variable {
-    color: #a9b7c6 !important;
+.article-content .code-content .token.variable,
+.code-content .token.variable {
+    color: #a9b7c6;
 }
 
 /* 注解颜色 */
-.token.annotation {
-    color: #bbb529 !important;
+.article-content .code-content .token.annotation,
+.code-content .token.annotation {
+    color: #bbb529;
 }
 
 /* 静态成员颜色 */
-.token.static {
-    color: #cc7832 !important;
-    font-weight: bold !important;
+.article-content .code-content .token.static,
+.code-content .token.static {
+    color: #cc7832;
+    font-weight: bold;
 }
 
 /* 方法调用颜色 */
-.token.method {
-    color: #ffc66d !important;
+.article-content .code-content .token.method,
+.code-content .token.method {
+    color: #ffc66d;
 }
 
 /* 参数颜色 */
-.token.parameter {
-    color: #a9b7c6 !important;
+.article-content .code-content .token.parameter,
+.code-content .token.parameter {
+    color: #a9b7c6;
 }
 
 @media (max-width: 768px) {

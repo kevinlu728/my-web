@@ -4,6 +4,7 @@
  * @author 陆凯
  * @version 1.0.0
  * @created 2024-03-20
+ * @updated 2024-09-01 - 移除内联样式中的!important标记，优化选择器特异性
  */
 
 import { formatDate } from '../utils/common-utils.js';
@@ -265,29 +266,38 @@ function addWelcomePageStyles(fromCache = false) {
             color: #34495e;
         }
         
-        .category-tags {
+        /* 增强分类标签选择器特异性，移除!important */
+        html body .welcome-page .category-tags,
+        .article-container .welcome-page .category-tags,
+        body #article-container .category-tags {
             display: flex;
             flex-wrap: wrap;
-            gap: 1rem !important; /* 适中间距 */
-            margin-top: 1.2rem !important; /* 适中上边距 */
+            gap: 1rem; 
+            margin-top: 1.2rem;
         }
         
-        .category-tag {
-            padding: 0.5rem 1.2rem !important; /* 适中内边距 */
-            border-radius: 20px !important; /* 适中圆角 */
-            font-size: 1rem !important; /* 适中字体 */
-            font-weight: 500 !important; /* 减轻字重 */
+        /* 增强分类标签选择器特异性，移除!important */
+        html body .welcome-page .category-tag,
+        .article-container .welcome-page .category-tag,
+        body #article-container .category-tag {
+            padding: 0.5rem 1.2rem;
+            border-radius: 20px;
+            font-size: 1rem;
+            font-weight: 500;
             cursor: pointer;
             transition: all 0.2s ease;
             border: none;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important; /* 减轻阴影 */
-            min-width: 60px !important; /* 减小最小宽度 */
-            text-align: center !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            min-width: 60px;
+            text-align: center;
         }
         
-        .category-tag:hover {
-            transform: translateY(-2px) !important; /* 减小悬停效果 */
-            box-shadow: 0 3px 6px rgba(0,0,0,0.15) !important;
+        /* 增强悬停效果选择器特异性，移除!important */
+        html body .welcome-page .category-tag:hover,
+        .article-container .welcome-page .category-tag:hover,
+        body #article-container .category-tag:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.15);
         }
         
         .recent-articles {

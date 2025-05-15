@@ -4,6 +4,7 @@
  * @author 陆凯
  * @created 2024-05-22
  * @updated 2024-05-22
+ * @updated 2024-09-01 - 移除!important标记，增加选择器特异性以保持样式优先级
  * 
  * 该文件专注于博客页面右侧栏的内部样式和外观，包括：
  * - 右侧栏的基本样式（背景、圆角、阴影等）
@@ -140,13 +141,16 @@
     /* 返回顶部按钮的响应式样式已移至scrollbar.css */
 }
 
-/* 确保所有内部元素不创建额外的滚动区域 */
-.blog-content .right-column > div,
-.blog-content .right-column #article-container,
-.blog-content .right-column .article-container {
-    overflow: visible !important;
-    max-height: none !important;
-    height: auto !important;
+/* 确保所有内部元素不创建额外的滚动区域 - 增加选择器特异性替代!important */
+html body .blog-content .right-column > div,
+html body .blog-content .right-column #article-container,
+html body .blog-content .right-column .article-container,
+body.blog-page .blog-content .right-column > div,
+body.blog-page .blog-content .right-column #article-container,
+body.blog-page .blog-content .right-column .article-container {
+    overflow: visible;
+    max-height: none;
+    height: auto;
 }
 
 /* 移除左侧栏滚动条样式，使用统一的类 */

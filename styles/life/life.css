@@ -3,6 +3,7 @@
  * @description 生活频道的整体布局样式
  * @created 2024-05-24
  * @updated 2024-08-16
+ * @updated 2024-09-01 - 移除!important标记，增加选择器特异性以保持样式优先级
  * 
  * 该文件专注于生活频道的整体布局样式，包括：
  * - 生活页面的左右两栏布局结构
@@ -62,15 +63,16 @@ body.life-page {
     transition: transform 0.3s ease;
 }
 
-/* 右侧栏布局 */
-.life-content .right-column {
+/* 右侧栏布局 - 增加选择器特异性替代!important */
+html body.life-page .life-content .right-column,
+body.life-page .life-content .right-column {
     position: relative;
     margin-left: calc(10px + 250px + 3px); /* 左栏宽度 + 间距 */
     flex: 1;
     height: calc(100vh - 85px);
     min-width: 0;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
+    overflow-y: auto;
+    overflow-x: hidden;
     z-index: 1;
 }
 
@@ -113,34 +115,43 @@ body.life-page {
     }
 }
 
-/* 响应式布局 - 小屏幕 */
+/* 响应式布局 - 小屏幕 - 增加选择器特异性替代!important */
 @media (max-width: 768px) {
-    .life-content {
+    /* 增强移动视图下内容区滚动行为 */
+    html body.life-page .life-content,
+    body.life-page .life-content,
+    html[data-viewport="mobile"] body .life-content {
         flex-direction: column;
         padding: 12px 10px 10px;
         gap: 15px;
         margin-top: 40px;
-        overflow-y: auto !important;
+        overflow-y: auto;
     }
     
-    .life-content .left-column {
+    /* 增强移动视图下左栏样式 */
+    html body.life-page .life-content .left-column,
+    body.life-page .life-content .left-column,
+    html[data-viewport="mobile"] body .life-content .left-column {
         position: relative;
         top: 0;
         left: 0;
         height: auto;
-        width: 100% !important;
-        overflow-y: visible !important;
+        width: 100%;
+        overflow-y: visible;
     }
     
-    .life-content .right-column {
+    /* 增强移动视图下右栏样式 */
+    html body.life-page .life-content .right-column,
+    body.life-page .life-content .right-column,
+    html[data-viewport="mobile"] body .life-content .right-column {
         position: relative;
         top: auto;
         right: auto;
         left: auto;
         margin-left: 0;
         width: 100%;
-        height: auto !important;
-        overflow-y: visible !important;
-        max-height: none !important;
+        height: auto;
+        overflow-y: visible;
+        max-height: none;
     }
 } 

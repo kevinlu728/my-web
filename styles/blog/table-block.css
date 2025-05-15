@@ -4,6 +4,7 @@
  * @description 表格组件的样式定义
  * @author 陆凯
  * @updated 2024-03-11
+ * @updated 2024-09-01 - 移除!important标记，增加选择器特异性以保持样式优先级
  */
 
 /* 重置所有表格相关元素的边距和内边距 */
@@ -140,15 +141,21 @@ tr:hover:not(.article-body tr:hover) {
     }
 }
 
-/* ===== 自适应宽度表格 ===== */
+/* ===== 自适应宽度表格 - 增加选择器特异性替代!important ===== */
+html body .auto-width-table,
+body .auto-width-table,
 .auto-width-table {
-    width: auto !important;
-    table-layout: auto !important;
+    width: auto;
+    table-layout: auto;
 }
 
+html body .auto-width-table th,
+html body .auto-width-table td,
+body .auto-width-table th,
+body .auto-width-table td,
 .auto-width-table th,
 .auto-width-table td {
-    width: auto !important;
+    width: auto;
     white-space: normal;
 }
 
@@ -169,9 +176,11 @@ tr:hover:not(.article-body tr:hover) {
     margin: 0;
 }
 
-/* ===== 数字列处理 ===== */
+/* ===== 数字列处理 - 增加选择器特异性替代!important ===== */
+html body .notion-table td.number-cell,
+body .notion-table td.number-cell,
 .notion-table td.number-cell {
-    min-width: 80px !important;
+    min-width: 80px;
 }
 
 /* ===== 表格响应式处理 ===== */
@@ -193,30 +202,6 @@ tr:hover:not(.article-body tr:hover) {
         overflow: hidden;
         text-overflow: ellipsis;
     }
-}
-
-/* ===== 自适应宽度表格 ===== */
-.auto-width-table {
-    width: auto !important;
-    table-layout: auto !important;
-}
-
-.auto-width-table th,
-.auto-width-table td {
-    width: auto !important;
-    white-space: normal;
-}
-
-/* 确保长文本单元格有足够空间 */
-.auto-width-table td.long-text {
-    min-width: 150px;
-    max-width: 300px;
-}
-
-/* 确保数字单元格对齐 */
-.auto-width-table td.number-cell {
-    text-align: right;
-    white-space: nowrap;
 }
 
 /* ===== 单元格内容样式 ===== */

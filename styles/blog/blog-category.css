@@ -1,4 +1,11 @@
 /* 文章分类相关样式移到这里 */
+/**
+ * @file blog-category.css
+ * @description 博客文章分类和树形导航样式
+ * @author 陆凯
+ * @created 2024-03-09
+ * @updated 2024-09-01 - 移除!important标记，增加选择器特异性以保持样式优先级
+ */
 
 /* 分类图标样式 */
 .category-icon {
@@ -160,16 +167,21 @@
     color: #4299e1;
 }
 
-/* 确保使用FontAwesome箭头向右图标 */
+/* 确保使用FontAwesome箭头向右图标 - 增加选择器特异性替代!important */
+html body .tree-toggle i:before,
+body.blog-page .tree-toggle i:before,
+.article-tree-container .tree-toggle i:before,
 .tree-toggle i:before {
-    content: "\f054" !important; /* 固定使用向右箭头，通过旋转控制方向 */
-    font-family: "Font Awesome 6 Free" !important;
-    font-weight: 900 !important;
+    content: "\f054"; /* 固定使用向右箭头，通过旋转控制方向 */
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
 }
 
-/* 全部收起状态下隐藏子项 */
+/* 全部收起状态下隐藏子项 - 增加选择器特异性替代!important */
+html body #article-tree .root-item.all-collapsed > .tree-children,
+body.blog-page #article-tree .root-item.all-collapsed > .tree-children,
 #article-tree .root-item.all-collapsed > .tree-children {
-    display: none !important;
+    display: none;
 }
 
 /* 树形结构展开动画 */

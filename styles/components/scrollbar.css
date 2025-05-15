@@ -3,12 +3,19 @@
  * @description 统一的自定义滚动条样式
  * @author 陆凯
  * @created 2024-05-23
+ * @updated 2024-08-31 - 整合所有页面滚动条样式到一个文件中，便于统一管理
+ * @updated 2024-09-01 - 移除!important标记，增加选择器特异性以保持样式优先级，确保与scrollbar.js逻辑兼容
  * 
  * 该文件定义了全站统一的自定义滚动条样式，包括：
  * - 浏览器通用的WebKit滚动条样式（Chrome/Safari/Edge等）
  * - Firefox专用的滚动条样式
  * - 滚动条的尺寸、颜色、圆角等视觉属性
+ * - 各个页面和组件的特定滚动条样式变体
  */
+
+/*=============================================
+=                基础滚动条样式              =
+=============================================*/
 
 /* 通用滚动条样式 - 适用于所有需要自定义滚动条的元素 */
 .custom-scrollbar {
@@ -66,6 +73,73 @@
     background-color: rgba(155, 155, 155, 0.7);
 }
 
+/*=============================================
+=            更淡的滚动条样式变体            =
+=============================================*/
+
+/* 目录导航等需要更淡滚动条的区域 */
+.light-scrollbar {
+    /* Firefox滚动条样式 */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(155, 155, 155, 0.3) transparent;
+}
+
+/* WebKit淡色滚动条样式 */
+.light-scrollbar::-webkit-scrollbar {
+    width: 3px;
+    height: 3px;
+}
+
+.light-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 3px;
+}
+
+.light-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(155, 155, 155, 0.3);
+    border-radius: 3px;
+}
+
+.light-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(155, 155, 155, 0.5);
+}
+
+/*=============================================
+=           白色边框滚动条样式变体           =
+=============================================*/
+
+/* 内容区域带白色边框滚动条 */
+.bordered-scrollbar {
+    /* Firefox滚动条样式 */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(155, 155, 155, 0.5) transparent;
+}
+
+/* WebKit带边框滚动条样式 */
+.bordered-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.bordered-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 2px 0;
+}
+
+.bordered-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(155, 155, 155, 0.5);
+    border-radius: 4px;
+    border: 2px solid white;
+}
+
+.bordered-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(155, 155, 155, 0.7);
+}
+
+/*=============================================
+=                HTML/BODY样式                =
+=============================================*/
+
 /* 应用于主体滚动 */
 html, body {
     /* 默认使用自定义滚动条 */
@@ -97,6 +171,10 @@ body::-webkit-scrollbar-thumb:hover {
     background-color: rgba(155, 155, 155, 0.7);
 }
 
+/*=============================================
+=                 主页滚动条                  =
+=============================================*/
+
 /* 专为首页设计的滚动条样式 */
 .home-page {
     /* 首页使用全局滚动，Body需要添加滚动条样式 */
@@ -124,6 +202,10 @@ body::-webkit-scrollbar-thumb:hover {
     background-color: rgba(155, 155, 155, 0.7);
 }
 
+/*=============================================
+=                博客页滚动条                 =
+=============================================*/
+
 /* 博客页面特定的滚动条样式 */
 .blog-page .blog-content {
     /* 博客内容区在大屏幕模式下不滚动 */
@@ -131,19 +213,78 @@ body::-webkit-scrollbar-thumb:hover {
     overflow: hidden;
 }
 
+/* 博客右侧栏滚动条样式 - 从article.css迁移 */
+.blog-content .right-column {
+    /* 使用Firefox滚动条 - 与统一样式保持一致 */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(155, 155, 155, 0.5) transparent;
+}
+
+.blog-content .right-column::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.blog-content .right-column::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 2px 0;
+}
+
+.blog-content .right-column::-webkit-scrollbar-thumb {
+    background-color: rgba(155, 155, 155, 0.5);
+    border-radius: 4px;
+    border: 2px solid white;
+}
+
+.blog-content .right-column::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(155, 155, 155, 0.7);
+}
+
+/* 文章目录滚动条样式 - 从article.css迁移 */
+.article-toc {
+    /* 使用Firefox滚动条缩减版 - 与统一样式保持一致但颜色更淡 */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(155, 155, 155, 0.3) transparent;
+}
+
+.article-toc::-webkit-scrollbar {
+    width: 3px;
+}
+
+.article-toc::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.article-toc::-webkit-scrollbar-thumb {
+    background-color: rgba(155, 155, 155, 0.3);
+    border-radius: 3px;
+}
+
+.article-toc::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(155, 155, 155, 0.5);
+}
+
 @media (max-width: 768px) {
-    /* 小屏幕下的博客内容区滚动行为 */
-    .article-page .blog-content {
-        overflow-y: auto !important;
-        height: 100vh !important;
+    /* 小屏幕下的博客内容区滚动行为 - 增加选择器特异性替代!important */
+    html body.blog-page .article-page .blog-content,
+    body.blog-page .article-page .blog-content,
+    html[data-viewport="mobile"] body .article-page .blog-content {
+        overflow-y: auto;
+        height: 100vh;
     }
     
-    /* 小屏幕下右栏不独立滚动 */
-    .article-page .right-column {
-        overflow: visible !important;
-        height: auto !important;
+    /* 小屏幕下右栏不独立滚动 - 增加选择器特异性替代!important */
+    html body.blog-page .article-page .right-column,
+    body.blog-page .article-page .right-column,
+    html[data-viewport="mobile"] body .article-page .right-column {
+        overflow: visible;
+        height: auto;
     }
 }
+
+/*=============================================
+=                生活页滚动条                 =
+=============================================*/
 
 /* 生活页面特定的滚动条样式 */
 .life-page .life-content {
@@ -153,18 +294,26 @@ body::-webkit-scrollbar-thumb:hover {
 }
 
 @media (max-width: 768px) {
-    /* 小屏幕下的博客内容区滚动行为 */
-    .life-page .life-content {
-        overflow-y: auto !important;
-        height: 100vh !important;
+    /* 小屏幕下的生活页内容区滚动行为 - 增加选择器特异性替代!important */
+    html body.life-page .life-page .life-content,
+    body.life-page .life-page .life-content,
+    html[data-viewport="mobile"] body .life-page .life-content {
+        overflow-y: auto;
+        height: 100vh;
     }
     
-    /* 小屏幕下右栏不独立滚动 */
-    .life-page .right-column {
-        overflow: visible !important;
-        height: auto !important;
+    /* 小屏幕下右栏不独立滚动 - 增加选择器特异性替代!important */
+    html body.life-page .life-page .right-column,
+    body.life-page .life-page .right-column,
+    html[data-viewport="mobile"] body .life-page .right-column {
+        overflow: visible;
+        height: auto;
     }
 }
+
+/*=============================================
+=                返回顶部按钮                 =
+=============================================*/
 
 /* "返回顶部"按钮样式 */
 .back-to-top {
@@ -238,4 +387,52 @@ body::-webkit-scrollbar-thumb:hover {
         width: 20px;
         height: 20px;
     }
+}
+
+/*=============================================
+=            组件特定滚动条样式              =
+=============================================*/
+
+/* 聊天消息区域滚动条 */
+.chat-messages {
+    scrollbar-width: thin;
+    scrollbar-color: #a0aec0 #edf2f7;
+}
+
+.chat-messages::-webkit-scrollbar {
+    width: 8px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+    background: #edf2f7;
+    border-radius: 4px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+    background-color: #a0aec0;
+    border-radius: 4px;
+}
+
+/* 调试面板滚动条 */
+#debug-panel {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(180, 190, 210, 0.35) rgba(240, 245, 250, 0.4);
+}
+
+#debug-panel::-webkit-scrollbar {
+    width: 5px;
+}
+
+#debug-panel::-webkit-scrollbar-track {
+    background: rgba(240, 245, 250, 0.4);
+    border-radius: 6px;
+}
+
+#debug-panel::-webkit-scrollbar-thumb {
+    background: rgba(180, 190, 210, 0.35);
+    border-radius: 6px;
+}
+
+#debug-panel::-webkit-scrollbar-thumb:hover {
+    background: rgba(160, 175, 200, 0.5);
 } 

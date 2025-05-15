@@ -18,7 +18,9 @@ import logger from '../utils/logger.js';
  */
 const ScrollbarClasses = {
     CUSTOM: 'custom-scrollbar',
-    NARROW: 'narrow-scrollbar'
+    NARROW: 'narrow-scrollbar',
+    LIGHT: 'light-scrollbar',
+    BORDERED: 'bordered-scrollbar'
 };
 
 /**
@@ -105,12 +107,12 @@ class Scrollbar {
             this.applyScrollbarStyle(ScrollTargets.BLOG_LEFT_COLUMN, ScrollbarClasses.NARROW); 
             // 应用文章树容器窄版滚动条
             this.applyScrollbarStyle(ScrollTargets.BLOG_ARTICLE_TREE, ScrollbarClasses.NARROW);
-            // 应用右侧栏通用滚动条
-            this.applyScrollbarStyle(ScrollTargets.BLOG_RIGHT_COLUMN, ScrollbarClasses.CUSTOM);
+            // 应用右侧栏带白色边框滚动条
+            this.applyScrollbarStyle(ScrollTargets.BLOG_RIGHT_COLUMN, ScrollbarClasses.BORDERED);
             // 应用博客主内容区滚动条（小屏幕模式下使用）
             this.applyScrollbarStyle(ScrollTargets.BLOG_CONTENT, ScrollbarClasses.CUSTOM);
-            // 应用文章目录滚动条
-            this.applyScrollbarStyle(ScrollTargets.ARTICLE_TOC, ScrollbarClasses.NARROW);
+            // 应用文章目录滚动条（更淡的样式）
+            this.applyScrollbarStyle(ScrollTargets.ARTICLE_TOC, ScrollbarClasses.LIGHT);
 
             // 禁用窗口滚动并使用右侧栏滚动
             this.enableCustomScrolling();
@@ -118,9 +120,9 @@ class Scrollbar {
             // 确保页面Body禁用默认滚动
             document.body.style.overflow = 'hidden';
 
-            // 应用右侧栏通用滚动条
-            this.applyScrollbarStyle(ScrollTargets.LIFE_RIGHT_COLUMN, ScrollbarClasses.CUSTOM);
-            // 应用博客主内容区滚动条（小屏幕模式下使用）
+            // 应用右侧栏带白色边框滚动条
+            this.applyScrollbarStyle(ScrollTargets.LIFE_RIGHT_COLUMN, ScrollbarClasses.BORDERED);
+            // 应用生活页面主内容区滚动条（小屏幕模式下使用）
             this.applyScrollbarStyle(ScrollTargets.LIFE_CONTENT, ScrollbarClasses.CUSTOM);
 
             // 禁用窗口滚动并使用右侧栏滚动

@@ -1,3 +1,10 @@
+/**
+ * @file debug-panel.css
+ * @description 调试面板样式
+ * @author 陆凯
+ * @updated 2024-08-31 - 移除!important标记，增加选择器特异性以保持样式优先级
+ */
+
 /* 调试区域容器 */
 .debug-section {
     margin-top: auto;
@@ -101,6 +108,7 @@
     z-index: 1000;
     max-height: 80vh;
     overflow-y: auto;
+    /* 使用统一滚动条样式，需要添加light-scrollbar类 */
 }
 
 /* 可拖动提示条 */
@@ -117,24 +125,7 @@
     cursor: grab;
 }
 
-/* 滚动条美化 */
-#debug-panel::-webkit-scrollbar {
-    width: 5px;
-}
-
-#debug-panel::-webkit-scrollbar-track {
-    background: rgba(240, 245, 250, 0.4);
-    border-radius: 6px;
-}
-
-#debug-panel::-webkit-scrollbar-thumb {
-    background: rgba(180, 190, 210, 0.35);
-    border-radius: 6px;
-}
-
-#debug-panel::-webkit-scrollbar-thumb:hover {
-    background: rgba(160, 175, 200, 0.5);
-}
+/* 滚动条样式已移至scrollbar.css */
 
 /* 向上滑动动画 */
 @keyframes slideUp {
@@ -182,23 +173,26 @@
     box-shadow: 0 0 0 2px rgba(147,197,253,0.1);
 }
 
-/* 调试控制按钮 */
-#debug-controls {
+/* 调试控制按钮 - 增加选择器特异性替代!important */
+#debug-panel #debug-controls {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
     margin-bottom: 16px;
 }
 
-#debug-controls button {
-    padding: 8px 16px !important;
-    background: #f8fafc !important;
-    color: #334155 !important;
-    border: 1px solid #e2e8f0 !important;
-    border-radius: 6px !important;
-    cursor: pointer !important;
-    font-size: 14px !important;
-    transition: all 0.3s ease !important;
+/* 增加选择器特异性，移除!important */
+html body #debug-panel #debug-controls button,
+body #debug-panel #debug-controls button,
+#debug-panel #debug-controls button {
+    padding: 8px 16px;
+    background: #f8fafc;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
     flex: 1;
     min-width: 120px;
     display: flex;
@@ -206,39 +200,52 @@
     justify-content: center;
 }
 
-#debug-controls button:hover {
-    background: #f1f5f9 !important;
-    border-color: #cbd5e1 !important;
+/* 增加悬停特异性 */
+html body #debug-panel #debug-controls button:hover,
+body #debug-panel #debug-controls button:hover,
+#debug-panel #debug-controls button:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
     transform: translateY(-1px);
 }
 
-/* 自动选择API按钮样式 */
-#api-select-btn {
-    background: #dbeafe !important;
-    border-color: #93c5fd !important;
-    color: #1e40af !important;
+/* 自动选择API按钮样式 - 增加选择器特异性 */
+html body #debug-panel #debug-controls #api-select-btn,
+body #debug-panel #debug-controls #api-select-btn,
+#debug-panel #debug-controls #api-select-btn {
+    background: #dbeafe;
+    border-color: #93c5fd;
+    color: #1e40af;
 }
 
-#api-select-btn:hover {
-    background: #bfdbfe !important;
-    border-color: #60a5fa !important;
+/* 增加悬停特异性 */
+html body #debug-panel #debug-controls #api-select-btn:hover,
+body #debug-panel #debug-controls #api-select-btn:hover,
+#debug-panel #debug-controls #api-select-btn:hover {
+    background: #bfdbfe;
+    border-color: #60a5fa;
 }
 
-/* 更新配置按钮 */
-#update-config-btn {
-    padding: 8px 16px !important;
-    background: #93C5FD !important;
-    color: white !important;
-    border: none !important;
-    border-radius: 6px !important;
-    cursor: pointer !important;
-    font-size: 14px !important;
-    transition: all 0.3s ease !important;
+/* 更新配置按钮 - 增加选择器特异性 */
+html body #debug-panel #update-config-btn,
+body #debug-panel #update-config-btn,
+#debug-panel #update-config-btn {
+    padding: 8px 16px;
+    background: #93C5FD;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
     width: 100%;
 }
 
-#update-config-btn:hover {
-    background: #60A5FA !important;
+/* 增加悬停特异性 */
+html body #debug-panel #update-config-btn:hover,
+body #debug-panel #update-config-btn:hover,
+#debug-panel #update-config-btn:hover {
+    background: #60A5FA;
     transform: translateY(-1px);
 }
 
@@ -517,10 +524,14 @@
     content: "⌘+⌥+K"; /* 使用Mac键盘符号 */
 }
 
-/* 在生产环境下隐藏调试面板相关元素 */
-body.production .debug-section,
-body.production #debug-toggle-container,
-body.production #debug-panel-container,
-body.production #debug-panel {
-    display: none !important;
+/* 在生产环境下隐藏调试面板相关元素 - 增加选择器特异性替代!important */
+html.production body .debug-section,
+html.production body #debug-toggle-container,
+html.production body #debug-panel-container,
+html.production body #debug-panel,
+body.production:not(.debug-enabled) .debug-section,
+body.production:not(.debug-enabled) #debug-toggle-container,
+body.production:not(.debug-enabled) #debug-panel-container,
+body.production:not(.debug-enabled) #debug-panel {
+    display: none;
 } 

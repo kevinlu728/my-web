@@ -176,7 +176,7 @@ class TableOfContents {
         container.innerHTML = '';
         
         // 设置容器样式
-        container.classList.add('article-toc');
+        container.classList.add('article-toc', 'light-scrollbar');
         
         // 不再添加额外的样式覆盖，使用CSS文件中的统一样式
         // 只保留底部显示修复的功能，避免添加可能导致冲突的样式

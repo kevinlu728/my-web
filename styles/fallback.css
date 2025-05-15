@@ -4,24 +4,26 @@
  * @author 陆凯
  * @version 1.0.0
  * @created 2024-04-01
+ * @updated 2024-08-29 - 移除!important标记，优化选择器特异性
  */
 
 /* ===== 基本图标回退样式 ===== */
 /* 用于图标资源加载失败时提供的基本图标样式 */
 /* 仅当存在no-fontawesome类时才应用回退样式 */
-html.no-fontawesome .fas.fa-chevron-right:before { content: "▸" !important; }
-html.no-fontawesome .fas.fa-chevron-down:before { content: "▾" !important; transform: rotate(0deg) !important; display: inline-block !important; }
-html.no-fontawesome .fas.fa-search:before { content: "🔍" !important; }
-html.no-fontawesome .fas.fa-times:before { content: "✕" !important; }
-html.no-fontawesome .fas.fa-sync:before { content: "↻" !important; }
-html.no-fontawesome .fas.fa-spinner:before { content: "⟳" !important; }
+/* 增强选择器特异性以替代!important */
+html.no-fontawesome body .fas.fa-chevron-right:before { content: "▸"; }
+html.no-fontawesome body .fas.fa-chevron-down:before { content: "▾"; transform: rotate(0deg); display: inline-block; }
+html.no-fontawesome body .fas.fa-search:before { content: "🔍"; }
+html.no-fontawesome body .fas.fa-times:before { content: "✕"; }
+html.no-fontawesome body .fas.fa-sync:before { content: "↻"; }
+html.no-fontawesome body .fas.fa-spinner:before { content: "⟳"; }
 /* 添加分类目录和文章图标回退 */
-html.no-fontawesome .fas.fa-folder:before, 
-html.no-fontawesome .fas.fa-folder-open:before { content: "📁" !important; }
-html.no-fontawesome .fas.fa-file:before,
-html.no-fontawesome .fas.fa-file-alt:before { content: "📄" !important; }
-html.no-fontawesome .fas.fa-tag:before { content: "🏷️" !important; }
-html.no-fontawesome .fas.fa-tags:before { content: "🏷️🏷️" !important; }
+html.no-fontawesome body .fas.fa-folder:before, 
+html.no-fontawesome body .fas.fa-folder-open:before { content: "📁"; }
+html.no-fontawesome body .fas.fa-file:before,
+html.no-fontawesome body .fas.fa-file-alt:before { content: "📄"; }
+html.no-fontawesome body .fas.fa-tag:before { content: "🏷️"; }
+html.no-fontawesome body .fas.fa-tags:before { content: "🏷️🏷️"; }
 .spin { animation: spin 2s linear infinite; }
 @keyframes spin { 100% { transform: rotate(360deg); } }
 
@@ -74,14 +76,14 @@ html.no-fontawesome .fas.fa-tags:before { content: "🏷️🏷️" !important; 
 }
 
 /* 基本的图标回退样式 - 仅在图标资源加载失败时使用 */
-html.no-fontawesome .fas, 
-html.no-fontawesome .far, 
-html.no-fontawesome .fab, 
-html.no-fontawesome .bi, 
-html.no-fontawesome .material-icons {
-    font-family: sans-serif !important;
-    transform: none !important;
-    -webkit-transform: none !important;
+html.no-fontawesome body .fas, 
+html.no-fontawesome body .far, 
+html.no-fontawesome body .fab, 
+html.no-fontawesome body .bi, 
+html.no-fontawesome body .material-icons {
+    font-family: sans-serif;
+    transform: none;
+    -webkit-transform: none;
 }
 
 /* 分类和文章图标基本样式 */
@@ -100,34 +102,36 @@ html.no-fontawesome .tree-item-icon i.fa-file-alt:before {
 }
 
 /* 确保三角形图标方向正确 - 增强版 */
-html.no-fontawesome .tree-toggle i:before,
-html.no-fontawesome .unicode-icon {
-    display: inline-block !important;
-    transform: none !important;
-    -webkit-transform: none !important;
-    rotation: 0deg !important;
-    text-align: center !important;
-    font-style: normal !important;
+html.no-fontawesome body .tree-toggle i:before,
+html.no-fontawesome body .unicode-icon {
+    display: inline-block;
+    transform: none;
+    -webkit-transform: none;
+    rotation: 0deg;
+    text-align: center;
+    font-style: normal;
 }
 
 /* 特定精确覆盖 - 最高优先级 */
-html.no-fontawesome .tree-item.expanded > .tree-item-content .tree-toggle i:before {
-    content: "▾" !important;
+/* 使用更具体的选择器替代!important */
+html.no-fontawesome body .tree-item.expanded > .tree-item-content .tree-toggle i:before {
+    content: "▾";
 }
 
-html.no-fontawesome .tree-item:not(.expanded) > .tree-item-content .tree-toggle i:before {
-    content: "▸" !important;
+html.no-fontawesome body .tree-item:not(.expanded) > .tree-item-content .tree-toggle i:before {
+    content: "▸";
 }
 
 /* 完全禁用任何可能干扰的CSS转换 */
-html.no-fontawesome * {
-    transition: none !important;
+/* 使用更高特异性的选择器 */
+html.no-fontawesome body * {
+    transition: none;
 }
 
-html.no-fontawesome .tree-toggle i {
-    transform: none !important;
-    -webkit-transform: none !important;
-    transition: none !important;
+html.no-fontawesome body .tree-toggle i {
+    transform: none;
+    -webkit-transform: none;
+    transition: none;
 }
 
 /* 代码块最小回退样式 - 仅在代码高亮资源加载失败时使用 */

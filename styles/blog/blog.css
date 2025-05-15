@@ -4,6 +4,7 @@
  * @author 陆凯
  * @created 2024-03-09
  * @updated 2024-08-16
+ * @updated 2024-09-01 - 移除!important标记，增加选择器特异性以保持样式优先级
  * 
  * 该文件专注于博客页面的整体布局样式，包括：
  * - 博客页面的整体布局（flex布局、间距等）
@@ -70,15 +71,17 @@ body.blog-page {
     transition: width 0.2s ease; /* 添加宽度变化的过渡效果 */
 }
 
-/* 右侧栏基本定位和大小 */
+/* 右侧栏基本定位和大小 - 增加选择器特异性替代!important */
+html body .blog-content .right-column,
+body.blog-page .blog-content .right-column,
 .blog-content .right-column {
     position: relative; /* 保持固定定位以防止上移问题 */
     margin-left: calc(10px + 300px + 3px); /* 使用更小的左侧内边距但保持拖动手柄宽度 */
     flex: 1; /* 填充剩余空间 */
     height: calc(100vh - 85px); /* 固定高度，与左栏保持一致 */
     min-width: 0; /* 允许收缩 */
-    overflow-y: auto !important; /* 仅创建一个纵向滚动区域 */
-    overflow-x: hidden !important; /* 防止水平滚动 */
+    overflow-y: auto; /* 仅创建一个纵向滚动区域 */
+    overflow-x: hidden; /* 防止水平滚动 */
     z-index: 1;
     transition: left 0.2s ease, right 0.2s ease; /* 修改过渡效果只针对位置变化 */
 }
@@ -133,25 +136,34 @@ body.blog-page {
 
 /* 响应式布局 - 小屏幕 */
 @media (max-width: 768px) {
+    /* 增强主容器样式特异性 */
+    html body .blog-content,
+    body.blog-page .blog-content,
     .blog-content {
         flex-direction: column; /* 小屏幕改为垂直布局 */
         padding: 12px 10px 10px; /* 调整内边距，包括顶部 */
         gap: 15px; /* 垂直间距 */
         margin-top: 40px; /* 调整顶部间距 */
         border-top: 1px solid rgba(0, 0, 0, 0.05); /* 保持顶部分隔线 */
-        overflow-y: auto !important; /* 小屏幕下主容器可以滚动 */
+        overflow-y: auto; /* 小屏幕下主容器可以滚动 */
         /* 滚动条样式通过custom-scrollbar类应用 */
     }
     
+    /* 增强左侧栏样式特异性 */
+    html body .blog-content .left-column,
+    body.blog-page .blog-content .left-column,
     .blog-content .left-column {
         position: relative; /* 小屏幕下改回相对定位 */
         top: 0;
         left: 0;
         height: auto; /* 自动高度 */
-        width: 100% !important; /* 强制宽度100% */
-        overflow-y: visible !important; /* 确保在小屏幕上不显示滚动条 */
+        width: 100%; /* 强制宽度100% */
+        overflow-y: visible; /* 确保在小屏幕上不显示滚动条 */
     }
     
+    /* 增强右侧栏样式特异性 */
+    html body .blog-content .right-column,
+    body.blog-page .blog-content .right-column,
     .blog-content .right-column {
         position: relative; /* 小屏幕恢复相对定位 */
         top: auto; /* 重置顶部位置 */
@@ -159,13 +171,17 @@ body.blog-page {
         left: auto; /* 重置左侧位置 */
         margin-left: 0; /* 重置左边距 */
         width: 100%; /* 确保宽度100% */
-        height: auto !important; /* 小屏幕下自适应高度 */
-        overflow-y: visible !important; /* 小屏幕下允许内容流动，避免双滚动 */
-        overflow-x: hidden !important; /* 防止水平滚动 */
-        max-height: none !important; /* 移除最大高度限制 */
+        height: auto; /* 小屏幕下自适应高度 */
+        overflow-y: visible; /* 小屏幕下允许内容流动，避免双滚动 */
+        overflow-x: hidden; /* 防止水平滚动 */
+        max-height: none; /* 移除最大高度限制 */
     }
     
+    /* 增强拖动手柄样式特异性 */
+    html body .resize-handle,
+    body.blog-page .resize-handle,
+    .blog-content .resize-handle,
     .resize-handle {
-        display: none !important; /* 在小屏设备上隐藏调整手柄 */
+        display: none; /* 在小屏设备上隐藏调整手柄 */
     }
 } 

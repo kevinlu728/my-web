@@ -5,6 +5,8 @@
  * @version 1.2.0
  * @created 2024-03-09
  * @updated 2024-07-12
+ * @updated 2024-08-30 - 修复内联样式导致的代码块灰色背景问题
+ * @updated 2024-08-30 - 修复代码块字体大小变化问题，恢复原始字体大小
  * 
  * 该模块实现了代码块的懒加载和语法高亮功能：
  * - 使用IntersectionObserver监测代码块可见性，实现按需加载
@@ -140,6 +142,17 @@ class CodeLazyLoader {
     addInlineStyles() {
         const style = document.createElement('style');
         style.textContent = `
+            /* 修复：移除顶层代码块容器的背景和边框样式 */
+            .lazy-block.code-block {
+                background: none;
+                background-color: transparent;
+                padding: 0;
+                margin: 0;
+                box-shadow: none;
+                border: none;
+            }
+            
+            /* 保留内部代码容器的样式 */
             .code-container {
                 margin: 1.5rem 0;
                 border-radius: 5px;
@@ -161,18 +174,22 @@ class CodeLazyLoader {
             }            
             .code-content pre {
                 margin: 0;
-                padding: 1rem;
+                padding: 0.8em;
                 font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-                font-size: 0.9rem;
-                line-height: 1.5;
+                font-size: 14px;
+                line-height: 1.4;
             }
             .code-content code {
-                font-family: inherit;
+                font-family: "JetBrains Mono", Consolas, Monaco, "Andale Mono", monospace;
+                font-size: 14px;
+                line-height: 1.4;
                 display: block;
                 color: #f8f8f2;
+                background: none;
+                padding: 0;
             }            
             .no-highlight {
-                color: #f8f8f2 !important;
+                color: #f8f8f2;
                 white-space: pre-wrap;
             }
             .waiting-for-highlight {

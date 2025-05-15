@@ -1,4 +1,9 @@
-/* 从原 chat.css 复制所有内容 */ 
+/**
+ * @file chat.css
+ * @description 聊天组件样式
+ * @author 陆凯
+ * @updated 2024-09-01 - 移除!important标记，增加选择器特异性以保持样式优先级
+ */
 
 /* 聊天组件样式 */
 .chat-widget {
@@ -96,24 +101,10 @@
     gap: 16px;
     width: 100%;
     box-sizing: border-box;
-    scrollbar-width: thin;
-    scrollbar-color: #a0aec0 #edf2f7;
+    /* 使用统一滚动条样式 */
 }
 
-/* 自定义滚动条样式 */
-.chat-messages::-webkit-scrollbar {
-    width: 8px;
-}
-
-.chat-messages::-webkit-scrollbar-track {
-    background: #edf2f7;
-    border-radius: 4px;
-}
-
-.chat-messages::-webkit-scrollbar-thumb {
-    background-color: #a0aec0;
-    border-radius: 4px;
-}
+/* 自定义滚动条样式已移至scrollbar.css */
 
 .chat-input {
     padding: 12px;
@@ -199,10 +190,19 @@
     transform: rotate(-45deg);
 }
 
-/* 显示调整大小状态 */
-.resizing {
+/* 显示调整大小状态 - 增加选择器特异性替代!important */
+html body .chat-widget .resizing,
+body .chat-widget .resizing,
+.chat-widget .resizing {
     user-select: none;
-    cursor: nwse-resize !important;
+    cursor: nwse-resize;
+}
+
+/* 额外确保在拖动操作期间cursor保持一致 */
+html body .chat-widget.resizing *,
+body .chat-widget.resizing *,
+.chat-widget.resizing * {
+    cursor: nwse-resize;
 }
 
 /* 消息样式 */
