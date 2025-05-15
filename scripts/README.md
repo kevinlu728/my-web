@@ -4,61 +4,65 @@
 
 ```
 scripts/
-├── blog/                  # 博客频道功能
-│   ├── articleManager.js  # 文章管理器
-│   ├── articleRenderer.js # 文章渲染器
-│   ├── categoryManager.js # 分类管理器
+├── blog/                       # 博客频道功能
+│   ├── articleManager.js       # 文章管理器
+│   ├── articleRenderer.js      # 文章渲染器
+│   ├── articlePaginationManager.js # 文章分页管理器
+│   ├── articleCacheManager.js  # 文章缓存管理器
+│   ├── categoryManager.js      # 分类管理器
 │   ├── articleSearchManager.js # 文章搜索管理器
-│   ├── codeLazyLoader.js  # 代码块懒加载器
-│   ├── mathLazyLoader.js  # 数学公式懒加载器
-│   ├── tableLazyLoader.js # 表格懒加载器
-│   ├── imageLazyLoader.js # 图片懒加载器
-│   ├── tableOfContents.js # 目录管理器
-│   ├── tech-blog.js       # 技术博客页面入口
+│   ├── codeLazyLoader.js       # 代码块懒加载器
+│   ├── mathLazyLoader.js       # 数学公式懒加载器
+│   ├── tableLazyLoader.js      # 表格懒加载器
+│   ├── imageLazyLoader.js      # 图片懒加载器
+│   ├── tableOfContents.js      # 目录管理器
+│   ├── tech-blog.js            # 技术博客页面入口
 │   └── ...
-├── components/            # UI组件相关脚本
-│   ├── chatWidget.js      # 聊天窗口组件
-│   ├── contactModals.js   # 联系方式弹窗组件
-│   ├── debugPanel.js      # 调试面板组件
-│   ├── navigation.js      # 导航菜单组件
-│   ├── particleBackground.js # 粒子背景组件
-│   ├── scrollbar.js       # 滚动条管理组件
+├── components/                 # UI组件相关脚本
+│   ├── chatWidget.js           # 聊天窗口组件
+│   ├── contactModals.js        # 联系方式弹窗组件
+│   ├── debugPanel.js           # 调试面板组件
+│   ├── navigation.js           # 导航菜单组件
+│   ├── particleBackground.js   # 粒子背景组件
+│   ├── scrollbar.js            # 滚动条管理组件
 │   └── ...
-├── config/                # 配置文件
-│   ├── config.js          # 配置主文件
-│   ├── config.development.js # 开发环境配置
-│   ├── config.production.js # 生产环境配置
-│   ├── resources.js       # 资源配置
-│   └── aiConfig.js        # AI服务配置
+├── config/                     # 配置文件
+│   ├── config.js               # 配置主文件
+│   ├── config.development.js   # 开发环境配置
+│   ├── config.production.js    # 生产环境配置
+│   ├── resources.js            # 资源配置
+│   └── aiConfig.js             # AI服务配置
 │   └── ...
-├── home/                  # 首页功能
-│   ├── home.js            # 首页页面入口
+├── home/                       # 首页功能
+│   ├── home.js                 # 首页页面入口
 │   └── ...
-├── life/                  # 生活频道功能
-│   ├── photoManager.js    # 照片管理器  
-│   ├── photoRenderer.js   # 照片渲染器
-│   ├── photoWall.js       # 照片墙组件
-│   ├── life.js            # 生活频道页面入口
+├── life/                       # 生活频道功能
+│   ├── photoManager.js         # 照片管理器  
+│   ├── photoRenderer.js        # 照片渲染器
+│   ├── photoWall.js            # 照片墙组件
+│   ├── life.js                 # 生活频道页面入口
 │   └── ...
-├── resources/             # 资源管理
-│   ├── gridjsLoader.js    # 表格资源
-│   ├── katexLoader.js     # 数学公式资源
-│   ├── prismLoader.js     # 代码高亮资源
-│   ├── resourceChecker.js # 资源检查器
-│   ├── resourceEvent.js   # 资源事件管理器
-│   ├── resourceManager.js # 资源管理器
-│   ├── resourceTimeout.js # 资源超时管理器
-│   ├── scriptResourceLoader.js   # 脚本资源加载器
-│   ├── styleResourceLoader.js    # 样式资源加载器
+├── resources/                  # 资源管理
+│   ├── gridjsLoader.js         # 表格资源
+│   ├── katexLoader.js          # 数学公式资源
+│   ├── prismLoader.js          # 代码高亮资源
+│   ├── resourceChecker.js      # 资源检查器
+│   ├── resourceEvent.js        # 资源事件管理器
+│   ├── resourceManager.js      # 资源管理器
+│   ├── resourceTimeout.js      # 资源超时管理器
+│   ├── scriptResourceLoader.js # 脚本资源加载器
+│   ├── styleResourceLoader.js  # 样式资源加载器
 │   └── ...
-├── services/                 # API服务客户端
-│   ├── aiService.js          # AI服务
-│   ├── notionAPIService.js    # Notion API服务
+├── services/                   # API服务客户端
+│   ├── aiService.js            # AI服务
+│   ├── notionAPIService.js     # Notion API服务
 │   └── ...
-├── utils/                 # 工具类函数
-│   ├── logger.js          # 日志工具
-│   ├── common-utils.js    # 通用工具函数
-│   ├── dom-utils.js       # DOM操作工具
+├── utils/                      # 工具类函数
+│   ├── logger.js               # 日志工具
+│   ├── common-utils.js         # 通用工具函数
+│   ├── dom-utils.js            # DOM操作工具
+│   ├── article-utils.js        # 文章相关工具函数
+│   ├── url-utils.js            # URL参数管理工具
 │   └── ...
 ```
 
@@ -74,9 +78,10 @@ scripts/
 ### 2. 博客频道 (blog/)
 
 - 文章管理器：文章数据获取、过滤、渲染和状态管理
+- 分页管理器：处理文章的"加载更多"功能和滚动检测
+- 缓存管理器：优化数据加载性能，管理文章缓存
 - 分类管理器：处理文章分类、筛选和状态同步
 - 搜索管理器：提供文章搜索和结果高亮功能
-- 缓存管理器：优化数据加载性能
 - 懒加载系统：针对代码块、公式、表格和图片的延迟加载
 - 目录导航：自动生成和处理文章目录
 

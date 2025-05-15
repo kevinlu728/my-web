@@ -19,20 +19,18 @@ styles/
 │   ├── blog-right-column.css # 博客右侧栏样式
 │   └── blog-resize-handle.css # 博客栏宽调整组件样式
 ├── life/                   # 生活频道相关样式
-│   └── life.css            # 生活频道主样式文件
-├── components/             # UI组件样式
-│   ├── header.css          # 页头样式
-│   ├── footer.css          # 页脚样式
-│   ├── chat.css            # 聊天组件样式
-│   ├── modal.css           # 模态框样式
-│   ├── debug-panel.css     # 调试面板样式
-│   ├── loading-spinner.css # 加载动画样式
-│   ├── scrollbar.css       # 自定义滚动条样式
-│   └── ...
-├── layouts/                # 页面布局样式
-│   └── ...
-└── sections/               # 页面区块样式
-    ├── photo-wall.css      # 照片墙样式
+│   ├── life.css            # 生活频道主样式文件
+│   ├── life-left-column.css  # 生活左侧栏样式
+│   ├── life-right-column.css # 生活右侧栏样式
+│   └── life-photo-wall.css   # 照片墙样式
+└── components/             # UI组件样式
+    ├── header.css          # 页头样式
+    ├── footer.css          # 页脚样式
+    ├── chat.css            # 聊天组件样式
+    ├── modal.css           # 模态框样式
+    ├── debug-panel.css     # 调试面板样式
+    ├── loading-spinner.css # 加载动画样式
+    ├── scrollbar.css       # 自定义滚动条样式
     └── ...
 ```
 
