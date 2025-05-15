@@ -155,34 +155,6 @@ class NotionAPIService {
     }
 
     /**
-     * 专用API测试函数
-     * 兼容notionService的testApiConnection
-     */
-    async testApiConnection() {
-        try {
-        this.logInfo('测试API连接...');
-        const apiUrl = `${this.getActiveBaseUrl()}/hello`;
-        this.logInfo(`测试API URL: ${apiUrl}`);
-        
-        const response = await fetch(apiUrl);
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            this.logError(`API连接测试失败: ${response.status}`, errorText);
-            throw new Error(`API连接测试失败: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        this.logInfo('API连接测试成功:', data);
-        
-        return data;
-        } catch (error) {
-        this.logError('测试API连接出错:', error);
-        throw error;
-        }
-    }
-
-    /**
      * 切换到直接API实现
      */
     enableDirectApi() {
@@ -596,12 +568,3 @@ const notionAPIService = new NotionAPIService();
 window.notionAPIService = notionAPIService;  // 用于调试面板
 // ES模块导出，兼容 import 方式
 export default notionAPIService;
-
-// 为兼容现有代码，导出与notionService.js相同的函数接口
-export const getArticles = notionAPIService.getArticles.bind(notionAPIService);
-export const getArticleContent = notionAPIService.getArticleContent.bind(notionAPIService);
-export const getDatabaseInfo = notionAPIService.getDatabaseInfo.bind(notionAPIService);
-export const getDatabases = notionAPIService.getDatabases.bind(notionAPIService);
-export const testApiConnection = notionAPIService.testApiConnection.bind(notionAPIService);
-export const getBlockChildren = notionAPIService.getBlockChildren.bind(notionAPIService);
-export const getPhotos = notionAPIService.getPhotos.bind(notionAPIService);

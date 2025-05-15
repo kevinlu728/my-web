@@ -31,7 +31,7 @@
  * - 依赖 articleRenderer.js 渲染内容
  * - 依赖 welcomePageManager.js 管理欢迎页面
  */
-import { getArticles, getArticleContent } from '../services/notionAPIService.js';
+import notionAPIService from '../services/notionAPIService.js';
 import { contentViewManager, ViewMode, ViewEvents } from './contentViewManager.js';
 import { categoryManager } from './categoryManager.js';
 import { articleSearchManager } from './articleSearchManager.js';
@@ -204,7 +204,7 @@ class ArticleManager {
             
             // 获取文章列表
             logger.info('正在从 API 获取文章列表...');
-            const result = await getArticles(this.blogDatabaseId);
+            const result = await notionAPIService.getArticles(this.blogDatabaseId);
             
             // 清除超时
             clearTimeout(timeoutId);
@@ -630,7 +630,7 @@ class ArticleManager {
             }, 12000); // 12秒超时
             
             // 从API获取文章
-            const articleData = await getArticleContent(pageId);
+            const articleData = await notionAPIService.getArticleContent(pageId);
             
             // 清除超时
             clearTimeout(timeoutId);
