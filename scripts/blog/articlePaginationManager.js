@@ -11,7 +11,6 @@
  * - 管理加载状态和UI反馈
  */
 
-
 import { renderMoreBlocks } from './articleRenderer.js';
 import { articleCacheManager } from './articleCacheManager.js';   
 import { updateLoadMoreStatus } from '../utils/article-utils.js';
@@ -39,11 +38,44 @@ class ArticlePaginationManager {
         // 防抖/节流相关
         this.triggerDebounceTimeout = null;
         
+        // 添加游标历史记录，用于检测循环游标
+        this.cursorHistory = new Set();
+        
         // 绑定方法的this上下文
         this._handleWindowResize = this._handleWindowResize.bind(this);
         
         // 添加窗口尺寸变化监听
         window.addEventListener('resize', this._handleWindowResize);
+    }
+
+    /**
+     * 统一更新加载状态
+     * @param {boolean} isLoading - 是否正在加载
+     * @param {Object} options - 附加选项
+     * @param {boolean} options.hasError - 是否发生错误 
+     * @param {boolean} options.updateUI - 是否更新UI (默认: true)
+     * @private
+     */
+    _updateLoadingState(isLoading, options = {}) {
+        const { hasError = false, updateUI = true } = options;
+
+        // 同时更新两个状态变量，确保它们一致
+        this.isLoading = isLoading;
+        this.isLoadingMore = isLoading;
+        
+        // 记录加载开始时间（用于超时检测）
+        if (isLoading) {
+            this._loadingStartTime = Date.now();
+        } else {
+            this._loadingStartTime = null;
+        }
+        
+        // 如果需要，更新UI
+        if (updateUI) {
+            this.updateLoadMoreContainer(isLoading, this.hasMore, hasError);
+        }
+        
+        logger.debug(`🔄 [状态更新] 加载状态: ${isLoading ? '加载中' : '空闲'} ${hasError ? '(有错误)' : ''}`);
     }
 
     /**
@@ -75,6 +107,7 @@ class ArticlePaginationManager {
                 this.scrollHandler = null;
             }
         }
+        // 更新UI，使用当前加载状态
         this.updateLoadMoreContainer(this.isLoading, this.hasMore);
     }
 
@@ -336,8 +369,8 @@ class ArticlePaginationManager {
                 // 如果还在加载状态，可能是卡住了，尝试重置并重试
                 if (this.isLoading || this.isLoadingMore) {
                     logger.warn('检测到加载可能卡住，尝试重置状态并重试');
-                    this.isLoading = false;
-                    this.isLoadingMore = false;
+                    // 使用统一方法重置状态
+                    this._updateLoadingState(false);
                     // 立即重试加载
                     this._triggerLoadMore(loadMoreContainer);
                 }
@@ -390,19 +423,20 @@ class ArticlePaginationManager {
             return false;
         }
         
+        // 保存当前游标，用于后续验证
+        const originalCursor = this.nextCursor;
+        
         // 添加超时保护，确保状态不会永久卡住
         const loadMoreTimeout = setTimeout(() => {
             if (this.isLoadingMore) {
                 logger.warn('加载更多超时，强制重置状态');
-                this.isLoadingMore = false;
-                this.isLoading = false;
-                // 更新UI显示加载失败状态
-                this.updateLoadMoreContainer(false, this.hasMore, true);
+                // 使用统一状态管理方法更新状态，并显示错误
+                this._updateLoadingState(false, { hasError: true });
             }
         }, 8000); // 缩短到8秒超时保护
         
-        this.isLoadingMore = true;
-        this.isLoading = true;  // 确保两个状态一致
+        // 设置加载状态
+        this._updateLoadingState(true);
         logger.info('开始加载更多内容');
         
         try {
@@ -411,24 +445,54 @@ class ArticlePaginationManager {
             // 双重检查：确保文章ID和请求ID都匹配
             if (this.currentPageId !== currentPageId || this.requestIdentifier !== requestId) {
                 logger.info('文章已切换或有更新请求，取消加载更多内容');
-                this.isLoadingMore = false;
-                this.isLoading = false;
+                this._updateLoadingState(false);
                 clearTimeout(loadMoreTimeout);
                 return false;
             }
             
             if (!moreData || !moreData.blocks) {
                 logger.warn('没有获取到更多内容或格式错误');
-                this.isLoadingMore = false;
-                this.isLoading = false;
+                this._updateLoadingState(false, { hasError: true });
                 clearTimeout(loadMoreTimeout);
-                // 显示重试选项
-                this.updateLoadMoreContainer(false, this.hasMore, true);
                 return false;
+            }
+            
+            // 游标验证 - 只记录日志，不修改hasMore
+            if (moreData.nextCursor === originalCursor && moreData.blocks.length > 0) {
+                logger.warn('⚠️ [游标未变] 检测到游标未变化，但仍信任服务器返回的hasMore值');
+            }
+            
+            // 特殊情况处理：服务器返回空游标但仍标记hasMore为true
+            if (!moreData.nextCursor && moreData.hasMore) {
+                logger.warn('⚠️ [状态矛盾] 服务器返回hasMore=true但无游标');
+                // 不再覆盖hasMore，而是信任服务器的值
             }
             
             // 处理数据
             const newBlocks = this.processMoreContentData(moreData);
+            
+            // 如果过滤后没有新块（全是重复块），提前结束
+            if (!newBlocks || newBlocks.length === 0) {
+                logger.info('⚠️ [空结果] 过滤重复块后没有新内容需要渲染');
+                // 检查是否还有更多内容可加载
+                if (this.hasMore && this.nextCursor) {
+                    logger.info('🔄 [自动重试] 尝试再次加载以获取新内容');
+                    // 重置加载状态
+                    this._updateLoadingState(false);
+                    clearTimeout(loadMoreTimeout);
+                    // 短暂延迟后再次尝试加载
+                    setTimeout(() => {
+                        this.loadMoreContent(updateCacheCallback);
+                    }, 500);
+                    return false;
+                } else {
+                    // 如果没有更多内容，更新UI
+                    this._updateLoadingState(false);
+                    clearTimeout(loadMoreTimeout);
+                    updateLoadMoreStatus(false, this.hasMore);
+                    return false;
+                }
+            }
             
             // 更新缓存
             if (typeof updateCacheCallback === 'function') {
@@ -443,17 +507,16 @@ class ArticlePaginationManager {
             const currentArticleBody = document.querySelector(`.article-body[data-article-id="${this.currentPageId}"]`);
             if (!currentArticleBody) {
                 logger.warn('未找到当前文章的正文容器，取消渲染');
-                this.isLoadingMore = false;
-                this.isLoading = false;
+                this._updateLoadingState(false);
                 clearTimeout(loadMoreTimeout);
                 return false;
             }
             const renderResult = renderMoreBlocks(newBlocks);
 
-            // 如果没有更多内容，确保显示提示
+            // 根据服务器返回的hasMore更新UI状态
             if (!this.hasMore) {
                 logger.info('✅ [分页完成] 已加载所有内容，文章完整加载');
-                // 先更新UI状态以显示"没有更多内容"
+                // 根据hasMore状态更新UI
                 updateLoadMoreStatus(false, false);
             } else {
                 // 还有更多内容，更新状态
@@ -463,18 +526,13 @@ class ArticlePaginationManager {
 
             // 完成后清除超时
             clearTimeout(loadMoreTimeout);
-            this.isLoadingMore = false;
-            this.isLoading = false;
+            this._updateLoadingState(false);
             return renderResult;
         } catch (error) {
             logger.error('❌ [分页错误] 加载更多内容失败:', error);
             // 确保在错误情况下也重置状态
             clearTimeout(loadMoreTimeout);
-            this.isLoadingMore = false;
-            this.isLoading = false;
-            
-            // 显示错误状态，允许用户重试
-            this.updateLoadMoreContainer(false, this.hasMore, true);
+            this._updateLoadingState(false, { hasError: true });
             return false;
         }
     }
@@ -537,9 +595,27 @@ class ArticlePaginationManager {
      * @returns {Array|null} 新的内容块或null
      */
     processMoreContentData(data) {
-        // 更新分页状态
+        const oldCursor = this.nextCursor;
+        
+        // 更新分页状态 - 信任服务器返回的值
         this.hasMore = data.hasMore;
         this.nextCursor = data.nextCursor;
+
+        // 检查游标是否已在历史记录中（检测循环）- 只记录日志，不修改hasMore
+        if (this.nextCursor && this.cursorHistory.has(this.nextCursor)) {
+            logger.warn(`⚠️ [游标重复] 检测到游标 ${this.nextCursor.substring(0, 8)}... 已存在于历史记录中`);
+            // 不再强制修改hasMore值
+        } else if (this.nextCursor) {
+            // 将新游标添加到历史记录
+            this.cursorHistory.add(this.nextCursor);
+            logger.debug(`📌 [游标记录] 记录游标: ${this.nextCursor.substring(0, 8)}...，当前历史记录数: ${this.cursorHistory.size}`);
+        }
+        
+        // 游标相同的检测 - 只记录日志，不修改hasMore
+        if (oldCursor === this.nextCursor && this.hasMore) {
+            logger.warn('⚠️ [游标未变] 游标未变化但服务器表示还有更多内容');
+            // 不再覆盖hasMore值
+        }
 
         // 如果没有新的内容块，直接返回
         if (!data.blocks || data.blocks.length === 0) {
@@ -547,13 +623,29 @@ class ArticlePaginationManager {
             return null;
         }
         
-        logger.info(`加载了 ${data.blocks.length} 个新块`);
+        logger.info(`收到 ${data.blocks.length} 个新块`);
         
-        // 添加到已加载的块中
+        // 添加重复内容检测
+        // 先初始化已加载的块数组（如果尚未初始化）
         this.loadedBlocks = this.loadedBlocks || [];
-        this.loadedBlocks = this.loadedBlocks.concat(data.blocks);
         
-        return data.blocks;
+        // 过滤掉重复的块
+        const newUniqueBlocks = data.blocks.filter(newBlock => {
+            // 检查是否已存在相同ID的块
+            return !this.loadedBlocks.some(existingBlock => existingBlock.id === newBlock.id);
+        });
+        
+        const duplicateCount = data.blocks.length - newUniqueBlocks.length;
+        if (duplicateCount > 0) {
+            logger.warn(`⚠️ [重复检测] 过滤掉 ${duplicateCount} 个重复块`);
+        }
+        
+        logger.info(`加载了 ${newUniqueBlocks.length} 个新块（过滤后）`);
+        
+        // 只添加非重复的块
+        this.loadedBlocks = this.loadedBlocks.concat(newUniqueBlocks);
+        
+        return newUniqueBlocks;
     }
 
     /**
@@ -620,8 +712,12 @@ class ArticlePaginationManager {
         this.nextCursor = null;
         this.currentPageId = null;
         this.loadedBlocks = [];
-        this.isLoading = false;
-        this.isLoadingMore = false;
+        
+        // 清除游标历史记录
+        this.cursorHistory.clear();
+        
+        // 使用统一状态管理方法重置加载状态
+        this._updateLoadingState(false, { updateUI: false });
         
         // 移除滚动监听器
         if (this.scrollHandler) {

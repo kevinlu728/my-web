@@ -13,7 +13,7 @@
 
 import notionAPIService from '../services/notionAPIService.js';
 import { lifeViewManager, ModuleType } from './lifeViewManager.js';
-import { processPhotoListData } from '../utils/photo-utils.js';
+import { processPhotoListData, filterPhotosByModuleType } from '../utils/photo-utils.js';
 import lifecycleManager from '../utils/lifecycleManager.js';
 import { throttle, showLoadingSpinner } from '../utils/common-utils.js';
 import logger from '../utils/logger.js';
@@ -27,6 +27,7 @@ class PhotoPaginationManager {
 
         // 分页状态
         this.photos = [];
+        this.filteredPhotos = []; // 过滤后的照片数组
         this.currentPage = 1;
         this.photosPerPage = DEFAULT_PHOTOS_PER_PAGE; //每页显示照片数
         this.paginationInfo = null;
@@ -62,6 +63,7 @@ class PhotoPaginationManager {
         // 设置基础属性
         this.lifeDatabaseId = databaseId;
         this.photos = [...photos];
+        this.filteredPhotos = [...photos]; // 初始时过滤的照片和所有照片相同
         this.paginationInfo = paginationInfo;
         this.currentPage = 1;
         this.isLoading = false;
@@ -340,10 +342,28 @@ class PhotoPaginationManager {
                     }
                 }
                 
-                // 只有通过API加载新照片后，才需要更新总照片集合；如果是下面的通过本地分页方式获取的照片，则不需要更新总照片集合，因为这些照片其实已经存在。
+                // 【新增】根据当前模块类型过滤照片
                 if (newPhotos && newPhotos.length > 0) {
-                    this.photos = [...this.photos, ...newPhotos];
-                    logger.info(`加载新照片后，当前共 ${this.photos.length} 张照片`);
+                    // 保存原始新照片数量（用于日志）
+                    const originalCount = newPhotos.length;
+                    
+                    // 存储所有原始照片（不过滤），用于模块切换时使用
+                    const allOriginalPhotos = [...newPhotos];
+                    
+                    // 如果当前不是显示全部照片，则按模块类型进行过滤
+                    if (this.currentModuleType !== ModuleType.ALL) {
+                        newPhotos = filterPhotosByModuleType(newPhotos, this.currentModuleType);
+                        logger.info(`🔍 [客户端过滤] 按模块"${this.currentModuleType}"过滤后，${originalCount} 张照片中有 ${newPhotos.length} 张符合条件`);
+                    }
+                    
+                    // 将所有原始照片添加到photos中，使得模块切换时能正确显示所有类型的照片
+                    this.photos = [...this.photos, ...allOriginalPhotos];
+                    
+                    // 更新过滤后的照片集合
+                    this.filteredPhotos = this.currentModuleType === ModuleType.ALL ? 
+                        [...this.photos] : filterPhotosByModuleType(this.photos, this.currentModuleType);
+                    
+                    logger.info(`加载新照片后，当前共 ${this.photos.length} 张照片，过滤后 ${this.filteredPhotos.length} 张照片`);
                 }
 
                 // 通知照片管理器开始渲染新照片，且需要更新总照片集合
@@ -356,12 +376,19 @@ class PhotoPaginationManager {
                 const nextPage = this.currentPage + 1;
                 const startIndex = (nextPage - 1) * this.photosPerPage;
                 const endIndex = nextPage * this.photosPerPage;
-                newPhotos = this.photos.slice(startIndex, endIndex);
+                
+                // 使用已过滤的照片集合
+                const photosToUse = this.filteredPhotos || this.photos;
+                newPhotos = photosToUse.slice(startIndex, endIndex);
+                
+                if (this.currentModuleType !== ModuleType.ALL) {
+                    logger.info(`📄 [本地分页] 第${nextPage}页，按模块"${this.currentModuleType}"过滤，加载了 ${newPhotos.length} 张照片`);
+                } else {
+                    logger.info(`📄 [本地分页] 第${nextPage}页，加载了 ${newPhotos.length} 张照片`);
+                }
 
                 // 通知照片管理器开始渲染新照片，且不需要更新总照片集合
                 this.onNewPhotosLoaded(newPhotos, false);
-                
-                logger.info(`📄 [本地分页] 第${nextPage}页，加载了 ${newPhotos.length} 张照片`);
             }
             
             // 收尾工作，仅在成功获取到照片后才增加页码，并更新相关状态
@@ -401,7 +428,9 @@ class PhotoPaginationManager {
         const nextPage = this.currentPage + 1;
         const startIndex = (nextPage - 1) * this.photosPerPage;
         
-        return startIndex < this.photos.length;
+        // 使用过滤后的照片来判断
+        const photosToCheck = this.filteredPhotos || this.photos;
+        return startIndex < photosToCheck.length;
     }
 
     /**
@@ -415,13 +444,16 @@ class PhotoPaginationManager {
             return [];
         }
         
+        // 使用过滤后的照片集合
+        const photosToUse = this.filteredPhotos || this.photos;
+        
         const startIndex = 0;
         const endIndex = this.currentPage * this.photosPerPage;
         
-        logger.debug(`获取当前页照片: startIndex=${startIndex}, endIndex=${endIndex}, 总数=${this.photos.length}`);
+        logger.debug(`获取当前页照片: startIndex=${startIndex}, endIndex=${endIndex}, 总数=${photosToUse.length}`);
         
         // 返回从开始到当前页的所有照片（用于初次渲染，显示当前页之前的所有照片）
-        const result = this.photos.slice(startIndex, endIndex);
+        const result = photosToUse.slice(startIndex, endIndex);
         logger.debug(`返回了 ${result.length} 张照片用于渲染`);
         
         return result;
@@ -489,13 +521,20 @@ class PhotoPaginationManager {
     /**
      * 切换模块类型
      * @param {string} moduleType 模块类型
+     * @param {Array} currentModulePhotos 当前模块的照片数组
      */
     filterPhotosByModule(moduleType, currentModulePhotos) {
-        if (this.currentModuleType === moduleType) {
-            return;
-        }
+        logger.info(`按模块筛选照片切换为: ${moduleType}`);
+        
+        // 保存当前模块类型
         this.currentModuleType = moduleType;
-        this.photos = [...currentModulePhotos];  //这行可能有问题
+        
+        // 直接使用photoManager已经过滤好的照片数组
+        this.filteredPhotos = [...currentModulePhotos];
+        
+        logger.info(`当前模块[${moduleType}]的照片数量: ${this.filteredPhotos.length}/${this.photos.length}`);
+        
+        // 重置分页状态
         this.currentPage = 1;
         this.isLoading = false;
         
@@ -515,6 +554,7 @@ class PhotoPaginationManager {
         this.currentPage = 1;
         this.isLoading = false;
         this.photos = [];
+        this.filteredPhotos = []; // 重置过滤后的照片数组
         
         // 移除滚动监听
         if (this.scrollHandler && this.scrollContainer) {

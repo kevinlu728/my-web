@@ -17,7 +17,7 @@ import { photoRenderer } from './photoRenderer.js';
 import { photoCacheManager } from './photoCacheManager.js';
 import { photoDetailManager } from './photoDetailManager.js';
 import lifecycleManager from '../utils/lifecycleManager.js';
-import { processPhotoListData } from '../utils/photo-utils.js';
+import { processPhotoListData, filterPhotosByModuleType } from '../utils/photo-utils.js';
 import { generateMockPhotos } from '../utils/mock-utils.js';
 import logger from '../utils/logger.js';
 
@@ -247,35 +247,16 @@ class PhotoManager {
      */
     filterByModule(moduleType) {
         logger.info(`按模块筛选照片: ${moduleType}`);
+        if (this.currentModuleType === moduleType) {
+            return;
+        }
+        
         this.currentModuleType = moduleType;
         
-        let currentModulePhotos = [];
-        if (moduleType === ModuleType.ALL) {
-            currentModulePhotos = [...this.photos];
-        } else {
-            currentModulePhotos = this.photos.filter(photo => {
-                // 优先检查categories数组
-                if (photo.categories && Array.isArray(photo.categories)) {
-                    const typeToFind = moduleType.toLowerCase();
-                    return photo.categories.some(cat => cat.toLowerCase() === typeToFind);
-                } else {
-                    // 向后兼容 - 使用单个category
-                    const category = photo.category?.toLowerCase();
-                    switch (moduleType) {
-                        case ModuleType.MOVIE:
-                            return category === 'movie';
-                        case ModuleType.FOOTBALL:
-                            return category === 'football';
-                        case ModuleType.TRAVEL:
-                            return category === 'travel';
-                        case ModuleType.FOOD:
-                            return category === 'food';
-                        default:
-                            return true;
-                    }
-                }
-            });
-        }
+        // 直接使用工具函数，避免重复检查
+        // filterPhotosByModuleType内部已经处理了ALL类型的情况
+        const currentModulePhotos = filterPhotosByModuleType([...this.photos], moduleType);
+        
         logger.info(`当前模块的照片数量: ${currentModulePhotos.length}`);
         this.currentModulePhotos = currentModulePhotos;
 

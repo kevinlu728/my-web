@@ -251,7 +251,20 @@ class ArticleCacheManager {
         try {
             // 从缓存获取现有数据，合并内容再更新
             const cachedData = this.getArticleFromCache(pageId) || {};
-            const mergedBlocks = (cachedData.blocks || []).concat(newBlocks);
+            const currentBlocks = cachedData.blocks || [];
+            
+            // 检测并过滤掉重复的块
+            const uniqueNewBlocks = newBlocks.filter(newBlock => {
+                // 检查新块是否已存在于当前缓存的块中
+                return !currentBlocks.some(existingBlock => existingBlock.id === newBlock.id);
+            });
+            
+            if (uniqueNewBlocks.length < newBlocks.length) {
+                logger.debug(`🔍 [缓存去重] 过滤掉了 ${newBlocks.length - uniqueNewBlocks.length} 个重复块`);
+            }
+            
+            // 合并块（只添加非重复的块）
+            const mergedBlocks = currentBlocks.concat(uniqueNewBlocks);
             
             // 更新缓存
             const articleData = {
@@ -263,7 +276,7 @@ class ArticleCacheManager {
             };
             
             this.setArticleCache(pageId, articleData);
-            logger.info(`🔄 [缓存更新] 文章: ${pageId}, 新增: ${newBlocks.length}块, 总计: ${mergedBlocks.length}块`);
+            logger.info(`🔄 [缓存更新] 文章: ${pageId}, 新增: ${uniqueNewBlocks.length}块, 总计: ${mergedBlocks.length}块`);
         } catch (error) {
             logger.warn('❌ [缓存错误] 更新文章缓存失败:', error);
         }

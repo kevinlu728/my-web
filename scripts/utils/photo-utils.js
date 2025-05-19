@@ -1,4 +1,5 @@
 import logger from './logger.js';
+import { ModuleType } from '../life/lifeViewManager.js';
 
 /********以下是照片列表的数据处理相关工具函数 ******/
 /**
@@ -105,5 +106,40 @@ export function searchPhotos(photos, searchTerm) {
         }
         
         return titleMatch || categoryMatch;
+    });
+}
+
+/**
+ * 根据模块类型过滤照片数组
+ * @param {Array} photos 照片数组
+ * @param {string} moduleType 模块类型
+ * @returns {Array} 过滤后的照片数组
+ */
+export function filterPhotosByModuleType(photos, moduleType) {
+    if (moduleType === ModuleType.ALL) {
+        return photos;
+    }
+    
+    return photos.filter(photo => {
+        // 优先检查categories数组
+        if (photo.categories && Array.isArray(photo.categories)) {
+            const typeToFind = moduleType.toLowerCase();
+            return photo.categories.some(cat => cat.toLowerCase() === typeToFind);
+        } else {
+            // 向后兼容 - 使用单个category
+            const category = photo.category?.toLowerCase();
+            switch (moduleType) {
+                case ModuleType.MOVIE:
+                    return category === 'movie';
+                case ModuleType.FOOTBALL:
+                    return category === 'football';
+                case ModuleType.TRAVEL:
+                    return category === 'travel';
+                case ModuleType.FOOD:
+                    return category === 'food';
+                default:
+                    return true;
+            }
+        }
     });
 }
