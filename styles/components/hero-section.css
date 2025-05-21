@@ -7,8 +7,8 @@
 .hero-section {
     position: relative;
     width: 100%;
-    height: 35vh; /* 降低高度，从50vh减小到35vh */
-    min-height: 250px; /* 减小最小高度 */
+    height: 32vh; /* 增加高度，从35vh增加到40vh */
+    min-height: 280px; /* 增加最小高度，确保内容可见 */
     overflow: hidden;
     margin-bottom: 0; /* 移除底部边距，使其与内容区无缝衔接 */
 }
@@ -49,7 +49,7 @@
     justify-content: center;
     align-items: center;
     height: 100%;
-    padding: calc(60px + 2rem) 2rem 2rem 2rem; /* 上 右 下 左 */
+    padding: calc(50px + 1.5rem) 2rem 2rem 2rem; /* 减小上部内边距 */
     color: #fff;
     text-align: center;
     max-width: 1200px;
@@ -58,8 +58,8 @@
 
 /* 头像样式 */
 .hero-avatar {
-    width: 200px;
-    height: 200px;
+    width: 180px; /* 稍微减小头像尺寸 */
+    height: 180px;
     border-radius: 50%;
     border: 4px solid rgba(255, 255, 255, 0.3);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
@@ -74,44 +74,65 @@
 
 /* 简介标题样式 */
 .hero-title {
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: 700;
-    margin-bottom: 1rem;
+    margin-bottom: 0.8rem; /* 减小底部边距 */
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-/* 简介副标题样式 */
-.hero-subtitle {
-    font-size: 1.2rem;
-    font-weight: 300;
-    margin-bottom: 1rem;
-    max-width: 800px;
-    line-height: 1.6;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
+/* 增加中等屏幕尺寸的响应式设计 */
+@media (min-width: 769px) and (max-width: 1200px) {
     .hero-section {
-        height: 30vh; /* 移动设备上降低高度 */
-        min-height: 220px; /* 减小移动设备上的最小高度 */
+        height: 38vh;
+        min-height: 260px;
     }
     
     .hero-content {
-        padding: calc(60px + 1rem) 1rem 1rem 1rem; /* 移动设备上减少内边距 */
+        padding: calc(45px + 1.2rem) 1.5rem 1.5rem 1.5rem;
+    }
+    
+    .hero-avatar {
+        width: 160px;
+        height: 160px;
+    }
+}
+
+/* 响应式设计 - 小屏幕 */
+@media (max-width: 768px) {
+    .hero-section {
+        height: 35vh; /* 移动设备上降低高度 */
+        min-height: 240px; /* 增加移动设备上的最小高度 */
+    }
+    
+    .hero-content {
+        padding: calc(50px + 1rem) 1rem 1rem 1rem; /* 移动设备上减少内边距 */
+    }
+    
+    .hero-avatar {
+        width: 140px; /* 减小移动设备上的头像尺寸 */
+        height: 140px;
+    }
+    
+    .hero-title {
+        font-size: 1.3rem; /* 减小移动设备上的标题字体大小 */
+    }
+}
+
+/* 非全屏窗口的特定调整 */
+@media (max-height: 700px) {
+    .hero-section {
+        height: auto; /* 在较低高度的窗口使用自适应高度 */
+        min-height: 280px;
+    }
+    
+    .hero-content {
+        padding-top: calc(40px + 1rem); /* 进一步减少上部内边距 */
     }
     
     .hero-avatar {
         width: 150px;
         height: 150px;
-    }
-    
-    .hero-title {
-        font-size: 2rem;
-    }
-    
-    .hero-subtitle {
-        font-size: 1.2rem;
+        margin-bottom: 0.8rem;
     }
 }
 
@@ -128,10 +149,5 @@
 }
 
 .hero-section.mini .hero-title {
-    font-size: 2rem;
+    font-size: 1.5rem;
 }
-
-.hero-section.mini .hero-subtitle {
-    font-size: 1.1rem;
-    margin-bottom: 1rem;
-} 

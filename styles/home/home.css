@@ -36,7 +36,7 @@
     margin: 0 auto;
     padding: 1rem;
     background: transparent; /* 移除背景色，保持透明 */
-    margin-top: 1rem; /* 调整与英雄区的间距 */
+    margin-top: 0.5rem; /* 减少与英雄区的间距 */
     margin-bottom: 1rem;
     position: relative;
     z-index: 2;
@@ -45,7 +45,7 @@
 
 /* 主内容区域包装器，确保最小高度 */
 main {
-    min-height: calc(100vh - 200px); /* 确保内容区域至少占满视口高度减去页脚高度 */
+    min-height: calc(100vh - 180px); /* 调整最小高度计算，适应更小的间距 */
     display: flex;
     flex-direction: column;
     background: linear-gradient(to bottom, rgba(75, 108, 183, 0.05), rgba(255, 255, 255, 0)); /* 减轻渐变的蓝色强度 */
@@ -67,10 +67,21 @@ main {
     margin-bottom: 1rem;
 }
 
+/* 非全屏窗口的特定调整 */
+@media (max-height: 700px) {
+    .home-content {
+        margin-top: 0; /* 在小高度屏幕上减少间距 */
+    }
+    
+    main {
+        min-height: auto; /* 使用自然高度 */
+    }
+}
+
 /* 响应式调整 */
 @media (max-width: 768px) {
     .home-content {
-        padding: 1rem;
+        padding: 0.75rem;
         margin-top: 0;
     }
     
@@ -80,7 +91,7 @@ main {
     
     /* 卡片间距响应式调整 - 从profile-cards.css移动到这里 */
     .profile-content > *:not(:last-child) {
-        margin-bottom: 1rem;
+        margin-bottom: 0.8rem; /* 减少卡片间距 */
     }
     
     main {
