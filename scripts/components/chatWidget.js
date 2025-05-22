@@ -74,7 +74,7 @@ export function initChatWidget() {
             welcomeShown = true;
             // 添加欢迎消息
             const welcomeMessages = [
-                '你好！我是Kevin的AI小助手，很高兴为你服务 👋',
+                '你好！我是Kevin的AI助手小鹿，很高兴为你服务 👋',
                 '我可以帮您：\n1. 了解Kevin的工作经历\n2. 了解Kevin的兴趣爱好\n3. 获取技术知识\n请问您想了解什么？ 😊'
             ];
 

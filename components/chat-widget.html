@@ -13,13 +13,13 @@
 
 <!-- 聊天组件 -->
 <div id="chat-widget" class="chat-widget" aria-label="AI助手聊天窗口" role="dialog" aria-modal="false">
-    <button id="chat-toggle" class="chat-toggle" aria-label="打开聊天" aria-expanded="false" aria-controls="chat-container">
-        <i class="fas fa-comments" aria-hidden="true"></i>
+    <button id="chat-toggle" class="chat-toggle" aria-label="打开AI小助手聊天" aria-expanded="false" aria-controls="chat-container">
+        <i class="fas fa-robot" aria-hidden="true"></i>
     </button>
     
     <div class="chat-container" aria-hidden="true">
         <div class="chat-header" role="heading" aria-level="3">
-            <h3>与AI助手对话</h3>
+            <h3><i class="fas fa-robot" aria-hidden="true"></i> AI小助手</h3>
             <div class="chat-controls">
                 <button id="minimize-btn" class="minimize-btn" aria-label="最小化聊天窗口">
                     <i class="fas fa-minus" aria-hidden="true"></i>
@@ -38,7 +38,7 @@
             <textarea 
                 id="chat-input-field"
                 class="chat-input-field"
-                placeholder="输入消息..." 
+                placeholder="有什么可以帮您？" 
                 rows="1"
                 aria-label="聊天输入框"
                 role="textbox"
@@ -51,8 +51,8 @@
         </div>
         
         <div class="quick-replies" role="group" aria-label="快速回复选项">
-            <button class="quick-reply-btn" tabindex="0">了解更多</button>
-            <button class="quick-reply-btn" tabindex="0">查看项目</button>
+            <button class="quick-reply-btn" tabindex="0">了解Kevin</button>
+            <button class="quick-reply-btn" tabindex="0">技术问题</button>
             <button class="quick-reply-btn" tabindex="0">联系方式</button>
         </div>
         

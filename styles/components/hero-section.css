@@ -209,13 +209,20 @@
     margin: 0 auto;
     z-index: 2;
     color: #fff; /* 改为白色 */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end; /* 改为底部对齐 */
+    align-items: center;
+    padding-top: 0;
+    padding-bottom: 15vh; /* 从底部留出空间 */
+    height: 100%;
 }
 
 /* 名字标题样式 */
 .hero-name {
     font-size: 4rem;
     font-weight: 700;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem; /* 增加与副标题的间距 */
     color: #fff; /* 改为白色 */
     letter-spacing: 2px;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); /* 增强阴影效果 */
@@ -236,7 +243,7 @@
 .hero-subtitle {
     font-size: 1.8rem;
     font-weight: 300;
-    margin-bottom: 2rem;
+    margin-bottom: 3.5rem; /* 大幅增加底部边距，确保导航卡片位于海平面下方 */
     color: #fff; /* 改为白色 */
     opacity: 0.95;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); /* 增强阴影效果 */
@@ -246,24 +253,35 @@
 @media (max-width: 768px) {
     .hero-name {
         font-size: 2.8rem;
+        margin-bottom: 1.2rem;
     }
     
     .hero-subtitle {
         font-size: 1.4rem;
+        margin-bottom: 3rem; /* 在平板设备上保持较大的间距 */
     }
     
     .hero-fullscreen .hero-content {
         padding: 1.5rem;
+        padding-top: 0;
+        padding-bottom: 12vh; /* 在平板设备上调整底部间距 */
     }
 }
 
 @media (max-width: 480px) {
     .hero-name {
         font-size: 2.2rem;
+        margin-bottom: 1rem;
     }
     
     .hero-subtitle {
         font-size: 1.2rem;
+        margin-bottom: 2.5rem; /* 在手机上调整间距 */
+    }
+    
+    .hero-fullscreen .hero-content {
+        padding-top: 0;
+        padding-bottom: 10vh; /* 在手机上调整底部间距 */
     }
 }
 
