@@ -7,8 +7,8 @@
 .hero-section {
     position: relative;
     width: 100%;
-    height: 32vh; /* 增加高度，从35vh增加到40vh */
-    min-height: 280px; /* 增加最小高度，确保内容可见 */
+    height: 40vh; /* 增加基础高度，确保足够的显示空间 */
+    min-height: 320px; /* 增加最小高度，确保在小屏幕上有足够空间 */
     overflow: hidden;
     margin-bottom: 0; /* 移除底部边距，使其与内容区无缝衔接 */
 }
@@ -49,7 +49,7 @@
     justify-content: center;
     align-items: center;
     height: 100%;
-    padding: calc(50px + 1.5rem) 2rem 2rem 2rem; /* 减小上部内边距 */
+    padding: calc(60px + 1.5rem) 2rem 2rem 2rem; /* 增加顶部内边距，确保与导航有足够距离 */
     color: #fff;
     text-align: center;
     max-width: 1200px;
@@ -58,12 +58,13 @@
 
 /* 头像样式 */
 .hero-avatar {
-    width: 180px; /* 稍微减小头像尺寸 */
-    height: 180px;
+    width: 200px; /* 增大头像尺寸 */
+    height: 200px;
     border-radius: 50%;
     border: 4px solid rgba(255, 255, 255, 0.3);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-    margin-bottom: 1rem;
+    margin-top: 1rem; /* 减小顶部边距，缩短与导航的距离 */
+    margin-bottom: 0.5rem; /* 增加底部边距，改善间距 */
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -73,48 +74,64 @@
 }
 
 /* 简介标题样式 */
-.hero-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    margin-bottom: 0.8rem; /* 减小底部边距 */
+.hero-name-small {
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem; /* 减小底部边距 */
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 /* 增加中等屏幕尺寸的响应式设计 */
 @media (min-width: 769px) and (max-width: 1200px) {
     .hero-section {
-        height: 38vh;
-        min-height: 260px;
+        height: 42vh; /* 略微增加中等屏幕的高度 */
+        min-height: 300px; /* 调整中等屏幕的最小高度 */
     }
     
     .hero-content {
-        padding: calc(45px + 1.2rem) 1.5rem 1.5rem 1.5rem;
+        padding: calc(50px + 1.5rem) 1.5rem 1.5rem 1.5rem; /* 调整内边距 */
     }
     
     .hero-avatar {
-        width: 160px;
-        height: 160px;
+        width: 180px; /* 调整中等屏幕的头像尺寸 */
+        height: 180px;
+        margin-top: 0.8rem; /* 减小顶部边距 */
     }
 }
 
 /* 响应式设计 - 小屏幕 */
 @media (max-width: 768px) {
     .hero-section {
-        height: 35vh; /* 移动设备上降低高度 */
-        min-height: 240px; /* 增加移动设备上的最小高度 */
+        height: 42vh; /* 增加移动设备的高度，确保内容完全显示 */
+        min-height: 280px; /* 增加移动设备的最小高度 */
     }
     
     .hero-content {
-        padding: calc(50px + 1rem) 1rem 1rem 1rem; /* 移动设备上减少内边距 */
+        padding: calc(50px + 1.2rem) 1rem 1.5rem 1rem; /* 调整移动设备的内边距 */
     }
     
     .hero-avatar {
-        width: 140px; /* 减小移动设备上的头像尺寸 */
-        height: 140px;
+        width: 160px; /* 调整移动设备上的头像尺寸 */
+        height: 160px;
+        margin-top: 0.8rem; /* 减小顶部边距 */
     }
     
-    .hero-title {
-        font-size: 1.3rem; /* 减小移动设备上的标题字体大小 */
+    .hero-name-small {
+        font-size: 1.1rem; /* 调整移动设备上的标题字体大小 */
+    }
+}
+
+/* 更小屏幕的适配 */
+@media (max-width: 480px) {
+    .hero-section {
+        height: 45vh; /* 在非常小的屏幕上进一步增加高度 */
+        min-height: 300px; /* 确保足够的最小高度 */
+    }
+    
+    .hero-avatar {
+        width: 140px; /* 调整超小屏幕的头像尺寸 */
+        height: 140px;
+        margin-top: 0.6rem; /* 进一步减小顶部边距 */
     }
 }
 
@@ -122,16 +139,17 @@
 @media (max-height: 700px) {
     .hero-section {
         height: auto; /* 在较低高度的窗口使用自适应高度 */
-        min-height: 280px;
+        min-height: 320px; /* 增加最小高度，确保内容可见 */
     }
     
     .hero-content {
-        padding-top: calc(40px + 1rem); /* 进一步减少上部内边距 */
+        padding-top: calc(50px + 1rem); /* 调整上部内边距 */
     }
     
     .hero-avatar {
-        width: 150px;
-        height: 150px;
+        width: 160px; /* 调整头像大小 */
+        height: 160px;
+        margin-top: 0.6rem; /* 减少顶部边距，节省空间 */
         margin-bottom: 0.8rem;
     }
 }
@@ -148,6 +166,111 @@
     margin-bottom: 1rem;
 }
 
-.hero-section.mini .hero-title {
-    font-size: 1.5rem;
+.hero-section.mini .hero-name-small {
+    font-size: 1.2rem;
+}
+
+/* ==================== 全屏英雄区样式（新版首页） ==================== */
+
+/* 全屏英雄区样式 */
+.hero-fullscreen {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: var(--primary-color);
+    text-align: center;
+    overflow: hidden;
+    margin-bottom: 0; /* 确保没有底部边距 */
+}
+
+/* 全屏英雄区的背景叠加渐变，使文本更易读 */
+.hero-fullscreen .hero-overlay {
+    background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.3) 0%,
+        rgba(0, 0, 0, 0.1) 50%,
+        rgba(44, 62, 80, 0.4) 100%
+    ); /* 顶部和底部稍暗，中间透明度低 */
+}
+
+/* 全屏英雄区背景图样式 */
+.hero-fullscreen .hero-background img {
+    opacity: 1; /* 调整透明度，确保文字可读性 */
+}
+
+/* 全屏英雄区内容样式 */
+.hero-fullscreen .hero-content {
+    padding: 2rem;
+    max-width: 900px;
+    margin: 0 auto;
+    z-index: 2;
+    color: #fff; /* 改为白色 */
+}
+
+/* 名字标题样式 */
+.hero-name {
+    font-size: 4rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: #fff; /* 改为白色 */
+    letter-spacing: 2px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); /* 增强阴影效果 */
+}
+
+/* 强调名字的第一部分 */
+.hero-name .first-name {
+    color: #fff; /* 改为白色 */
+}
+
+/* 强调名字的第二部分 */
+.hero-name .last-name {
+    color: var(--secondary-color-orange); /* 橙色调 */
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6); /* 更强的阴影 */
+}
+
+/* 副标题/职业描述样式 */
+.hero-subtitle {
+    font-size: 1.8rem;
+    font-weight: 300;
+    margin-bottom: 2rem;
+    color: #fff; /* 改为白色 */
+    opacity: 0.95;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); /* 增强阴影效果 */
+}
+
+/* 全屏英雄区响应式调整 */
+@media (max-width: 768px) {
+    .hero-name {
+        font-size: 2.8rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.4rem;
+    }
+    
+    .hero-fullscreen .hero-content {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-name {
+        font-size: 2.2rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.2rem;
+    }
+}
+
+/* 为较低高度的屏幕进行优化 */
+@media (max-height: 700px) {
+    .hero-fullscreen {
+        height: auto;
+        min-height: 100vh;
+    }
 }

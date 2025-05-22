@@ -10,7 +10,7 @@
  * - 移动端汉堡菜单的展开/收起
  * - 菜单项点击后的导航菜单收起
  * 负责在页面滚动时动态改变导航栏的样式：
- * - 初始状态：导航栏透明，文字白色（首页）
+ * - 初始状态：导航栏透明，文字白色（关于我页面）
  * - 滚动状态：导航栏背景变为半透明白色，文字颜色改变
  * 
  */
@@ -72,13 +72,13 @@ function updateHeaderOnScroll() {
     const scrollPosition = window.scrollY;
     const heroSection = document.querySelector('.hero-section');
     
-    // 如果不是首页或没有hero-section，始终使用scrolled样式
-    if (!document.body.classList.contains('home-page') || !heroSection) {
+    // 如果不是关于我页面或没有hero-section，始终使用scrolled样式
+    if (!document.body.classList.contains('about-me-page') || !heroSection) {
         document.body.classList.add('scrolled');
         return;
     }
     
-    // 首页上有hero-section时，根据滚动位置决定
+    // 关于我页面上有hero-section时，根据滚动位置决定
     const threshold = heroSection.clientHeight * 0.1;
     
     if (scrollPosition > threshold) {
@@ -111,11 +111,11 @@ export function initActiveNavLink() {
         const linkPath = new URL(link.href, window.location.origin).pathname;
         
         // 检查是否匹配当前页面
-        // 处理首页特殊情况
+        // 处理关于我页面特殊情况
         if (
-            (currentPath === '/' && linkPath.includes('index.html')) ||
-            (currentPath.includes('index.html') && linkPath.includes('index.html')) ||
-            (currentPath !== '/' && !currentPath.includes('index.html') && linkPath === currentPath)
+            (currentPath === '/' && linkPath.includes('about-me.html')) ||
+            (currentPath.includes('about-me.html') && linkPath.includes('about-me.html')) ||
+            (currentPath !== '/' && !currentPath.includes('about-me.html') && linkPath === currentPath)
         ) {
             // 设置为当前页
             link.setAttribute('aria-current', 'page');

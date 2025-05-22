@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>技术沉淀 - 云栖小栈</title>
+    <!-- SEO元标签 -->
+    <meta name="description" content="云栖小栈 - 陆凯的个人网站">
+    <meta name="keywords" content="终端技术专家,电影爱好者">
+    <!-- 预加载策略 - 核心CSS使用preload，非关键资源使用prefetch -->
+    <link rel="preload" href="./styles/aboutme/about-me.css" as="style">
+    <!-- CSS资源 - 使用相对路径 -->
+    <link rel="stylesheet" href="./styles/aboutme/about-me.css">
+    <!-- 优先使用本地Font Awesome资源。对于首页，直接加载关键图标资源，不使用资源加载器  -->
+    <link rel="stylesheet" href="/assets/libs/font-awesome/all.min.css" 
+          id="local-font-awesome" 
+          data-source="local-resource"
+          data-resource-type="font-awesome">
+    <!-- 网站图标 -->
+    <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
+
+    <!-- 先加载日志模块、配置模块、资源管理器 -->
+    <script type="module">
+        // 导入logger, 确保它最先加载
+        import logger from './scripts/utils/logger.js';
+        import config from './scripts/config/config.js';
+    </script>
+    
+    <!-- 加载通用脚本 -->
+    <!-- <script src="scripts/common.js" type="module"></script> -->
+    
+    <!-- 再加载API服务，首页暂时不使用Notion API服务，而AI服务会由聊天组件加载 -->
+
+    <!-- 结构化数据 -->
+    <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "Person",
+            "name": "关于我 - 云栖小栈",
+            "description": "关于我 - 陆凯的个人网站",
+            "url": "https://clouddweller.cn/about-me.html",
+            "author": {
+            "@type": "Person",
+            "name": "陆凯"
+            }
+        }
+    </script>
+</head>
+<body class="about-me-page">
+    <!-- 粒子背景效果 -->
+    <div id="particles-js"></div>
+    
+    <!-- 头部导航 -->
+    <header class="header">
+        <nav class="nav-container">
+            <div class="web-title">
+                云 栖 小 栈
+            </div>
+            <button class="hamburger" aria-label="菜单">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <ul class="nav-menu">
+                <li><a href="index.html">首页</a></li>
+                <li><a href="tech-blog.html">技术沉淀</a></li>
+                <li><a href="life.html">回忆瞬间</a></li>
+                <li><a href="about-me.html" aria-current="page">关于我</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <!-- 英雄区 -->
+        <section class="hero-section">
+            <!-- 背景图 -->
+            <div class="hero-background">
+                <img src="assets/images/backgrounds/hero-bg.svg" alt="背景图">
+            </div>
+            
+            <!-- 半透明渐变叠加层 -->
+            <div class="hero-overlay"></div>
+            
+            <!-- 英雄区内容 -->
+            <div class="hero-content">
+                <img src="assets/profile.webp" alt="个人头像" class="hero-avatar" loading="lazy" width="200" height="200">
+                <h1 class="hero-name-small">Kevin Lu</h1>
+            </div>
+        </section>
+        
+        <!-- 直接使用profile-content，移除home-content外层容器 -->
+        <section class="profile-content">
+            <div class="profile-card card-career">
+                <div class="card-title">职业旅程</div>
+                <div class="card-subtitle">「终端技术架构专家 × AI终端工程化先行者」</div>
+                <div class="card-items-container">
+                    <div class="card-item">9年终端技术纵深：从华为终端芯片层到美团亿级流量终端架构</div>
+                    <div class="card-item">5年技术管理沉淀：0-1组建3个创新团队（华为HiAI/京东端智能/美团终端PaaS）</div>
+                    <div class="card-item">AI端云实践经历：熟悉大模型应用（GPT/Claude/DS）和端智能框架（TFLite/CoreML）</div>
+                </div>
+            </div>
+            <div class="profile-card card-life">
+                <div class="card-title">生活另一面</div>
+                <div class="card-subtitle">—— 当一个「不务正业」的程序猿决定给人生按Ctrl+Alt+Del</div>
+                <div class="card-items-container">
+                    <div class="card-item">电影：在达子的荒诞骗局中品光怪陆离，在星爷的龙套故事中悟草根人生</div>
+                    <div class="card-item">足球：稀有的内拉祖里和南部之星双料，纸上谈兵的懂球帝，实况玩家和小众FMer</div>
+                    <div class="card-item">漫游：偶尔看看世界，走走古迹遗址，左手《XX通史》右手充电宝，读史旅游两不误</div>
+                </div>
+            </div>
+            <div class="profile-card card-collaboration">
+                <div class="card-title">与我同行</div>
+                <div class="card-text">正在寻找：前瞻技术合作者 | 价值投资伙伴 | 敢想敢为的极客团队</div>
+                <div class="card-motto">Let's build something that matters.</div>
+                <button class="contact-btn">联系我</button>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div id="social-links-container"></div>
+        <div class="copyright">
+            © 2024 陆凯 - All rights reserved
+        </div>
+    </footer>
+
+    <div id="contact-modal-container"></div>
+
+    <div id="chat-widget-container"></div>
+
+    <script src="scripts/aboutme/about-me.js" type="module"></script>
+</body>
+</html>

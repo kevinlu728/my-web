@@ -8,9 +8,9 @@
     <meta name="description" content="云栖小栈 - 陆凯的个人网站">
     <meta name="keywords" content="博客,技术,生活,华为,京东,美团,电影,足球,旅行">
     <!-- 预加载策略 - 核心CSS使用preload，非关键资源使用prefetch -->
-    <link rel="preload" href="./styles/home/home-new.css" as="style">
+    <link rel="preload" href="./styles/home/home.css" as="style">
     <!-- CSS资源 - 使用相对路径 -->
-    <link rel="stylesheet" href="./styles/home/home-new.css">
+    <link rel="stylesheet" href="./styles/home/home.css">
     <!-- 优先使用本地Font Awesome资源。对于首页，直接加载关键图标资源，不使用资源加载器  -->
     <link rel="stylesheet" href="/assets/libs/font-awesome/all.min.css" 
           id="local-font-awesome" 
@@ -64,17 +64,17 @@
                 <li><a href="index.html" aria-current="page">首页</a></li>
                 <li><a href="tech-blog.html">技术沉淀</a></li>
                 <li><a href="life.html">回忆瞬间</a></li>
-                <li><a href="about-me.html">关于我</a></li>
+                <li><a href="contact.html">联系方式</a></li>
             </ul>
         </nav>
     </header>
 
     <main>
-        <!-- 全屏英雄区 -->
-        <section class="hero-fullscreen">
+        <!-- 英雄区 -->
+        <section class="hero-section">
             <!-- 背景图 -->
             <div class="hero-background">
-                <img src="assets/images/backgrounds/wallpaper.webp" alt="背景图">
+                <img src="assets/images/backgrounds/hero-bg.svg" alt="背景图">
             </div>
             
             <!-- 半透明渐变叠加层 -->
@@ -82,27 +82,51 @@
             
             <!-- 英雄区内容 -->
             <div class="hero-content">
-                <h1 class="hero-name">
-                    <span class="first-name">KEVIN</span> 
-                    <span class="last-name">LU</span>
-                </h1>
-                <h2 class="hero-subtitle">终端老兵 &amp; 工业AI创业者</h2>
+                <img src="assets/profile.webp" alt="个人头像" class="hero-avatar" loading="lazy" width="200" height="200">
+                <h1 class="hero-title">Kevin Lu</h1>
+            </div>
+        </section>
+        
+        <!-- 直接使用profile-content，移除home-content外层容器 -->
+        <section class="profile-content">
+            <div class="profile-card card-career">
+                <div class="card-title">职业旅程</div>
+                <div class="card-subtitle">「终端技术架构专家 × AI终端工程化先行者」</div>
+                <div class="card-items-container">
+                    <div class="card-item">9年终端技术纵深：从华为终端芯片层到美团亿级流量终端架构</div>
+                    <div class="card-item">5年技术管理沉淀：0-1组建3个创新团队（华为HiAI/京东端智能/美团终端PaaS）</div>
+                    <div class="card-item">AI端云实践经历：熟悉大模型应用（GPT/Claude/DS）和端智能框架（TFLite/CoreML）</div>
+                </div>
+            </div>
+            <div class="profile-card card-life">
+                <div class="card-title">生活另一面</div>
+                <div class="card-subtitle">—— 当一个「不务正业」的程序猿决定给人生按Ctrl+Alt+Del</div>
+                <div class="card-items-container">
+                    <div class="card-item">电影：在达子的荒诞骗局中品光怪陆离，在星爷的龙套故事中悟草根人生</div>
+                    <div class="card-item">足球：稀有的小国际和南部之星双料，纸上谈兵的懂球帝，实况玩家和小众FMer</div>
+                    <div class="card-item">漫游：偶尔看看世界，走走古迹遗址，左手《XX通史》右手充电宝，读史旅游两不误</div>
+                </div>
+            </div>
+            <div class="profile-card card-collaboration">
+                <div class="card-title">与我同行</div>
+                <div class="card-text">正在寻找：前瞻技术合作者 | 价值投资伙伴 | 敢想敢为的极客团队</div>
+                <div class="card-motto">Let's build something that matters.</div>
                 <button class="contact-btn">联系我</button>
             </div>
         </section>
     </main>
 
-    <!-- <footer class="footer">
+    <footer class="footer">
         <div id="social-links-container"></div>
         <div class="copyright">
             © 2024 陆凯 - All rights reserved
         </div>
-    </footer> -->
+    </footer>
 
     <div id="contact-modal-container"></div>
 
     <div id="chat-widget-container"></div>
 
-    <script src="scripts/home/home-new.js" type="module"></script>
+    <script src="scripts/home/home.js" type="module"></script>
 </body>
 </html>

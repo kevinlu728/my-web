@@ -312,6 +312,36 @@ body::-webkit-scrollbar-thumb:hover {
 }
 
 /*=============================================
+=                 关于我页滚动条                 =
+=============================================*/
+
+.about-me-page {
+    /* 首页使用全局滚动，Body需要添加滚动条样式 */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(155, 155, 155, 0.5) transparent;
+}
+
+.about-me-page::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.about-me-page::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 4px;
+}
+
+.about-me-page::-webkit-scrollbar-thumb {
+    background-color: rgba(155, 155, 155, 0.5);
+    border-radius: 4px;
+    border: 2px solid transparent;
+}
+
+.about-me-page::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(155, 155, 155, 0.7);
+}
+
+/*=============================================
 =                返回顶部按钮                 =
 =============================================*/
 

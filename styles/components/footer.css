@@ -1,7 +1,6 @@
 .footer {
     width: 100%;
     padding: 2rem 0;
-    margin-top: 2rem;
     color: white;
     text-align: center;
     background: linear-gradient(135deg, #4b6cb7 0%, #89c8da 100%);
@@ -61,7 +60,7 @@
 
 /* 针对首页的特定样式 */
 .home-page .footer {
-    margin-top: 1rem;
+    margin-top: 0;
 }
 
 @media (max-width: 768px) {

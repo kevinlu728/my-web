@@ -1,0 +1,85 @@
+/**
+ * @file home-new.css
+ * @description 新版首页样式，简洁全屏设计
+ * @created 2024-08-18
+ */
+
+/* 导入基础样式 */
+@import '../base.css';
+/* 导入组件样式 */
+@import '../components/header.css';
+@import '../components/footer.css';
+@import '../components/chat.css'; /* 导入统一的聊天组件样式 */
+@import '../components/scrollbar.css'; /* 导入统一的滚动条样式 */
+@import '../components/modal.css'; /* 导入统一的模态框样式 */
+@import '../components/loading-spinner.css'; /* 导入统一的加载动画样式 */
+@import '../components/hero-section.css'; /* 导入英雄区样式 */
+
+/* 主页布局样式 */
+body.home-page {
+    overflow-x: hidden;
+    background-color: var(--background-color);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* 保留particles-js的全局背景功能 */
+#particles-js {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background: linear-gradient(135deg, #f8fbff 0%, #f2f9ff 100%); /* 更亮更白的背景色 */
+    z-index: -2;
+}
+
+/* 主内容区域包装器，确保最小高度 */
+main {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    margin: 0; /* 确保没有外边距 */
+    padding: 0; /* 确保没有内边距 */
+    flex: 1;
+}
+
+/* 新版首页特定样式 - 移除间距 */
+body.home-page main {
+    margin-bottom: -1px; /* 与footer贴合 */
+}
+
+body.home-page .footer {
+    margin-top: 0;
+    border-top: none; /* 移除顶部边框 */
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .contact-btn {
+        padding: 0.7rem 1.8rem;
+        font-size: 0.9rem;
+    }
+}
+
+/* 联系按钮样式 */
+.contact-btn {
+    padding: 0.8rem 2rem;
+    background: linear-gradient(135deg, var(--secondary-color-orange) 0%, var(--tertiary-color-orange) 100%);
+    color: white;
+    border: none;
+    border-radius: 30px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    margin-top: 1rem;
+}
+
+.contact-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}

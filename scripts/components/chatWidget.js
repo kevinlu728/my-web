@@ -49,6 +49,9 @@ export function initChatWidget() {
         return;
     }
 
+    // 根据当前页面设置聊天组件的主题颜色
+    applyPageSpecificTheme(chatWidget);
+
     logger.debug('✅ 聊天组件初始化完成');
 
     // 清空聊天记录，确保没有重复消息
@@ -470,6 +473,27 @@ export function initChatWidget() {
     
     // 初始化时恢复窗口状态
     restoreWindowState();
+}
+
+/**
+ * 根据当前页面设置聊天组件的主题颜色
+ * @param {HTMLElement} chatWidget - 聊天组件元素
+ */
+function applyPageSpecificTheme(chatWidget) {
+    // 检测当前页面类型
+    const isAboutPage = document.body.classList.contains('about-page') || 
+                        window.location.pathname.includes('about-me') ||
+                        window.location.href.includes('about-me');
+    
+    // 如果是"关于我"页面，添加特定类名
+    if (isAboutPage) {
+        chatWidget.classList.add('about-page');
+        logger.debug('在"关于我"页面加载聊天组件 - 应用蓝色主题');
+    } else {
+        // 确保移除about-page类，防止缓存问题
+        chatWidget.classList.remove('about-page');
+        logger.debug('在其他页面加载聊天组件 - 应用默认橙色主题');
+    }
 }
 
 export default { initChatWidget }; 

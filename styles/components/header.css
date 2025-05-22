@@ -16,7 +16,7 @@
 }
 
 /* 修改：专门针对首页的悬浮效果，确保导航栏悬浮在英雄区上方 */
-.home-page:not(.scrolled) .header {
+.about-me-page:not(.scrolled) .header {
     background-color: transparent;
     box-shadow: none;
 }
@@ -65,9 +65,9 @@
 }
 
 /* 修改：专门针对首页的导航链接颜色 */
-.home-page:not(.scrolled) .header .nav-menu a {
+.about-me-page:not(.scrolled) .header .nav-menu a {
     color: white;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); /* 增强文字阴影 */
 }
 
 /* 确保滚动状态下的高亮链接保持高亮 */
@@ -79,8 +79,8 @@
 }
 
 /* 只在首页英雄区上方时使用白色高亮 */
-.home-page:not(.scrolled) .header .nav-menu li.active a,
-.home-page:not(.scrolled) .header .nav-menu a[aria-current="page"] {
+.about-me-page:not(.scrolled) .header .nav-menu li.active a,
+.about-me-page:not(.scrolled) .header .nav-menu a[aria-current="page"] {
     color: white;
 }
 
@@ -90,7 +90,7 @@
 }
 
 /* 在首页英雄区上方悬停时才使用白色 */
-.home-page:not(.scrolled) .header .nav-menu a:hover {
+.about-me-page:not(.scrolled) .header .nav-menu a:hover {
     color: white;
 }
 
@@ -109,7 +109,7 @@
 }
 
 /* 在首页英雄区上方时才使用白色下划线 */
-.home-page:not(.scrolled) .header .nav-menu a::after {
+.about-me-page:not(.scrolled) .header .nav-menu a::after {
     background-color: white;
 }
 
@@ -138,11 +138,11 @@
 }
 
 /* 在首页英雄区上方时网站标题为白色 */
-.home-page:not(.scrolled) .header .web-title {
+.about-me-page:not(.scrolled) .header .web-title {
     color: white;
     -webkit-text-fill-color: white; /* 覆盖渐变效果，直接使用白色 */
     background: none;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); /* 增强文字阴影 */
 }
 
 .web-title:hover {

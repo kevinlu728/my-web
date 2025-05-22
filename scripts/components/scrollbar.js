@@ -29,7 +29,8 @@ const ScrollbarClasses = {
 export const PageTypes = {
     HOME: 'home-page',
     BLOG: 'blog-page',
-    LIFE: 'life-page'
+    LIFE: 'life-page',
+    ABOUT_ME: 'about-me-page'
 };
 
 /**
@@ -44,6 +45,7 @@ const ScrollTargets = {
     ARTICLE_TOC: '.article-toc',
     LIFE_CONTENT: '.life-content',
     LIFE_RIGHT_COLUMN: '.life-content .right-column',
+    ABOUT_ME_CONTENT: '.about-me-content'
 };
 
 class Scrollbar {

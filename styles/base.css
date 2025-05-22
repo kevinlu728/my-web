@@ -3,6 +3,10 @@
     --primary-color: #2c3e50;
     --secondary-color: #4299e1;
     --tertiary-color: #f0f8ff; /* 非常浅的蓝色，可用于背景和高亮 */
+    --secondary-color-blue: #4299e1;
+    --tertiary-color-blue: #f0f8ff; /* 非常浅的蓝色，可用于背景和高亮 */
+    --secondary-color-orange: #ffb74d; /* 更改为橙色调 */
+    --tertiary-color-orange: #e74c3c; /* 更改为橙红色 */
     --background-color: #f8f9fa;
     --text-color: #2c3e50;
     --accent-color: #e74c3c;
