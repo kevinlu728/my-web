@@ -21,7 +21,7 @@ export const categoryConfig = {
     // 分类名称映射
     nameMap: {
         'all': '全部文章',
-        'Test': '测试',
+        'Management': '管理',
         'Computer Basis': '计算机基础',
         'Data Structure and Algorithm': '数据结构和算法',
         'Programming Language': '编程语言',
@@ -39,13 +39,13 @@ export const categoryConfig = {
         'Programming Language': 4, 
         'Data Structure and Algorithm': 5, 
         'Computer Basis': 6, 
-        'Test': 99, 
+        'Management': 99, 
         '未分类': 100
     },
     
     // 分类颜色配置
     colors: {
-        'Test': {
+        'Management': {
             bg: '#F5F5F5',
             color: '#666666',
             hoverBg: '#E8E8E8'
