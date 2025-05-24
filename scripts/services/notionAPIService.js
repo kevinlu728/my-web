@@ -466,7 +466,7 @@ class NotionAPIService {
             raw: data
         };
         } catch (error) {
-        this.logError('获取照片列表失败:', error);
+        this.logError('获取照片列表失败:', error.message);
         // 详细记录异常堆栈
         this.logError('错误堆栈:', error.stack);
         this.logError('错误发生时间:', new Date().toISOString());
@@ -511,7 +511,7 @@ class NotionAPIService {
         this.connectionStatus = 'online';
         return data;
         } catch (error) {
-        this.logError(`API请求失败: ${fullUrl}`, error);
+        this.logError(`API请求失败: ${fullUrl}`, error.message);
         this.lastError = error;
         
         // 如果允许回退且还有重试次数

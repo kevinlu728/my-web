@@ -380,7 +380,7 @@ body::-webkit-scrollbar-thumb:hover {
 }
 
 .back-to-top:hover::before {
-    content: "返回顶部";
+    content: "\8FD4\56DE\9876\90E8"; /* "返回顶部"的Unicode编码 */
     position: absolute;
     top: -30px;
     left: 50%;

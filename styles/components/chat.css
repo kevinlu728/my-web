@@ -50,7 +50,7 @@
 
 /* 添加悬停提示文字 */
 .chat-toggle::after {
-    content: "AI小助手";
+    content: "\0041\0049\5C0F\52A9\624B"; /* "AI小助手"的Unicode编码 */
     position: absolute;
     top: -40px;
     left: 50%;

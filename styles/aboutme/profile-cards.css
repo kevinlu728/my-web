@@ -87,7 +87,7 @@
 }
 
 .card-career .card-item::before {
-    content: "•";
+    content: "\2022"; /* 使用Unicode编码的实心圆点 */
 }
 
 /* ==== 生活简介卡片特定样式 ==== */
@@ -112,7 +112,7 @@
 }
 
 .card-life .card-item::before {
-    content: "•";
+    content: "\2022"; /* 使用Unicode编码的实心圆点 */
 }
 
 /* ==== 合作卡片特定样式 ==== */
