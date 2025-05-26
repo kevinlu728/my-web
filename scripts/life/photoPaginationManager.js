@@ -11,12 +11,12 @@
  * - 提供模拟数据分页加载
  */
 
-import notionAPIService from '../services/notionAPIService.js';
-import { lifeViewManager, ModuleType } from './lifeViewManager.js';
-import { processPhotoListData, filterPhotosByModuleType } from '../utils/photo-utils.js';
+import logger from '../utils/logger.js';
 import lifecycleManager from '../utils/lifecycleManager.js';
 import { throttle, showLoadingSpinner } from '../utils/common-utils.js';
-import logger from '../utils/logger.js';
+import { processPhotoListData, filterPhotosByModuleType } from '../utils/photo-utils.js';
+import notionAPIService from '../services/notionAPIService.js';
+import { lifeViewManager, ModuleType } from './lifeViewManager.js';
 import { photoCacheManager } from './photoCacheManager.js';
 
 export const DEFAULT_PHOTOS_PER_PAGE = 10;
@@ -38,7 +38,7 @@ class PhotoPaginationManager {
         
         // 滚动监听
         this.scrollHandler = null;
-        this.scrollContainer = null;
+        // this.scrollContainer = null;
         
         // 绑定方法的this上下文
         this._handleScroll = this._handleScroll.bind(this);
@@ -561,8 +561,6 @@ class PhotoPaginationManager {
                 this.scrollContainer.removeEventListener('scroll', this.scrollHandler);
             this.scrollHandler = null;
         }
-        
-        logger.info('照片分页状态已重置');
     }
 
     /**

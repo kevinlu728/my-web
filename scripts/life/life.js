@@ -16,16 +16,15 @@
  */
 
 import logger from '../utils/logger.js';
+import lifecycleManager from '../utils/lifecycleManager.js';
 import config from '../config/config.js';
-
 import notionAPIService from '../services/notionAPIService.js';
 import { resourceManager } from '../resource/resourceManager.js';
+import { initNavigation, initScrollNavigation, initActiveNavLink } from '../components/navigation.js';
+import { scrollbar } from '../components/scrollbar.js';
 import { photoManager } from './photoManager.js';
 import { themeModuleManager } from './themeModuleManager.js';
 import { lifeViewManager, ModuleType, ViewMode } from './lifeViewManager.js';
-import { initNavigation, initScrollNavigation, initActiveNavLink } from '../components/navigation.js';
-import { scrollbar } from '../components/scrollbar.js';
-import lifecycleManager from '../utils/lifecycleManager.js';
 
 logger.info('🚀 life.js 开始加载...');
 
@@ -127,6 +126,8 @@ export async function initializePage() {
         initializeViewEvents();
         // 更新视图状态
         updateViewMode(ViewMode.LOADING);
+        // 移除可能存在的重试时的加载提示
+        removeRetryLoadingContainer(getPhotoWallContainer());
         
         // ===== 2. 核心组件初始化 =====
         // 初始化NotionAPI服务，后续照片管理器会使用
@@ -162,22 +163,17 @@ export async function initializePage() {
         // ===== 5. 收尾工作 =====
         // 更新视图状态
         updateViewMode(ViewMode.GRID);
-
     } catch (error) {
-        // 统一错误处理
-        logger.error('页面初始化过程中发生错误:', error.message);
+        // 记录错误信息并重置状态
+        logger.error('页面初始化过程中发生错误:', {
+            type: error.name === 'NetworkError' ? '网络连接错误' : '其它类型错误',
+            message: error.message
+        });
  
         // 重置状态标志
         window.pageState.loading = false;
         window.pageState.error = error;
         
-        // 记录详细错误信息以便调试
-        if (error.name === 'NetworkError') {
-            logger.error('网络连接错误，请检查网络连接');
-        } else {
-            logger.error('其它类型错误:', error.message);
-        }
-
         // 显示友好的错误提示界面
         showErrorPage(error);
     } finally {
@@ -208,12 +204,11 @@ function initializeViewEvents() {
         logger.debug(`视图模式变更事件触发: ${previousMode || 'none'} -> ${mode}`);
         
         // 更新UI状态
-        document.getElementById('photo-wall-container').dataset.viewMode = mode;
+        getPhotoWallContainer().dataset.viewMode = mode;
         
         // 根据模式执行特定操作
         if (mode === 'grid') {
             // 网格模式特定操作
-            
         } else if (mode === 'detail') {
             // 详情模式特定操作
             // 例如：禁用滚动、聚焦详情元素等
@@ -276,7 +271,7 @@ function updateViewMode(mode) {
     }
 
     // 根据模式更新UI状态
-    const photoWallElement = document.getElementById('photo-wall-container');
+    const photoWallElement = getPhotoWallContainer();
     if (photoWallElement) {
         photoWallElement.dataset.viewMode = mode;
     }
@@ -328,8 +323,19 @@ function showErrorPage(error) {
         return;
     }
     
-    // 清空右侧栏内容
-    rightColumn.innerHTML = '';
+    // 保持右侧栏标题和基本结构
+    if (!rightColumn.querySelector('.right-column-header')) {
+        rightColumn.innerHTML = `
+            <div class="right-column-header">
+                <h2>闲时有趣，发现美好</h2>
+                <p class="right-column-subtitle">收藏佳片、主队时刻、旅行足迹，这里是我的生活印记</p>
+            </div>
+            <div id="photo-wall-container" class="photo-wall-container">
+                <div class="photo-grid"></div>
+            </div>
+            <div class="load-more-container"></div>
+        `;
+    }
     
     // 确定错误类型和消息
     let errorTitle = '数据加载失败';
@@ -354,40 +360,79 @@ function showErrorPage(error) {
         errorCode = 'SERVER_ERROR';
     }
     
-    // 创建错误页面HTML
-    const errorPageHTML = `
-        <div class="error-page">
-            <div class="error-icon"></div>
-            <h2 class="error-title">${errorTitle}</h2>
-            <p class="error-message">${errorMessage}</p>
-            ${errorCode ? `<div class="error-code">${errorCode}</div>` : ''}
-            <div class="error-action">
-                <button class="retry-button" id="retry-button">
-                    <span class="retry-button-icon"></span>
-                    <span>重新加载</span>
-                </button>
+    // 创建错误页面HTML并插入到照片墙容器中
+    const errorPageContainer = rightColumn.querySelector('#photo-wall-container');
+    if (errorPageContainer) {
+        errorPageContainer.innerHTML = `
+            <div class="error-page">
+                <div class="error-icon"></div>
+                <h2 class="error-title">${errorTitle}</h2>
+                <p class="error-message">${errorMessage}</p>
+                ${errorCode ? `<div class="error-code">${errorCode}</div>` : ''}
+                <div class="error-action">
+                    <button class="retry-button" id="retry-button">
+                        <span class="retry-button-icon"></span>
+                        <span>重新加载</span>
+                    </button>
+                </div>
             </div>
-        </div>
-    `;
-    
-    // 添加错误页面到右侧栏
-    rightColumn.innerHTML = errorPageHTML;
+        `;
+    }
     
     // 添加重试按钮事件
     const retryButton = document.getElementById('retry-button');
     if (retryButton) {
         retryButton.addEventListener('click', () => {
             logger.info('用户点击重试按钮，重新初始化页面');
-            // 清空错误状态
-            window.pageState.error = null;
-            // 显示加载提示
-            rightColumn.innerHTML = '<div class="loading-container" style="text-align: center; padding: 100px 0;"><div class="loading-spinner"></div><div class="loading-text">正在重新加载...</div></div>';
+            
+            // 先清理页面状态和事件
+            cleanupPage();
+            
+            // 再显示加载提示
+            const photoWallContainer = getPhotoWallContainer();
+            if (photoWallContainer) {
+                photoWallContainer.innerHTML = `
+                    <div class="retry-loading-container" style="text-align: center; padding: 100px 0;">
+                        <div class="loading-spinner"></div>
+                        <div class="loading-text">正在重新加载...</div>
+                    </div>
+                `;
+            }
+            
             // 延迟一点以显示加载提示
             setTimeout(() => {
                 // 重新初始化页面
                 initializePage();
             }, 500);
         });
+    }
+}
+
+function getPhotoWallContainer() {
+    return document.getElementById('photo-wall-container');
+}
+
+/**
+ * 隐藏错误页面
+ */
+function cleanupErrorPage(errorPageContainer) {
+    // 移除错误页面
+    const errorPage = errorPageContainer.querySelector('.error-page');
+    if (errorPage) {
+        errorPage.remove();
+    }
+    // 移除重试时的加载提示
+    removeRetryLoadingContainer(errorPageContainer);
+    // 确保photo-grid存在
+    if (!errorPageContainer.querySelector('.photo-grid')) {
+        errorPageContainer.innerHTML = '<div class="photo-grid"></div>';
+    }
+}
+
+function removeRetryLoadingContainer(errorPageContainer) {
+    const retryLoadingContainer = errorPageContainer.querySelector('.retry-loading-container');
+    if (retryLoadingContainer) {
+        retryLoadingContainer.remove();
     }
 }
 
@@ -400,17 +445,19 @@ export function cleanupPage() {
     
     try {
         // 移除事件监听器
-        const photoWallContainer = document.getElementById('photo-wall-container');
+        const photoWallContainer = getPhotoWallContainer();
         if (photoWallContainer) {
             // 移除数据属性
             photoWallContainer.removeAttribute('data-view-mode');
         }
+
+        cleanupErrorPage(getPhotoWallContainer());
         
-        // 移除容器中的内容
-        const rightColumn = document.querySelector('.life-content .right-column');
-        if (rightColumn) {
-            rightColumn.innerHTML = '';
-        }
+        // 移除容器中的内容。注释掉，因为需要保留右侧栏的标题和基本结构，否则重试时会找不到照片墙容器
+        // const rightColumn = document.querySelector('.life-content .right-column');
+        // if (rightColumn) {
+        //     rightColumn.innerHTML = '';
+        // }
         
         // 移除主题类
         document.body.classList.remove('theme-all');
@@ -426,13 +473,6 @@ export function cleanupPage() {
         if (scrollbar && typeof scrollbar.cleanup === 'function') {
             scrollbar.cleanup();
         }
-        
-        if (lifeViewManager && typeof lifeViewManager.cleanup === 'function') {
-            lifeViewManager.cleanup();
-        }
-        
-        // 重置视图状态
-        lifeViewManager.reset();
         
         // 完全重置页面状态
         window.pageState = {

@@ -10,16 +10,16 @@
  * 4. 与API交互
  */
 
+import logger from '../utils/logger.js';
+import lifecycleManager from '../utils/lifecycleManager.js';
+import { processPhotoListData, filterPhotosByModuleType } from '../utils/photo-utils.js';
+import { generateMockPhotos } from '../utils/mock-utils.js';
 import notionAPIService from '../services/notionAPIService.js';
 import { lifeViewManager, ModuleType } from './lifeViewManager.js';
 import { photoPaginationManager, DEFAULT_PHOTOS_PER_PAGE } from './photoPaginationManager.js';
 import { photoRenderer } from './photoRenderer.js';
 import { photoCacheManager } from './photoCacheManager.js';
 import { photoDetailManager } from './photoDetailManager.js';
-import lifecycleManager from '../utils/lifecycleManager.js';
-import { processPhotoListData, filterPhotosByModuleType } from '../utils/photo-utils.js';
-import { generateMockPhotos } from '../utils/mock-utils.js';
-import logger from '../utils/logger.js';
 
 // 照片墙管理器
 class PhotoManager {

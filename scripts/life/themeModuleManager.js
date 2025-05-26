@@ -10,8 +10,8 @@
  */
 
 import logger from '../utils/logger.js';
-import {lifeViewManager, ModuleType} from './lifeViewManager.js';
 import lifecycleManager from '../utils/lifecycleManager.js';
+import {lifeViewManager, ModuleType} from './lifeViewManager.js';
 
 // 主题模块管理器
 class ThemeModuleManager {

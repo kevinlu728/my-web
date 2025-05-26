@@ -724,8 +724,8 @@ class PhotoRenderer {
         };
         
         // 清理容器引用
-        this.container = null;
-        this.photoGridContainer = null;
+        // this.container = null;
+        // this.photoGridContainer = null;
     }
 }
 

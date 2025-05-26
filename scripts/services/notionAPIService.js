@@ -466,10 +466,7 @@ class NotionAPIService {
             raw: data
         };
         } catch (error) {
-        this.logError('获取照片列表失败:', error.message);
-        // 详细记录异常堆栈
-        this.logError('错误堆栈:', error.stack);
-        this.logError('错误发生时间:', new Date().toISOString());
+        this.logError(`获取照片列表失败: ${error.message}\n错误堆栈: ${error.stack}\n错误发生时间: ${new Date().toISOString()}`);
         throw error;
         }
     }
@@ -483,53 +480,53 @@ class NotionAPIService {
         
         // 记录请求参数
         if (options.body) {
-        this.logDebug('请求参数:', JSON.parse(options.body));
+            this.logDebug('请求参数:', JSON.parse(options.body));
         }
         
         try {
-        const response = await fetch(fullUrl, options);
+            const response = await fetch(fullUrl, options);
         
-        if (!response.ok) {
-            const errorText = await response.text();
-            // 详细记录错误信息
-            this.logError('API请求失败:', {
-            method: options.method || 'GET',
-            url: fullUrl,
-            params: options.body ? JSON.parse(options.body) : {},
-            statusCode: response.status,
-            statusText: response.statusText,
-            headers: Object.fromEntries([...response.headers]),
-            responseText: errorText
-            });
-            throw new Error(`API请求失败: ${response.status} - ${errorText}`);
-        }
+            if (!response.ok) {
+                const errorText = await response.text();
+                // 记录完整的错误信息
+                this.logError('API请求失败:', {
+                    method: options.method || 'GET',
+                    url: fullUrl,
+                    params: options.body ? JSON.parse(options.body) : {},
+                    statusCode: response.status,
+                    statusText: response.statusText,
+                    headers: Object.fromEntries([...response.headers]),
+                    responseText: errorText,
+                    timestamp: new Date().toISOString()
+                });
+                throw new Error(`API请求失败: ${response.status} - ${errorText}`);
+            }
         
-        const data = await response.json();
-        this.logDebug('API响应数据:', data);
-        
-        this.retryCount = 0; // 重置重试计数器
-        this.connectionStatus = 'online';
-        return data;
+            const data = await response.json();
+            this.logDebug('API响应数据:', data);
+            
+            this.retryCount = 0; // 重置重试计数器
+            this.connectionStatus = 'online';
+            return data;
         } catch (error) {
-        this.logError(`API请求失败: ${fullUrl}`, error.message);
-        this.lastError = error;
+            this.lastError = error;
         
-        // 如果允许回退且还有重试次数
-        if (allowFallback && this.retryCount < this.maxRetries) {
-            this.retryCount++;
-            this.logInfo(`尝试切换API实现并重试 (${this.retryCount}/${this.maxRetries})`);
-            
-            // 切换API实现
-            this.useDirectApi = !this.useDirectApi;
-            this.logInfo(`已切换到${this.useDirectApi ? '直接' : '标准'}API实现`);
-            
-            // 递归调用，但不增加重试计数
-            return await this.executeRequest(url, options, true);
-        }
+            // 如果允许回退且还有重试次数
+            if (allowFallback && this.retryCount < this.maxRetries) {
+                this.retryCount++;
+                this.logInfo(`尝试切换API实现并重试 (${this.retryCount}/${this.maxRetries}), 错误原因: ${error.message}`);
+                
+                // 切换API实现
+                this.useDirectApi = !this.useDirectApi;
+                this.logInfo(`已切换到${this.useDirectApi ? '直接' : '标准'}API实现`);
+                
+                // 递归调用，但不增加重试计数
+                return await this.executeRequest(url, options, true);
+            }
         
-        // 如果已达到最大重试次数或不允许回退
-        this.connectionStatus = 'offline';
-        throw error; // 重新抛出错误供调用者处理
+            // 如果已达到最大重试次数或不允许回退
+            this.connectionStatus = 'offline';
+            throw error; // 重新抛出错误供调用者处理
         }
     }
 

@@ -11,6 +11,7 @@
  */
 
 import logger from '../utils/logger.js';
+import lifecycleManager from '../utils/lifecycleManager.js';
 
 // 模块类型枚举
 export const ModuleType = {
@@ -45,11 +46,14 @@ export const ViewEvents = {
  */
 class LifeViewManager {
     constructor() {
-        this.container = null;
+        // this.container = null;
         this.currentMode = null;
         this.initialized = false;
         this.pendingModeChanges = [];
         this.eventHandlers = {}; // 存储事件处理函数，便于清理
+
+        // 注册清理函数
+        lifecycleManager.registerCleanup('lifeViewManager', this.cleanup.bind(this));
     }
     
     /**
@@ -63,7 +67,7 @@ class LifeViewManager {
         
         if (!this.container) {
             logger.error(`未找到视图容器: #${containerId}`);
-            return false;
+            return;
         }
         
         this.initialized = true;
@@ -71,14 +75,11 @@ class LifeViewManager {
         // 处理待处理的模式变更
         this.processPendingModeChanges();
         
-        // logger.info('视图管理器初始化完成');
-        
         // 发布初始化完成事件
         document.dispatchEvent(new CustomEvent('lifeViewManager:initialized', {
             detail: { manager: this }
         }));
-        
-        return true;
+        logger.info('视图管理器初始化完成');
     }
     
     /**
@@ -204,14 +205,12 @@ class LifeViewManager {
      * 销毁视图管理器
      */
     destroy() {
-        logger.info('销毁视图管理器...');
-        
         // 移除所有事件监听器
         Object.keys(this.eventHandlers).forEach(eventName => {
             this.off(eventName);
         });
         
-        this.container = null;
+        // this.container = null;
         this.initialized = false;
         this.currentMode = null;
         
@@ -222,9 +221,7 @@ class LifeViewManager {
      * 重置视图管理器状态
      * 不完全销毁，保留容器引用，但重置其他状态
      */
-    reset() {
-        logger.info('重置视图管理器状态...');
-        
+    reset() {      
         // 移除所有事件监听器
         Object.keys(this.eventHandlers).forEach(eventName => {
             this.off(eventName);
@@ -240,9 +237,6 @@ class LifeViewManager {
         this.currentMode = ViewMode.GRID;
         this.pendingModeChanges = [];
         this.eventHandlers = {};
-        
-        logger.info('视图管理器状态已重置');
-        
         return true;
     }
     
@@ -250,7 +244,6 @@ class LifeViewManager {
      * 清理函数 - 兼容生命周期管理器
      */
     cleanup() {
-        logger.info('清理视图管理器...');
         this.reset();
         logger.info('视图管理器已清理');
     }

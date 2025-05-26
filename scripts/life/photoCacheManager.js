@@ -11,8 +11,8 @@
  */
 
 import logger from '../utils/logger.js';
-import { lifeViewManager } from './lifeViewManager.js';
 import lifecycleManager from '../utils/lifecycleManager.js';
+import { lifeViewManager } from './lifeViewManager.js';
 
 class PhotoCacheManager {
     constructor() {
@@ -592,8 +592,6 @@ class PhotoCacheManager {
      * @param {boolean} clearCache 是否同时清除缓存，默认为false
      */
     cleanup(clearCache = false) {
-        logger.info('清理照片缓存管理器...');
-        
         // 如果需要，清除缓存
         if (clearCache) {
             this.clearAllCache();
