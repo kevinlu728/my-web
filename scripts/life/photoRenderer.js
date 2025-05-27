@@ -33,7 +33,6 @@ class PhotoRenderer {
      */
     initialize(container) {
         logger.info('初始化照片渲染器...');
-        this.container = container;
         this.initResourceEventListeners();
         this.loadResources();
     }
@@ -724,8 +723,7 @@ class PhotoRenderer {
         };
         
         // 清理容器引用
-        // this.container = null;
-        // this.photoGridContainer = null;
+        this.photoGridContainer = null;
     }
 }
 
