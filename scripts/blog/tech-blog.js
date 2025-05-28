@@ -136,6 +136,8 @@ export async function initializePage() {
         initViewEvents();
         // 更新视图状态
         contentViewManager.updateViewState('loading');
+        // 移除可能存在的重试时的加载提示
+        removeRetryLoadingContainer(getArticleContainer());
         
         // ===== 2. 核心组件初始化 =====
         // 初始化NotionAPI服务，后续文章管理器会使用
@@ -188,23 +190,14 @@ export async function initializePage() {
 
     } catch (error) {
         // 统一错误处理
-        logger.error('页面初始化过程中发生错误:', error.message);
+        logger.error('页面初始化过程中发生错误:', {
+            type: error.name === 'NetworkError' ? '网络连接错误' : '其它类型错误',
+            message: error.message
+        });
  
         // 重置状态标志 - 使用统一的状态变量
         window.pageState.loading = false;
         window.pageState.error = error;
-        
-        // 错误分类处理（可选）
-        if (error.name === 'NetworkError') {
-            logger.error('网络连接错误，请检查网络连接');
-            showStatus('网络连接失败，请检查您的网络设置', true, 'error');
-        } else if (error.name === 'DataError') {
-            logger.error('数据加载错误:', error.message);
-            showStatus('加载数据时出错，请稍后再试', true, 'error');
-        } else {
-            logger.error('其它类型错误:', error.message);
-            showError('页面初始化失败，请稍后重试');
-        }
         
         // 显示友好的错误提示界面
         showErrorPage(error);
@@ -599,8 +592,123 @@ function fixFontAwesomeIcons() {
  * @param {Error} error 错误对象
  */
 function showErrorPage(error) {
-    logger.error('显示友好的错误提示界面', error);
-    //待实现
+    logger.info('显示友好的错误提示界面');
+    
+    // 寻找右侧栏容器
+    const rightColumn = document.querySelector('.blog-content .right-column');
+    if (!rightColumn) {
+        logger.error('未找到右侧栏容器，无法显示错误页面');
+        return;
+    }
+    
+    // 保持右侧栏的基本结构
+    if (!rightColumn.querySelector('#article-container')) {
+        rightColumn.innerHTML = `
+            <div id="article-container" class="article-container">
+                <div class="article-body"></div>
+            </div>
+        `;
+    }
+    
+    // 确定错误类型和消息
+    let errorTitle = '内容加载失败';
+    let errorMessage = '很抱歉，无法加载博客内容。这可能是暂时性问题，请稍后再试。';
+    let errorCode = '';
+    
+    if (error.name === 'NetworkError' || error.message.includes('network') || error.message.includes('连接')) {
+        errorTitle = '网络连接问题';
+        errorMessage = '无法连接到数据服务器。请检查您的网络连接，或者稍后再试。';
+        errorCode = 'NETWORK_ERROR';
+    } else if (error.message.includes('权限') || error.message.includes('permission') || error.message.includes('unauthorized')) {
+        errorTitle = '权限错误';
+        errorMessage = '您没有访问此内容的权限。如需帮助，请联系管理员。';
+        errorCode = 'PERMISSION_DENIED';
+    } else if (error.message.includes('timeout') || error.message.includes('超时')) {
+        errorTitle = '请求超时';
+        errorMessage = '服务器响应时间过长。请稍后再试。';
+        errorCode = 'REQUEST_TIMEOUT';
+    } else if (error.status === 500 || error.message.includes('500')) {
+        errorTitle = '服务器错误';
+        errorMessage = 'Notion服务器暂时不可用。请稍后再试。';
+        errorCode = 'SERVER_ERROR';
+    }
+    
+    // 创建错误页面HTML并插入到文章容器中
+    const articleContainer = rightColumn.querySelector('#article-container');
+    if (articleContainer) {
+        articleContainer.innerHTML = `
+            <div class="error-page">
+                <div class="error-icon"></div>
+                <h2 class="error-title">${errorTitle}</h2>
+                <p class="error-message">${errorMessage}</p>
+                ${errorCode ? `<div class="error-code">${errorCode}</div>` : ''}
+                <div class="error-action">
+                    <button class="retry-button" id="retry-button">
+                        <span class="retry-button-icon"></span>
+                        <span>重新加载</span>
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+    
+    // 添加重试按钮事件
+    const retryButton = document.getElementById('retry-button');
+    if (retryButton) {
+        retryButton.addEventListener('click', () => {
+            logger.info('用户点击重试按钮，重新初始化页面');
+            
+            // 先清理页面状态和事件
+            cleanupPage();
+            
+            // 再显示加载提示
+            const articleContainer = getArticleContainer();
+            if (articleContainer) {
+                articleContainer.innerHTML = `
+                    <div class="retry-loading-container" style="text-align: center; padding: 100px 0;">
+                        <div class="loading-spinner"></div>
+                        <div class="loading-text">正在重新加载...</div>
+                    </div>
+                `;
+            }
+            
+            // 延迟一点以显示加载提示
+            setTimeout(() => {
+                // 重新初始化页面
+                initializePage();
+            }, 500);
+        });
+    }
+}
+
+function getArticleContainer() {
+    return document.getElementById('article-container');
+}
+
+/**
+ * 清理错误页面
+ * @param {HTMLElement} errorPageContainer 错误页面的容器
+ */
+function cleanupErrorPage(errorPageContainer) {
+    if (!errorPageContainer) return; 
+    // 移除错误页面
+    const errorPage = errorPageContainer.querySelector('.error-page');
+    if (errorPage) {
+        errorPage.remove();
+    }
+    // 移除重试时的加载提示
+    removeRetryLoadingContainer(errorPageContainer);
+    // 确保article-body存在
+    if (!errorPageContainer.querySelector('.article-body')) {
+        errorPageContainer.innerHTML = '<div class="article-body"></div>';
+    }
+}
+
+function removeRetryLoadingContainer(errorPageContainer) {
+    const retryLoadingContainer = errorPageContainer.querySelector('.retry-loading-container');
+    if (retryLoadingContainer) {
+        retryLoadingContainer.remove();
+    }
 }
 
 /**
@@ -611,6 +719,12 @@ export function cleanupPage() {
     logger.info('开始清理技术博客页面资源...');
     
     try {
+        // 清理错误页面
+        const articleContainer = getArticleContainer();
+        if (articleContainer) {
+            cleanupErrorPage(articleContainer);
+        }
+        
         // 销毁视图管理器，这会清理所有注册的事件监听器
         contentViewManager.destroy();
         
@@ -624,13 +738,23 @@ export function cleanupPage() {
         }
         
         // 重置页面状态
-        window.pageState.initialized = false;
-        window.pageState.initializing = false;
-        window.pageState.loading = false;
+        window.pageState = {
+            initialized: false,
+            initializing: false,
+            loading: false,
+            error: null
+        };
         
         logger.info('技术博客页面资源清理完成');
     } catch (error) {
         logger.error('清理页面资源时发生错误:', error);
+        // 即使出错，也尝试重置关键状态
+        window.pageState = {
+            initialized: false,
+            initializing: false,
+            loading: false,
+            error: error
+        };
     }
 }
 

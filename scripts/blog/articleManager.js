@@ -82,54 +82,49 @@ class ArticleManager {
         logger.info('初始化文章管理器，数据库ID:', databaseId);
         this.blogDatabaseId = databaseId;
         
-        try {
-            // 初始化分类管理器
-            categoryManager.initialize();
+        // 初始化分类管理器
+        categoryManager.initialize();
 
-            // 检查URL中是否有指定文章参数
-            const urlParams = new URLSearchParams(window.location.search);
-            const articleIdFromUrl = urlParams.get('article');
+        // 检查URL中是否有指定文章参数
+        const urlParams = new URLSearchParams(window.location.search);
+        const articleIdFromUrl = urlParams.get('article');
 
-            if (!articleIdFromUrl) {
-                logger.info('URL参数不含文章ID,将初始化欢迎页面管理器并显示欢迎页');
-                // 初始化欢迎页面管理器，在加载文章列表之前初始化欢迎页面管理器是因为希望尽早显示欢迎页面骨架屏
-                this.initWelcomePageManager();
-                // 加载文章列表
-                const articles = await this.loadArticles();
-                // 更新分类列表
-                await this.updateCategories(articles);
-                // 初始化搜索管理器
-                this.initArticleSearchManager();
-                // 更新视图状态
-                contentViewManager.updateViewState('auto');
-                // 委托给欢迎页管理器处理
-                welcomePageManager.showWelcomePage(articles);
-            } else {
-                // 仅当URL中指定了文章ID时才加载文章
-                logger.info(`URL参数包含文章ID: ${articleIdFromUrl},将显示指定文章`);
-                // 尽早显示文章内容页面骨架屏
-                articlePageSkeleton.show(this.getArticleContainer());
-                // 加载文章列表
-                const articles = await this.loadArticles();
-                // 更新分类列表
-                await this.updateCategories(articles);
-                // 初始化搜索管理器
-                this.initArticleSearchManager();
-                // 显示指定文章
-                await this.loadArticle(articleIdFromUrl);
-            }
-
-            // 监听文章选择事件
-            document.addEventListener('articleSelected', (e) => {
-                if (e.detail && e.detail.articleId) {
-                    logger.info('从搜索结果中选择文章');
-                    this.loadArticle(e.detail.articleId);
-                }
-            });
-        } catch (error) {
-            logger.error('文章管理器初始化失败:', error.message);
-            throw error;
+        if (!articleIdFromUrl) {
+            logger.info('URL参数不含文章ID,将初始化欢迎页面管理器并显示欢迎页');
+            // 初始化欢迎页面管理器，在加载文章列表之前初始化欢迎页面管理器是因为希望尽早显示欢迎页面骨架屏
+            this.initWelcomePageManager();
+            // 加载文章列表
+            const articles = await this.loadArticles();
+            // 更新分类列表
+            await this.updateCategories(articles);
+            // 初始化搜索管理器
+            this.initArticleSearchManager();
+            // 更新视图状态
+            contentViewManager.updateViewState('auto');
+            // 委托给欢迎页管理器处理
+            welcomePageManager.showWelcomePage(articles);
+        } else {
+            // 仅当URL中指定了文章ID时才加载文章
+            logger.info(`URL参数包含文章ID: ${articleIdFromUrl},将显示指定文章`);
+            // 尽早显示文章内容页面骨架屏
+            articlePageSkeleton.show(this.getArticleContainer());
+            // 加载文章列表
+            const articles = await this.loadArticles();
+            // 更新分类列表
+            await this.updateCategories(articles);
+            // 初始化搜索管理器
+            this.initArticleSearchManager();
+            // 显示指定文章
+            await this.loadArticle(articleIdFromUrl);
         }
+
+        // 监听文章选择事件
+        document.addEventListener('articleSelected', (e) => {
+            if (e.detail && e.detail.articleId) {
+                logger.info('从搜索结果中选择文章');
+                this.loadArticle(e.detail.articleId);
+            }
+        });
     }
 
     initWelcomePageManager() {
@@ -243,6 +238,7 @@ class ArticleManager {
             return this.articles;
         } catch (error) {
             logger.error('加载文章列表失败:', error.message);
+            throw error;
             
             // 显示错误状态
             if (error.name === 'AbortError') {

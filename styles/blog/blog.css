@@ -24,6 +24,7 @@
 @import '../components/hero-section.css'; /* 新增: 英雄区样式 */
 @import '../components/loading-spinner.css'; /* 导入统一的加载动画样式 */
 @import '../components/debug-panel.css';
+@import '../components/error-page.css';
 /* 导入布局样式 */
 @import './blog-left-column.css';
 @import './blog-right-column.css';

@@ -414,6 +414,7 @@ function getPhotoWallContainer() {
 
 /**
  * 隐藏错误页面
+ * @param {HTMLElement} errorPageContainer 错误页面的容器
  */
 function cleanupErrorPage(errorPageContainer) {
     // 移除错误页面

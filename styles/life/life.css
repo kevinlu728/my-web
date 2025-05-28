@@ -20,6 +20,7 @@
 @import '../components/modal.css'; /* 导入统一的模态框样式 */
 @import '../components/hero-section.css'; /* 新增: 英雄区样式 */
 @import '../components/loading-spinner.css'; /* 导入统一的加载动画样式 */
+@import '../components/error-page.css';
 /* 导入布局样式 */
 @import './life-left-column.css';
 @import './life-right-column.css';
