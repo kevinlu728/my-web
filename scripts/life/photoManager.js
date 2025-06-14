@@ -20,17 +20,16 @@ import { photoPaginationManager, DEFAULT_PHOTOS_PER_PAGE } from './photoPaginati
 import { photoRenderer } from './photoRenderer.js';
 import { photoCacheManager } from './photoCacheManager.js';
 import { photoDetailManager } from './photoDetailManager.js';
+import { photoDataSet } from './photoDataSet.js';
 
 // 照片墙管理器
 class PhotoManager {
     constructor() {
         this.lifeDatabaseId = null;
-        this.photos = []; // 已加载的全部照片
         this.paginationInfo = null; // 分页信息
         this.isLoading = false; // 用于控制无限滚动加载
         this.scrollListeners = []; // 用于存储滚动监听器
         this.currentModuleType = ModuleType.ALL;
-        this.currentModulePhotos = [];
     }
 
     /**
@@ -59,7 +58,7 @@ class PhotoManager {
         
         // 获取照片数据
         const processedPhotos = await this.loadPhotos();
-        this.photos = [...processedPhotos];
+        photoDataSet.initialize(processedPhotos);
         
         // 初始化渲染器
         photoRenderer.initialize(container);
@@ -67,7 +66,6 @@ class PhotoManager {
         // 初始化分页管理器
         photoPaginationManager.initialize(
             this.lifeDatabaseId,
-            processedPhotos, 
             this.paginationInfo,
             this.onNewPhotosLoaded.bind(this)
         );
@@ -77,7 +75,7 @@ class PhotoManager {
 
         lifeViewManager.dispatchViewEvent('loadingEnd');
         
-        this.render(this.photos);
+        this.render(photoDataSet.getPhotos());
         
         // 注册清理函数
         lifecycleManager.registerCleanup('photoManager', this.cleanup.bind(this));
@@ -165,7 +163,7 @@ class PhotoManager {
         // 使用渲染器渲染照片
         photoRenderer.render(
             container, 
-            photosToShow, 
+            photosOfCurrentModule, 
             photosOfCurrentModule.length,
             this.onPhotoDetailClick.bind(this)
         );
@@ -187,8 +185,8 @@ class PhotoManager {
         
         logger.info(`获取到 ${newPhotos.length} 张新照片，准备渲染`);
         if (needUpdateTotalPhotos) {
-            this.photos = [...this.photos, ...newPhotos];
-            logger.info(`加载新照片后，当前共有 ${this.photos.length} 张照片`);
+            photoDataSet.appendPhotos(newPhotos);
+            logger.info(`加载新照片后，当前共有 ${photoDataSet.getPhotos().length} 张照片`);
         }
         
         // 确保在调用渲染之前DOM已准备好
@@ -233,7 +231,7 @@ class PhotoManager {
         photoCacheManager.cachePhoto(photo);
         
         // 获取当前模块所有照片，便于前后导航
-        const currentModulePhotos = this.getCurrentModulePhotos();
+        const currentModulePhotos = photoDataSet.getCurrentModulePhotos();
         const currentIndex = currentModulePhotos.findIndex(p => p.id === photo.id);
         logger.debug(`当前照片索引: ${currentIndex}/${currentModulePhotos.length}`);
         
@@ -255,10 +253,9 @@ class PhotoManager {
         
         // 直接使用工具函数，避免重复检查
         // filterPhotosByModuleType内部已经处理了ALL类型的情况
-        const currentModulePhotos = filterPhotosByModuleType([...this.photos], moduleType);
-        
+        const currentModulePhotos = filterPhotosByModuleType([...photoDataSet.getPhotos()], moduleType);
+        photoDataSet.setCurrentModulePhotos(currentModulePhotos);
         logger.info(`当前模块的照片数量: ${currentModulePhotos.length}`);
-        this.currentModulePhotos = currentModulePhotos;
 
         // 重要修复: 同步更新分页管理器中的照片数据
         photoPaginationManager.filterPhotosByModule(moduleType, currentModulePhotos);
@@ -268,14 +265,7 @@ class PhotoManager {
     }
 
     getPhotos() {
-        return this.photos;
-    }
-
-    getCurrentModulePhotos() {
-        if (this.currentModulePhotos && this.currentModulePhotos.length > 0) {
-            return this.currentModulePhotos;
-        }
-        return this.photos;
+        return photoDataSet.getPhotos();
     }
 
     getPhotoContainer() {
@@ -299,10 +289,12 @@ class PhotoManager {
         
         // 清理分页管理器
         photoPaginationManager.cleanup();
+
+        // 清理数据集
+        photoDataSet.cleanup();
         
         // 重置状态
         this.isLoading = false;
-        this.photos = [];
         this.paginationInfo = null;
         this.lifeDatabaseId = null;
     }

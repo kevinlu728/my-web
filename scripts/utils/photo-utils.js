@@ -123,6 +123,8 @@ export function filterPhotosByModuleType(photos, moduleType) {
     return photos.filter(photo => {
         // 优先检查categories数组
         if (photo.categories && Array.isArray(photo.categories)) {
+            // 打印photo.categories
+            logger.info('photo.categories: ' + photo.categories);
             const typeToFind = moduleType.toLowerCase();
             return photo.categories.some(cat => cat.toLowerCase() === typeToFind);
         } else {
@@ -137,6 +139,8 @@ export function filterPhotosByModuleType(photos, moduleType) {
                     return category === 'travel';
                 case ModuleType.FOOD:
                     return category === 'food';
+                case ModuleType.FAMILY:
+                    return category === 'family';
                 default:
                     return true;
             }

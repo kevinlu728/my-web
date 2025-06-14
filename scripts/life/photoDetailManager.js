@@ -150,6 +150,7 @@ class PhotoDetailManager {
                 case 'football': return '足球';
                 case 'travel': return '旅行';
                 case 'food': return '美食';
+                case 'family': return '家庭';
                 default: return category;
             }
         };

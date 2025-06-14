@@ -35,6 +35,11 @@ function generateSvgImage(width, height, type, index) {
             bgColor = getRandomColor(20, 80, 50); 
             title = `美食 ${index}`;
             break;
+        case 'FAMILY':
+            // 粉色系 - HSL色相330-350
+            bgColor = getRandomColor(330, 80, 50); 
+            title = `家庭 ${index}`;
+            break;
         default:
             bgColor = '#cccccc';
     }

@@ -18,6 +18,7 @@ import { processPhotoListData, filterPhotosByModuleType } from '../utils/photo-u
 import notionAPIService from '../services/notionAPIService.js';
 import { lifeViewManager, ModuleType } from './lifeViewManager.js';
 import { photoCacheManager } from './photoCacheManager.js';
+import { photoDataSet } from './photoDataSet.js';
 
 export const DEFAULT_PHOTOS_PER_PAGE = 10;
 
@@ -26,8 +27,6 @@ class PhotoPaginationManager {
         this.lifeDatabaseId = null;
 
         // 分页状态
-        this.photos = [];
-        this.filteredPhotos = []; // 过滤后的照片数组
         this.currentPage = 1;
         this.photosPerPage = DEFAULT_PHOTOS_PER_PAGE; //每页显示照片数
         this.paginationInfo = null;
@@ -57,13 +56,11 @@ class PhotoPaginationManager {
      * @param {Array} photos 所有照片数据
      * @param {Function} onNewPhotosLoaded 新照片加载的回调函数
      */
-    initialize(databaseId, photos, paginationInfo, onNewPhotosLoaded = null) {
-        logger.info('初始化照片分页管理器, 照片总数:', photos ? photos.length : 0, '，分页信息:', paginationInfo);
+    initialize(databaseId, paginationInfo, onNewPhotosLoaded = null) {
+        logger.info('初始化照片分页管理器, 分页信息:', paginationInfo);
         
         // 设置基础属性
         this.lifeDatabaseId = databaseId;
-        this.photos = [...photos];
-        this.filteredPhotos = [...photos]; // 初始时过滤的照片和所有照片相同
         this.paginationInfo = paginationInfo;
         this.currentPage = 1;
         this.isLoading = false;
@@ -347,26 +344,24 @@ class PhotoPaginationManager {
                     // 保存原始新照片数量（用于日志）
                     const originalCount = newPhotos.length;
                     
-                    // 存储所有原始照片（不过滤），用于模块切换时使用
-                    const allOriginalPhotos = [...newPhotos];
-                    
                     // 如果当前不是显示全部照片，则按模块类型进行过滤
                     if (this.currentModuleType !== ModuleType.ALL) {
                         newPhotos = filterPhotosByModuleType(newPhotos, this.currentModuleType);
                         logger.info(`🔍 [客户端过滤] 按模块"${this.currentModuleType}"过滤后，${originalCount} 张照片中有 ${newPhotos.length} 张符合条件`);
                     }
                     
-                    // 将所有原始照片添加到photos中，使得模块切换时能正确显示所有类型的照片
-                    this.photos = [...this.photos, ...allOriginalPhotos];
-                    
                     // 更新过滤后的照片集合
-                    this.filteredPhotos = this.currentModuleType === ModuleType.ALL ? 
-                        [...this.photos] : filterPhotosByModuleType(this.photos, this.currentModuleType);
+                    if (this.currentModuleType === ModuleType.ALL) {
+                        photoDataSet.setFilteredPhotos(photoDataSet.getPhotos());
+                    } else {
+                        photoDataSet.setFilteredPhotos(filterPhotosByModuleType(photoDataSet.getPhotos(), this.currentModuleType));
+                    }
                     
-                    logger.info(`加载新照片后，当前共 ${this.photos.length} 张照片，过滤后 ${this.filteredPhotos.length} 张照片`);
+                    logger.info(`加载新照片后，当前共 ${photoDataSet.getPhotos().length} 张照片，过滤后 ${photoDataSet.getFilteredPhotos().length} 张照片`);
                 }
 
                 // 通知照片管理器开始渲染新照片，且需要更新总照片集合
+                logger.info('11111111111111');
                 this.onNewPhotosLoaded(newPhotos, true);
             } else {
                 // 如果没有API分页信息或游标，回退到原来的本地分页方式
@@ -378,7 +373,7 @@ class PhotoPaginationManager {
                 const endIndex = nextPage * this.photosPerPage;
                 
                 // 使用已过滤的照片集合
-                const photosToUse = this.filteredPhotos || this.photos;
+                const photosToUse = photoDataSet.getFilteredPhotos() || photoDataSet.getPhotos();
                 newPhotos = photosToUse.slice(startIndex, endIndex);
                 
                 if (this.currentModuleType !== ModuleType.ALL) {
@@ -388,6 +383,7 @@ class PhotoPaginationManager {
                 }
 
                 // 通知照片管理器开始渲染新照片，且不需要更新总照片集合
+                logger.info('22222222222222');
                 this.onNewPhotosLoaded(newPhotos, false);
             }
             
@@ -429,7 +425,7 @@ class PhotoPaginationManager {
         const startIndex = (nextPage - 1) * this.photosPerPage;
         
         // 使用过滤后的照片来判断
-        const photosToCheck = this.filteredPhotos || this.photos;
+        const photosToCheck = photoDataSet.getFilteredPhotos() || photoDataSet.getPhotos();
         return startIndex < photosToCheck.length;
     }
 
@@ -439,13 +435,13 @@ class PhotoPaginationManager {
      */
     getPhotosForCurrentPage() {
         // 安全检查
-        if (!this.photos || this.photos.length === 0) {
+        if (!photoDataSet.getPhotos() || photoDataSet.getPhotos().length === 0) {
             logger.warn('无照片数据可供渲染');
             return [];
         }
         
         // 使用过滤后的照片集合
-        const photosToUse = this.filteredPhotos || this.photos;
+        const photosToUse = photoDataSet.getFilteredPhotos() || photoDataSet.getPhotos();
         
         const startIndex = 0;
         const endIndex = this.currentPage * this.photosPerPage;
@@ -530,9 +526,9 @@ class PhotoPaginationManager {
         this.currentModuleType = moduleType;
         
         // 直接使用photoManager已经过滤好的照片数组
-        this.filteredPhotos = [...currentModulePhotos];
+        photoDataSet.setFilteredPhotos(currentModulePhotos);
         
-        logger.info(`当前模块[${moduleType}]的照片数量: ${this.filteredPhotos.length}/${this.photos.length}`);
+        logger.info(`当前模块[${moduleType}]的照片数量: ${photoDataSet.getFilteredPhotos().length}/${photoDataSet.getPhotos().length}`);
         
         // 重置分页状态
         this.currentPage = 1;
@@ -540,11 +536,6 @@ class PhotoPaginationManager {
         
         // 更新加载状态
         this.updateLoadMoreContainer(false);
-        
-        return {
-            hasMore: this.hasMorePhotos(),
-            photosToShow: this.getPhotosForCurrentPage()
-        };
     }
 
     /**
@@ -553,8 +544,6 @@ class PhotoPaginationManager {
     reset() {
         this.currentPage = 1;
         this.isLoading = false;
-        this.photos = [];
-        this.filteredPhotos = []; // 重置过滤后的照片数组
         
         // 移除滚动监听
         if (this.scrollHandler && this.scrollContainer) {

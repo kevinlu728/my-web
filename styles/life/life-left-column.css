@@ -93,6 +93,11 @@
     box-shadow: 0 4px 10px rgba(255, 224, 178, 0.5);
 }
 
+.module-selector[data-module="family"].active {
+    background-color: #f48fb1; /* 淡粉色 */
+    box-shadow: 0 4px 10px rgba(244, 143, 177, 0.5);
+}
+
 /* 响应式调整 */
 @media (max-width: 768px) {
     .life-content .left-column {

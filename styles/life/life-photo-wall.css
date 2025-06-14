@@ -158,7 +158,7 @@ background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/200
 }
 
 /* 电影字段 */
-.photo-extended-field[data-field="movie"]::before {
+.photo-extended-field[data-field="movie type"]::before {
 background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23787878"><path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-4z"/></svg>');
 }
   
@@ -224,6 +224,11 @@ background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/200
 .module-tag.food {
   background-color: #ffe0b2; /* 淡橙色 */
   color: #e65100; /* 深橙色文字 */
+}
+
+.module-tag.family {
+  background-color: #f19cb8; /* 淡粉色 */
+  color: #d43e7a; /* 深粉色文字 */
 }
 
 /* 电影模块特定样式 */

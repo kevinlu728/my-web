@@ -514,6 +514,10 @@ class PhotoRenderer {
                         moduleLabel = '美食';
                         moduleClass = 'food';
                         break;
+                    case 'family':
+                        moduleLabel = '家庭';
+                        moduleClass = 'family';
+                        break;
                     case 'test':
                         moduleLabel = '测试';
                         moduleClass = 'test';
@@ -544,6 +548,10 @@ class PhotoRenderer {
                 case 'food':
                     moduleLabel = '美食';
                     moduleClass = 'food';
+                    break;
+                case 'family':
+                    moduleLabel = '家庭';
+                    moduleClass = 'family';
                     break;
                 case 'test':
                     moduleLabel = '测试';

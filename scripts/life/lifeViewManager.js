@@ -19,6 +19,7 @@ export const ModuleType = {
     FOOTBALL: 'football',
     TRAVEL: 'travel',
     FOOD: 'food',
+    FAMILY: 'family',
     ALL: 'all'
 };
 
