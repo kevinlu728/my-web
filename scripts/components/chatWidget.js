@@ -260,6 +260,14 @@ export function initChatWidget() {
                 }
                 chatMessages.appendChild(messageElement);
                 
+                // 暂时禁用AI服务，显示一段友好的提示
+                setTimeout(() => {
+                    messageElement.querySelector('p').innerHTML = '抱歉哦，AI小助手正在休假，请稍后再来吧 😭';
+                    messageElement.classList.remove('typing');
+                    isWaitingForResponse = false;
+                }, 1000);
+                return;
+
                 // 开始流式接收回复
                 aiService.sendMessageStream(
                     message,
@@ -404,6 +412,14 @@ export function initChatWidget() {
                 `;
                 
                 chatMessages.appendChild(messageElement);
+
+                // 暂时禁用AI服务，显示一段友好的提示
+                setTimeout(() => {
+                    messageElement.querySelector('p').innerHTML = '抱歉哦，AI小助手正在休假，请稍后再来吧 😭';
+                    messageElement.classList.remove('typing');
+                    isWaitingForResponse = false;
+                }, 1000);
+                return;
                 
                 // 开始流式接收回复
                 aiService.sendMessageStream(

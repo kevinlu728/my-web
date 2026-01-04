@@ -2,6 +2,7 @@
  * @file home-new.css
  * @description 新版首页样式，简洁全屏设计
  * @created 2024-08-18
+ * @updated 2024-12-XX - 合并首页专用样式，提高维护性
  */
 
 /* 导入基础样式 */
@@ -13,7 +14,7 @@
 @import '../components/scrollbar.css'; /* 导入统一的滚动条样式 */
 @import '../components/modal.css'; /* 导入统一的模态框样式 */
 @import '../components/loading-spinner.css'; /* 导入统一的加载动画样式 */
-@import '../components/hero-section.css'; /* 导入英雄区样式 */
+@import '../components/hero-section.css'; /* 导入通用英雄区样式（用于其他页面） */
 
 /* 主页布局样式 */
 body.home-page {
@@ -63,38 +64,100 @@ body.home-page .footer {
     }
 }
 
-/* 联系按钮样式 */
-.contact-btn {
-    padding: 0.9rem 3rem;
-    background: linear-gradient(135deg, var(--secondary-color-orange) 0%, var(--tertiary-color-orange) 100%);
-    color: white;
-    border: none;
-    border-radius: 30px;
-    font-size: 1.1rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-    margin-top: 4rem;
+/* ==================== 全屏英雄区样式（首页专用） ==================== */
+
+/* 全屏英雄区样式 */
+.hero-fullscreen {
     position: relative;
-    z-index: 5;
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: var(--primary-color);
+    text-align: center;
+    overflow: hidden;
+    margin-bottom: 0; /* 确保没有底部边距 */
 }
 
-.contact-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+/* 全屏英雄区的背景叠加渐变，使文本更易读 */
+.hero-fullscreen .hero-overlay {
+    background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.3) 0%,
+        rgba(0, 0, 0, 0.1) 50%,
+        rgba(44, 62, 80, 0.4) 100%
+    ); /* 顶部和底部稍暗，中间透明度低 */
+}
+
+/* 全屏英雄区背景图样式 */
+.hero-fullscreen .hero-background img {
+    opacity: 1; /* 调整透明度，确保文字可读性 */
+}
+
+/* 全屏英雄区内容样式 */
+.hero-fullscreen .hero-content {
+    padding: 2rem;
+    max-width: 900px;
+    margin: 0 auto;
+    z-index: 2;
+    color: #fff; /* 改为白色 */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* 使用space-between分布内容 */
+    align-items: center;
+    padding-top: calc(70px + 2rem); /* 为导航栏留出空间，名字和副标题靠近导航 */
+    padding-bottom: 2vh; /* 减少底部内边距，备案号更靠近页面底部 */
+    height: 100%;
+}
+
+/* 名字标题样式 */
+.hero-name {
+    font-size: 4rem;
+    font-weight: 700;
+    margin-bottom: 1.0rem; /* 增加与副标题的间距 */
+    margin-top: 2.0rem; /* 确保靠近顶部 */
+    color: #fff; /* 改为白色 */
+    letter-spacing: 2px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); /* 增强阴影效果 */
+    order: 1; /* 确保在顶部 */
+}
+
+/* 强调名字的第一部分 */
+.hero-name .first-name {
+    color: #fff; /* 改为白色 */
+}
+
+/* 强调名字的第二部分 */
+.hero-name .last-name {
+    color: var(--secondary-color-orange); /* 橙色调 */
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6); /* 更强的阴影 */
+}
+
+/* 副标题/职业描述样式 */
+.hero-subtitle {
+    font-size: 1.8rem;
+    font-weight: 300;
+    margin-bottom: 0; /* 移除底部边距，与导航卡片更紧凑 */
+    margin-top: 0;
+    color: #fff; /* 改为白色 */
+    opacity: 0.95;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); /* 增强阴影效果 */
+    order: 2; /* 紧跟在名字后面 */
 }
 
 /* 导航卡片样式 */
 .nav-cards {
     display: flex;
     gap: 2.5rem;
-    margin-top: 2rem;
+    margin-top: auto;
+    margin-bottom: auto;
     flex-wrap: wrap;
     justify-content: center;
     position: relative;
     z-index: 5;
+    order: 3; /* 位于中间区域 */
 }
 
 .nav-card {
@@ -163,6 +226,56 @@ body.home-page .footer {
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
+/* 联系按钮样式 */
+.contact-btn {
+    padding: 0.9rem 3rem;
+    background: linear-gradient(135deg, var(--secondary-color-orange) 0%, var(--tertiary-color-orange) 100%);
+    color: white;
+    border: none;
+    border-radius: 30px;
+    font-size: 1.1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    margin-top: 0rem;
+    position: relative;
+    z-index: 5;
+    order: 4; /* 位于导航卡片后面 */
+}
+
+.contact-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+
+/* 备案号样式 */
+.icp-license {
+    margin-top: auto; /* 使用auto将备案号推到底部 */
+    margin-bottom: 0;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    width: 100%;
+    text-align: center;
+    z-index: 3;
+    order: 5; /* 确保在最后，位于底部 */
+}
+
+.icp-license a {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.85rem;
+    text-decoration: none;
+    transition: color 0.3s ease;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.icp-license a:hover {
+    color: rgba(255, 255, 255, 1);
+    text-decoration: underline;
+}
+
 /* 响应式样式 */
 @media (max-width: 768px) {
     .nav-cards {
@@ -189,6 +302,32 @@ body.home-page .footer {
         padding: 0.8rem 2.5rem;
         font-size: 1rem;
         margin-top: 3rem; /* 在平板上保持足够的间距 */
+    }
+    
+    /* 全屏英雄区响应式调整 */
+    .hero-name {
+        font-size: 2.8rem;
+        margin-bottom: 1.2rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.4rem;
+        margin-bottom: 3rem; /* 在平板设备上保持较大的间距 */
+    }
+    
+    .hero-fullscreen .hero-content {
+        padding: 1.5rem;
+        padding-top: calc(70px + 1.5rem); /* 为导航栏留出空间 */
+        padding-bottom: 1.5vh; /* 减少底部间距，备案号更靠近底部 */
+    }
+    
+    .icp-license {
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+    }
+    
+    .icp-license a {
+        font-size: 0.8rem;
     }
 }
 
@@ -217,5 +356,43 @@ body.home-page .footer {
         padding: 0.8rem 2rem;
         font-size: 0.9rem;
         margin-top: 2.5rem; /* 在手机上调整间距 */
+    }
+    
+    /* 全屏英雄区响应式调整 */
+    .hero-name {
+        font-size: 2.2rem;
+        margin-bottom: 1rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.2rem;
+        margin-bottom: 2.5rem; /* 在手机上调整间距 */
+    }
+    
+    .hero-fullscreen .hero-content {
+        padding-top: calc(70px + 1rem); /* 为导航栏留出空间 */
+        padding-bottom: 1vh; /* 减少底部间距，备案号更靠近底部 */
+    }
+    
+    .icp-license {
+        margin-top: 1.2rem;
+        padding-top: 0.8rem;
+    }
+    
+    .icp-license a {
+        font-size: 0.75rem;
+    }
+}
+
+/* 为较低高度的屏幕进行优化 */
+@media (max-height: 700px) {
+    .hero-fullscreen {
+        height: auto;
+        min-height: 100vh;
+    }
+    
+    .icp-license {
+        margin-top: 1.5rem;
+        padding-top: 1rem;
     }
 }
