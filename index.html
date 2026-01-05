@@ -114,27 +114,29 @@
                 
                 <button class="contact-btn">联系我</button>
                 
-                <!-- 备案号 -->
-                <div class="icp-license">
-                    <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">
-                        沪ICP备2025151590号-1
-                    </a>
-                </div>
             </div>
         </section>
     </main>
 
-    <!-- <footer class="footer">
+    <footer class="footer footer-home">
         <div id="social-links-container"></div>
         <div class="copyright">
-            © 2024 陆凯 - All rights reserved
+            © 2023-<span id="currentYear"></span> Kevin Lu 版权所有 | 云栖小栈 (clouddweller.cn)
         </div>
-    </footer> -->
+        <div class="icp-license">
+            <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">
+                沪ICP备2025151590号-1
+            </a>
+        </div>
+    </footer>
 
     <div id="contact-modal-container"></div>
 
     <div id="chat-widget-container"></div>
 
     <script src="scripts/home/home-new.js" type="module"></script>
+    <script>
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+    </script>
 </body>
 </html>

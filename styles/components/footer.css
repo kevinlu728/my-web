@@ -10,6 +10,20 @@
     z-index: 5;
 }
 
+/* 首页特定页脚样式 */
+.footer-home {
+    width: 100%;
+    padding: 2rem 0;
+    color: white;
+    text-align: center;
+    /* background: transparent; */
+    background: linear-gradient(135deg, #4f323d 0%, #312b3a 50%);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+    clear: both;
+    z-index: 5;
+  }
+
 .social-links {
     display: flex;
     justify-content: center;
@@ -58,9 +72,29 @@
     color: white;
 }
 
-/* 针对首页的特定样式 */
-.home-page .footer {
-    margin-top: 0;
+/* 备案号样式 */
+.icp-license {
+    margin-top: auto; /* 使用auto将备案号推到底部 */
+    margin-bottom: 0;
+    /* padding-top: 0.5rem; */
+    /* border-top: 1px solid rgba(255, 255, 255, 0.2); */
+    width: 100%;
+    text-align: center;
+    z-index: 3;
+    order: 5; /* 确保在最后，位于底部 */
+}
+
+.icp-license a {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.85rem;
+    text-decoration: none;
+    transition: color 0.3s ease;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.icp-license a:hover {
+    color: rgba(255, 255, 255, 1); 
+    text-decoration: underline;
 }
 
 @media (max-width: 768px) {
@@ -72,5 +106,14 @@
         font-size: 1.2rem;
         width: 2rem;
         height: 2rem;
+    }
+
+    .icp-license {
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+    }
+    
+    .icp-license a {
+        font-size: 0.8rem;
     }
 } 

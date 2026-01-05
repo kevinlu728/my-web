@@ -239,7 +239,8 @@ body.home-page .footer {
     transition: all 0.3s ease;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-    margin-top: 0rem;
+    margin-top: 3rem;
+    margin-bottom: 3rem;
     position: relative;
     z-index: 5;
     order: 4; /* 位于导航卡片后面 */
@@ -250,31 +251,6 @@ body.home-page .footer {
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
 }
 
-
-/* 备案号样式 */
-.icp-license {
-    margin-top: auto; /* 使用auto将备案号推到底部 */
-    margin-bottom: 0;
-    padding-top: 1.5rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
-    width: 100%;
-    text-align: center;
-    z-index: 3;
-    order: 5; /* 确保在最后，位于底部 */
-}
-
-.icp-license a {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 0.85rem;
-    text-decoration: none;
-    transition: color 0.3s ease;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-}
-
-.icp-license a:hover {
-    color: rgba(255, 255, 255, 1);
-    text-decoration: underline;
-}
 
 /* 响应式样式 */
 @media (max-width: 768px) {
@@ -320,15 +296,6 @@ body.home-page .footer {
         padding-top: calc(70px + 1.5rem); /* 为导航栏留出空间 */
         padding-bottom: 1.5vh; /* 减少底部间距，备案号更靠近底部 */
     }
-    
-    .icp-license {
-        margin-top: 1.5rem;
-        padding-top: 1rem;
-    }
-    
-    .icp-license a {
-        font-size: 0.8rem;
-    }
 }
 
 @media (max-width: 480px) {
@@ -372,27 +339,5 @@ body.home-page .footer {
     .hero-fullscreen .hero-content {
         padding-top: calc(70px + 1rem); /* 为导航栏留出空间 */
         padding-bottom: 1vh; /* 减少底部间距，备案号更靠近底部 */
-    }
-    
-    .icp-license {
-        margin-top: 1.2rem;
-        padding-top: 0.8rem;
-    }
-    
-    .icp-license a {
-        font-size: 0.75rem;
-    }
-}
-
-/* 为较低高度的屏幕进行优化 */
-@media (max-height: 700px) {
-    .hero-fullscreen {
-        height: auto;
-        min-height: 100vh;
-    }
-    
-    .icp-license {
-        margin-top: 1.5rem;
-        padding-top: 1rem;
     }
 }
