@@ -111,11 +111,10 @@ export function initActiveNavLink() {
         const linkPath = new URL(link.href, window.location.origin).pathname;
         
         // 检查是否匹配当前页面
-        // 处理关于我页面特殊情况
         if (
-            (currentPath === '/' && linkPath.includes('about-me.html')) ||
-            (currentPath.includes('about-me.html') && linkPath.includes('about-me.html')) ||
-            (currentPath !== '/' && !currentPath.includes('about-me.html') && linkPath === currentPath)
+            (currentPath === '/' && linkPath.includes('index.html')) ||
+            (currentPath.includes('index.html') && linkPath.includes('index.html')) ||
+            (currentPath !== '/' && !currentPath.includes('index.html') && linkPath === currentPath)
         ) {
             // 设置为当前页
             link.setAttribute('aria-current', 'page');
